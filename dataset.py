@@ -54,9 +54,10 @@ class dataset:
         if return_data:
             return self.data
 
-    def get_data(self, atlas_map):
+    def get_data(self, subject, atlas_map):
         """the main function to output the processed data
         Args:
+            subject:
             atlas_map: atlas mapper to find the voxels
                        associated to the vertices
 

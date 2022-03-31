@@ -31,7 +31,7 @@ locations.
 The anatomical structure indicates the brain areas to be studied with a structural template (i.e MNI 152).
 The current interested brain areas include but not limited to cerebellum and cortex.
 
-### 2. Atlas map
+### 2. Atlas map class
 
 The mapping function from the vertices of surface-based template to the list of connecting voxels. This 
 is the main function to integrate and connect multiple dataset into the same format, which contains many
@@ -43,3 +43,37 @@ given by the current atlas being used and imaging resolution.
 The Data Set class `dataset` is designed to be the entry of getting the data in standard format. It 
 reads the input of raw individual data and other parameters for further use. The class function 
 `get_data()` is to get the final processed data matrix `Y` after minimally preprocessed data.
+
+### Derivatives structure
+
+The folder structure of derivatives
+
+    derivatives/
+        │   README.md
+        │
+        └───group/
+        │       
+        │       ...
+        │   
+        └───sub001/
+        │       └───anatomical/
+        │       │       file naming (@Caro)
+        │       └───func/
+        │       │       file naming (@ana)
+        │       └───surface/
+        │       │       sub-001_space-32k-L-.surf.gii ? (@ladan)
+        │       └───suit/
+        │               file naming (@Jorn)
+        │       └───contrast/
+        │               beta_info.tsv file structure (@ana / @ladan)
+        │       ...
+        │   
+        └───sub002/
+        │       ...
+        │     
+        └───subxxx/
+                ...
+
+### AtlasMap structure
+
+Need to be discussed later.
