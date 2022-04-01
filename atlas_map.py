@@ -13,13 +13,37 @@ import os
 PATH = 'mapping'
 
 
-def atlas_map(atlas, resolution):
-    """The function to return the atlas map as required
-    Args:
-        atlas: which atlas is being used
-        resolution: the resolution that wants to map
+class atlas_map:
+    def __int__(self, name, sub):
+        self.name = name
+        self.sub = sub
 
-    Returns: the atlas mapper
-    """
-    mapper = os.path.join(PATH, "file_%s_%d.txt" % (atlas, resolution))
-    return mapper
+    def build(self, xyz, nii_file):
+        """
+        Args:
+            xyz:
+            nii_file:
+
+        Returns: xyz in subject space
+
+        """
+        pass
+
+    def save(self, file_name):
+        pass
+
+    def load(self, file_name):
+        pass
+
+
+# def atlas_map(subject, atlas, resolution):
+#     """The function to return the atlas map as required
+#     Args:
+#         subject: give the subject
+#         atlas: which atlas is being used
+#         resolution: the resolution that wants to map
+#
+#     Returns: the atlas mapper
+#     """
+#     mapper = os.path.join(PATH, "file_%s_%d.txt" % (atlas, resolution))
+#     return mapper
