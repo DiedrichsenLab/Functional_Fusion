@@ -45,9 +45,9 @@ reads the input of raw individual data and other parameters for further use. The
 
 The folder structure of derivatives
 
-@Ana: IMHO, all different individual derivatives should be under a ses-<label> dir, under sub<label> dir.
-      I added this suggestion to the diagram.
-
+    @Ana: IMHO, all different individual derivatives should be under a ses-<label> dir, under sub<label> dir.
+          I added this suggestion to the diagram.
+      
     derivatives/
         │   README.md
         │
