@@ -66,41 +66,54 @@ The folder structure of derivatives
         │       │           [_run-<index>][_echo-<index>]_<contrast_label>.nii[.gz]
         │       │
         │       │       [_acq-<label>][_ce-<label>][_dir-<label>][_rec-<label>] are optional keys/values.
-        │       │       Multi-echo data MUST be split into one file per echo. We can this if not Multi-Echo.
+        │       │       Multi-echo data MUST be split into one file per echo. We can skip this if not Multi-Echo.
         │       │
         │       │       Check: 
         │       │       https://bids-specification.readthedocs.io/en/v1.2.0/04-modality-specific-files/ \
         │       │           01-magnetic-resonance-imaging-data.html
         │       │
-        │       │       Example for raw data after conversion from Dicom to NIfTI, considering a task named Theory-of-Mind (TOM):
+        │       │       Example for raw data after conversion from Dicom to NIfTI, considering a task named
+        │       │       Theory-of-Mind (TOM):
         │       │       sub-01_ses-01_task-TOM_dir-ap_run-01_bold.nii.gz
         │       │         
-        │       │       For preprocessed data, we should probably take advantage of the SPM prefixes. 
-        │       │       I think we might be using data that need to be tagged with the following:
+        │       │       For preprocessed volume data, we should probably take advantage of the SPM prefixes. 
+        │       │       We might be using data that need to be tagged with the following:
         │       │       a - slice timing correction
         │       │       r - resliced (this can be from coregistration or realignment)
         │       │       u - undistorted, (from Realign unwarp - which requires reslicing)
         │       │       w - warped - typically this is done by normalization
+        │       │
+        │       │       In addition, AFAIK, there's no BIDS convention for different system coordinates. So,
+        │       │       as suggested for the surface, we can simply add another key/value for that.
         │       │         
         │       │       Example:
-        │       │       wurasub-01_ses-01_task-TOM_dir-ap_run-01_bold.nii.gz
+        │       │       wurasub-01_ses-01_task-TOM_space-MNI152_dir-ap_run-01_bold.nii.gz
         │       │
         │       │       Motion files should also be included here.
         │       │       Example:
         │       │       rpsub-01_ses-01_task-TOM_dir-ap_run-01_bold.txt
         │       │         
-        │       │       Paradigm-descriptors files for all runs to build the design matrix should also be included here.
+        │       │       Paradigm-descriptors files for all runs to build the design matrix should also be 
+        │       │       included here.
         │       │       Example:
         │       │       sub-01_ses-01_task-TOM_dir-ap_run-01_events.tsv
         │       │         
         │       └───ses-<label>/surface/
         │       │       sub-001_space-32k-L-.surf.gii ? (@Ladan)
+        │       │
+        │       │       @Ana: For preprocessed surface data, we should follow the same reasoning as for volume.
+        │       │             Only, two extra keys/values might be necessary: hemisphere and number of nodes.
+        │       │               
+        │       │             Example for left hemisphere using high-resolution fsaverage mesh w/ 163842 nodes:
+        │       │             rasub-01_ses-01_task-TOM_space-MNI152_dir-ap_run-01_bold_fsaverage7_lh.gii
+        │       │               
         │       └───ses-<label>/suit/
         │               file naming (@Joern)
         │       └───contrast/
-        │               @Ana: I think this dir should be renamed as 'first-level_analysis' because we may not only want 
+        │               @Ana: This dir should be renamed as 'first-level_analysis' because we may not only want 
         │                     to include contrast (stat) maps, but also effect size or effect variance maps.
-        │                     Inside this dir, we should have sub-folders dedicated to each run and one for ffx, too.
+        │                     Inside this dir, we should have sub-folders dedicated to each run and one for ffx.
+        │
         │               beta_info.tsv file structure (@Ana / @Ladan)
         │       ...
         │   
