@@ -57,6 +57,31 @@ The folder structure of derivatives
         │       │       file naming (@Caro)
         │       └───func/
         │       │       file naming (@ana)
+        │       │
+        │       │       Template suggested by BIDS:         
+        │       │       sub-<label>[_ses-<label>]_task-<label>[_acq-<label>][_ce-<label>][_dir-<label>][_rec-<label>] \
+        │       │           [_run-<index>][_echo-<index>]_<contrast_label>.nii[.gz]
+        │       │
+        │       │       [_acq-<label>][_ce-<label>][_dir-<label>][_rec-<label>] are optional keys/values.
+        │       │       Multi-echo data MUST be split into one file per echo. We can this if not Multi-Echo.
+        │       │
+        │       │       Check: 
+        │       │       https://bids-specification.readthedocs.io/en/v1.2.0/04-modality-specific-files/ \
+        │       │           01-magnetic-resonance-imaging-data.html
+        │       │
+        │       │       Example for raw data after conversion from Dicom to NIfTI, considering a task named Theory-of-Mind (TOM):
+        │       │       sub-01_ses-01_task-TOM_dir-ap_run-01_bold.nii.gz
+        │       │         
+        │       │       For preprocessed data, we should probably take advantage of the SPM prefixes. 
+        │       │       I think we might be using data that need to be tagged with the following:
+        │       │       a - slice timing correction
+        │       │       r - resliced (this can be from coregistration or realignment)
+        │       │       u - undistorted, (from Realign unwarp - which requires reslicing)
+        │       │       w - warped - typically this is done by normalization
+        │       │         
+        │       │       Example:
+        │       │       wurasub-01_ses-01_task-TOM_dir-ap_run-01_bold.nii.gz
+        │       │         
         │       └───surface/
         │       │       sub-001_space-32k-L-.surf.gii ? (@ladan)
         │       └───suit/
