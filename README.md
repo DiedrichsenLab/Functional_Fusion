@@ -45,6 +45,9 @@ reads the input of raw individual data and other parameters for further use. The
 
 The folder structure of derivatives
 
+@Ana: IMHO, all different individual derivatives should be under a ses-<label> dir, under sub<label> dir.
+      I added this suggestion to the diagram.
+
     derivatives/
         │   README.md
         │
@@ -53,10 +56,10 @@ The folder structure of derivatives
         │       ...
         │   
         └───sub001/
-        │       └───anatomical/
+        │       └───ses-<label>/anatomical/
         │       │       file naming (@Caro)
-        │       └───func/
-        │       │       file naming (@ana)
+        │       └───ses-<label>/func/
+        │       │       file naming (@Ana)
         │       │
         │       │       Template suggested by BIDS:         
         │       │       sub-<label>[_ses-<label>]_task-<label>[_acq-<label>][_ce-<label>][_dir-<label>][_rec-<label>] \
@@ -81,13 +84,24 @@ The folder structure of derivatives
         │       │         
         │       │       Example:
         │       │       wurasub-01_ses-01_task-TOM_dir-ap_run-01_bold.nii.gz
+        │       │
+        │       │       Motion files should also be included here.
+        │       │       Example:
+        │       │       rpsub-01_ses-01_task-TOM_dir-ap_run-01_bold.txt
         │       │         
-        │       └───surface/
-        │       │       sub-001_space-32k-L-.surf.gii ? (@ladan)
-        │       └───suit/
-        │               file naming (@Jorn)
+        │       │       Paradigm-descriptors files for all runs to build the design matrix should also be included here.
+        │       │       Example:
+        │       │       sub-01_ses-01_task-TOM_dir-ap_run-01_events.tsv
+        │       │         
+        │       └───ses-<label>/surface/
+        │       │       sub-001_space-32k-L-.surf.gii ? (@Ladan)
+        │       └───ses-<label>/suit/
+        │               file naming (@Joern)
         │       └───contrast/
-        │               beta_info.tsv file structure (@ana / @ladan)
+        │               @Ana: I think this dir should be renamed as 'first-level_analysis' because we may not only want 
+        │                     to include contrast (stat) maps, but also effect size or effect variance maps.
+        │                     Inside this dir, we should have sub-folders dedicated to each run and one for ffx, too.
+        │               beta_info.tsv file structure (@Ana / @Ladan)
         │       ...
         │   
         └───sub002/
