@@ -109,10 +109,15 @@ The folder structure of derivatives
         │       │               
         │       └───ses-<label>/suit/
         │               file naming (@Joern)
-        │       └───contrast/
+        │       └───ses-<label>/contrast/
         │               @Ana: This dir should be renamed as 'first-level_analysis' because we may not only want 
         │                     to include contrast (stat) maps, but also effect size or effect variance maps.
         │                     Inside this dir, we should have sub-folders dedicated to each run and one for ffx.
+        │                     Examples of sub-folders names:
+        │                     results_volume_task-<label>_run<label>
+        │                     results_volume_task-<label>_ffx
+        │                     results_fsaverage7_task-<label>_run<label>
+        │                     results_fsaverage7_task-<label>_ffx
         │
         │               beta_info.tsv file structure (@Ana / @Ladan)
         │       ...
