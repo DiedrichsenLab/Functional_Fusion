@@ -12,55 +12,48 @@ Author: dzhi
 import numpy as np
 import torch as pt
 import nilearn as nl
+import pandas as pd
 
 
-class dataset:
-    def __init__(self, atlas, raw_data, target='betas'):
-        # Constructor of dataset class, and the class
-        # knows which atlas will be used for this individual's
-        # raw data when initializing.
-        self.atlas = atlas
-        self.data = raw_data
-        self._data_processing(target=target)
+class DataSet:
+    def __init__(self, base_dir):
+        """DataSet class:
+        Implements the interface for each of the data set
+        Note that the actual preprocessing and glm estimate
+        do not have to be performed with functionality provided by
+        this class. The class is just a instrument to present the user with
+        a uniform interface of how to get subject info
 
-    def _minimal_preprocessing(self):
-        # TODO: the minimal preprocessing pipeline
-        #  to process the raw input data
-        pass
-
-    def glm(self):
-        pass
-
-    def connectivity(self):
-        pass
-
-    def _data_processing(self, target='betas', return_data=False):
-        """The minimum preprocessing pipeline to process the
-           raw individual data
         Args:
-            target: 'betas' - to get beta estimates
-                    'conn' - to get the connectivity fingerprint
-
-        Returns:
+            basedir (str): _description_
         """
-        self._minimal_preprocessing()
-        if target == 'betas':
-            self.glm()
-        elif target == 'conn':
-            self.connectivity()
-        else:
-            raise ValueError('the value of target is invalid.')
+        self.base_dir  = base_dir
+        self.surface_dir = base_dir + '/{0}/surface'
+        self.anatomical_dir = base_dir + '/{0}/anatomical'
+        self.contrast_dir = base_dir + '/{0}/contrast'
+        self.suit_dir = base_dir + '/{0}/suit'
 
-        if return_data:
-            return self.data
+    def get_participants(self):
+        """ returns a data frame with all participants
+        available in the study. The fields in the data frame correspond to the
+        standard columns in participant.tsv.
+        https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html
+        Returns:
+            Pinfo (pandas data frame): participant information in standard bids format
+        """
+        Pinfo = pd.read_csv(self.base_dir + '/participant.tsv')
+        return Pinfo
 
-    def get_data(self, subject, atlas_map):
+    def get_data(self, participant_id, atlas_map):
         """the main function to output the processed data
         Args:
-            subject:
-            atlas_map: atlas mapper to find the voxels
-                       associated to the vertices
+            participant_id: standard participant_id
+            atlas_map: AtlasMAP to find the voxels
 
-        Returns: Y - the processed individual data
+        Returns:
+            Y (np.ndarray):
+                A N x P numpy array of aggregated data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
         """
         pass

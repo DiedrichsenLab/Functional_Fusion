@@ -4,46 +4,60 @@
 The functions of atlas mapping
 
 Created on 3/30/2022 at 3:00 PM
-Author: dzhi
+Author: dzhi, jdiedrichsen
 """
 import numpy as np
 import nilearn as nl
 import os
 
-PATH = 'mapping'
 
-
-class atlas_map:
-    def __int__(self, name, sub):
-        self.name = name
-        self.sub = sub
-
-    def build(self, xyz, nii_file):
-        """
+class AtlasMap:
+    def __int__(self, dataset, atlas, participant_id):
+        """AtlasMap stores the mapping rules from a specific data set (and participant)
+        to the desired atlas space in form of a voxel list
         Args:
-            xyz:
-            nii_file:
-
-        Returns: xyz in subject space
-
+            dataset_id (string): name of
+            participant_id (string): Participant name
         """
-        pass
+        self.participant_id = participant_id
+        self.dataset = dataset # Reference to corresponding data set
+        self.atlas = atlas     # Reference to corresponding altas
+        self.P = atlas.P       #  Number of brain locations
+
+    def build(self):
+        """
+        Using the dataset, build creates a list of voxel indices of
+        For each of the locations, it
+        """
+        self.voxel_list = [np.empty((1,),dtype=int)]*self.P
 
     def save(self, file_name):
+        """serializes a atlas map to a file
+        Args:
+            file_name (string): full filepath and name
+        """
         pass
 
     def load(self, file_name):
+        """loads a build atlas map from file
+
+        Args:
+            file_name (string): full filepath and name
+        """
         pass
 
+class Atlas():
+    def __init__(self):
+        """The Atlas class implements the general atlas functions
+        for mapping from the P brain locations back to nii or gifti files
+        Each Atlas is associated with a set of atlas maps
+        """
+        self.atlas_id = 'unknown'
+        self.P = np.nan # Number of locations in this atlas
 
-# def atlas_map(subject, atlas, resolution):
-#     """The function to return the atlas map as required
-#     Args:
-#         subject: give the subject
-#         atlas: which atlas is being used
-#         resolution: the resolution that wants to map
-#
-#     Returns: the atlas mapper
-#     """
-#     mapper = os.path.join(PATH, "file_%s_%d.txt" % (atlas, resolution))
-#     return mapper
+    def map_data(self,data):
+        """Maps data back into some atlas form.
+        Args:
+            data (numpy.ndarray): P or N x P array
+        """
+        pass
