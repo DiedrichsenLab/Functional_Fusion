@@ -59,6 +59,11 @@ The folder structure of derivatives
         └───sub001/
         │       └───anatomical/
         │       │       file naming (@Caro)
+        │       │       sub-<participant_label>[_acq-<label>][_run-<index>]_<modality_label>.nii[.gz]
+        │       │       -	If several scans of same modality: use run-01, run-02, etc
+        │       │       -	If several scans of same modality with different acquisition parameters exist, then acq-[parameter] should be used. Example: acq-highres, acq-wholebrain, acq-RARE, acq-FLASH
+        │       │       -	Other labels are probably not useful for our purposes (distinguishing contrast agents, distinguishing reconstruction algorithms like those using motion correction)
+        │       │       
         │       └───func/
         │       │       file naming (@Ana)
         │       │
