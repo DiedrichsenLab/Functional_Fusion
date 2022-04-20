@@ -56,9 +56,23 @@ The folder structure of derivatives
         │
         │       ...
         │
-        └───sub001/
-        │       └───anatomical/
-        │       │       file naming (@Caro)
+        └───sub-<label>/
+        │       └───anat/
+        │       │       sub-<label>_desc-preproc_T1w.nii                # Native space T1w (space defining)
+        │       │       sub-<label>_label-CSF_probseg.nii               # probabilistic segmentation (CSF)
+        │       │       sub-<label>_label-GM_probseg.nii                # probabilistic segmentation (GM)
+        │       │       sub-<label>_label-WM_probseg.nii                # probabilistic segmentation (WM)
+        │       │       sub-<label>_space-32K_hemi-L_white.surf.gii     # 32K white matter surface
+        │       │       sub-<label>_space-32K_hemi-L_pial.surf.gii      # 32K pial surfaceces
+        |       |       sub-<label>_desc-brain_mask.nii                 # Mask of within brain tissue
+        │       └───suit/
+        │       │       sub-<label>_label-GMc_probseg.nii                # probabilistic segmentation (GM-cereb)
+        │       │       sub-<label>_label-WMc_probseg.nii                # probabilistic segmentation (WM-cereb)
+        │       │       sub-<label>_label-GMb_probseg.nii                # probabilistic segmentation (GM-rest)
+        │       │       sub-<label>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
+        │       │       sub-<label>_desc-cereb_mask.nii                  # hand corrected cerebellar mask
+        │       │       sub-<label>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
+        |       |       
         │       └───func/
         │       │       file naming (@Ana)
         │       │
@@ -100,18 +114,6 @@ The folder structure of derivatives
         │       │       Example:
         │       │       sub-01_ses-01_task-TOM_dir-ap_run-01_events.tsv
         │       │
-        │       └───surface/
-        │       │       sub-001_space-32k-L-.surf.gii ? (@Ladan)
-        │       │
-        │       │       @Ana: For preprocessed surface data, we should follow the same reasoning as for volume.
-        │       │             Only, two extra keys/values might be necessary: hemisphere and number of nodes.
-        │       │       @Joern: There will be no preprocessed surface data at this point, as the extraction
-                                Will be done dynamically over Atlas map
-        │       │             Example for left hemisphere using high-resolution fsaverage mesh w/ 163842 nodes:
-        │       │             rasub-01_ses-01_task-TOM_space-MNI152_dir-ap_run-01_bold_fsaverage7_lh.gii
-        │       │
-        │       └───suit/
-        │               file naming (@Joern)
         │       └───contrast/
         │               @Ana: This dir should be renamed as 'first-level_analysis' because we may not only want
         │                     to include contrast (stat) maps, but also effect size or effect variance maps.
