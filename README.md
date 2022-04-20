@@ -73,6 +73,7 @@ The folder structure of derivatives
         │       │       sub-<label>_desc-cereb_mask.nii                  # hand corrected cerebellar mask
         │       │       sub-<label>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
         |       |       
+
         │       └───func/
         │       │       file naming (@Ana)
         │       │
