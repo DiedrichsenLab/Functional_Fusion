@@ -48,7 +48,7 @@ The folder structure of derivatives
     @Ana: IMHO, all different individual derivatives should be under a ses-<label> dir, under sub<label> dir.
           I added this suggestion to the diagram.
     @Joern: This is clearly useful for some experiments, but not for others. Certainly, we want only one anatomical directory per study - as we want the data in a common space. I have removed the session for now - this is meant to be the smallest common denominator across all studies. Extensions can always be made for longer, multi-session studies.
-
+    
     derivatives/
         │   README.md
         │
@@ -58,22 +58,20 @@ The folder structure of derivatives
         │
         └───sub-<label>/
         │       └───anat/
-        │       │       sub-<label>_desc-preproc_T1w.nii                # Native space T1w (space defining)
-        │       │       sub-<label>_label-CSF_probseg.nii               # probabilistic segmentation (CSF)
-        │       │       sub-<label>_label-GM_probseg.nii                # probabilistic segmentation (GM)
-        │       │       sub-<label>_label-WM_probseg.nii                # probabilistic segmentation (WM)
-        │       │       sub-<label>_space-32K_hemi-L_white.surf.gii     # 32K white matter surface
-        │       │       sub-<label>_space-32K_hemi-L_pial.surf.gii      # 32K pial surfaceces
-        |       |       sub-<label>_desc-brain_mask.nii                 # Mask of within brain tissue
+        │       │       sub-<id>_desc-preproc_T1w.nii                # Native space T1w (space defining)
+        │       │       sub-<id>_label-CSF_probseg.nii               # probabilistic segmentation (CSF)
+        │       │       sub-<id>_label-GM_probseg.nii                # probabilistic segmentation (GM)
+        │       │       sub-<id>_label-WM_probseg.nii                # probabilistic segmentation (WM)
+        │       │       sub-<id>_space-32K_hemi-L_white.surf.gii     # 32K white matter surface
+        │       │       sub-<id>_space-32K_hemi-L_pial.surf.gii      # 32K pial surfaceces
+        |       |       sub-<id>_desc-brain_mask.nii                 # Mask of within brain tissue
         │       └───suit/
-        │       │       sub-<label>_label-GMc_probseg.nii                # probabilistic segmentation (GM-cereb)
-        │       │       sub-<label>_label-WMc_probseg.nii                # probabilistic segmentation (WM-cereb)
-        │       │       sub-<label>_label-GMb_probseg.nii                # probabilistic segmentation (GM-rest)
-        │       │       sub-<label>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
-        │       │       sub-<label>_desc-cereb_mask.nii                  # hand corrected cerebellar mask
-        │       │       sub-<label>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
-        |       |       
-
+        │       │       sub-<id>_label-GMc_probseg.nii                # probabilistic segmentation (GM-cereb)
+        │       │       sub-<id>_label-WMc_probseg.nii                # probabilistic segmentation (WM-cereb)
+        │       │       sub-<id>_label-GMb_probseg.nii                # probabilistic segmentation (GM-rest)
+        │       │       sub-<id>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
+        │       │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask
+        |       | 			sub-<id>_space-SUIT_xfm.nii 									#	coordinate transformation file into native        
         │       └───func/
         │       │       file naming (@Ana)
         │       │
