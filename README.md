@@ -58,7 +58,7 @@ The folder structure of derivatives
         │
         └───sub-<label>/
         │       └───anat/
-        │       │       sub-<id>_desc-preproc_T1w.nii                # Native space T1w (space defining)
+        │       │       sub-<id>_T1w.nii                # Native space T1w (space defining)
         │       │       sub-<id>_label-CSF_probseg.nii               # probabilistic segmentation (CSF)
         │       │       sub-<id>_label-GM_probseg.nii                # probabilistic segmentation (GM)
         │       │       sub-<id>_label-WM_probseg.nii                # probabilistic segmentation (WM)
