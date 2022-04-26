@@ -113,17 +113,18 @@ The folder structure of derivatives
         │       │       Example:
         │       │       sub-01_ses-01_task-TOM_dir-ap_run-01_events.tsv
         │       │
-        │       └───contrast/
-        │               @Ana: This dir should be renamed as 'first-level_analysis' because we may not only want
-        │                     to include contrast (stat) maps, but also effect size or effect variance maps.
-        │                     Inside this dir, we should have sub-folders dedicated to each run and one for ffx.
-        │                     Examples of sub-folders names:
-        │                     results_volume_task-<label>_run<label>
-        │                     results_volume_task-<label>_ffx
-        │                     results_fsaverage7_task-<label>_run<label>
-        │                     results_fsaverage7_task-<label>_ffx
-        │
-        │               beta_info.tsv file structure (@Ana / @Ladan)
+        │       └───estimates/
+          								sess-s1/ 
+    			    │               beta_info.tsv: Information on regression estimate values structure
+    			    									TSV-file with obligatory columns
+    			    										run: run number (reflected in file name)
+    			    										reg_id: regressor id (reflected in file name) 
+    			    										reg_num: column number of regressor in design matrix
+    			    								sub-<label>_ses-<label>_matrix.npy: Design matrix used for estimation
+        │                     sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii
+        │                     sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii
+        │                     sub-<label>_ses-<label>_mask.nii
+        │                     sub-<label>_ses-<label>_resms.nii
         │       ...
         │
         └───sub002/

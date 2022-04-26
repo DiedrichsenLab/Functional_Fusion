@@ -2,6 +2,10 @@
 import pandas as pd
 import shutil
 from pathlib import Path
+import mat73
+import numpy as np 
+
+
 base_dir = '/Volumes/diedrichsen_data$/data'
 orig_dir = base_dir + '/Cerebellum/super_cerebellum'
 target_dir = base_dir + '/FunctionalFusion/MDTB'
@@ -87,14 +91,66 @@ def import_freesurfer(source_dir,dest_dir,old_id,new_id):
         except: 
             print('skipping ' + src[i])
 
-def import_spm_glm(source_dir,dest_dir,new_id):
+def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
+    """Imports the output of the SPM GLM with an SPM_info.mat 
+    structure into BIDS deriviatie (Functional Fusion) framework.
+    It assumes that a single GLM corresponds to single session. 
+
+    See readme for output structure. 
+    Args:
+        source_dir (_type_): Directory of the SPM GLM
+        dest_dir (_type_): Destination directory for that subject / session 
+        new_id (_type_): New name for the subject 
+        info_dict (_type_): Dictonary with the old field names and the new field names for the information
+    """
+    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    src=[]
+    dest =[] 
+    # Generate new dictionary from SPM info 
+    D = mat73.loadmat(source_dir+'/SPM_info.mat')
+    T={}
+    for i in info_dict.items(): 
+        T[i[1]]=D[i[0]]
+
+    N = len(T[i[1]])
+    if 'reg_id' not in T.keys():
+        n = sum(T['run']==1)
+        T['reg_num'] = np.arange(N)
+        T['reg_id'] = T['reg_num'] % n
+
+    # Ensure that run number is an integer value 
+    T['run'] = [int(j) for j in T['run']] 
+    D = pd.DataFrame(T)
+    D.to_csv(dest_dir + f'/{sub_id}_{sess_id}_reginfo.tsv')
+
+    # Prepare beta files for transfer 
+    src=[]
+    dest =[] 
+    for i in range(N): 
+        src.append(f'/beta_{i+1:04d}.nii')
+        dest.append(f'/{sub_id}_{sess_id}_run-{D.run[i]:02}_reg-{D.reg_id[i]:02d}_beta.nii')
+    # Mask 
+    src.append(f'/mask.nii')
+    dest.append(f'/{sub_id}_{sess_id}_run-{D.run[i]:02}_mask.nii')
+
+    # ResMS 
+    src.append(f'/resms.nii')
+    dest.append(f'/{sub_id}_{sess_id}_run-{D.run[i]:02}_resms.nii')
     
+    # Copy those files over
+    for i in range(len(src)): 
+        try: 
+            shutil.copyfile(source_dir+src[i],dest_dir+dest[i])
+        except: 
+            print('skipping ' + src[i])
+
+
 
 
 
 if __name__ == "__main__":
     T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
-    for s in T.participant_id:
+    for s in [T.participant_id[0]]:
         old_id = s.replace('sub-','s',1)
         # dir1 = orig_dir + f'/sc1/suit/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/suit'
@@ -102,6 +158,15 @@ if __name__ == "__main__":
         # dir1 = orig_dir + f'/sc1/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/anat'
         # import_anat(dir1,dir2,'anatomical',s)
-        dir1 = orig_dir + f'/sc1/surfaceWB/{old_id}'
-        dir2 = target_dir + f'/derivatives/{s}/anat'
-        import_freesurfer(dir1,dir2,old_id,s)
+        # dir1 = orig_dir + f'/sc1/surfaceWB/{old_id}'
+        # dir2 = target_dir + f'/derivatives/{s}/anat'
+        # import_freesurfer(dir1,dir2,old_id,s)
+        info_dict={'run':'run',
+                   'inst':'instruction',
+                   'TN':'task_name',
+                   'CN':'cond_name',
+                   'task':'task_num',
+                   'cond':'cond_num'}
+        dir1 = orig_dir + f'/sc1/GLM_firstlevel_7/{old_id}'
+        dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s1'
+        import_spm_glm(dir1,dir2,s,'ses-s1',info_dict)
