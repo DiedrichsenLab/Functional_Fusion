@@ -131,11 +131,11 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
         dest.append(f'/{sub_id}_{sess_id}_run-{D.run[i]:02}_reg-{D.reg_id[i]:02d}_beta.nii')
     # Mask 
     src.append(f'/mask.nii')
-    dest.append(f'/{sub_id}_{sess_id}_run-{D.run[i]:02}_mask.nii')
+    dest.append(f'/{sub_id}_{sess_id}_mask.nii')
 
     # ResMS 
     src.append(f'/resms.nii')
-    dest.append(f'/{sub_id}_{sess_id}_run-{D.run[i]:02}_resms.nii')
+    dest.append(f'/{sub_id}_{sess_id}_resms.nii')
     
     # Copy those files over
     for i in range(len(src)): 
@@ -150,7 +150,7 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
 
 if __name__ == "__main__":
     T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
-    for s in [T.participant_id[0]]:
+    for s in T.participant_id:
         old_id = s.replace('sub-','s',1)
         # dir1 = orig_dir + f'/sc1/suit/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/suit'
