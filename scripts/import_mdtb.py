@@ -65,8 +65,32 @@ def import_anat(source_dir,dest_dir,anat_name,participant_id):
         except: 
             print('skipping ' + src[i])
 
-def import_freesurfer(source_dir,dest_dir): 
-    pass
+def import_freesurfer(source_dir,dest_dir,old_id,new_id):
+    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    src=[]
+    dest =[] 
+    src.append(f'/{old_id}.L.pial.32k.surf.gii')
+    dest.append(f'/{new_id}_space-32k_hemi-L_pial.surf.nii')
+    src.append(f'/{old_id}.L.white.32k.surf.gii')
+    dest.append(f'/{new_id}_space-32k_hemi-L_white.surf.nii')
+    src.append(f'/{old_id}.R.pial.32k.surf.gii')
+    dest.append(f'/{new_id}_space-32k_hemi-R_pial.surf.nii')
+    src.append(f'/{old_id}.R.pial.32k.surf.gii')
+    dest.append(f'/{new_id}_space-32k_hemi-R_white.surf.nii')
+    src.append(f'/{old_id}.L.sulc.32k.shape.gii')
+    dest.append(f'/{new_id}_space-32k_hemi-L_sulc.shape.nii')
+    src.append(f'/{old_id}.R.sulc.32k.shape.gii')
+    dest.append(f'/{new_id}_space-32k_hemi-R_sulc.shape.nii')
+    for i in range(len(src)): 
+        try: 
+            shutil.copyfile(source_dir+src[i],dest_dir+dest[i])
+        except: 
+            print('skipping ' + src[i])
+
+def import_spm_glm(source_dir,dest_dir,new_id):
+    
+
+
 
 if __name__ == "__main__":
     T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
@@ -75,6 +99,9 @@ if __name__ == "__main__":
         # dir1 = orig_dir + f'/sc1/suit/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/suit'
         # import_suit(dir1,dir2,'anatomical',s)
-        dir1 = orig_dir + f'/sc1/anatomicals/{old_id}'
+        # dir1 = orig_dir + f'/sc1/anatomicals/{old_id}'
+        # dir2 = target_dir + f'/derivatives/{s}/anat'
+        # import_anat(dir1,dir2,'anatomical',s)
+        dir1 = orig_dir + f'/sc1/surfaceWB/{old_id}'
         dir2 = target_dir + f'/derivatives/{s}/anat'
-        import_anat(dir1,dir2,'anatomical',s)
+        import_freesurfer(dir1,dir2,old_id,s)
