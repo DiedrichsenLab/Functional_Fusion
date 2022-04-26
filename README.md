@@ -62,8 +62,8 @@ The folder structure of derivatives
         │       │       sub-<id>_label-CSF_probseg.nii               # probabilistic segmentation (CSF)
         │       │       sub-<id>_label-GM_probseg.nii                # probabilistic segmentation (GM)
         │       │       sub-<id>_label-WM_probseg.nii                # probabilistic segmentation (WM)
-        │       │       sub-<id>_space-32K_hemi-L_white.surf.gii     # 32K white matter surface
-        │       │       sub-<id>_space-32K_hemi-L_pial.surf.gii      # 32K pial surfaceces
+        │       │       sub-<id>_space-32k_hemi-L_white.surf.gii     # 32K white matter surface
+        │       │       sub-<id>_space-32k_hemi-L_pial.surf.gii      # 32K pial surfaceces
         |       |       sub-<id>_desc-brain_mask.nii                 # Mask of within brain tissue
         │       └───suit/
         │       │       sub-<id>_label-GMc_probseg.nii                # probabilistic segmentation (GM-cereb)
