@@ -26,13 +26,13 @@ class DataSet:
         a uniform interface of how to get subject info
 
         Args:
-            basedir (str): _description_
+            basedir (str): basis directory
         """
         self.base_dir  = base_dir
-        self.surface_dir = base_dir + '/{0}/surface'
-        self.anatomical_dir = base_dir + '/{0}/anatomical'
-        self.contrast_dir = base_dir + '/{0}/contrast'
-        self.suit_dir = base_dir + '/{0}/suit'
+        self.surface_dir = base_dir + '/derivatives/{0}/anat'
+        self.anatomical_dir = base_dir + '/derivatives/{0}/anat'
+        self.data_dir = base_dir + '/derivatives/{0}/estimates'
+        self.suit_dir = base_dir + '/derivatives/{0}/suit'
 
     def get_participants(self):
         """ returns a data frame with all participants
@@ -42,8 +42,8 @@ class DataSet:
         Returns:
             Pinfo (pandas data frame): participant information in standard bids format
         """
-        Pinfo = pd.read_csv(self.base_dir + '/participants.tsv')
-        return Pinfo
+        self.part_info = pd.read_csv(self.base_dir + '/participants.tsv',delimiter='\t')
+        return self.part_info
 
     def get_data(self, participant_id, atlas_map):
         """the main function to output the processed data
@@ -59,10 +59,14 @@ class DataSet:
         """
         pass
 
+class DataSetMDTB(DataSet):
+    def __init__(self, dir):
+        super().__init__(dir)
 
-class DataSet_HCP_resting(DataSet):
+
+class DataSetHcpResting(DataSet):
     def __init__(self, dir='Y:\data\FunctionalFusion\HCP'):
-        super(DataSet_HCP_resting, self).__init__(base_dir=dir)
+        super(DataSetHcpResting, self).__init__(base_dir=dir)
         # self.func_dir = self.base_dir + '/{0}/estimates'
         self.all_sub = self.get_participants()
         self.derivative_dir = self.base_dir + '/derivatives'
@@ -108,7 +112,6 @@ class DataSet_HCP_resting(DataSet):
 
 
 if __name__ == '__main__':
-    A = DataSet_HCP_resting()
+    A = DataSetHcpResting()
     part = A.get_participants()
     data = A.get_data(part['participant_id'][0:10])
-
