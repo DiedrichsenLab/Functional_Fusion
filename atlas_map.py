@@ -10,9 +10,10 @@ import numpy as np
 from numpy.linalg import inv
 import nibabel as nb
 import os
+
 import SUITPy as suit
-from SUITPy.flatmap import affine_transform
 import surfAnalysisPy as surf
+from util import affine_transform, affine_transform_mat, sample_img_nn,coords_to_linvidxs, sq_eucl_distances
 
 class Atlas():
     def __init__(self):
@@ -42,9 +43,10 @@ class AtlasVolumetric(Atlas):
         self.mask_img = nb.load(mask_img)
         Xmask = self.mask_img.get_data()
         Xmask = (Xmask>0)
-        self.i,self.j,self.k = np.where(Xmask>0)
-        self.x,self.y,self.z = affine_transform(self.i,self.j,self.k,self.mask_img.affine)
-        self.P = self.x.shape[0]
+        i,j,k = np.where(Xmask>0)
+        self.vox = np.vstack((i,j,k))
+        self.world = affine_transform_mat(self.vox,self.mask_img.affine)
+        self.P = self.world.shape[0]
 
     def map_data(self,data):
         """Maps data back into a full nifti
@@ -56,7 +58,7 @@ class AtlasVolumetric(Atlas):
             mapped_image (Nifti1Image): Image containing mapped results 
         """
         X=np.zeros(self.mask_img.shape)
-        X[self.i,self.j,self.k]=data
+        X[self.vox[0],self.vox[1],self.vox[2]]=data
         mapped = nb.Nifti1Image(X,self.mask_img.affine)
         return mapped
 
@@ -78,7 +80,7 @@ class AtlasMap():
         Using the dataset, build creates a list of voxel indices of
         For each of the locations, it
         """
-        self.voxel_list = [np.empty((1,),dtype=int)]*self.P
+        pass 
 
     def save(self, file_name):
         """serializes a atlas map to a file
@@ -116,12 +118,34 @@ class AtlasMapDeform(AtlasMap):
         Using the dataset, build creates a list of voxel indices of
         For each of the locations, it
         """
-        self.voxel_list = np.empty((self.P,),dtype=object)
-        i,j,k=affine_transform(self.atlas.x,self.atlas.y,self.atlas.z,
-                            inv(self.deform_img.affine))
-        i=i.astype(int)
-        j=j.astype(int)
-        k=k.astype(int)
-        X=self.deform_img.get_fdata()
-        
+        # Caluculate locations of atlas in individual (deformed) coordinates 
+        atlas_ind = sample_img_nn(self.deform_img,self.atlas.world).squeeze().T
+        N = atlas_ind.shape[1] # Number of locations in atlas
+        if smooth is None: # Use nearest neighbor interpolation  
+            self.vox_list,self.vox_weight = coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
+        else:              # Use smoothing kernel of specific size 
+            # Get world coordinates and linear coordinates for all available voxels
+            M = self.mask_img.get_fdata()
+            i,j,k=np.where(M>0)
+            world_vox = affine_transform_mat(np.vstack((i,j,k)),self.mask_img.affine) # available voxels in world coordiantes
+            linindx = np.ravel_multi_index((i,j,k),M.shape,mode='clip')
+            
+            # Distances between atlas coordinates and voxel coordinates 
+            D = sq_eucl_distances(atlas_ind,world_vox)
+            # Find voxels with substantial power under gaussian kernel 
+            W = np.exp(-0.5 * D/(smooth**2))
+            W[W<0.2]=0
+            a,b=W.nonzero()
+            # Now transfer them into a full list of voxels 
+            # this is somewhat ugly and brute force 
+            c = np.zeros(a.shape,dtype=int)
+            c[1:]=a[0:-1]==a[1:]
+            for i in range(c.shape[0]-1):
+                 if c[i+1]:
+                    c[i+1]=c[i+1]+c[i]
+            self.vox_list=np.zeros((N,c.max()+1),dtype=np.int16)
+            self.vox_weight=np.zeros((N,c.max()+1))
+            self.vox_list[a,c]=linindx[b]
+            self.vox_weight[a,c]=W[a,b]
+            self.vox_weight = self.vox_weight / self.vox_weight.sum(axis=1,     keepdims=True)
         pass

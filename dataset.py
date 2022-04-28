@@ -45,15 +45,15 @@ class DataSet:
         self.part_info = pd.read_csv(self.base_dir + '/participants.tsv',delimiter='\t')
         return self.part_info
 
-    def get_data(self, participant_id, atlas_map):
+    def get_data(self, participant_id, atlas_maps):
         """the main function to output the processed data
         Args:
             participant_id: standard participant_id
-            atlas_map: AtlasMAP to find the voxels
+            atlas_maps: List of atlasmaps to find the voxels
 
         Returns:
             Y (np.ndarray):
-                A N x P numpy array of aggregated data
+                A numatlasses list with N x P numpy array of data
             T (pd.DataFrame):
                 A data frame with information about the N numbers provide
         """
@@ -63,6 +63,11 @@ class DataSetMDTB(DataSet):
     def __init__(self, dir):
         super().__init__(dir)
 
+    def get_data(self,participant_id,atlas_maps): 
+        pass
+
+    def get_data_fnames(self,participant_id,session_id): 
+        
 
 class DataSetHcpResting(DataSet):
     def __init__(self, dir='Y:\data\FunctionalFusion\HCP'):

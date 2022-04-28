@@ -23,10 +23,11 @@ def make_mdtb_suit3():
     atlas_maps = []
     for s in T.participant_id:
         deform = mdtb_dataset.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
-        mask = mdtb_dataset.data_dir.format(s) + f'/ses-s1/{s}_ses-s1_mask.nii'
+        mask = mdtb_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
         A = AtlasMapDeform(mdtb_dataset, suit3_atlas, s,deform, mask)
-        A.build()
-        A.save()
+        A.build(smooth=2.0)
+        data = mdtb_dataset.get_data(s,[A])
+
 
 if __name__ == "__main__":
     make_mdtb_suit3()

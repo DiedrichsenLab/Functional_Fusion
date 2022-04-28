@@ -45,15 +45,11 @@ The Data Set class `DataSet` is designed to be the entry of getting the data in 
 
 The folder structure of derivatives
 
-    @Ana: IMHO, all different individual derivatives should be under a ses-<label> dir, under sub<label> dir.
-          I added this suggestion to the diagram.
-    @Joern: This is clearly useful for some experiments, but not for others. Certainly, we want only one anatomical directory per study - as we want the data in a common space. I have removed the session for now - this is meant to be the smallest common denominator across all studies. Extensions can always be made for longer, multi-session studies.
-    
     derivatives/
         │   README.md
         │
         └───group/
-        │
+        │				
         │       ...
         │
         └───sub-<label>/
@@ -73,45 +69,12 @@ The folder structure of derivatives
         │       │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask
         |       | 			sub-<id>_space-SUIT_xfm.nii 									#	coordinate transformation file into native        
         │       └───func/
-        │       │       file naming (@Ana)
-        │       │
-        │       │       Template suggested by BIDS:
-        │       │       sub-<label>[_ses-<label>]_task-<label>[_acq-<label>][_ce-<label>][_dir-<label>]
-        | [_rec-<label>] \
-        │       │           [_run-<index>][_echo-<index>]_<contrast_label>.nii[.gz]
-        │       │
-        │       │       [_acq-<label>][_ce-<label>][_dir-<label>][_rec-<label>] are optional keys/values.
-        │       │       Multi-echo data MUST be split into one file per echo. We can skip this if not Multi-Echo.
-        │       │
-        │       │       Check:
-        │       │       https://bids-specification.readthedocs.io/en/v1.2.0/04-modality-specific-files/ \
-        │       │           01-magnetic-resonance-imaging-data.html
-        │       │
-        │       │       Example for raw data after conversion from Dicom to NIfTI, considering a task named
-        │       │       Theory-of-Mind (TOM):
-        │       │       sub-01_task-TOM_run-01_bold.nii.gz
-        │       │
-        │       │       For preprocessed volume data, we should probably take advantage of the SPM prefixes.
-        │       │       We might be using data that need to be tagged with the following:
-        │       │       a - slice timing correction
-        │       │       r - resliced (this can be from coregistration or realignment)
-        │       │       u - undistorted, (from Realign unwarp - which requires reslicing)
-        │       │       w - warped - typically this is done by normalization
-        │       │
-        │       │       In addition, AFAIK, there's no BIDS convention for different system coordinates. So,
-        │       │       as suggested for the surface, we can simply add another key/value for that.
-        │       │
-        │       │       Example:
-        │       │       wurasub-01_ses-01_task-TOM_space-MNI152_dir-ap_run-01_bold.nii.gz
-        │       │
-        │       │       Motion files should also be included here.
-        │       │       Example:
-        │       │       rpsub-01_ses-01_task-TOM_dir-ap_run-01_bold.txt
-        │       │
-        │       │       Paradigm-descriptors files for all runs to build the design matrix should also be
-        │       │       included here.
-        │       │       Example:
-        │       │       sub-01_ses-01_task-TOM_dir-ap_run-01_events.tsv
+          								sess-s1/ 
+        |				| 					Minimally preprocessed fMRI data, ideally in the subjects original space
+        │       │       		sub-<label>_ses-<label>_run-<label>_bold.nii[.gz]
+        |				| 			
+        |				|						Information of different characteristics of runs (phase-encoding direction, etc)
+        |				|						should be stored in a separate json or tsv file.... 
         │       │
         │       └───estimates/
           								sess-s1/ 
@@ -125,13 +88,7 @@ The folder structure of derivatives
         │                     sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii
         │                     sub-<label>_ses-<label>_mask.nii
         │                     sub-<label>_ses-<label>_resms.nii
-        │       ...
-        │
-        └───sub002/
-        │       ...
-        │
-        └───subxxx/
-                ...
+        
 
 ### AtlasMap structure
 
