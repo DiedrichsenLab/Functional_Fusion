@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 import mat73
 import numpy as np 
-from atlas_map import AtlasVolumetric, AtlasMapDeform
+from atlas_map import AtlasVolumetric, AtlasMapDeform, get_data
 from dataset import DataSetMDTB
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
@@ -26,8 +26,10 @@ def make_mdtb_suit3():
         mask = mdtb_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
         A = AtlasMapDeform(mdtb_dataset, suit3_atlas, s,deform, mask)
         A.build(smooth=2.0)
-        data = mdtb_dataset.get_data(s,[A])
-
+        # data = mdtb_dataset.get_data(s,[A])
+        a=mdtb_dataset.get_data_fnames(s,'ses-s1')
+        data = get_data(a,[A])
+        pass
 
 if __name__ == "__main__":
     make_mdtb_suit3()

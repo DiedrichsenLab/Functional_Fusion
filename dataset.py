@@ -6,14 +6,13 @@ Data fusion project dataset module
 The class for converting and mapping raw data from multi-dataset
 to a standard data structure that can be used in Diedrichsen lab
 
-Created on 3/30/2022 at 12:21 PM
-Author: dzhi
 """
 import numpy as np
 import torch as pt
 import nibabel as nib
 import pandas as pd
 import os
+import util
 
 
 class DataSet:
@@ -64,10 +63,15 @@ class DataSetMDTB(DataSet):
         super().__init__(dir)
 
     def get_data(self,participant_id,atlas_maps): 
-        pass
+        fnames=self.get_data_fnames(participant_id,'ses-s1')
+        atlas_maps.get_data(fnames,atlas_maps)
 
-    def get_data_fnames(self,participant_id,session_id): 
-        
+    def get_data_fnames(self,participant_id,session_id=None): 
+        dir = self.data_dir.format(participant_id) + f'/{session_id}'
+        T=pd.read_csv(dir+f'/{participant_id}_{session_id}_reginfo.tsv')
+        fnames = [f'{dir}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i,t in T.iterrows()]
+        fnames.append(f'{dir}/{participant_id}_{session_id}_resms.nii')
+        return fnames
 
 class DataSetHcpResting(DataSet):
     def __init__(self, dir='Y:\data\FunctionalFusion\HCP'):

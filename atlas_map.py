@@ -143,9 +143,39 @@ class AtlasMapDeform(AtlasMap):
             for i in range(c.shape[0]-1):
                  if c[i+1]:
                     c[i+1]=c[i+1]+c[i]
-            self.vox_list=np.zeros((N,c.max()+1),dtype=np.int16)
+            self.vox_list=np.zeros((N,c.max()+1),dtype=np.int32)
             self.vox_weight=np.zeros((N,c.max()+1))
             self.vox_list[a,c]=linindx[b]
             self.vox_weight[a,c]=W[a,b]
             self.vox_weight = self.vox_weight / self.vox_weight.sum(axis=1,     keepdims=True)
         pass
+
+
+def get_data(fnames,atlas_maps): 
+    """Extracts the data for a list of fnames
+    for a list of atlas_maps. This is usually called by DataSet.get_data() 
+    to extract the required raw data before processing it further
+
+    Args:
+        fnames (list): list of file names to be sampled 
+        atlas_maps (list): list of built atlas-map objects 
+    """
+    n_atlas = len(atlas_maps)
+    n_files = len(fnames)
+    data = []
+    # Make the empty data structures
+    for at in atlas_maps:
+        data.append(np.full((n_files,at.vox_list.shape[0]),np.nan))
+    for j,f in enumerate(fnames): 
+        V = nb.load(f)
+        X = V.get_fdata()
+        if (X.ndim>3):
+            raise(NameError('extraction right now only for 3d-niftis'))
+        # Map this file into the data structures 
+        X = X.ravel()
+        for i,at in enumerate(atlas_maps): 
+            d=X[at.vox_list] * at.vox_weight  # Expanded data
+            d = np.nansum(d,axis=1)
+            d[np.nansum(at.vox_weight,axis=1)==0]=np.nan
+            data[i][j,:]=d
+    return data
