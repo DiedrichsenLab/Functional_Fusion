@@ -24,28 +24,28 @@ df = pd.read_csv(open(sessions_map), sep=',', index_col=0)
 subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 
 
-def import_func_derivatives(sub, sname):
+def import_estimates(sub, sname):
     session = df[df[sub].values == sname].index.values[0]
     drago_files = drago_derivatives + sub + '/' + session + \
         '/*ffx/stat_maps/*.nii.gz'
-    target_path = cbs_derivatives + '/' + sub + '/estimates/' + session
-    if not os.path.exists(target_path):
-        os.makedirs(target_path)
+    cbs_path = cbs_derivatives + '/' + sub + '/estimates/' + session
+    if not os.path.exists(cbs_path):
+        os.makedirs(cbs_path)
     else:
-        for ng in glob.glob(target_path + '/*.nii.gz'):
+        for ng in glob.glob(cbs_path + '/*.nii.gz'):
             os.remove(ng)
-    p = subprocess.Popen(["scp", '-o BatchMode=yes', drago_files, target_path])
+    p = subprocess.Popen(["scp", '-o BatchMode=yes', drago_files, cbs_path])
     p.wait()
-    original_files = target_path + '/*.nii.gz'
+    original_files = cbs_path + '/*.nii.gz'
     for f in glob.glob(original_files):
-        original_fname = re.match(target_path + '/(.*).nii.gz', f).groups()[0]
+        original_fname = re.match(cbs_path + '/(.*).nii.gz', f).groups()[0]
         final_fname = sub + '_' + session + '_reg-' + original_fname + \
             '_zmaps.nii.gz'
-        ff = target_path + '/' + final_fname
+        ff = cbs_path + '/' + final_fname
         os.rename(f, ff)
 
 
 if __name__ == "__main__":
     for subject in subjects_list:
         for session_name in session_names:
-            import_func_derivatives(subject, session_name)
+            import_estimates(subject, session_name)
