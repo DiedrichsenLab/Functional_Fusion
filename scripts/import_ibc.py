@@ -1,3 +1,14 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Script to transfer IBC data from drago to cbs servers
+
+Author: Ana Luisa Pinho
+
+Created: April 2022
+Last update: April 2022
+"""
+
 import os
 import glob
 import re
@@ -18,8 +29,8 @@ home = str(Path.home())
 cbs = os.path.join(home, 'diedrichsen_data/data/FunctionalFusion/ibc')
 cbs_derivatives = os.path.join(cbs, 'derivatives')
 
-sessions_map = 'ibc_sessions.csv'
-df = pd.read_csv(open(sessions_map), sep=',', index_col=0)
+sessions_map = 'ibc_sessions.tsv'
+df = pd.read_csv(open(sessions_map), sep='\t', index_col=0)
 
 subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 
