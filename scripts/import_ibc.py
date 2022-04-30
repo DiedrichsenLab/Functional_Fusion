@@ -18,9 +18,9 @@ from pathlib import Path
 
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp']
-# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-session_names = ['archi']
-subjects_numbers = [1]
+subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+session_names = ['hcp1', 'hcp2']
+# subjects_numbers = [1]
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc/'
 drago_derivatives = drago + 'derivatives/'
@@ -57,7 +57,6 @@ def import_estimates(sub, sname, df1, df2, df3):
         regressors = df3[df3.task == tk].regressor.values
         for cond, reg in zip(conditions, regressors):
             drago_file = zfolder + cond + '.nii.gz'
-            print(drago_file)
             p = subprocess.Popen(["scp", '-o BatchMode=yes', drago_file,
                                   cbs_path])
             p.wait()

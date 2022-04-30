@@ -15,6 +15,12 @@ hcp1	5	HcpEmotion	ap
 hcp1	6	HcpGambling	ap
 hcp1	7	HcpMotor	ap
 hcp1	8	HcpLanguage	ap
+hcp2	1	HcpRelational	pa
+hcp2	2	HcpSocial	pa
+hcp2	3	HcpWm	pa
+hcp2	4	HcpRelational	ap
+hcp2	5	HcpSocial	ap
+hcp2	6	HcpWm	ap
 rsvp-language	1	RSVPLanguage	pa
 rsvp-language	2	RSVPLanguage	pa
 rsvp-language	3	RSVPLanguage	pa
