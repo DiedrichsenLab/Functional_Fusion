@@ -17,9 +17,9 @@ import pandas as pd
 from pathlib import Path
 
 
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp']
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-session_names = ['hcp1', 'hcp2']
+session_names = ['rsvp-language']
 # subjects_numbers = [1]
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc/'
@@ -51,8 +51,12 @@ def import_estimates(sub, sname, df1, df2, df3):
     phasedir = df2[df2.session == sname].phase.values
     session_folder = drago_derivatives + sub + '/' + session
     for rn, tk, ph in zip(runs, tasks, phasedir):
-        zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
-            '/z_score_maps/'
+        if tk == 'RSVPLanguage':
+            zfolder = session_folder + '/res_stats_' + tk + \
+                '_%02d_' % (rn - 1) + ph + '/z_score_maps/'
+        else:
+            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
+                '/z_score_maps/'
         conditions = df3[df3.task == tk].condition.values
         regressors = df3[df3.task == tk].regressor.values
         for cond, reg in zip(conditions, regressors):
