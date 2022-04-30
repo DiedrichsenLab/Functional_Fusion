@@ -17,10 +17,11 @@ import pandas as pd
 from pathlib import Path
 
 
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-session_names = ['rsvp-language']
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1]
+session_names = ['mtt1', 'mtt2']
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc/'
 drago_derivatives = drago + 'derivatives/'
@@ -54,6 +55,9 @@ def import_estimates(sub, sname, df1, df2, df3):
         if tk == 'RSVPLanguage':
             zfolder = session_folder + '/res_stats_' + tk + \
                 '_%02d_' % (rn - 1) + ph + '/z_score_maps/'
+        elif tk in ['MTTWE', 'MTTNS']:
+            zfolder = session_folder + '/res_stats_' + tk + \
+                '%d_' % rn + ph + '/z_score_maps/'
         else:
             zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
                 '/z_score_maps/'
