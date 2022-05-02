@@ -1,0 +1,32 @@
+subject	sub-01	sub-02	sub-04	sub-05	sub-06	sub-07	sub-08	sub-09	sub-11	sub-12	sub-13	sub-14	sub-15
+ses-00	screening	screening	screening	screening	screening	screening	screening	screening	screening	screening	screening	screening	screening
+ses-01	old_anat1	archi	hcp1	hcp1	hcp1	hcp1	archi	hcp1	hcp1	hcp1	hcp1	archi	archi
+ses-02	old_anat2	old_anat1	hcp2	hcp2	hcp2	hcp2	hcp1	hcp2	hcp2	hcp2	hcp2	hcp1	hcp1
+ses-03	hcp1	old_anat2	rsvp-language	rsvp-language	rsvp-language	rsvp-language	hcp2	old_anat1	rsvp-language	archi	rsvp-language	hcp2	hcp2
+ses-04	hcp2	hcp1	archi	archi	archi	archi	rsvp-language	rsvp-language	clips1	rsvp-language	archi	rsvp-language	rsvp-language
+ses-05	rsvp-language	hcp2	clips1	clips1	clips1	clips1	clips1	archi	archi	clips1	clips1	anat1	tom
+ses-06	clips1	rsvp-language	clips2	clips2	clips2	clips2	clips2	clips1	clips2	clips2	clips2	anat2	preference
+ses-07	archi	clips1	clips3	clips3	clips3	clips3	clips3	clips2	clips3	clips3	clips3	clips1	clips1
+ses-08	clips2	clips2	anat1	anat1	clips4	clips4	clips4	clips3	clips4	clips4	clips4	clips2	clips2
+ses-09	clips3	clips3	clips4	clips4	anat1	anat1	anat1	anat1	anat1	anat1	anat1	clips3	clips3
+ses-10	anat1		anat2	anat2	anat2	anat2	anat2	clips4	anat2	anat2	anat2	clips4	enumeration
+ses-11	clips4		mtt1	mtt1	mtt1	mtt2	-	anat2	mtt1	mtt1	mtt1	mtt1	clips4
+ses-12	anat1		mtt2	mtt2	mtt2	mtt1	mtt1	mtt1	mtt2	mtt2	mtt2	mtt2	anat1
+ses-13	anat2		raiders1	raiders1	raiders1	raiders1	mtt2	mtt2	raiders1	raiders1	raiders1	preference	anat2
+ses-14	mtt1		raiders2	raiders2	raiders2	raiders2	raiders1	raiders1	raiders1	raiders1	raiders2	raiders1	mtt1
+ses-15	mtt2		preference	preference	preference	preference	spatial-navigation	raiders2	raiders2	raiders2	preference	raiders2	mtt2
+ses-16	raiders1		tom	tom	tom	tom	raiders2	preference	preference	preference	tom	tom	raiders1
+ses-17	raiders2		enumeration	enumeration	enumeration	enumeration	mathlang	tom	relaxo	relaxo	enumeration	enumeration	anat1
+ses-18	tom		lyon1	lyon1	lyon1	lyon1	preference	enumeration	tom	tom	lyon1	lyon1	lyon1
+ses-19	preference		lyon2	lyon2	lyon2	lyon2	tom	relaxo	enumeration	enumeration	lyon2	lyon2	self
+ses-20	enumeration		relaxo	self	relaxo	relaxo	enumeration	lyon1	lyon1	lyon1	relaxo	relaxo	lyon2
+ses-21	relaxo		self	audio1	self	audio1	lyon1	lyon2	lyon2	lyon2	self	self	audio1
+ses-22	lyon1		audio1	relaxo	audio1	audio2	lyon2	self	self	self	audio1	audio1	audio2
+ses-23	lyon2		audio2	audio2	audio2	self	self	audio1	audio1	audio1	audio2	audio2	stanford1
+ses-24	self		stanford1	stanford1	stanford1	stanford1	audio1	audio2	audio2	audio2	stanford1	stanford1	
+ses-25			stanford2	stanford2	stanford2	stanford2	audio2	stanford1	stanford1	stanford1	stanford2	stanford2	
+ses-26			stanford3	stanford3	stanford3	stanford3	stanford1	stanford2	stanford2	stanford2	stanford3	stanford3	
+ses-27			lpp1	lpp1	lpp1	lpp1	stanford2	stanford3	stanford3	stanford3		lpp1	
+ses-28			lpp2	lpp2	lpp2	lpp2	stanford3	lpp1	lpp1	lpp1		lpp2	
+ses-29				biological-motion			lpp1		lpp2	lpp2		biological-motion	
+ses-30							lpp2		biological-motion	biological-motion			
