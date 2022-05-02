@@ -93,11 +93,11 @@ EmotionalPain	physical_pain	1
 EmotionalPain	emotional_pain	2
 PainMovie	movie_pain	1
 PainMovie	movie_mental	2
-VSTM	vstm_linear	1
-VSTM	vstm_constant	2
+VSTM	vstm_constant	1
+VSTM	vstm_linear	2
 VSTM	vstm_quadratic	3
-Enumeration	enumeration_linear	1
-Enumeration	enumeration_constant	2
+Enumeration	enumeration_constant	1
+Enumeration	enumeration_linear	2
 Enumeration	enumeration_quadratic	3
 Self	instructions	1
 Self	encode_self	2

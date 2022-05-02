@@ -12,6 +12,7 @@ Last update: April 2022
 import os
 import glob
 import subprocess
+import numpy as np
 import pandas as pd
 
 from pathlib import Path
@@ -19,9 +20,9 @@ from pathlib import Path
 
 # subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1]
-session_names = ['mtt1', 'mtt2']
+# subjects_numbers = [12, 13, 14, 15]
+subjects_numbers = [1]
+session_names = ['enumeration']
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc/'
 drago_derivatives = drago + 'derivatives/'
@@ -58,11 +59,25 @@ def import_estimates(sub, sname, df1, df2, df3):
         elif tk in ['MTTWE', 'MTTNS']:
             zfolder = session_folder + '/res_stats_' + tk + \
                 '%d_' % rn + ph + '/z_score_maps/'
+        elif sub == 'sub-11' and sname == 'preference' and rn == 6:
+            tk = 'PreferenceFaces'
+            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
+                '_run-01/z_score_maps/'
+        elif sub == 'sub-11' and sname == 'preference' and rn == 7:
+            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
+                '_run-02/z_score_maps/'
         else:
             zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
                 '/z_score_maps/'
-        conditions = df3[df3.task == tk].condition.values
-        regressors = df3[df3.task == tk].regressor.values
+        if tk in ['VSTM' + '%d' %s for s in np.arange(1, 3)]:
+            conditions = df3[df3.task == 'VSTM'].condition.values
+            regressors = df3[df3.task == 'VSTM'].regressor.values
+        elif tk in ['Self' + '%d' %s for s in np.arange(1, 5)]:
+            conditions = df3[df3.task == 'Self'].condition.values
+            regressors = df3[df3.task == 'Self'].regressor.values
+        else:
+            conditions = df3[df3.task == tk].condition.values
+            regressors = df3[df3.task == tk].regressor.values
         for cond, reg in zip(conditions, regressors):
             drago_file = zfolder + cond + '.nii.gz'
             p = subprocess.Popen(["scp", '-o BatchMode=yes', drago_file,
