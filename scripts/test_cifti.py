@@ -22,10 +22,10 @@ def explore_cifti():
     bmcr = bmf[bmf.name == 'CIFTI_STRUCTURE_CEREBELLUM_RIGHT']
     bmc= bmcl + bmcr
     ijk = bmc.voxel
-    X = np.zeros((80,50,50))
+    X = np.zeros((90,50,50))
     X[ijk[:,0],ijk[:,1],ijk[:,2]] = 1
     N = nb.Nifti1Image(X,bmc.affine)
-    nb.save(N,'cerebellar_mask.nii')
+    nb.save(N,atlas_dir + '/tpl-MNI152AsymC_res-2' + '/tpl-MNI152AsymC_res-2_gmcmask.nii')
     pass
 
 
