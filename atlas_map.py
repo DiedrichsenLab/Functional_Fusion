@@ -202,10 +202,10 @@ class AtlasMapSurf(AtlasMap):
         each of the nodes
         """
         n_points = len(depths)
-        c1 = self.white_surf.darrays[0].data
-        c2 = self.pial_surf.darrays[0].data
-        n_vert = c1.shape[0]
-        if c2.shape[0] != n_vert:
+        c1 = self.white_surf.darrays[0].data.T
+        c2 = self.pial_surf.darrays[0].data.T
+        n_vert = c1.shape[1]
+        if c2.shape[1] != n_vert:
             raise(NameError('White and pial surfaces should have same number of vertices.'))
 
         # Get the indices for all the points being sampled
