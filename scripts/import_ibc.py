@@ -6,7 +6,7 @@ Script to transfer IBC data from Drago to CBS
 Author: Ana Luisa Pinho
 
 Created: April 2022
-Last update: April 2022
+Last update: May 2022
 """
 
 import os
@@ -19,10 +19,13 @@ from pathlib import Path
 
 
 # subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [12, 13, 14, 15]
-subjects_numbers = [1]
-session_names = ['enumeration']
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language', 'mtt1', 'mtt2',
+                 'preference', 'tom', 'enumeration', 'self', 'clips4',
+                 'lyon1', 'lyon2']
+
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc/'
 drago_derivatives = drago + 'derivatives/'
@@ -69,20 +72,26 @@ def import_estimates(sub, sname, df1, df2, df3):
         else:
             zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
                 '/z_score_maps/'
-        if tk in ['VSTM' + '%d' %s for s in np.arange(1, 3)]:
+        if tk in ['VSTM' + '%d' % s for s in np.arange(1, 3)]:
             conditions = df3[df3.task == 'VSTM'].condition.values
             regressors = df3[df3.task == 'VSTM'].regressor.values
-        elif tk in ['Self' + '%d' %s for s in np.arange(1, 5)]:
+        elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
             conditions = df3[df3.task == 'Self'].condition.values
             regressors = df3[df3.task == 'Self'].regressor.values
+        elif tk in ['WedgeClock', 'WedgeAnti']:
+            conditions = df3[df3.task == 'Wedge'].condition.values
+            regressors = df3[df3.task == 'Wedge'].regressor.values
+        elif tk in ['ExpRing', 'ContRing']:
+            conditions = df3[df3.task == 'Ring'].condition.values
+            regressors = df3[df3.task == 'Ring'].regressor.values
         else:
             conditions = df3[df3.task == tk].condition.values
             regressors = df3[df3.task == tk].regressor.values
         for cond, reg in zip(conditions, regressors):
             drago_file = zfolder + cond + '.nii.gz'
-            p = subprocess.Popen(["scp", '-o BatchMode=yes', drago_file,
-                                  cbs_path])
-            p.wait()
+            with subprocess.Popen(["scp", '-o BatchMode=yes', drago_file,
+                                  cbs_path]) as p:
+                p.wait()
             f = cbs_path + '/' + cond + '.nii.gz'
             print(f)
             ff = cbs_path + '/' + sub + '_' + session + '_run-' + \
