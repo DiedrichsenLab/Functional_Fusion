@@ -27,16 +27,18 @@ def make_mdtb_suit():
         A = am.AtlasMapDeform(mdtb_dataset, suit3_atlas, s,deform, mask)
         A.build(smooth=2.0)
         # data = mdtb_dataset.get_data(s,[A])
-        a=mdtb_dataset.get_data_fnames(s,'ses-s1')
-        data = am.get_data(a,[A])
+        #a=mdtb_dataset.get_data_fnames(s,'ses-s1')
+        # data = am.get_data(a,[A])
+        am.save_data_to_cifti(data,atlas_maps)
         pass
 
 def make_mdtb_fs32k(): 
     # Make the atlas object 
     atlas =[] 
+    bm_name = ['cortex_left','cortex_right']
     for i,hem in enumerate(['L','R']):
         mask = atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
-        atlas.append(am.AtlasSurface('fs32kL',mask_gii=mask))
+        atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
     # initialize the data set object 
     mdtb_dataset = DataSetMDTB(data_dir)
 
@@ -53,8 +55,9 @@ def make_mdtb_fs32k():
                             s,white,pial, mask))
             atlas_maps[i].build()
         # data = mdtb_dataset.get_data(s,[A])
-        data_files=mdtb_dataset.get_data_fnames(s,'ses-s1')
-        data = am.get_data(data_files,atlas_maps)
+        # data_files=mdtb_dataset.get_data_fnames(s,'ses-s1')
+        # data = am.get_data(data_files,atlas_maps)
+        am.save_data_to_cifti(np.zeros((4,4)),atlas_maps)
         pass
 
 
