@@ -17,7 +17,7 @@ def reslice_SUIT():
     a = suit.reslice.reslice_image(img_name,def_name,interp=1,voxelsize=(2,2,2))
     X = (a.get_fdata()>0.2).astype('i2')
     b = nb.Nifti1Image(X, affine=a.affine)                            
-    nb.save(b,atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii')
+    nb.save(b,atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmas_uncorr.nii')
     pass 
 
 if __name__ == "__main__":

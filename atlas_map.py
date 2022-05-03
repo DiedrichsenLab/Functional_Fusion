@@ -62,10 +62,39 @@ class AtlasVolumetric(Atlas):
         mapped = nb.Nifti1Image(X,self.mask_img.affine)
         return mapped
 
+class AtlasSurface(Atlas):
+    def __init__(self,id,mask_gii):
+        """Atlas Surface class constructor 
+
+        Args:
+            id (str): Name of the altas (e.g. SUIT2)
+            mask_gii (str): gifti file name of mask image defining atlas locations
+        """
+        self.id = id
+        self.mask_gii = nb.load(mask_gii)
+        Xmask = self.mask_gii.agg_data()
+        Xmask = (Xmask>0)
+        self.vertex = np.nonzero(Xmask>0)[0]
+        self.P = self.vertex.shape[0]
+
+    def map_data(self,data):
+        """Maps data back into a full nifti
+
+        Args:
+            data (ndarray): 1-d Numpy array of the size (P,)
+
+        Returns:
+            mapped_image (Nifti1Image): Image containing mapped results 
+        """
+        X=np.zeros(self.mask_img.shape)
+        X[self.vox[0],self.vox[1],self.vox[2]]=data
+        mapped = nb.Nifti1Image(X,self.mask_img.affine)
+        return mapped
+
+
 class AtlasMap():
     def __init__(self, dataset, atlas, participant_id):
-        """AtlasMap stores the mapping rules from a specific data set (and participant)
-        to the desired atlas space in form of a voxel list
+        """AtlasMap stores the mapping rules from a specific data set (and participant) to the desired atlas space in form of a voxel list
         Args:
             dataset_id (string): name of
             participant_id (string): Participant name
@@ -100,7 +129,7 @@ class AtlasMap():
 
 class AtlasMapDeform(AtlasMap):
     def __init__(self, dataset, atlas, participant_id, deform_img,mask_img):
-        """AtlasMap stores the mapping rules from a specific data set (and participant)
+        """AtlasMapDeform stores the mapping rules for a non-linear deformation
         to the desired atlas space in form of a voxel list
         Args:
             dataset_id (str): name of
@@ -150,6 +179,42 @@ class AtlasMapDeform(AtlasMap):
             self.vox_weight = self.vox_weight / self.vox_weight.sum(axis=1,     keepdims=True)
         pass
 
+class AtlasMapSurf(AtlasMap):
+    def __init__(self, dataset, atlas, participant_id, 
+                white_surf,pial_surf,mask_img):
+        """AtlasMapSurf stores the mapping rules for a freesurfer-style surface (pial + white surface pair)
+        Args:
+            dataset_id (str): name of
+            participant_id (str): Participant name
+            white_surf (str): Name for white matter surface
+            pial_surf (str): Name for pial surface
+            mask_img (str): Name of masking image that defines the functional data space. 
+        """
+        super().__init__(dataset,atlas,participant_id)
+        self.id = atlas.id
+        self.white_surf = nb.load(white_surf)
+        self.pial_surf = nb.load(pial_surf)
+        self.mask_img = nb.load(mask_img)
+    
+    def build(self,smooth = None, depths=[0,0.2,0.4,0.6,0.8,1.0]):
+        """
+        Using the dataset, build creates a list of voxel indices of
+        each of the nodes
+        """
+        n_points = len(depths)
+        c1 = self.white_surf.darrays[0].data
+        c2 = self.pial_surf.darrays[0].data
+        n_vert = c1.shape[0]
+        if c2.shape[0] != n_vert:
+            raise(NameError('White and pial surfaces should have same number of vertices.'))
+
+        # Get the indices for all the points being sampled
+        indices = np.zeros((3,n_vert,n_points))
+        for i in range(n_points):
+            indices[:,:,i] = (1-depths[i])*c1+depths[i]*c2
+
+        self.vox_list,good = coords_to_linvidxs(indices,self.mask_img,mask=True)
+        self.vox_weight = good / good.sum(axis=1,keepdim=True)
 
 def get_data(fnames,atlas_maps): 
     """Extracts the data for a list of fnames

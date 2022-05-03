@@ -74,17 +74,17 @@ def import_freesurfer(source_dir,dest_dir,old_id,new_id):
     src=[]
     dest =[] 
     src.append(f'/{old_id}.L.pial.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-L_pial.surf.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-L_pial.surf.gii')
     src.append(f'/{old_id}.L.white.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-L_white.surf.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-L_white.surf.gii')
     src.append(f'/{old_id}.R.pial.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-R_pial.surf.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-R_pial.surf.gii')
     src.append(f'/{old_id}.R.pial.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-R_white.surf.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-R_white.surf.gii')
     src.append(f'/{old_id}.L.sulc.32k.shape.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-L_sulc.shape.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-L_sulc.shape.gii')
     src.append(f'/{old_id}.R.sulc.32k.shape.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-R_sulc.shape.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-R_sulc.shape.gii')
     for i in range(len(src)): 
         try: 
             shutil.copyfile(source_dir+src[i],dest_dir+dest[i])
@@ -158,10 +158,10 @@ if __name__ == "__main__":
         # dir1 = orig_dir + f'/sc1/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/anat'
         # import_anat(dir1,dir2,'anatomical',s)
-        # dir1 = orig_dir + f'/sc1/surfaceWB/{old_id}'
-        # dir2 = target_dir + f'/derivatives/{s}/anat'
-        # import_freesurfer(dir1,dir2,old_id,s)
-        info_dict={'run':'run',
+        dir1 = orig_dir + f'/sc1/surfaceWB/{old_id}'
+        dir2 = target_dir + f'/derivatives/{s}/anat'
+        import_freesurfer(dir1,dir2,old_id,s)
+        """info_dict={'run':'run',
                    'inst':'instruction',
                    'TN':'task_name',
                    'CN':'cond_name',
@@ -170,3 +170,4 @@ if __name__ == "__main__":
         dir1 = orig_dir + f'/sc1/GLM_firstlevel_7/{old_id}'
         dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s1'
         import_spm_glm(dir1,dir2,s,'ses-s1',info_dict)
+        """
