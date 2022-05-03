@@ -14,8 +14,10 @@ def reslice_SUIT():
     adir = atlas_dir +'/tpl-MNI152NLin6AsymC'
     img_name = adir + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
     def_name = adir + '/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
-    a = suit.reslice.reslice_image(img_name,def_name,interp=1)
-    nb.save(a,atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii')
+    a = suit.reslice.reslice_image(img_name,def_name,interp=1,voxelsize=(2,2,2))
+    X = (a.get_fdata()>0.2).astype('i2')
+    b = nb.Nifti1Image(X, affine=a.affine)                            
+    nb.save(b,atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii')
     pass 
 
 if __name__ == "__main__":
