@@ -270,6 +270,20 @@ def get_data(fnames,atlas_maps):
     return data
 
 def data_to_cifti(data,atlas_maps):
+    """Transforms a list of data sets and list of atlas maps 
+    into a cifti2image
+
+    Args:
+        data (list): 
+            List / array of data arrays - need to have all same shape[0]
+            and a shape[1] that matches the corresponding atlas map  
+        atlas_maps (list): 
+            List / array of atlas maps
+
+    Returns:
+        img: nibabel.cifti2image
+            Can be saved as (*.dscalar.nii) file 
+    """
     for i,atm in enumerate(atlas_maps):
         if i == 0: 
             bm = atm.atlas.get_brain_model_axis()
