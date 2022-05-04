@@ -11,6 +11,7 @@ Last update: May 2022
 
 import os
 import glob
+import re
 import subprocess
 import numpy as np
 import pandas as pd
@@ -18,13 +19,13 @@ import pandas as pd
 from pathlib import Path
 
 
-# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language', 'mtt1', 'mtt2',
-                 'preference', 'tom', 'enumeration', 'self', 'clips4',
-                 'lyon1', 'lyon2']
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language', 'mtt1', 'mtt2',
+#                  'preference', 'tom', 'enumeration', 'self', 'clips4',
+#                  'lyon1', 'lyon2']
 
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc/'
@@ -43,7 +44,7 @@ dfc = pd.read_csv(open(task_conditions), sep='\t')
 subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 
 
-def import_estimates(sub, sname, df1, df2, df3):
+def transfer_estimates(sub, sname, df1, df2, df3):
     session = df1[df1[sub].values == sname].index.values[0]
     cbs_path = cbs_derivatives + '/' + sub + '/estimates/' + session
     if not os.path.exists(cbs_path):
@@ -100,7 +101,33 @@ def import_estimates(sub, sname, df1, df2, df3):
             os.rename(f, ff)
 
 
+def transfer_anat(pt):
+    cbs_anatpath = cbs_derivatives + '/' + pt + '/anat/'
+    if not os.path.exists(cbs_anatpath):
+        os.makedirs(cbs_anatpath)
+    else:
+        for ng in glob.glob(cbs_anatpath + '/*.nii.gz'):
+            os.remove(ng)
+    drago_anatsess = drago_derivatives + pt + '/ses-00/anat/'
+    drago_anatfile = drago_anatsess + pt + '_ses-00_T1w.nii.gz'
+    w_drago_anatfile = drago_anatsess + 'w' + pt + '_ses-00_T1w.nii.gz'
+    for afile in [drago_anatfile, w_drago_anatfile]:
+        with subprocess.Popen(["scp", '-o BatchMode=yes', afile,
+                               cbs_anatpath]) as a:
+            a.wait()
+        tag = re.match(
+            drago_anatsess + '(.*)_ses-00_T1w.nii.gz', afile).groups()[0]
+        t1 = cbs_anatpath + tag + '_ses-00_T1w.nii.gz'
+        print(t1)
+        new_t1 = cbs_anatpath + tag + '_T1w.nii.gz'
+        print(new_t1)
+        os.rename(t1, new_t1)
+
+
 if __name__ == "__main__":
     for subject in subjects_list:
-        for session_name in session_names:
-            import_estimates(subject, session_name, dfm, dfs, dfc)
+        # Import derivatives
+        # for session_name in session_names:
+        #     transfer_estimates(subject, session_name, dfm, dfs, dfc)
+        # Import T1w images
+        transfer_anat(subject)
