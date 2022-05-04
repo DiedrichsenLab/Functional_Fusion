@@ -27,7 +27,7 @@ def make_mdtb_suit():
         mask = mdtb_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
         A = am.AtlasMapDeform(mdtb_dataset, suit3_atlas, s,deform, mask)
         A.build(smooth=2.0)
-        # data = mdtb_dataset.get_data(s,[A])
+        data = mdtb_dataset.get_data(s,[A])
         #a=mdtb_dataset.get_data_fnames(s,'ses-s1')
         # data = am.get_data(a,[A])
         am.save_data_to_cifti(data,atlas_maps)

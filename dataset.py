@@ -13,7 +13,8 @@ import nibabel as nib
 import pandas as pd
 import os
 import util
-
+import matrix
+import atlas_map as am
 
 class DataSet:
     def __init__(self, base_dir):
@@ -62,19 +63,81 @@ class DataSetMDTB(DataSet):
     def __init__(self, dir):
         super().__init__(dir)
 
-    def get_data(self,participant_id,atlas_maps): 
-        fnames=self.get_data_fnames(participant_id,'ses-s1')
-        atlas_maps.get_data(fnames,atlas_maps)
 
-    def get_data_fnames(self,participant_id,session_id=None): 
+    def get_data_fnames(self,participant_id,session_id=None):
+        """ Gets all raw data files 
+
+        Args:
+            participant_id (str): Subject 
+            session_id (str): Session ID. Defaults to None.
+        Returns:
+            fnames (list): List of fnames
+            T (pd.DataFrame): Info structure for regressors (reginfo)
+        """
         dir = self.data_dir.format(participant_id) + f'/{session_id}'
         T=pd.read_csv(dir+f'/{participant_id}_{session_id}_reginfo.tsv')
         fnames = [f'{dir}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i,t in T.iterrows()]
         fnames.append(f'{dir}/{participant_id}_{session_id}_resms.nii')
         return fnames
 
+    def get_data(self,participant_id,
+                    atlas_maps,
+                    sess_id,
+                    type='cond',
+                    averaging='sess'):
+        dir = self.data_dir.format(participant_id) + f'/{sess_id}'
+        fnames,info = self.get_data_fnames(participant_id,sess_id)
+        data = np.random.normal(0,1,(745,10))
+        # data = am.get_data(fnames,atlas_maps)
+        # Load design matrix for optimal reweighting
+        np.load(dir+f'/{participant_id}_{sess_id}_designmatrix.npy')
+
+        resms = data[-1,:]
+        data = data[0:-1,:]
+
+        # Create unique ID for each regressor for averaging and subsetting it
+        if subset is None:
+            subset = np.ones((self.data.shape[0],),dtype = bool)
+        elif type(subset) is pd.Series: 
+            subset = subset.to_numpy()>0
+
+        # Different ways of averaging
+        if averaging == "sess":
+            X = matrix.indicator(info.id[subset] + (self.sess[subset] - 1) * num_reg)
+            data = np.linalg.solve(X.T @ X, X.T @ self.data[subset,:])
+            data_info = info[((info.run == 1) | (info.run == 9)) & subset]
+        elif averaging == "exp":
+            X = matrix.indicator(info.id[subset])
+            data = np.linalg.solve(X.T @ X, X.T @ self.data[subset,:])
+            data_info = info[(info.run == 1) & subset]
+        elif averaging == "none":
+            data_info = info[subset]
+            data = self.data[subset,:]
+        else:
+            raise (NameError("averaging needs to be sess, exp, or none"))
+
+
+        # Now weight the different betas by the variance that they predict for the time series.
+        # This also removes the mean of the time series implictly.
+        # Note that weighting is done always on the average regressor structure, so that regressors still remain exchangeable across sessions
+        if weighting:
+            XXm = np.mean(self.XX, 0)
+            ind = np.where((info.run==1) & subset)[0]
+            XXm = XXm[ind, :][:, ind]  # Get the desired subset only
+            XXs = scipy.linalg.sqrtm(XXm)  # Note that XXm = XXs @ XXs.T
+            for r in np.unique(data_info["run"]):  # WEight each run/session seperately
+                idx = data_info.run == r
+                data[idx, :] = XXs @ data[idx, :]
+
+        # Data should be imputed if there are nan values
+        data = np.nan_to_num(data)
+
+        return data, data_info
+
+    
+
 class DataSetHcpResting(DataSet):
-    def __init__(self, dir='Y:\data\FunctionalFusion\HCP'):
+    def __init__(self, dir):
         super(DataSetHcpResting, self).__init__(base_dir=dir)
         # self.func_dir = self.base_dir + '/{0}/estimates'
         self.all_sub = self.get_participants()
