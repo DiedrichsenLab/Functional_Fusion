@@ -53,6 +53,35 @@ def get_cortex():
     nb.save(mask_gii,atlas_dir + '/tpl-fs32k' + '/tpl-fs32k_hemi-R_mask.label.gii')
     pass
 
+def get_ts_nii():
+    dir = hcp_dir + '/derivatives/100307/func'
+    ts_cifti = nb.load(dir+'/sub-100307_ses-01_task-rest_space-fsLR32k_run-01_bold.nii')
+    # get brain axis models
+    bmf = ts_cifti.header.get_axis(1)
+    # get the data array with all the time points, all the structures
+    ts_array = ts_cifti.get_fdata()
+
+    # initialize a matrix representing 4D data (x, y, z, time_point)
+    subcorticals_vol = np.zeros([bmf.volume_shape[0], bmf.volume_shape[1], bmf.volume_shape[2], ts_array.shape[0]])
+    for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
+        # get the values corresponding to the brain model
+        bm_vals = ts_array[:, slc]
+
+        # get the voxels/vertices corresponding to the current brain model
+        ijk = bm.voxel
+        # fill in data
+        if (idx != 0) & (idx != 1): # indices 0 and 1 are cortical hemispheres
+            # print(str(nam))
+            subcorticals_vol[ijk[:, 0], ijk[:, 1], ijk[:, 2], :] = bm_vals.T 
+
+    # save as nii 
+    N = nb.Nifti1Image(subcorticals_vol,bmf.affine)
+
+    ts_nifti = dir+'/sub-100307_ses-01_task-rest_space-subcortex_run-01_bold.nii'
+    nb.save(N,ts_nifti)
+
+    return
+
 
 if __name__ == "__main__":
     get_cortex()
