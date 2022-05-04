@@ -15,6 +15,7 @@ import os
 import util
 import matrix
 import atlas_map as am
+import scipy.linalg as sl
 
 class DataSet:
     def __init__(self, base_dir):
@@ -78,61 +79,54 @@ class DataSetMDTB(DataSet):
         T=pd.read_csv(dir+f'/{participant_id}_{session_id}_reginfo.tsv')
         fnames = [f'{dir}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i,t in T.iterrows()]
         fnames.append(f'{dir}/{participant_id}_{session_id}_resms.nii')
-        return fnames
+        return fnames, T 
 
     def get_data(self,participant_id,
                     atlas_maps,
                     sess_id,
-                    type='cond',
-                    averaging='sess'):
+                    type='CondSes'):
         dir = self.data_dir.format(participant_id) + f'/{sess_id}'
         fnames,info = self.get_data_fnames(participant_id,sess_id)
-        data = np.random.normal(0,1,(745,10))
+        data = np.random.normal(0,1,(737,10))
         # data = am.get_data(fnames,atlas_maps)
         # Load design matrix for optimal reweighting
-        np.load(dir+f'/{participant_id}_{sess_id}_designmatrix.npy')
+        X = np.load(dir+f'/{participant_id}_{sess_id}_designmatrix.npy')
 
+        # get the resms and prewhiten the data
         resms = data[-1,:]
         data = data[0:-1,:]
+        data = data / np.sqrt(np.abs(resms))
+        # Append the intercept regressors 
+        data = np.concatenate([data,np.zeros((16,data.shape[1]))])
 
-        # Create unique ID for each regressor for averaging and subsetting it
-        if subset is None:
-            subset = np.ones((self.data.shape[0],),dtype = bool)
-        elif type(subset) is pd.Series: 
-            subset = subset.to_numpy()>0
+        # determine the different halfs 
+        info['half']=2-(info.run<9)
 
-        # Different ways of averaging
-        if averaging == "sess":
-            X = matrix.indicator(info.id[subset] + (self.sess[subset] - 1) * num_reg)
-            data = np.linalg.solve(X.T @ X, X.T @ self.data[subset,:])
-            data_info = info[((info.run == 1) | (info.run == 9)) & subset]
-        elif averaging == "exp":
-            X = matrix.indicator(info.id[subset])
-            data = np.linalg.solve(X.T @ X, X.T @ self.data[subset,:])
-            data_info = info[(info.run == 1) & subset]
-        elif averaging == "none":
-            data_info = info[subset]
-            data = self.data[subset,:]
-        else:
-            raise (NameError("averaging needs to be sess, exp, or none"))
-
-
-        # Now weight the different betas by the variance that they predict for the time series.
-        # This also removes the mean of the time series implictly.
-        # Note that weighting is done always on the average regressor structure, so that regressors still remain exchangeable across sessions
-        if weighting:
-            XXm = np.mean(self.XX, 0)
-            ind = np.where((info.run==1) & subset)[0]
-            XXm = XXm[ind, :][:, ind]  # Get the desired subset only
-            XXs = scipy.linalg.sqrtm(XXm)  # Note that XXm = XXs @ XXs.T
-            for r in np.unique(data_info["run"]):  # WEight each run/session seperately
-                idx = data_info.run == r
-                data[idx, :] = XXs @ data[idx, :]
-
-        # Data should be imputed if there are nan values
-        data = np.nan_to_num(data)
-
-        return data, data_info
+        if type == 'CondSes':
+            n_cond = np.max(info.cond_num)
+            reg = (info.half-1)*n_cond + info.cond_num
+            reg[info.instruction==1] = 0 
+            # Contrast for the regressors of interst 
+            C = matrix.indicator(reg,positive=True) # Drop the instructions
+            # contrast for all instructions
+            CI = matrix.indicator(info.half*info.instruction,positive=True) 
+            C = np.c_[C,CI]
+            reg_in = np.arange(n_cond*2,dtype=int)
+            # Subset of info sutructire 
+            ii = (info.run == 1) | (info.run == 9) & (info.cond_num>0)
+            data_info = info[ii].reindex()
+            names=[f'{d.cond_name}-sess{d.half}' for i,d in data_info.iterrows()]
+        elif type == 'TaskSes':
+            pass
+        elif type == 'AllSes': 
+            pass
+        pass
+        # Add the block regressors 
+        C = sl.block_diag(C,np.eye(16))
+        Xn = X @ C
+        data_n = np.linalg.solve(Xn.T @ Xn, Xn.T @ X @ data)
+        data_n = data_n[reg_in,:]
+        return data_n, data_info, names
 
     
 
