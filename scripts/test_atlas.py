@@ -6,6 +6,7 @@ import mat73
 import numpy as np 
 import atlas_map as am
 from dataset import DataSetMDTB
+import nibabel as nb
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 data_dir = base_dir + '/MDTB'
@@ -44,8 +45,9 @@ def make_mdtb_fs32k():
 
     # create and calculate the atlas map for each participant
     T = mdtb_dataset.get_participants()
-    atlas_maps = []
     for s in T.participant_id:
+        atlas_maps = []
+        data = [] 
         for i,hem in enumerate(['L','R']): 
             adir = mdtb_dataset.anatomical_dir.format(s)
             pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
@@ -54,10 +56,11 @@ def make_mdtb_fs32k():
             atlas_maps.append(am.AtlasMapSurf(mdtb_dataset, atlas[i],
                             s,white,pial, mask))
             atlas_maps[i].build()
-        # data = mdtb_dataset.get_data(s,[A])
-        # data_files=mdtb_dataset.get_data_fnames(s,'ses-s1')
-        # data = am.get_data(data_files,atlas_maps)
-        am.save_data_to_cifti(np.zeros((4,4)),atlas_maps)
+            # data = mdtb_dataset.get_data(s,[A])
+            # data_files=mdtb_dataset.get_data_fnames(s,'ses-s1')
+            data.append(np.random.normal(0,1,(100,atlas_maps[i].P))) # am.get_data(data_files,atlas_maps)
+        im = am.data_to_cifti(data,atlas_maps)
+        nb.save(im,atlas_dir + '/tpl-fs32k/tpl_gs32k_func.dscalar.nii')
         pass
 
 

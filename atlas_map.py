@@ -269,8 +269,17 @@ def get_data(fnames,atlas_maps):
             data[i][j,:]=d
     return data
 
-def save_data_to_cifti(data,atlas_maps):
+def data_to_cifti(data,atlas_maps):
     for i,atm in enumerate(atlas_maps):
         if i == 0: 
-        bm = bm+atm.atlas.get_brain_model_axis()
-    
+            bm = atm.atlas.get_brain_model_axis()
+            D = data[i]
+        else: 
+            bm = bm+atm.atlas.get_brain_model_axis()
+            D = np.c_[D,data[i]]
+    # row_axis = nb.cifti2.SeriesAxis(start=0,step=1,size=D.shape[0])
+    names = [f'row {r:03}' for r in range(D.shape[0])]
+    row_axis = nb.cifti2.ScalarAxis(names)
+    header = nb.Cifti2Header.from_axes((row_axis,bm))
+    cifti_img = nb.Cifti2Image(dataobj=D,header=header)
+    return cifti_img 
