@@ -1,12 +1,10 @@
-# A set of functions dedicated to import of data from our 
-# old SPM-based framework into the functional-fusion BIDS-like 
-# derivative structure
-
 import pandas as pd
 import shutil
 from pathlib import Path
 import mat73
 import numpy as np 
+import scipy.io as sio
+
 
 def import_suit(source_dir,dest_dir,anat_name,participant_id):
     """ Imports a suit folder into a BIDS/derivtive structure
@@ -71,17 +69,17 @@ def import_freesurfer(source_dir,dest_dir,old_id,new_id):
     src=[]
     dest =[] 
     src.append(f'/{old_id}.L.pial.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-L_pial.surf.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-L_pial.surf.gii')
     src.append(f'/{old_id}.L.white.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-L_white.surf.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-L_white.surf.gii')
     src.append(f'/{old_id}.R.pial.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-R_pial.surf.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-R_pial.surf.gii')
     src.append(f'/{old_id}.R.pial.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-R_white.surf.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-R_white.surf.gii')
     src.append(f'/{old_id}.L.sulc.32k.shape.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-L_sulc.shape.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-L_sulc.shape.gii')
     src.append(f'/{old_id}.R.sulc.32k.shape.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-R_sulc.shape.nii')
+    dest.append(f'/{new_id}_space-32k_hemi-R_sulc.shape.gii')
     for i in range(len(src)): 
         try: 
             shutil.copyfile(source_dir+src[i],dest_dir+dest[i])
@@ -141,3 +139,19 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
         except: 
             print('skipping ' + src[i])
 
+def import_spm_designmatrix(source_dir,dest_dir,sub_id,sess_id):
+    """Imports the output of the SPM GLM with an SPM_info.mat 
+    structure into BIDS deriviatie (Functional Fusion) framework.
+    It assumes that a single GLM corresponds to single session. 
+
+    See readme for output structure. 
+    Args:
+        source_dir (_type_): Directory of the SPM GLM
+        dest_dir (_type_): Destination directory for that subject / session 
+        sub_id (_type_): New name for the subject 
+        sess_id (_type_): ID of the session to import 
+    """
+    X = sio.loadmat(source_dir+'/design_matrix.mat')
+    DM = X['X']
+    filename = dest_dir + f'/{sub_id}_{sess_id}_designmatrix.npy'
+    np.save(filename,DM)

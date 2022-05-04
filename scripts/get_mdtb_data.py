@@ -12,7 +12,7 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
-def make_mdtb_suit(): 
+def get_mdtb_suit(): 
     # Make the atlas object 
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('SUIT',mask_img=mask)
@@ -22,15 +22,16 @@ def make_mdtb_suit():
     # create and calculate the atlas map for each participant
     T = mdtb_dataset.get_participants()
     for s in T.participant_id:
+        print(f'Atlasmap {s}')
         deform = mdtb_dataset.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
         mask = mdtb_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
         atlas_map = am.AtlasMapDeform(mdtb_dataset, suit_atlas, s,deform, mask)
         atlas_map.build(smooth=2.0)
-        data,info,str = mdtb_dataset.get_data(s,[atlas_map],'ses-s1')
-        #a=mdtb_dataset.get_data_fnames(s,'ses-s1')
+        print(f'Extract {s}')
+        data,info,names = mdtb_dataset.get_data(s,[atlas_map],'ses-s1')
         pass
 
-def make_mdtb_fs32k(): 
+def get_mdtb_fs32k(): 
     # Make the atlas object 
     atlas =[] 
     bm_name = ['cortex_left','cortex_right']
@@ -62,7 +63,7 @@ def make_mdtb_fs32k():
 
 
 if __name__ == "__main__":
-    make_mdtb_suit()
+    get_mdtb_suit()
 
 
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')

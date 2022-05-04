@@ -84,7 +84,7 @@ def get_ts_nii():
 
 
 if __name__ == "__main__":
-    get_cortex()
+    explore_cifti()
 
 
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
