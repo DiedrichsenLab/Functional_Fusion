@@ -8,7 +8,6 @@ to a standard data structure that can be used in Diedrichsen lab
 
 """
 import numpy as np
-import torch as pt
 import nibabel as nib
 import pandas as pd
 import os
