@@ -45,11 +45,11 @@ def show_mdtb_suit():
     mdtb_dataset = DataSetMDTB(data_dir)
     T = mdtb_dataset.get_participants()
     s = T.participant_id[0]
-    C = nb.load(mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_ses-1_CondSes.dscalar.nii')
+    C = nb.load(mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_ses-s1_CondSes.dscalar.nii')
     X = C.get_fdata()
-    Nifti = suit_atlas.data_to_nifti(X[0])
+    Nifti = suit_atlas.data_to_nifti(X)
     surf_data = suit.flatmap.vol_to_surf(Nifti)
-    fig = suit.flatmap.plot(surf_data,render='plotly')
+    fig = suit.flatmap.plot(surf_data[:,10],render='plotly')
     fig.show()
 
 def get_mdtb_fs32k():
@@ -84,7 +84,7 @@ def get_mdtb_fs32k():
 
 
 if __name__ == "__main__":
-    get_mdtb_suit()
+    show_mdtb_suit()
 
 
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
