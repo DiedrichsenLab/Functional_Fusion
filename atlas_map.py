@@ -14,8 +14,7 @@ import os
 import SUITPy as suit
 
 import sys
-sys.path.insert(0, 'D:\python_workspace')
-
+sys.path.append('.')
 import surfAnalysisPy as surf
 import util
 

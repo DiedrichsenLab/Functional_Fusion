@@ -182,29 +182,27 @@ class DataSetHcpResting(DataSet):
     def get_data(self, participant_id, atlas_map=None, sess_id=None,
                  run=None, roi=None):
         if run is None:
-            run = ['01']
+            run = '01'
         if sess_id is None:
-            sess_id = ['01']
+            sess_id = '01'
         if roi is None:
             roi = ['CEREBELLUM_LEFT']
 
-        dir = self.estimates_dir.format(participant_id) + f'/{sess_id}'
-        fnames, info = self.get_data_fnames(participant_id, sess_id)
-
         func_dir = os.path.join(self.derivative_dir, f'{participant_id}/estimates')
-        for s in sess_id:
-            for r in run:
-                file = 'sub-%d_ses-%s_task-rest_space-fsLR32k_run-%s_bold.nii' % \
-                       (participant_id, s, r)
-                G = nib.load(os.path.join(func_dir, file))
-                axes = [G.header.get_axis(i) for i in range(G.ndim)]
-                cifti_data = G.get_fdata(dtype=np.float32)
-                # data = self._surf_data_from_cifti(cifti_data, axes[1], 'CIFTI_STRUCTURE_'+roi)
-                this_roi = ['CIFTI_STRUCTURE_'+x for x in roi]
-                _, data = self._volume_from_cifti(cifti_data, axes[1], this_roi)
+
+        file = 'sub-%d_ses-%s_task-rest_space-fsLR32k_run-%s_bold.nii' % \
+               (participant_id, sess_id, run)
+        G = nib.load(os.path.join(func_dir, file))
+        axes = [G.header.get_axis(i) for i in range(G.ndim)]
+        cifti_data = G.get_fdata(dtype=np.float32)
+        # data = self._surf_data_from_cifti(cifti_data, axes[1], 'CIFTI_STRUCTURE_'+roi)
+        this_roi = ['CIFTI_STRUCTURE_'+x for x in roi]
+        _, data = self._volume_from_cifti(cifti_data, axes[1], this_roi)
+
+        return data
 
 
 if __name__ == '__main__':
     A = DataSetHcpResting('Y:\data\FunctionalFusion\HCP')
     part = A.get_participants()
-    data = A.get_data(part['participant_id'][0], sess_id="ses-s1")
+    data = A.get_data(part['participant_id'][0], sess_id="01")
