@@ -88,11 +88,12 @@ class AtlasVolumetric(Atlas):
         if p != self.P:
             raise(NameError('Data needs to be a P vector or NxP matrix'))
         if N>1:
-            X=np.zeros(self.mask_img.shape+N)
+            X=np.zeros(self.mask_img.shape+(N,))
+            X[self.vox[0],self.vox[1],self.vox[2]]=data.T
         else:
-            X=np.zeros(self.mask_img)
-        X[self.vox[0],self.vox[1],self.vox[2]]=data
-        img = nb.Nift1Image(X,self.mask_img.affine)
+            X=np.zeros(self.mask_img.shape)
+            X[self.vox[0],self.vox[1],self.vox[2]]=data
+        img = nb.Nifti1Image(X,self.mask_img.affine)
         return img
 
 class AtlasSurface(Atlas):

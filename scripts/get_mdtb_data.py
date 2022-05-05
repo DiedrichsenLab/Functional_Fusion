@@ -7,6 +7,7 @@ import numpy as np
 import atlas_map as am
 from dataset import DataSetMDTB
 import nibabel as nb
+import SUITPy as suit
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 data_dir = base_dir + '/MDTB'
@@ -30,8 +31,21 @@ def get_mdtb_suit():
         print(f'Extract {s}')
         data,info,names = mdtb_dataset.get_data(s,[atlas_map],'ses-s1')
         C=am.data_to_cifti(data,[atlas_map],names)
-        nb.save(C,mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT_ses-1_CondSes.dscalar.nii')
+        nb.save(C,mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_ses-1_CondSes.dscalar.nii')
         pass
+
+def show_mdtb_suit(): 
+    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
+    mdtb_dataset = DataSetMDTB(data_dir)
+    T = mdtb_dataset.get_participants()
+    s = T.participant_id[0]
+    C = nb.load(mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_ses-1_CondSes.dscalar.nii')
+    X = C.get_fdata()
+    Nifti = suit_atlas.data_to_nifti(X[0])
+    surf_data = suit.flatmap.vol_to_surf(Nifti)
+    fig = suit.flatmap.plot(surf_data,render='plotly')
+    fig.show()
 
 def get_mdtb_fs32k():
     # Make the atlas object
@@ -65,7 +79,7 @@ def get_mdtb_fs32k():
 
 
 if __name__ == "__main__":
-    get_mdtb_suit()
+    show_mdtb_suit()
 
 
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
