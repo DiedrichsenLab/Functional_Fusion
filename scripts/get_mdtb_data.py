@@ -17,7 +17,7 @@ if not Path(base_dir).exists():
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
-def get_mdtb_suit():
+def get_mdtb_suit(ses_id='ses-1'):
     # Make the atlas object
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
@@ -33,11 +33,12 @@ def get_mdtb_suit():
         atlas_map = am.AtlasMapDeform(mdtb_dataset, suit_atlas, s,deform, mask)
         atlas_map.build(smooth=2.0)
         print(f'Extract {s}')
-        data,info,names = mdtb_dataset.get_data(s,[atlas_map],'ses-s1')
+        data,info,names = mdtb_dataset.get_data(s,[atlas_map],ses_id)
         C=am.data_to_cifti(data,[atlas_map],names)
         dest_dir = mdtb_dataset.data_dir.format(s)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        nb.save(C, dest_dir + f'/{s}_space-SUIT3_ses-1_CondSes.dscalar.nii')
+        nb.save(C, dest_dir + f'/{s}_space-SUIT3_{ses_id}_CondSes.dscalar.nii')
+        info.to_csv(dest_dir + f'/{s}_{ses_id}_info-CondSes.tsv',sep='\t')
 
 def show_mdtb_suit(): 
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'

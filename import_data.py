@@ -121,7 +121,6 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
     D = pd.DataFrame(T)
     D.to_csv(dest_dir + f'/{sub_id}_{sess_id}_reginfo.tsv',sep='\t')
 
-    return
     # Prepare beta files for transfer
     src=[]
     dest =[]
