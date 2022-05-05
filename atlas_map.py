@@ -12,6 +12,10 @@ import nibabel as nb
 import os
 
 import SUITPy as suit
+
+import sys
+sys.path.insert(0, 'D:\python_workspace')
+
 import surfAnalysisPy as surf
 import util
 

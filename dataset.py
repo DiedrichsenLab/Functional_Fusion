@@ -134,7 +134,6 @@ class DataSetMDTB(DataSet):
         return data_n, data_info, names
 
 
-
 class DataSetHcpResting(DataSet):
     def __init__(self, dir):
         super(DataSetHcpResting, self).__init__(base_dir=dir)
@@ -144,13 +143,15 @@ class DataSetHcpResting(DataSet):
 
     def _volume_from_cifti(self, data, axis, vol_name):
         assert isinstance(axis, nib.cifti2.BrainModelAxis)
+        vol_data = np.full(axis.volume_shape + (data.shape[0],), np.nan)
         for name, data_indices, model in axis.iter_structures():
-            if name == vol_name:
+            if name in vol_name:
                 data = data.T[data_indices]  # Assume brainmodels axis is last, move it to front
                 vox_indices = tuple(model.voxel.T)
-                vol_data = np.full(axis.volume_shape + data.shape[1:], np.nan)
                 vol_data[vox_indices] = data  # "Fancy indexing"
-                return vol_data  # Add affine for spatial interpretation
+
+        N = nib.Nifti1Image(vol_data, axis.affine)
+        return N, vol_data  # Add affine for spatial interpretation
 
     def _surf_data_from_cifti(self, data, axis, surf_name):
         assert isinstance(axis, nib.cifti2.BrainModelAxis)
@@ -163,26 +164,47 @@ class DataSetHcpResting(DataSet):
                 return surf_data
         raise ValueError(f"No structure named {surf_name}")
 
-    def get_data(self, participant_id, atlas_map=None, session=None,
-                 run=None, roi='CEREBELLUM_LEFT'):
+    def get_data_fnames(self, participant_id, session_id=None):
+        """ Gets all raw data files
+        Args:
+            participant_id (str): Subject
+            session_id (str): Session ID. Defaults to None.
+        Returns:
+            fnames (list): List of fnames
+            T (pd.DataFrame): Info structure for regressors (reginfo)
+        """
+        dir = self.estimates_dir.format(participant_id) + f'/{session_id}'
+        T=pd.read_csv(dir+f'/{participant_id}_{session_id}_reginfo.tsv',sep='\t')
+        fnames = [f'{dir}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i,t in T.iterrows()]
+        fnames.append(f'{dir}/{participant_id}_{session_id}_resms.nii')
+        return fnames, T
+
+    def get_data(self, participant_id, atlas_map=None, sess_id=None,
+                 run=None, roi=None):
         if run is None:
             run = ['01']
-        if session is None:
-            session = ['01']
+        if sess_id is None:
+            sess_id = ['01']
+        if roi is None:
+            roi = ['CEREBELLUM_LEFT']
 
-        for sub in participant_id:
-            func_dir = os.path.join(self.derivative_dir, f'{sub}/estimates')
-            for s in session:
-                for r in run:
-                    file = 'sub-%d_ses-%s_task-rest_space-fsLR32k_run-%s_dtseries.nii' % (sub, s, r)
-                    G = nib.load(os.path.join(func_dir, file))
-                    axes = [G.header.get_axis(i) for i in range(G.ndim)]
-                    cifti_data = G.get_fdata(dtype=np.float32)
-                    # data = self._surf_data_from_cifti(cifti_data, axes[1], 'CIFTI_STRUCTURE_'+roi)
-                    data = self._volume_from_cifti(cifti_data, axes[1], 'CIFTI_STRUCTURE_'+roi)
+        dir = self.estimates_dir.format(participant_id) + f'/{sess_id}'
+        fnames, info = self.get_data_fnames(participant_id, sess_id)
+
+        func_dir = os.path.join(self.derivative_dir, f'{participant_id}/estimates')
+        for s in sess_id:
+            for r in run:
+                file = 'sub-%d_ses-%s_task-rest_space-fsLR32k_run-%s_bold.nii' % \
+                       (participant_id, s, r)
+                G = nib.load(os.path.join(func_dir, file))
+                axes = [G.header.get_axis(i) for i in range(G.ndim)]
+                cifti_data = G.get_fdata(dtype=np.float32)
+                # data = self._surf_data_from_cifti(cifti_data, axes[1], 'CIFTI_STRUCTURE_'+roi)
+                this_roi = ['CIFTI_STRUCTURE_'+x for x in roi]
+                _, data = self._volume_from_cifti(cifti_data, axes[1], this_roi)
 
 
 if __name__ == '__main__':
-    A = DataSetHcpResting()
+    A = DataSetHcpResting('Y:\data\FunctionalFusion\HCP')
     part = A.get_participants()
-    data = A.get_data(part['participant_id'][0:10])
+    data = A.get_data(part['participant_id'][0], sess_id="ses-s1")
