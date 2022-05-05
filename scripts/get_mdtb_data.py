@@ -9,7 +9,11 @@ from dataset import DataSetMDTB
 import nibabel as nb
 import SUITPy as suit
 
+
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
+if not Path(base_dir).exists():
+    base_dir = '/srv/diedrichsen/data/FunctionalFusion'
+
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
@@ -31,8 +35,9 @@ def get_mdtb_suit():
         print(f'Extract {s}')
         data,info,names = mdtb_dataset.get_data(s,[atlas_map],'ses-s1')
         C=am.data_to_cifti(data,[atlas_map],names)
-        nb.save(C,mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_ses-1_CondSes.dscalar.nii')
-        pass
+        dest_dir = mdtb_dataset.data_dir.format(s)
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+        nb.save(C, dest_dir + f'/{s}_space-SUIT3_ses-1_CondSes.dscalar.nii')
 
 def show_mdtb_suit(): 
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
@@ -79,7 +84,7 @@ def get_mdtb_fs32k():
 
 
 if __name__ == "__main__":
-    show_mdtb_suit()
+    get_mdtb_suit()
 
 
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
