@@ -3,7 +3,7 @@ import pandas as pd
 import shutil
 from pathlib import Path
 import mat73
-import numpy as np 
+import numpy as np
 
 import import_data as id
 
@@ -29,14 +29,13 @@ if __name__ == "__main__":
         # dir1 = orig_dir + f'/sc1/surfaceWB/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/anat'
         # id.import_freesurfer(dir1,dir2,old_id,s)
-        '''info_dict={'run':'run',
+        info_dict={'run':'run',
                    'inst':'instruction',
                    'TN':'task_name',
                    'CN':'cond_name',
                    'task':'task_num',
                    'cond':'cond_num'}
-        '''
         dir1 = orig_dir + f'/sc1/GLM_firstlevel_7/{old_id}'
         dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s1'
-        id.import_spm_designmatrix(dir1,dir2,s,'ses-s1')
+        id.import_spm_glm(dir1,dir2,s,'ses-s1',info_dict)
         pass
