@@ -11,7 +11,6 @@ Last update: May 2022
 
 import os
 import glob
-import re
 import subprocess
 import numpy as np
 import pandas as pd
@@ -115,11 +114,14 @@ def transfer_anat(pt):
         with subprocess.Popen(["scp", '-o BatchMode=yes', afile,
                                cbs_anatpath]) as a:
             a.wait()
-        tag = re.match(
-            drago_anatsess + '(.*)_ses-00_T1w.nii.gz', afile).groups()[0]
-        t1 = cbs_anatpath + tag + '_ses-00_T1w.nii.gz'
+        if afile == drago_anatfile:
+            t1 = cbs_anatpath + pt + '_ses-00_T1w.nii.gz'
+            new_t1 = cbs_anatpath + pt + '_space-native_T1w.nii.gz'
+        else:
+            assert afile == w_drago_anatfile
+            t1 = cbs_anatpath + 'w' + pt + '_ses-00_T1w.nii.gz'
+            new_t1 = cbs_anatpath + pt + '_T1w.nii.gz'
         print(t1)
-        new_t1 = cbs_anatpath + tag + '_T1w.nii.gz'
         print(new_t1)
         os.rename(t1, new_t1)
 
