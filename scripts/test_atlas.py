@@ -60,6 +60,27 @@ def make_mdtb_fs32k():
         nb.save(im,atlas_dir + '/tpl-fs32k/tpl_gs32k_func.dscalar.nii')
         pass
 
+def make_hcp_suit():
+    # Make the atlas object for cerebellum suit
+    mask = atlas_dir + '/tpl-MNI152AsymC_res-2' + '/tpl-MNI152AsymC_res-2_gmcmask.nii'
+    suit_atlas = am.AtlasVolumetric('SUIT',mask_img=mask)
+    hcp_dataset = DataSetMDTB(base_dir + '/HCP')
+    
+    # create and calculate the atlas map for each participant
+    T = hcp_dataset.get_participants()
+
+    # hcp resting state is in MNI space, so we can use the deformation from MNI to suit space
+    deform = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
+
+    for s in T.participant_id[0]: ## for testing, just one participant is used
+        # create a mapping based on atlas deformation 
+        atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
+        atlas_map.build(smooth=2.0) # smoothing level?
+
+        # get the data based on atlas map
+        data,info,str = hcp_dataset.get_data(s,[atlas_map],'ses-s1')
+
+    return atlas_map
 
 if __name__ == "__main__":
     make_mdtb_suit()
