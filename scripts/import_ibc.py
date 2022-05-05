@@ -104,9 +104,9 @@ def transfer_anat(pt):
     cbs_anatpath = cbs_derivatives + '/' + pt + '/anat/'
     if not os.path.exists(cbs_anatpath):
         os.makedirs(cbs_anatpath)
-    else:
-        for ng in glob.glob(cbs_anatpath + '/*.nii.gz'):
-            os.remove(ng)
+    # else:
+    #     for ng in glob.glob(cbs_anatpath + '/*.nii.gz'):
+    #         os.remove(ng)
     drago_anatsess = drago_derivatives + pt + '/ses-00/anat/'
     drago_anatfile = drago_anatsess + pt + '_ses-00_T1w.nii.gz'
     w_drago_anatfile = drago_anatsess + 'w' + pt + '_ses-00_T1w.nii.gz'
@@ -126,6 +126,31 @@ def transfer_anat(pt):
         os.rename(t1, new_t1)
 
 
+def transfer_meshes(participant):
+    cbs_meshfolder = cbs_derivatives + '/' + participant + '/anat/'
+    if not os.path.exists(cbs_meshfolder):
+        os.makedirs(cbs_meshfolder)
+    drago_meshfolder = drago_derivatives + participant + '/ses-00/anat/' + \
+        participant + '/surf/'
+    hemispheres = ['lh', 'rh']
+    meshes = ['orig', 'pial', 'sulc', 'white']
+    for hemi in hemispheres:
+        for mesh in meshes:
+            drago_meshfile = drago_meshfolder + hemi + '.' + mesh
+            with subprocess.Popen(["scp", '-o BatchMode=yes', drago_meshfile,
+                                   cbs_meshfolder]) as m:
+                m.wait()
+            cbs_meshfile = cbs_meshfolder + hemi + '.' + mesh
+            if hemi == 'lh':
+                new_cbs_meshfile = cbs_meshfolder + participant + \
+                    '_hemi-L_' + mesh + '.surf'
+            else:
+                assert hemi == 'rh'
+                new_cbs_meshfile = cbs_meshfolder + participant + \
+                    '_hemi-R_' + mesh + '.surf'
+            os.rename(cbs_meshfile, new_cbs_meshfile)
+
+
 if __name__ == "__main__":
     for subject in subjects_list:
         # Import derivatives
@@ -133,3 +158,6 @@ if __name__ == "__main__":
         #     transfer_estimates(subject, session_name, dfm, dfs, dfc)
         # Import T1w images
         transfer_anat(subject)
+        # Import Freesurfer meshes
+        transfer_meshes(subject)
+
