@@ -32,8 +32,11 @@ class DataSet:
         self.base_dir  = base_dir
         self.surface_dir = base_dir + '/derivatives/{0}/anat'
         self.anatomical_dir = base_dir + '/derivatives/{0}/anat'
-        self.data_dir = base_dir + '/derivatives/{0}/estimates'
+        self.estimates_dir = base_dir + '/derivatives/{0}/estimates'
         self.suit_dir = base_dir + '/derivatives/{0}/suit'
+        self.data_dir = base_dir + '/derivatives/{0}/data'
+
+
 
     def get_participants(self):
         """ returns a data frame with all participants
@@ -66,69 +69,72 @@ class DataSetMDTB(DataSet):
 
 
     def get_data_fnames(self,participant_id,session_id=None):
-        """ Gets all raw data files 
+        """ Gets all raw data files
 
         Args:
-            participant_id (str): Subject 
+            participant_id (str): Subject
             session_id (str): Session ID. Defaults to None.
         Returns:
             fnames (list): List of fnames
             T (pd.DataFrame): Info structure for regressors (reginfo)
         """
-        dir = self.data_dir.format(participant_id) + f'/{session_id}'
-        T=pd.read_csv(dir+f'/{participant_id}_{session_id}_reginfo.tsv')
+        dir = self.estimates_dir.format(participant_id) + f'/{session_id}'
+        T=pd.read_csv(dir+f'/{participant_id}_{session_id}_reginfo.tsv',sep='\t')
         fnames = [f'{dir}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i,t in T.iterrows()]
         fnames.append(f'{dir}/{participant_id}_{session_id}_resms.nii')
-        return fnames, T 
+        return fnames, T
 
     def get_data(self,participant_id,
                     atlas_maps,
                     sess_id,
                     type='CondSes'):
-        dir = self.data_dir.format(participant_id) + f'/{sess_id}'
+        dir = self.estimates_dir.format(participant_id) + f'/{sess_id}'
         fnames,info = self.get_data_fnames(participant_id,sess_id)
-        data = np.random.normal(0,1,(737,10))
-        # data = am.get_data(fnames,atlas_maps)
+        # data = np.random.normal(0,1,(737,atlas_maps[0].P))
+        data = am.get_data(fnames,atlas_maps)
         # Load design matrix for optimal reweighting
         X = np.load(dir+f'/{participant_id}_{sess_id}_designmatrix.npy')
 
-        # get the resms and prewhiten the data
-        resms = data[-1,:]
-        data = data[0:-1,:]
-        data = data / np.sqrt(np.abs(resms))
-        # Append the intercept regressors 
-        data = np.concatenate([data,np.zeros((16,data.shape[1]))])
-
-        # determine the different halfs 
+        # determine the different halfs
         info['half']=2-(info.run<9)
 
         if type == 'CondSes':
             n_cond = np.max(info.cond_num)
             reg = (info.half-1)*n_cond + info.cond_num
-            reg[info.instruction==1] = 0 
-            # Contrast for the regressors of interst 
+            reg[info.instruction==1] = 0
+            # Contrast for the regressors of interst
             C = matrix.indicator(reg,positive=True) # Drop the instructions
             # contrast for all instructions
-            CI = matrix.indicator(info.half*info.instruction,positive=True) 
+            CI = matrix.indicator(info.half*info.instruction,positive=True)
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond*2,dtype=int)
-            # Subset of info sutructire 
-            ii = (info.run == 1) | (info.run == 9) & (info.cond_num>0)
-            data_info = info[ii].reindex()
+            # Subset of info sutructire
+            ii = ((info.run == 1) | (info.run == 9)) & (info.cond_num>0)
+            data_info = info[ii].copy().reset_index()
             names=[f'{d.cond_name}-sess{d.half}' for i,d in data_info.iterrows()]
         elif type == 'TaskSes':
             pass
-        elif type == 'AllSes': 
+        elif type == 'AllSes':
             pass
         pass
-        # Add the block regressors 
+        # Add the block regressors
         C = sl.block_diag(C,np.eye(16))
         Xn = X @ C
-        data_n = np.linalg.solve(Xn.T @ Xn, Xn.T @ X @ data)
-        data_n = data_n[reg_in,:]
+
+        # get the resms and prewhiten the data
+        data_n = []
+        for i in range(len(data)):
+            resms = data[i][-1,:]
+            data[i] = data[i][0:-1,:]
+            data[i] = data[i] / np.sqrt(np.abs(resms))
+            # Append the intercept regressors
+            data[i] = np.concatenate([data[i],np.zeros((16,data[i].shape[1]))])
+
+            d = np.linalg.solve(Xn.T @ Xn, Xn.T @ X @ data[i])
+            data_n.append(d[reg_in,:])
         return data_n, data_info, names
 
-    
+
 
 class DataSetHcpResting(DataSet):
     def __init__(self, dir):

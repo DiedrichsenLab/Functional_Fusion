@@ -3,7 +3,7 @@ import pandas as pd
 import shutil
 from pathlib import Path
 import mat73
-import numpy as np 
+import numpy as np
 import atlas_map as am
 from dataset import DataSetMDTB
 import nibabel as nb
@@ -12,11 +12,11 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
-def get_mdtb_suit(): 
-    # Make the atlas object 
-    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('SUIT',mask_img=mask)
-    # initialize the data set object 
+def get_mdtb_suit():
+    # Make the atlas object
+    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
+    # initialize the data set object
     mdtb_dataset = DataSetMDTB(data_dir)
 
     # create and calculate the atlas map for each participant
@@ -29,24 +29,26 @@ def get_mdtb_suit():
         atlas_map.build(smooth=2.0)
         print(f'Extract {s}')
         data,info,names = mdtb_dataset.get_data(s,[atlas_map],'ses-s1')
+        C=am.data_to_cifti(data,[atlas_map],names)
+        nb.save(C,mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT_ses-1_CondSes.dscalar.nii')
         pass
 
-def get_mdtb_fs32k(): 
-    # Make the atlas object 
-    atlas =[] 
+def get_mdtb_fs32k():
+    # Make the atlas object
+    atlas =[]
     bm_name = ['cortex_left','cortex_right']
     for i,hem in enumerate(['L','R']):
         mask = atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
         atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
-    # initialize the data set object 
+    # initialize the data set object
     mdtb_dataset = DataSetMDTB(data_dir)
 
     # create and calculate the atlas map for each participant
     T = mdtb_dataset.get_participants()
     for s in T.participant_id:
         atlas_maps = []
-        data = [] 
-        for i,hem in enumerate(['L','R']): 
+        data = []
+        for i,hem in enumerate(['L','R']):
             adir = mdtb_dataset.anatomical_dir.format(s)
             pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
             white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'

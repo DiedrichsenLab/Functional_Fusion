@@ -32,21 +32,21 @@ class Atlas():
         pass
 
 class AtlasVolumetric(Atlas):
-    def __init__(self,id,mask_img):
-        """Atlas Volumetric class constructor 
+    def __init__(self,name,mask_img):
+        """Atlas Volumetric class constructor
 
         Args:
-            id (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_img (str): file name of mask image defining atlas location
         """
-        self.name = id
+        self.name = name
         self.mask_img = nb.load(mask_img)
         Xmask = self.mask_img.get_data()
         Xmask = (Xmask>0)
         i,j,k = np.where(Xmask>0)
         self.vox = np.vstack((i,j,k))
         self.world = util.affine_transform_mat(self.vox,self.mask_img.affine)
-        self.P = self.world.shape[0]
+        self.P = self.world.shape[1]
 
     def map_data(self,data):
         """Maps data back into a full nifti
@@ -55,7 +55,7 @@ class AtlasVolumetric(Atlas):
             data (ndarray): 1-d Numpy array of the size (P,)
 
         Returns:
-            mapped_image (Nifti1Image): Image containing mapped results 
+            mapped_image (Nifti1Image): Image containing mapped results
         """
         X=np.zeros(self.mask_img.shape)
         X[self.vox[0],self.vox[1],self.vox[2]]=data
@@ -63,7 +63,7 @@ class AtlasVolumetric(Atlas):
         return mapped
 
     def get_brain_model_axis(self):
-        """ Returns brain model axis 
+        """ Returns brain model axis
 
         Returns:
             bm (cifti2.BrainModelAxis)
@@ -72,15 +72,38 @@ class AtlasVolumetric(Atlas):
                                             name=self.name)
         return bm
 
-class AtlasSurface(Atlas):
-    def __init__(self,id,mask_gii):
-        """Atlas Surface class constructor 
+    def data_to_nifti(self,data):
+        """Transforms data in atlas space into
+        3d or 4d nifti image
 
         Args:
-            id (str): Name of the altas (e.g. SUIT2)
+            data (np.ndarray): Data to be mapped into nift
+
+        Returns:
+            Nifti1Image: NiftiImage object
+        """
+        if data.ndim==1:
+            data = data.reshape(1,-1)
+        N,p = data.shape
+        if p != self.P:
+            raise(NameError('Data needs to be a P vector or NxP matrix'))
+        if N>1:
+            X=np.zeros(self.mask_img.shape+N)
+        else:
+            X=np.zeros(self.mask_img)
+        X[self.vox[0],self.vox[1],self.vox[2]]=data
+        img = nb.Nift1Image(X,self.mask_img.affine)
+        return img
+
+class AtlasSurface(Atlas):
+    def __init__(self,name,mask_gii):
+        """Atlas Surface class constructor
+
+        Args:
+            name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_gii (str): gifti file name of mask image defining atlas locations
         """
-        self.name = id
+        self.name = name
         self.mask_gii = nb.load(mask_gii)
         Xmask = self.mask_gii.agg_data()
         self.vertex_mask = (Xmask>0)
@@ -94,7 +117,7 @@ class AtlasSurface(Atlas):
             data (ndarray): 1-d Numpy array of the size (P,)
 
         Returns:
-            mapped_image (Nifti1Image): Image containing mapped results 
+            mapped_image (Nifti1Image): Image containing mapped results
         """
         X=np.zeros(self.mask_img.shape)
         X[self.vox[0],self.vox[1],self.vox[2]]=data
@@ -102,7 +125,7 @@ class AtlasSurface(Atlas):
         return mapped
 
     def get_brain_model_axis(self):
-        """ Returns brain model axis 
+        """ Returns brain model axis
 
         Returns:
             bm (cifti2.BrainModelAxis)
@@ -128,7 +151,7 @@ class AtlasMap():
         Using the dataset, build creates a list of voxel indices of
         For each of the locations, it
         """
-        pass 
+        pass
 
     def save(self, file_name):
         """serializes a atlas map to a file
@@ -154,41 +177,41 @@ class AtlasMapDeform(AtlasMap):
             dataset_id (str): name of
             participant_id (str): Participant name
             deform_img (str): Name for deformation map image
-            mask_img (str): Name of masking image that defines the functional data space. 
+            mask_img (str): Name of masking image that defines the functional data space.
         """
         super().__init__(dataset,atlas,participant_id)
         self.name = atlas.name
         self.deform_img = nb.load(deform_img)
         self.mask_img = nb.load(mask_img)
-    
+
     def build(self,smooth = None):
         """
         Using the dataset, build creates a list of voxel indices of
         For each of the locations, it
         """
-        # Caluculate locations of atlas in individual (deformed) coordinates 
+        # Caluculate locations of atlas in individual (deformed) coordinates
         atlas_ind = suit.reslice.sample_image(self.deform_img,
                     self.atlas.world[0],
                     self.atlas.world[1],
                     self.atlas.world[2],1).squeeze().T
         N = atlas_ind.shape[1] # Number of locations in atlas
-        if smooth is None: # Use nearest neighbor interpolation  
+        if smooth is None: # Use nearest neighbor interpolation
             self.vox_list,self.vox_weight = util.coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
-        else:              # Use smoothing kernel of specific size 
+        else:              # Use smoothing kernel of specific size
             # Get world coordinates and linear coordinates for all available voxels
             M = self.mask_img.get_fdata()
             i,j,k=np.where(M>0)
             world_vox = util.affine_transform_mat(np.vstack((i,j,k)),self.mask_img.affine) # available voxels in world coordiantes
             linindx = np.ravel_multi_index((i,j,k),M.shape,mode='clip')
-            
-            # Distances between atlas coordinates and voxel coordinates 
+
+            # Distances between atlas coordinates and voxel coordinates
             D = util.sq_eucl_distances(atlas_ind,world_vox)
-            # Find voxels with substantial power under gaussian kernel 
+            # Find voxels with substantial power under gaussian kernel
             W = np.exp(-0.5 * D/(smooth**2))
             W[W<0.2]=0
             a,b=W.nonzero()
-            # Now transfer them into a full list of voxels 
-            # this is somewhat ugly and brute force 
+            # Now transfer them into a full list of voxels
+            # this is somewhat ugly and brute force
             c = np.zeros(a.shape,dtype=int)
             c[1:]=a[0:-1]==a[1:]
             for i in range(c.shape[0]-1):
@@ -202,22 +225,22 @@ class AtlasMapDeform(AtlasMap):
         pass
 
 class AtlasMapSurf(AtlasMap):
-    def __init__(self, dataset, atlas, participant_id, 
+    def __init__(self, dataset, atlas, participant_id,
                 white_surf,pial_surf,mask_img):
         """AtlasMapSurf stores the mapping rules for a freesurfer-style surface (pial + white surface pair)
         Args:
             dataset_id (str): name of
             participant_id (str): Participant name
             white_surf (str): Name for white matter surface
-            pial_surf (str): Name for pial surface            
-            mask_img (str): Name of masking image that defines the functional data space. 
+            pial_surf (str): Name for pial surface
+            mask_img (str): Name of masking image that defines the functional data space.
         """
         super().__init__(dataset,atlas,participant_id)
         self.name = atlas.name
         self.white_surf = nb.load(white_surf)
         self.pial_surf = nb.load(pial_surf)
         self.mask_img = nb.load(mask_img)
-    
+
     def build(self,smooth = None, depths=[0,0.2,0.4,0.6,0.8,1.0]):
         """
         Using the dataset, build creates a list of voxel indices of
@@ -237,17 +260,17 @@ class AtlasMapSurf(AtlasMap):
 
         self.vox_list,good = util.coords_to_linvidxs(indices,self.mask_img,mask=True)
         self.vox_weight = good / good.sum(axis=0)
-        self.vox_list = self.vox_list.T 
-        self.vox_weight = self.vox_weight.T 
+        self.vox_list = self.vox_list.T
+        self.vox_weight = self.vox_weight.T
 
-def get_data(fnames,atlas_maps): 
+def get_data(fnames,atlas_maps):
     """Extracts the data for a list of fnames
-    for a list of atlas_maps. This is usually called by DataSet.get_data() 
+    for a list of atlas_maps. This is usually called by DataSet.get_data()
     to extract the required raw data before processing it further
 
     Args:
-        fnames (list): list of file names to be sampled 
-        atlas_maps (list): list of built atlas-map objects 
+        fnames (list): list of file names to be sampled
+        atlas_maps (list): list of built atlas-map objects
     """
     n_atlas = len(atlas_maps)
     n_files = len(fnames)
@@ -255,45 +278,55 @@ def get_data(fnames,atlas_maps):
     # Make the empty data structures
     for at in atlas_maps:
         data.append(np.full((n_files,at.vox_list.shape[0]),np.nan))
-    for j,f in enumerate(fnames): 
+    for j,f in enumerate(fnames):
         V = nb.load(f)
         X = V.get_fdata()
         if (X.ndim>3):
             raise(NameError('extraction right now only for 3d-niftis'))
-        # Map this file into the data structures 
+        # Map this file into the data structures
         X = X.ravel()
-        for i,at in enumerate(atlas_maps): 
+        for i,at in enumerate(atlas_maps):
             d=X[at.vox_list] * at.vox_weight  # Expanded data
             d = np.nansum(d,axis=1)
             d[np.nansum(at.vox_weight,axis=1)==0]=np.nan
             data[i][j,:]=d
     return data
 
-def data_to_cifti(data,atlas_maps):
-    """Transforms a list of data sets and list of atlas maps 
+def data_to_cifti(data,atlas_maps,names=None):
+    """Transforms a list of data sets and list of atlas maps
     into a cifti2image
 
     Args:
-        data (list): 
+        data (list):
             List / array of data arrays - need to have all same shape[0]
-            and a shape[1] that matches the corresponding atlas map  
-        atlas_maps (list): 
+            and a shape[1] that matches the corresponding atlas map
+        atlas_maps (list):
             List / array of atlas maps
-
+        names (list of str):
+            Names for the scalar axis
     Returns:
         img: nibabel.cifti2image
-            Can be saved as (*.dscalar.nii) file 
+            Can be saved as (*.dscalar.nii) file
     """
+    # Check is a single is given
+    if type(data) is not list:
+        data = [data]
+    if type(atlas_maps) is not list:
+        atlas_maps = [atlas_maps]
+
+    # Make the brain Structure models
     for i,atm in enumerate(atlas_maps):
-        if i == 0: 
+        if i == 0:
             bm = atm.atlas.get_brain_model_axis()
             D = data[i]
-        else: 
+        else:
             bm = bm+atm.atlas.get_brain_model_axis()
             D = np.c_[D,data[i]]
+
     # row_axis = nb.cifti2.SeriesAxis(start=0,step=1,size=D.shape[0])
-    names = [f'row {r:03}' for r in range(D.shape[0])]
+    if names is None:
+        names = [f'row {r:02}' for r in range(D.shape[0])]
     row_axis = nb.cifti2.ScalarAxis(names)
     header = nb.Cifti2Header.from_axes((row_axis,bm))
     cifti_img = nb.Cifti2Image(dataobj=D,header=header)
-    return cifti_img 
+    return cifti_img
