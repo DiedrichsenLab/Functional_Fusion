@@ -44,7 +44,7 @@ def fix_sc2_reginfo():
 
 
 if __name__ == "__main__":
-    fix_sc2_reginfo()
+    # fix_sc2_reginfo()
     T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
     for s in T.participant_id:
         old_id = s.replace('sub-','s',1)
