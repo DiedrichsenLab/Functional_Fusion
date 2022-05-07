@@ -11,22 +11,24 @@ Last update: May 2022
 
 import os
 import glob
+import re
 import subprocess
 import numpy as np
 import pandas as pd
 
 from pathlib import Path
 
+from nilearn.image import load_img, mean_img
 
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1]
+subjects_numbers = [14]
 
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language', 'mtt1', 'mtt2',
 #                  'preference', 'tom', 'enumeration', 'self', 'clips4',
 #                  'lyon1', 'lyon2']
-session_names = ['rsvp-language']
 
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc/'
@@ -102,7 +104,7 @@ def transfer_estimates(sub, sname, df1, df2, df3):
             os.rename(f, ff)
 
 
-def transfer_wmeanepi(sbj, sess_id, df4, df5):
+def epi(sbj, sess_id, df4, df5):
     sess = df4[df4[sbj].values == sess_id].index.values[0]
     cbs_dir = cbs_derivatives + '/' + sbj + '/func/' + sess
     if not os.path.exists(cbs_dir):
@@ -116,21 +118,37 @@ def transfer_wmeanepi(sbj, sess_id, df4, df5):
     phasedir = df5[df5.session == sess_id].phase.values
     for rn, tk, ph in zip(runs, tasks, phasedir):
         if tk == 'RSVPLanguage':
-            wmean_epi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
+            wepi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
                 '_dir-' + ph + '_run-' + '%02d' % (rn - 1) + '_bold.nii.gz'
         else:
-            wmean_epi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
+            wepi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
                 '_dir-' + ph + '_bold.nii.gz'
-        wmean_epi = func_folder + wmean_epi_fname
-        with subprocess.Popen(["scp", '-o BatchMode=yes', wmean_epi,
+        wepi = func_folder + wepi_fname
+        with subprocess.Popen(["scp", '-o BatchMode=yes', wepi,
                                cbs_dir]) as epi:
             epi.wait()
-        cbs_epi = cbs_dir + '/' + wmean_epi_fname
+        cbs_epi = cbs_dir + '/' + wepi_fname
         new_cbs_epi = cbs_dir + '/' + sbj + '_' + sess + '_run-' + \
             '%02d' % rn + '_bold.nii.gz'
         print(cbs_epi)
         print(new_cbs_epi)
         os.rename(cbs_epi, new_cbs_epi)
+
+
+def compute_wmeanepi(subj, derivatives):
+    main_dir = derivatives + '/' + subj + '/func/'
+    sessions_dirs = glob.glob(main_dir + 'ses-*')
+    for sdir in sessions_dirs:
+        wepis_paths = glob.glob(sdir + '/*_bold.nii.gz')
+        for wepi_path in wepis_paths:
+            wepi_fname = re.match(
+                sdir + '/(.*)_bold.nii.gz', wepi_path).groups()[0]
+            if wepi_fname == 'sub-14_ses-01_run-03':
+                continue
+            wepi = load_img(wepi_path)
+            wmeanepi = mean_img(wepi)
+            wmeanepi.to_filename(os.path.join(sdir,
+                                              wepi_fname + '_mean.nii.gz'))
 
 
 def transfer_anat(pt):
@@ -164,21 +182,21 @@ def transfer_cmasks(pt):
     if not os.path.exists(cbs_anatpath):
         os.makedirs(cbs_anatpath)
     else:
-        for ng in glob.glob(cbs_anatpath + 'c*.nii.gz'):
+        for ng in glob.glob(cbs_anatpath + 'mwc*.nii.gz'):
             os.remove(ng)
     drago_anatsess = drago_derivatives + pt + '/ses-00/anat/'
-    drago_c1 = drago_anatsess + 'c1' + pt + '_ses-00_T1w.nii.gz'
-    drago_c2 = drago_anatsess + 'c2' + pt + '_ses-00_T1w.nii.gz'
+    drago_c1 = drago_anatsess + 'mwc1' + pt + '_ses-00_T1w.nii.gz'
+    drago_c2 = drago_anatsess + 'mwc2' + pt + '_ses-00_T1w.nii.gz'
     for cfile in [drago_c1, drago_c2]:
         with subprocess.Popen(["scp", '-o BatchMode=yes', cfile,
                                cbs_anatpath]) as c:
             c.wait()
         if cfile == drago_c1:
-            cmask = cbs_anatpath + 'c1' + pt + '_ses-00_T1w.nii.gz'
+            cmask = cbs_anatpath + 'mwc1' + pt + '_ses-00_T1w.nii.gz'
             new_cmask = cbs_anatpath + pt + '_mask-c1_T1w.nii.gz'
         else:
             assert cfile == drago_c2
-            cmask = cbs_anatpath + 'c2' + pt + '_ses-00_T1w.nii.gz'
+            cmask = cbs_anatpath + 'mwc2' + pt + '_ses-00_T1w.nii.gz'
             new_cmask = cbs_anatpath + pt + '_mask-c2_T1w.nii.gz'
         print(cmask)
         print(new_cmask)
@@ -220,13 +238,16 @@ if __name__ == "__main__":
         # ## Import T1w images ##
         # transfer_anat(subject)
         # ## Import cmasks ##
-        transfer_cmasks(subject)
+        # transfer_cmasks(subject)
         # ## Import Freesurfer meshes ##
         # transfer_meshes(subject)
+        # ## Compute mean EPI ##
+        compute_wmeanepi(subject, cbs_derivatives)
         # for session_name in session_names:
             ## Import mean EPI ##
-            # transfer_wmeanepi(subject, session_name, dfm, dfs)
+            # epi(subject, session_name, dfm, dfs)
             ## Import derivatives ##
             # transfer_estimates(subject, session_name, dfm, dfs, dfc)
+            # generate_reginfo(sb, ses_id, df6, df7, df8)
 
 
