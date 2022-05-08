@@ -21,31 +21,7 @@ from pathlib import Path
 from nilearn.image import load_img, mean_img
 
 
-# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [14]
-
-session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language', 'mtt1', 'mtt2',
-#                  'preference', 'tom', 'enumeration', 'self', 'clips4',
-#                  'lyon1', 'lyon2']
-
-
-drago = 'agrilopi@drago:/storage/store2/data/ibc/'
-drago_derivatives = drago + 'derivatives/'
-home = str(Path.home())
-cbs = os.path.join(home, 'diedrichsen_data/data/FunctionalFusion/ibc')
-cbs_derivatives = os.path.join(cbs, 'derivatives')
-
-sess_map = 'ibc_sessions_map.tsv'
-sess_struct = 'ibc_sessions_structure.tsv'
-task_conditions = 'ibc_conditions.tsv'
-dfm = pd.read_csv(open(sess_map), sep='\t', index_col=0)
-dfs = pd.read_csv(open(sess_struct), sep='\t')
-dfc = pd.read_csv(open(task_conditions), sep='\t')
-
-subjects_list = ['sub-%02d' % s for s in subjects_numbers]
-
+# ############################# FUNCTIONS ##############################
 
 def transfer_estimates(sub, sname, df1, df2, df3):
     session = df1[df1[sub].values == sname].index.values[0]
@@ -104,7 +80,7 @@ def transfer_estimates(sub, sname, df1, df2, df3):
             os.rename(f, ff)
 
 
-def epi(sbj, sess_id, df4, df5):
+def epi(sbj, sess_id, df4, df5, first_run_only = False):
     sess = df4[df4[sbj].values == sess_id].index.values[0]
     cbs_dir = cbs_derivatives + '/' + sbj + '/func/' + sess
     if not os.path.exists(cbs_dir):
@@ -116,10 +92,15 @@ def epi(sbj, sess_id, df4, df5):
     runs = df5[df5.session == sess_id].srun.values
     tasks = df5[df5.session == sess_id].task.values
     phasedir = df5[df5.session == sess_id].phase.values
-    for rn, tk, ph in zip(runs, tasks, phasedir):
+    for i, (rn, tk, ph) in enumerate(zip(runs, tasks, phasedir)):
+        if first_run_only == True and i > 0:
+            break
         if tk == 'RSVPLanguage':
             wepi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
                 '_dir-' + ph + '_run-' + '%02d' % (rn - 1) + '_bold.nii.gz'
+        elif tk in ['MTTWE', 'MTTNS']:
+            wepi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
+                '_dir-' + ph + '_run-' + '%02d' % rn + '_bold.nii.gz'
         else:
             wepi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
                 '_dir-' + ph + '_bold.nii.gz'
@@ -147,8 +128,9 @@ def compute_wmeanepi(subj, derivatives):
                 continue
             wepi = load_img(wepi_path)
             wmeanepi = mean_img(wepi)
-            wmeanepi.to_filename(os.path.join(sdir,
-                                              wepi_fname + '_mean.nii.gz'))
+            wmeanepi_fullpath = os.path.join(sdir, wepi_fname + '_mean.nii.gz')
+            wmeanepi.to_filename(os.path.join(wmeanepi_fullpath))
+            print(wmeanepi_fullpath)
 
 
 def transfer_anat(pt):
@@ -233,21 +215,59 @@ def transfer_meshes(participant):
             os.rename(cbs_meshfile, new_cbs_meshfile)
 
 
+# ############################### INPUTS ###############################
+
+subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [14]
+
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language', 'mtt1', 'mtt2',
+#                  'preference', 'tom', 'enumeration', 'self', 'clips4',
+#                  'lyon1', 'lyon2']
+session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+                 'clips4', 'lyon1', 'lyon2']
+
+
+# ############################# PARAMETERS #############################
+
+drago = 'agrilopi@drago:/storage/store2/data/ibc/'
+drago_derivatives = drago + 'derivatives/'
+home = str(Path.home())
+cbs = os.path.join(home, 'diedrichsen_data/data/FunctionalFusion/ibc')
+cbs_derivatives = os.path.join(cbs, 'derivatives')
+
+sess_map = 'ibc_sessions_map.tsv'
+sess_struct = 'ibc_sessions_structure.tsv'
+task_conditions = 'ibc_conditions.tsv'
+dfm = pd.read_csv(open(sess_map), sep='\t', index_col=0)
+dfs = pd.read_csv(open(sess_struct), sep='\t')
+dfc = pd.read_csv(open(task_conditions), sep='\t')
+
+subjects_list = ['sub-%02d' % s for s in subjects_numbers]
+
+
+# ############################# RUN ####################################
+
 if __name__ == "__main__":
     for subject in subjects_list:
         # ## Import T1w images ##
         # transfer_anat(subject)
+
         # ## Import cmasks ##
         # transfer_cmasks(subject)
+
         # ## Import Freesurfer meshes ##
         # transfer_meshes(subject)
+
+        for session_name in session_names:
+            ## Import mean EPI ##
+            epi(subject, session_name, dfm, dfs, first_run_only = True)
+
+            # ## Import derivatives ##
+            # transfer_estimates(subject, session_name, dfm, dfs, dfc)
+
         # ## Compute mean EPI ##
         compute_wmeanepi(subject, cbs_derivatives)
-        # for session_name in session_names:
-            ## Import mean EPI ##
-            # epi(subject, session_name, dfm, dfs)
-            ## Import derivatives ##
-            # transfer_estimates(subject, session_name, dfm, dfs, dfc)
-            # generate_reginfo(sb, ses_id, df6, df7, df8)
 
 
