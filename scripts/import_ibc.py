@@ -18,6 +18,7 @@ import pandas as pd
 
 from pathlib import Path
 
+import nibabel as nb
 from nilearn.image import load_img, mean_img
 
 
@@ -161,12 +162,21 @@ def compute_wmeanepi(subj, sess_id, derivatives, df1):
         wepi_fname = re.match(
             sdir + '/(.*)_bold.nii.gz', wepi_path).groups()[0]
         if wepi_fname == 'sub-14_ses-01_run-03':
-            continue
-        wepi = load_img(wepi_path)
-        wmeanepi = mean_img(wepi)
-        wmeanepi_fullpath = os.path.join(sdir, wepi_fname + '_mean.nii.gz')
-        wmeanepi.to_filename(os.path.join(wmeanepi_fullpath))
-        print(wmeanepi_fullpath)
+            img = nb.load(os.path.join(
+                sdir, 'sub-14_ses-01_run-03_bold.nii.gz'))
+            X = img.get_fdata()
+            Y = np.nanmean(X, axis=3)
+            meanimg = nb.Nifti1Image(Y, img.affine)
+            meanimg_path = os.path.join(
+                sdir, 'sub-01_ses-03_run-01_mean.nii.gz'
+            nb.save(meanimg, meanimg_path)
+            print(meanimg_path)
+        else:
+            wepi = load_img(wepi_path)
+            wmeanepi = mean_img(wepi)
+            wmeanepi_fullpath = os.path.join(sdir, wepi_fname + '_mean.nii.gz')
+            wmeanepi.to_filename(os.path.join(wmeanepi_fullpath))
+            print(wmeanepi_fullpath)
 
 
 def transfer_anat(pt):
@@ -255,14 +265,13 @@ def transfer_meshes(participant):
 
 # subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1]
+subjects_numbers = [14]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-                 'clips4', 'lyon1', 'lyon2']
+# session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+#                  'clips4', 'lyon1', 'lyon2']
 # session_names = ['self', 'clips4', 'lyon1', 'lyon2']
-# session_names = ['enumeration']
+session_names = ['archi']
 
 
 # ############################# PARAMETERS #############################
@@ -298,7 +307,7 @@ if __name__ == "__main__":
 
         for session_name in session_names:
             ## Import mean EPI ##
-            epi(subject, session_name, dfm, dfs, first_run_only = True)
+            # epi(subject, session_name, dfm, dfs, first_run_only = False)
 
             # ## Import derivatives ##
             # transfer_estimates(subject, session_name, dfm, dfs, dfc)
