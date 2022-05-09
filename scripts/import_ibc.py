@@ -80,6 +80,34 @@ def transfer_estimates(sub, sname, df1, df2, df3):
             os.rename(f, ff)
 
 
+def generate_sessinfo(individual, sesstag, derivatives, df1, df2, df3):
+    session_number = df1[df1[individual].values == sesstag].index.values[0]
+    ifolder = derivatives + '/' + individual + '/estimates/' + \
+        session_number
+    if not os.path.exists(ifolder):
+        os.makedirs(ifolder)
+    else:
+        if not glob.glob(ifolder + '/*.tsv'):
+            for ng in glob.glob(ifolder + '/*.tsv'):
+                os.remove(ng)
+    run_numbers = df2[df2.session == sesstag].srun.values
+    task_names = df2[df2.session == sesstag].task.values
+    sessinfo = np.empty((0, 4))
+    for rnum, tname in zip(run_numbers, task_names):
+        condition_names = df3[df3.task == tname].condition.tolist()
+        reg_numbers = df3[df3.task == tname].regressor.tolist()
+        rnum_rep = np.repeat(rnum, len(condition_names)).tolist()
+        tname_rep = np.repeat(tname, len(condition_names)).tolist()
+        rstack = np.vstack((rnum_rep, tname_rep, condition_names,
+                            reg_numbers)).T
+        sessinfo = np.vstack((sessinfo, rstack))
+    dff = pd.DataFrame(sessinfo, columns = ['run','task_name','cond_name',
+                                            'reg_num'])
+    dff_fname = individual + '_' + session_number + '_reginfo.tsv'
+    dff_path = os.path.join(ifolder, dff_fname)
+    dff.to_csv(dff_path, sep='\t', index=False)
+
+
 def epi(sbj, sess_id, df4, df5, first_run_only = False):
     sess = df4[df4[sbj].values == sess_id].index.values[0]
     cbs_dir = cbs_derivatives + '/' + sbj + '/func/' + sess
@@ -159,8 +187,8 @@ def transfer_anat(pt):
         os.rename(t1, new_t1)
 
 
-def transfer_cmasks(pt):
-    cbs_anatpath = cbs_derivatives + '/' + pt + '/anat/'
+def transfer_cmasks(pt, derivatives):
+    cbs_anatpath = derivatives + '/' + pt + '/anat/'
     if not os.path.exists(cbs_anatpath):
         os.makedirs(cbs_anatpath)
     else:
@@ -219,14 +247,13 @@ def transfer_meshes(participant):
 
 subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [14]
+# subjects_numbers = [1]
 
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language', 'mtt1', 'mtt2',
 #                  'preference', 'tom', 'enumeration', 'self', 'clips4',
 #                  'lyon1', 'lyon2']
-session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-                 'clips4', 'lyon1', 'lyon2']
+# session_names = ['archi']
 
 
 # ############################# PARAMETERS #############################
@@ -255,19 +282,23 @@ if __name__ == "__main__":
         # transfer_anat(subject)
 
         # ## Import cmasks ##
-        # transfer_cmasks(subject)
+        # transfer_cmasks(subject, cbs_derivatives)
 
         # ## Import Freesurfer meshes ##
         # transfer_meshes(subject)
 
         for session_name in session_names:
             ## Import mean EPI ##
-            epi(subject, session_name, dfm, dfs, first_run_only = True)
+            # epi(subject, session_name, dfm, dfs, first_run_only = True)
 
             # ## Import derivatives ##
             # transfer_estimates(subject, session_name, dfm, dfs, dfc)
 
+            # ## Generate tsv files with session info ##
+            generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
+                              dfs, dfc)
+
         # ## Compute mean EPI ##
-        compute_wmeanepi(subject, cbs_derivatives)
+        # compute_wmeanepi(subject, cbs_derivatives)
 
 
