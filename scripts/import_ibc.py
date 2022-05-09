@@ -94,6 +94,9 @@ def generate_sessinfo(individual, sesstag, derivatives, df1, df2, df3):
     task_names = df2[df2.session == sesstag].task.values
     sessinfo = np.empty((0, 4))
     for rnum, tname in zip(run_numbers, task_names):
+        if individual == 'sub-11' and rnum == 6 and \
+           tname == 'PreferencePaintings':
+            tname = 'PreferenceFaces'
         condition_names = df3[df3.task == tname].condition.tolist()
         reg_numbers = df3[df3.task == tname].regressor.tolist()
         rnum_rep = np.repeat(rnum, len(condition_names)).tolist()
@@ -245,14 +248,13 @@ def transfer_meshes(participant):
 
 # ############################### INPUTS ###############################
 
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1]
 
-session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language', 'mtt1', 'mtt2',
-#                  'preference', 'tom', 'enumeration', 'self', 'clips4',
-#                  'lyon1', 'lyon2']
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+                 'clips4', 'lyon1', 'lyon2']
 # session_names = ['archi']
 
 
