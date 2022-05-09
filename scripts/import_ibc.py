@@ -111,8 +111,8 @@ def generate_sessinfo(individual, sesstag, derivatives, df1, df2, df3):
     dff.to_csv(dff_path, sep='\t', index=False)
 
 
-def epi(sbj, sess_id, df4, df5, first_run_only = False):
-    sess = df4[df4[sbj].values == sess_id].index.values[0]
+def epi(sbj, sess_id, df1, df2, first_run_only = False):
+    sess = df1[df1[sbj].values == sess_id].index.values[0]
     cbs_dir = cbs_derivatives + '/' + sbj + '/func/' + sess
     if not os.path.exists(cbs_dir):
         os.makedirs(cbs_dir)
@@ -120,9 +120,9 @@ def epi(sbj, sess_id, df4, df5, first_run_only = False):
         for ng in glob.glob(cbs_dir + '/*bold.nii.gz'):
             os.remove(ng)
     func_folder = drago_derivatives + sbj + '/' + sess + '/func/'
-    runs = df5[df5.session == sess_id].srun.values
-    tasks = df5[df5.session == sess_id].task.values
-    phasedir = df5[df5.session == sess_id].phase.values
+    runs = df2[df2.session == sess_id].srun.values
+    tasks = df2[df2.session == sess_id].task.values
+    phasedir = df2[df2.session == sess_id].phase.values
     for i, (rn, tk, ph) in enumerate(zip(runs, tasks, phasedir)):
         if first_run_only == True and i > 0:
             break
@@ -132,6 +132,12 @@ def epi(sbj, sess_id, df4, df5, first_run_only = False):
         elif tk in ['MTTWE', 'MTTNS']:
             wepi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
                 '_dir-' + ph + '_run-' + '%02d' % rn + '_bold.nii.gz'
+        elif tk in ['VSTM' + '%d' % s for s in np.arange(1, 3)]:
+            wepi_fname = 'wrdc' + sbj + '_' + sess + '_task-VSTM_dir-' + \
+                ph + '_run-' + '%02d' % rn + '_bold.nii.gz'
+        elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
+            wepi_fname = 'wrdc' + sbj + '_' + sess + '_task-Self_dir-' + \
+                ph + '_run-' + '%02d' % rn + '_bold.nii.gz'
         else:
             wepi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
                 '_dir-' + ph + '_bold.nii.gz'
@@ -147,21 +153,20 @@ def epi(sbj, sess_id, df4, df5, first_run_only = False):
         os.rename(cbs_epi, new_cbs_epi)
 
 
-def compute_wmeanepi(subj, derivatives):
-    main_dir = derivatives + '/' + subj + '/func/'
-    sessions_dirs = glob.glob(main_dir + 'ses-*')
-    for sdir in sessions_dirs:
-        wepis_paths = glob.glob(sdir + '/*_bold.nii.gz')
-        for wepi_path in wepis_paths:
-            wepi_fname = re.match(
-                sdir + '/(.*)_bold.nii.gz', wepi_path).groups()[0]
-            if wepi_fname == 'sub-14_ses-01_run-03':
-                continue
-            wepi = load_img(wepi_path)
-            wmeanepi = mean_img(wepi)
-            wmeanepi_fullpath = os.path.join(sdir, wepi_fname + '_mean.nii.gz')
-            wmeanepi.to_filename(os.path.join(wmeanepi_fullpath))
-            print(wmeanepi_fullpath)
+def compute_wmeanepi(subj, sess_id, derivatives, df1):
+    sess = df1[df1[subj].values == sess_id].index.values[0]
+    sdir = derivatives + '/' + subj + '/func/' + sess
+    wepis_paths = glob.glob(sdir + '/*_bold.nii.gz')
+    for wepi_path in wepis_paths:
+        wepi_fname = re.match(
+            sdir + '/(.*)_bold.nii.gz', wepi_path).groups()[0]
+        if wepi_fname == 'sub-14_ses-01_run-03':
+            continue
+        wepi = load_img(wepi_path)
+        wmeanepi = mean_img(wepi)
+        wmeanepi_fullpath = os.path.join(sdir, wepi_fname + '_mean.nii.gz')
+        wmeanepi.to_filename(os.path.join(wmeanepi_fullpath))
+        print(wmeanepi_fullpath)
 
 
 def transfer_anat(pt):
@@ -249,13 +254,15 @@ def transfer_meshes(participant):
 # ############################### INPUTS ###############################
 
 # subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
                  'clips4', 'lyon1', 'lyon2']
-# session_names = ['archi']
+# session_names = ['self', 'clips4', 'lyon1', 'lyon2']
+# session_names = ['enumeration']
 
 
 # ############################# PARAMETERS #############################
@@ -291,16 +298,14 @@ if __name__ == "__main__":
 
         for session_name in session_names:
             ## Import mean EPI ##
-            # epi(subject, session_name, dfm, dfs, first_run_only = True)
+            epi(subject, session_name, dfm, dfs, first_run_only = True)
 
             # ## Import derivatives ##
             # transfer_estimates(subject, session_name, dfm, dfs, dfc)
 
             # ## Generate tsv files with session info ##
-            generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
-                              dfs, dfc)
+            # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
+            #                   dfs, dfc)
 
-        # ## Compute mean EPI ##
-        # compute_wmeanepi(subject, cbs_derivatives)
-
-
+            # ## Compute mean EPI ##
+            compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
