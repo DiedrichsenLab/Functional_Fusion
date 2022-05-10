@@ -4,20 +4,17 @@ function [ output_args ] = nishimoto_imana( what, varargin )
 % PATH DEFINITIONS
 
 % Add dependencies to path
-if isdir('/Volumes/diedrichsen_data$/data')
-    workdir='/Volumes/diedrichsen_data$/data';
-elseif isdir('/srv/diedrichsen/data')
-    workdir='/srv/diedrichsen/data';
-else
-    fprintf('Workdir not found. Mount or connect to server and try again.');
-end
-addpath(sprintf('%s/../matlab/spm12',workdir));
-addpath(sprintf('%s/../matlab/spm12/toolbox/suit/',workdir));
-addpath(sprintf('%s/../matlab/dataframe',workdir));
-addpath(sprintf('%s/../matlab/imaging/tools/',workdir));
-
-
-
+% if isdir('/Volumes/diedrichsen_data$/data')
+%     workdir='/Volumes/diedrichsen_data$/data';
+% elseif isdir('/srv/diedrichsen/data')''
+%     workdir='/srv/diedrichsen/data';
+% else
+%     fprintf('Workdir not found. Mount or connect to server and try again.');
+% end
+% addpath(sprintf('%s/../matlab/spm12',workdir));
+% addpath(sprintf('%s/../matlab/spm12/toolbox/suit/',workdir));
+% addpath(sprintf('%s/../matlab/dataframe',workdir));
+% addpath(sprintf('%s/../matlab/imaging/tools/',workdir));
 
 %% ----- Initialize suit toolbox -----
 % check for SUIT installation
@@ -35,7 +32,8 @@ suit_defaults;
 
 global base_dir
 
-base_dir = sprintf('%s/FunctionalFusion/Nishimoto_103Task/',workdir);
+% base_dir = sprintf('%s/FunctionalFusion/Nishimoto_103Task/',workdir);
+base_dir = '/Users/ladan/Documents/DATA/nishimoto';
 
 %%% Freesurfer stuff
 path1 = getenv('PATH');
@@ -47,15 +45,14 @@ path1 = [path1, ':/Applications/freesurfer/mni/bin'];
 setenv('PATH', path1);
 setenv('FREESURFER_HOME','/Applications/freeSurfer');
 setenv(fullfile(base_dir, 'surfaceFreesurfer'))
-setenv('SUBJECTS_DIR',fullfile(base_dir, 'surfaceFreeSurfer'));
+setenv('SUBJECTS_DIR',fullfile(base_dir, 'surfaceFreesurfer'));
 % setenv('PERL5LIB','/Applications/freesurfer/mni/Library/Perl/Updates/5.10.0');
 % setenv('PERL5LIB', '/Applications/freesurfer/mni/System/Library/Perl/5.8.6');
 
 path1 = [path1 '/Applications/workbench/bin_macosx64'];
 setenv('PATH', path1);
 
-% defining other directories
-
+% defining the names of other directories
 func_dir = 'func';
 anat_dir = 'anat';
 est_dir  = 'est';
@@ -186,40 +183,56 @@ switch what
             spm_jobman('run',matlabbatch);
         end % s (subject)
     
-    case 'FUNC:rm_dumm' % removing 
-        % nishimoto_bids('Func:rm_dumm', 'sn', [1])
+    case 'FUNC:rm_dumm' % removing dummies and renaming
+        % removes dummies from the beginning of the functional images and
+        % save the new images with new names so that we don't lose the
+        % original images. For code efficiency, it will also rename the tsv
+        % files
+        % Example usage: nishimoto_imana('FUNC:rm_dumm', 'sn', [1])
         sn = subj_id;
         
         vararginoptions(varargin, 'sn')
         
         for s = sn
-            funScans = dir('*bold*.nii');
+            % go to subject's directory
+            func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
+            cd(func_subj_dir)
+%             funScans = dir('*bold*.nii');
+            funScans = temp_list;
             for i = 1:length(funScans)
-                srcfilename = sprintf('%s_sess-%02d_%s_bold_%02d.nii', subj_name, ss, task_names{ti}, i);
-                desfilename = sprintf('run_%02d_sess-%02d_%s.nii', i, ss, task_names{ti});
+                srcfilename = sprintf('%s%sbold.nii', subj_str{s}, funScans{i});
+                desfilename = sprintf('%s_run-%02d.nii', subj_str{s}, i);
                 mkdir temp;
-                spm_file_split(funScans(i).name,'temp');
+                unzip(srcfilename)
+                
+                spm_file_split(funScans{i}.name,'temp');
+                spm_file_split(sprintf('%s%sbold.nii', subj_str{s}, funScans{i}),'temp');
                 
                 cd temp;
                 list = dir('sub-*.nii');
                 list = list(numDummys+1:end);  % Remove dummies
                 V    = {list(:).name};
-                
                 spm_file_merge(V,srcfilename);
-                movefile(srcfilename,fullfile(imgRawDir, subj_name, sprintf('sess-%02d', ss), 'func', task_names{ti}, desfilename))
+                movefile(srcfilename,fullfile(func_subj_dir, desfilename))
                 cd ..
                 rmdir('temp','s');
-                fprintf('Run %02d done for sess %02d %s \n', i, ss, subj_name);
+                % change the names of the tsv files
+                tsv_source = sprintf('%s%sevents.tsv', subj_str{s}, funScans{i});
+                tsv_dest = sprintf('%s_run-%02d_events.tsv', subj_str{s}, i);
+                movefile(fullfile(func_subj_dir, tsv_source), fullfile(func_subj_dir, tsv_dest))
+                fprintf('-Dummies removed for run-%02d done for %s \n', i, subj_str{s});
             end % i (number of runs: funScans)
-        end % sn (subjects)
-        
+        end % sn (subjects)    
     case 'FUNC:realign'
     case 'FUNC:move_data' 
     case 'FUNC:coreg' 
     case 'FUNC:make_samealign'
     case 'FUNC:make_maskImage'
         
-    case 'GLM:design1'
+    case 'GLM:design1' % make the design matrix for the glm
+        % models each condition as a separate regressors
+        % For conditions with multiple repetitions, one regressor
+        % represents all the instances
         % nishimoto_imana('GLM:design1', 'sn', [1])
         
         sn = subj_id;
@@ -227,29 +240,101 @@ switch what
         vararginoptions(varargin, {'sn', 'hrf_cutoff'});
         
         prefix = 'r'; % prefix of the preprocessed epi we want to use
-        
+        glm = 1;
         for s = sn
-            
-            % create a directory to save the design
-            subj_dir = fullfile(base_dir, subj_str{s}, est_dir);
-            dircheck(subj_dir)
-            
-            T = []; % task/condition + session + run info
-            J = []; % structure with SPM fields to make the design
-            
-            J.dir            = {subj_dir};
-            J.timing.units   = 'secs';
-            J.timing.RT      = 2.0;
-            J.timing.fmri_t  = 16;
-            J.timing.fmri_t0 = 1;
-            
+            func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
             % loop over runs
-            for run = run_list
-                % get the tsvfile for the current run
-                D = dload(sprintf('%s_run-%02d_bold.tsv', subj_str{s}, run));
+            for ss = [1, 2]
+                % create a directory to save the design
+                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('ses-%d', ss));
+                dircheck(subj_est_dir)
                 
+                T = []; % task/condition + session + run info
+                J = []; % structure with SPM fields to make the design
                 
-            end % run (runs in the list)
+                J.dir            = {subj_est_dir};
+                J.timing.units   = 'secs';
+                J.timing.RT      = 2.0;
+                J.timing.fmri_t  = 16;
+                J.timing.fmri_t0 = 1;
+                
+                % get the list of runs for the current session
+                runs_list = sess{ss};
+                
+                % loop through runs within the current sessions
+                for run = 1:length(runs_list)
+                    
+%                   % fill in nifti image names for the current run
+                    N = cell(numTRs - numDummys, 1); % preallocating!
+                    for i = 1:(numTRs-numDummys)
+                        N{i} = fullfile(func_subj_dir, sprintf('%s%s_run-%02d.nii', prefix, subj_str{s}, i));
+                    end % i (image numbers)
+                    J.sess(run).scans = N; % scans in the current runs
+                    
+                    % get the path to the tsv file
+                    tsv_path = fullfile(base_dir, subj_str{s}, func_dir);
+                    % get the tsvfile for the current run
+                    D = dload(fullfile(tsv_path, sprintf('%s_run-%02d_events.tsv', subj_str{s}, run)));
+                    
+                    % get unique conditions
+                    unique_conds = unique(D.trial_type, 'stable');
+                    
+                    % loop over trials within the current run and build up
+                    % the design matrix
+                    for ic = 1:length(unique_conds)
+                        % get the indices corresponding to the current
+                        % condition.
+                        % this line is necessary as there are some
+                        % conditions with more than 1 repetition
+                        idx = strcmp(D.trial_type, unique_conds{ic});
+                        fprintf('* %d instances found for condition %s in run %02d\n', sum(idx), unique_conds{ic}, run)
+                        
+                        % filling in "reginfo"
+                        TT.sn    = s;
+                        TT.sess  = ss;
+                        TT.run   = run;
+                        TT.CN    = unique_conds(ic);
+                        TT.cond  = ic;
+                        TT.n_rep = sum(idx);
+                        
+                        % filling in fields of J (SPM Job)
+                        J.sess(run).cond(ic).name = unique_conds{ic};
+                        J.sess(run).cond(ic).tmod = 0;
+                        J.sess(run).cond(ic).orth = 0;
+                        J.sess(run).cond(ic).pmod = struct('name', {}, 'param', {}, 'poly', {});
+                        
+                        % get onset and duration (should be in seconds)
+                        onset    = D.onset(idx) - (J.timing.RT*numDummys);
+                        duration = D.duration(idx); 
+                        
+                        J.sess(run).cond(ic).onset    = onset;
+                        J.sess(run).cond(ic).duration = duration;
+                        
+                        % add the condition info to the reginfo structure
+                        T = addstruct(T, TT);
+                    end % ic (conditions)
+                    
+                    J.sess(run).multi     = {''};
+                    J.sess(run).regress   = struct('name', {}, 'val', {});
+                    J.sess(run).multi_reg = {''};
+                    J.sess(run).hpf       = hrf_cutoff; % set to 'inf' if using J.cvi = 'FAST'. SPM HPF not applied
+                end % run (runs of current session)
+                
+%                 J.fact             = struct('name', {}, 'levels', {});
+%                 J.bases.hrf.derivs = [0 0];
+%                 J.bases.hrf.params = [4.5 11];                                  % set to [] if running wls
+%                 J.volt             = 1;
+%                 J.global           = 'None';
+%                 J.mask             = {fullfile(imagingDir, task_names{task_num}, subj_name,'rmask_noskull.nii,1')};
+%                 J.mthresh          = 0.05;
+%                 J.cvi_mask         = {fullfile(imagingDir, task_names{task_num}, subj_name,'rmask_gray.nii')};
+%                 J.cvi              =  'fast';
+%                 
+%                 spm_rwls_run_fmri_spec(J);
+                
+                save(fullfile(J.dir{1},sprintf('%s_ses-%d_reginfo.tsv', subj_str{s}, ss)), '-struct', 'T');
+                fprintf('- estimates for glm_%d session %d has been saved for %s \n', glm, ss, subj_str{s});
+            end % ss (session)
             
             
         end % sn (subject)
@@ -267,13 +352,12 @@ switch what
         
         vararginoptions(varargin, {'sn'});
         % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'FreeSurfer');
-        dircheck(fs_dir)
+        subj_fs_dir = fullfile(base_dir, fs_dir);
         
         for s = sn
             fprintf('- recon-all %s\n', subj_str{s});
             subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
-            freesurfer_reconall(fs_dir, subj_str{s}, ...
+            freesurfer_reconall(subj_fs_dir, subj_str{s}, ...
                                 fullfile(subj_dir,sprintf('%s_T1w_lpi.nii', subj_str{s})));
         end % s (sn)
     case 'SURF:xhemireg'       % Cross-register surfaces left / right hem
