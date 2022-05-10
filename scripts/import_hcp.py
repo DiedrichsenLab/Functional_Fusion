@@ -23,26 +23,27 @@ def import_func_resting(source_dir, dest_dir, participant_id):
         dest_dir (str): destination directory
         participant_id (str): ID of participant
     """
-    # Make the destination directory
-    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+   
     src=[]
     dest =[]
-    src.append(f'/rfMRI_REST1_LR/rfMRI_REST1_LR_Atlas_hp2000_clean.dtseries.nii')
-    dest.append(f'/sub-{participant_id}_ses-01_task-rest_space-fsLR32k_run-01_dtseries.nii')
 
-    src.append(f'/rfMRI_REST1_RL/rfMRI_REST1_RL_Atlas_hp2000_clean.dtseries.nii')
-    dest.append(f'/sub-{participant_id}_ses-01_task-rest_space-fsLR32k_run-02_dtseries.nii')
+    for ss in [1, 2]:
+         # add a folder for session
+         dest_dir = dest_dir + f"ses-{ss:02}"
+         # Make the destination directory
+         Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
-    src.append(f'/rfMRI_REST2_LR/rfMRI_REST2_LR_Atlas_hp2000_clean.dtseries.nii')
-    dest.append(f'/sub-{participant_id}_ses-02_task-rest_space-fsLR32k_run-01_dtseries.nii')
+         # move data into the corresponding session folder
+         src.append(f'/rfMRI_REST1_LR/rfMRI_REST1_LR_Atlas_hp2000_clean.dtseries.nii')
+         dest.append(f'/sub-{participant_id}_ses-{ss:02}_task-rest_space-fsLR32k_run-01_dtseries.nii')
 
-    src.append(f'/rfMRI_REST2_RL/rfMRI_REST2_RL_Atlas_hp2000_clean.dtseries.nii')
-    dest.append(f'/sub-{participant_id}_ses-02_task-rest_space-fsLR32k_run-02_dtseries.nii')
-    for i in range(len(src)):
-        try:
-            shutil.copyfile(source_dir+'/MNINonLinear/Results'+src[i], dest_dir+dest[i])
-        except:
-            print('skipping ' + src[i])
+         src.append(f'/rfMRI_REST1_RL/rfMRI_REST1_RL_Atlas_hp2000_clean.dtseries.nii')
+         dest.append(f'/sub-{participant_id}_ses-{ss:02}_task-rest_space-fsLR32k_run-02_dtseries.nii')
+         for i in range(len(src)):
+             try:
+                 shutil.copyfile(source_dir+'/MNINonLinear/Results'+src[i], dest_dir+dest[i])
+             except:
+                 print('skipping ' + src[i])
 
 
 if __name__ == "__main__":
