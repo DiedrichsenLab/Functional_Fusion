@@ -15,6 +15,7 @@ import util
 import matrix
 import atlas_map as am
 import scipy.linalg as sl
+import nibabel as nb
 
 class DataSet:
     def __init__(self, base_dir):
@@ -32,6 +33,7 @@ class DataSet:
         self.surface_dir = base_dir + '/derivatives/{0}/anat'
         self.anatomical_dir = base_dir + '/derivatives/{0}/anat'
         self.estimates_dir = base_dir + '/derivatives/{0}/estimates'
+        self.func_dir = base_dir + '/derivatives/{0}/func'
         self.suit_dir = base_dir + '/derivatives/{0}/suit'
         self.data_dir = base_dir + '/derivatives/{0}/data'
 
@@ -141,7 +143,57 @@ class DataSetHcpResting(DataSet):
         self.all_sub = self.get_participants()
         self.derivative_dir = self.base_dir + '/derivatives'
 
-    def _volume_from_cifti(self, data, axis, vol_name):
+    def get_data_fnames(self, participant_id, session_id = None):
+        """
+        gets the names of the raw time series files
+        Args:
+            participant_id(str) : subject id
+            session_id(int) : Session id.
+        Returns:
+            fnames(list): list of file names
+        """
+        dir = self.func_dir.format(participant_id) + f'/{session_id}'
+        fnames = fnames = [f'{dir}/{participant_id}_ses-{session_id:02}_run-{run:02}_dtseries.nii' for run in [1, 2]]
+        return fnames
+
+    def _volume_from_cifti(fname, save = False):
+        """
+        Gets the 4D nifti object containing the time series
+        for all the subcortical structures
+        Args:
+            fname (str) - name of the file
+            save (Boolean) - set to True if you want to save the 4D nifti (NOT IMPLEMENTED YET)
+        Returns:
+            nii_vol(nifti vol object) - nifti object containing the time series of subcorticals
+        """
+        ts_cifti = nb.load(fname)
+        # get brain axis models
+        bmf = ts_cifti.header.get_axis(1)
+        # get the data array with all the time points, all the structures
+        ts_array = ts_cifti.get_fdata()
+
+        # initialize a matrix representing 4D data (x, y, z, time_point)
+        subcorticals_vol = np.zeros([bmf.volume_shape[0], bmf.volume_shape[1], bmf.volume_shape[2], ts_array.shape[0]])
+        for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
+            # get the values corresponding to the brain model
+            bm_vals = ts_array[:, slc]
+
+            # get the voxels/vertices corresponding to the current brain model
+            ijk = bm.voxel
+            # fill in data
+            if (idx != 0) & (idx != 1): # indices 0 and 1 are cortical hemispheres
+                # print(str(nam))
+                subcorticals_vol[ijk[:, 0], ijk[:, 1], ijk[:, 2], :] = bm_vals.T 
+
+        # save as nii 
+        nii_vol = nb.Nifti1Image(subcorticals_vol,bmf.affine)
+
+        # if save:
+        #     ts_nifti = dir+'/sub-100307_ses-01_task-rest_space-subcortex_run-01_bold.nii'
+        #     nb.save(nii_vol,ts_nifti)
+        return nii_vol
+    
+    def _volume_from_cifti_da(self, data, axis, vol_name):
         assert isinstance(axis, nib.cifti2.BrainModelAxis)
         vol_data = np.full(axis.volume_shape + (data.shape[0],), np.nan)
         for name, data_indices, model in axis.iter_structures():
@@ -179,25 +231,21 @@ class DataSetHcpResting(DataSet):
         fnames.append(f'{dir}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
-    def get_data(self, participant_id, atlas_map=None, sess_id=None,
-                 run=None, roi=None):
-        if run is None:
-            run = '01'
-        if sess_id is None:
-            sess_id = '01'
-        if roi is None:
-            roi = ['CEREBELLUM_LEFT']
+    def get_data(self, participant_id, 
+                 atlas_maps, 
+                 sess_id=None,
+                 ):
 
-        func_dir = os.path.join(self.derivative_dir, f'{participant_id}/estimates')
+        # get the file name for the cifti time series
+        fnames = self.get_data_fnames(participant_id,sess_id)
+        
+        # get the volumetric data for subcorticals
+        vol_list = []
+        for f in fnames:
+            vol_list.append(self._volume_from_cifti(f, save = False))
 
-        file = 'sub-%d_ses-%s_task-rest_space-fsLR32k_run-%s_bold.nii' % \
-               (participant_id, sess_id, run)
-        G = nib.load(os.path.join(func_dir, file))
-        axes = [G.header.get_axis(i) for i in range(G.ndim)]
-        cifti_data = G.get_fdata(dtype=np.float32)
-        # data = self._surf_data_from_cifti(cifti_data, axes[1], 'CIFTI_STRUCTURE_'+roi)
-        this_roi = ['CIFTI_STRUCTURE_'+x for x in roi]
-        _, data = self._volume_from_cifti(cifti_data, axes[1], this_roi)
+        data = am.get_data(vol_list,atlas_maps)
+
 
         return data
 
