@@ -78,7 +78,7 @@ def make_hcp_suit():
         atlas_map.build(smooth=2.0) # smoothing level?
 
         # get the data based on atlas map
-        data,info,str = hcp_dataset.get_data(s,[atlas_map],'ses-s1')
+        data = hcp_dataset.get_data(s,[atlas_map],'ses-s1')
 
     return atlas_map
 
