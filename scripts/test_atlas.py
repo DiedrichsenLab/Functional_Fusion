@@ -6,6 +6,7 @@ import mat73
 import numpy as np 
 import atlas_map as am
 from dataset import DataSetMDTB
+from dataset import DataSetHcpResting
 import nibabel as nb
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
@@ -62,9 +63,9 @@ def make_mdtb_fs32k():
 
 def make_hcp_suit():
     # Make the atlas object for cerebellum suit
-    mask = atlas_dir + '/tpl-MNI152AsymC_res-2' + '/tpl-MNI152AsymC_res-2_gmcmask.nii'
+    mask = atlas_dir + '/tpl-MNI152NLin6AsymC' + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('SUIT',mask_img=mask)
-    hcp_dataset = DataSetMDTB(base_dir + '/HCP')
+    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
     
     # create and calculate the atlas map for each participant
     T = hcp_dataset.get_participants()
@@ -72,15 +73,15 @@ def make_hcp_suit():
     # hcp resting state is in MNI space, so we can use the deformation from MNI to suit space
     deform = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
 
-    for s in T.participant_id[0]: ## for testing, just one participant is used
+    for s in T.participant_id.values: ## for testing, just one participant is used
         # create a mapping based on atlas deformation 
         atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
         atlas_map.build(smooth=2.0) # smoothing level?
 
         # get the data based on atlas map
-        data = hcp_dataset.get_data(s,[atlas_map],'ses-s1')
+        data = hcp_dataset.get_data(s,[atlas_map],'ses-01')
 
-    return atlas_map
+        return data
 
 if __name__ == "__main__":
     make_mdtb_suit()
