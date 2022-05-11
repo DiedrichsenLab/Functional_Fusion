@@ -283,7 +283,11 @@ def get_data(fnames,atlas_maps):
     for at in atlas_maps:
         data.append(np.full((n_files,at.vox_list.shape[0]),np.nan))
     for j,f in enumerate(fnames):
-        V = nb.load(f)
+        if isinstance(f, str):
+            V = nb.load(f)
+        else:
+            V = f
+            
         X = V.get_fdata()
         if (X.ndim>3):
             raise(NameError('extraction right now only for 3d-niftis'))
