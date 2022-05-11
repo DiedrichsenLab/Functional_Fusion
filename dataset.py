@@ -143,20 +143,7 @@ class DataSetHcpResting(DataSet):
         self.all_sub = self.get_participants()
         self.derivative_dir = self.base_dir + '/derivatives'
 
-    def get_data_fnames(self, participant_id, session_id = None):
-        """
-        gets the names of the raw time series files
-        Args:
-            participant_id(str) : subject id
-            session_id(int) : Session id.
-        Returns:
-            fnames(list): list of file names
-        """
-        dir = self.func_dir.format(participant_id) + f'/{session_id}'
-        fnames = fnames = [f'{dir}/{participant_id}_ses-{session_id:02}_run-{run:02}_dtseries.nii' for run in [1, 2]]
-        return fnames
-
-    def _volume_from_cifti(fname, save = False):
+    def _volume_from_cifti(self, fname, save = False):
         """
         Gets the 4D nifti object containing the time series
         for all the subcortical structures
@@ -225,11 +212,9 @@ class DataSetHcpResting(DataSet):
             fnames (list): List of fnames
             T (pd.DataFrame): Info structure for regressors (reginfo)
         """
-        dir = self.estimates_dir.format(participant_id) + f'/{session_id}'
-        T=pd.read_csv(dir+f'/{participant_id}_{session_id}_reginfo.tsv',sep='\t')
-        fnames = [f'{dir}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i,t in T.iterrows()]
-        fnames.append(f'{dir}/{participant_id}_{session_id}_resms.nii')
-        return fnames, T
+        dir = self.func_dir.format(f"{participant_id}") + f'/{session_id}'
+        fnames = [f'{dir}/sub-{participant_id}_{session_id}_space-fsLR32k_run-{r:02}.dtseries.nii' for r in [1, 2]]
+        return fnames
 
     def get_data(self, participant_id, 
                  atlas_maps, 
@@ -241,8 +226,9 @@ class DataSetHcpResting(DataSet):
         
         # get the volumetric data for subcorticals
         vol_list = []
-        for f in fnames:
-            vol_list.append(self._volume_from_cifti(f, save = False))
+        for file_name in fnames:
+            vol = self._volume_from_cifti(file_name)
+            vol_list.append(vol)
 
         data = am.get_data(vol_list,atlas_maps)
 
