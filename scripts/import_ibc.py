@@ -20,11 +20,13 @@ from pathlib import Path
 
 subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language', 'mtt1', 'mtt2',
 #                  'preference', 'tom', 'enumeration', 'self', 'clips4',
 #                  'lyon1', 'lyon2']
+session_names = ['rsvp-language']
 
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc/'
@@ -93,11 +95,42 @@ def transfer_estimates(sub, sname, df1, df2, df3):
                                   cbs_path]) as p:
                 p.wait()
             f = cbs_path + '/' + cond + '.nii.gz'
-            print(f)
             ff = cbs_path + '/' + sub + '_' + session + '_run-' + \
                 '%02d' % rn + '_reg-' + '%02d' % reg + '_zmap.nii.gz'
+            print(f)
             print(ff)
             os.rename(f, ff)
+
+
+def transfer_wmeanepi(sbj, sess_id, df4, df5):
+    sess = df4[df4[sbj].values == sess_id].index.values[0]
+    cbs_dir = cbs_derivatives + '/' + sbj + '/func/' + sess
+    if not os.path.exists(cbs_dir):
+        os.makedirs(cbs_dir)
+    else:
+        for ng in glob.glob(cbs_dir + '/*bold.nii.gz'):
+            os.remove(ng)
+    func_folder = drago_derivatives + sbj + '/' + sess + '/func/'
+    runs = df5[df5.session == sess_id].srun.values
+    tasks = df5[df5.session == sess_id].task.values
+    phasedir = df5[df5.session == sess_id].phase.values
+    for rn, tk, ph in zip(runs, tasks, phasedir):
+        if tk == 'RSVPLanguage':
+            wmean_epi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
+                '_dir-' + ph + '_run-' + '%02d' % (rn - 1) + '_bold.nii.gz'
+        else:
+            wmean_epi_fname = 'wrdc' + sbj + '_' + sess + '_task-' + tk + \
+                '_dir-' + ph + '_bold.nii.gz'
+        wmean_epi = func_folder + wmean_epi_fname
+        with subprocess.Popen(["scp", '-o BatchMode=yes', wmean_epi,
+                               cbs_dir]) as epi:
+            epi.wait()
+        cbs_epi = cbs_dir + '/' + wmean_epi_fname
+        new_cbs_epi = cbs_dir + '/' + sbj + '_' + sess + '_run-' + \
+            '%02d' % rn + '_bold.nii.gz'
+        print(cbs_epi)
+        print(new_cbs_epi)
+        os.rename(cbs_epi, new_cbs_epi)
 
 
 def transfer_anat(pt):
@@ -105,7 +138,7 @@ def transfer_anat(pt):
     if not os.path.exists(cbs_anatpath):
         os.makedirs(cbs_anatpath)
     else:
-        for ng in glob.glob(cbs_anatpath + '/*.nii.gz'):
+        for ng in glob.glob(cbs_anatpath + '*_T1w.nii.gz'):
             os.remove(ng)
     drago_anatsess = drago_derivatives + pt + '/ses-00/anat/'
     drago_anatfile = drago_anatsess + pt + '_ses-00_T1w.nii.gz'
@@ -126,10 +159,74 @@ def transfer_anat(pt):
         os.rename(t1, new_t1)
 
 
+def transfer_cmasks(pt):
+    cbs_anatpath = cbs_derivatives + '/' + pt + '/anat/'
+    if not os.path.exists(cbs_anatpath):
+        os.makedirs(cbs_anatpath)
+    else:
+        for ng in glob.glob(cbs_anatpath + 'c*.nii.gz'):
+            os.remove(ng)
+    drago_anatsess = drago_derivatives + pt + '/ses-00/anat/'
+    drago_c1 = drago_anatsess + 'c1' + pt + '_ses-00_T1w.nii.gz'
+    drago_c2 = drago_anatsess + 'c2' + pt + '_ses-00_T1w.nii.gz'
+    for cfile in [drago_c1, drago_c2]:
+        with subprocess.Popen(["scp", '-o BatchMode=yes', cfile,
+                               cbs_anatpath]) as c:
+            c.wait()
+        if cfile == drago_c1:
+            cmask = cbs_anatpath + 'c1' + pt + '_ses-00_T1w.nii.gz'
+            new_cmask = cbs_anatpath + pt + '_mask-c1_T1w.nii.gz'
+        else:
+            assert cfile == drago_c2
+            cmask = cbs_anatpath + 'c2' + pt + '_ses-00_T1w.nii.gz'
+            new_cmask = cbs_anatpath + pt + '_mask-c2_T1w.nii.gz'
+        print(cmask)
+        print(new_cmask)
+        os.rename(cmask, new_cmask)
+
+
+def transfer_meshes(participant):
+    cbs_meshfolder = cbs_derivatives + '/' + participant + '/anat/'
+    if not os.path.exists(cbs_meshfolder):
+        os.makedirs(cbs_meshfolder)
+    else:
+        for ng in glob.glob(cbs_meshfolder + '*.surf'):
+            os.remove(ng)
+    drago_meshfolder = drago_derivatives + participant + '/ses-00/anat/' + \
+        participant + '/surf/'
+    hemispheres = ['lh', 'rh']
+    meshes = ['orig', 'pial', 'sulc', 'white']
+    for hemi in hemispheres:
+        for mesh in meshes:
+            drago_meshfile = drago_meshfolder + hemi + '.' + mesh
+            with subprocess.Popen(["scp", '-o BatchMode=yes', drago_meshfile,
+                                   cbs_meshfolder]) as m:
+                m.wait()
+            cbs_meshfile = cbs_meshfolder + hemi + '.' + mesh
+            if hemi == 'lh':
+                new_cbs_meshfile = cbs_meshfolder + participant + \
+                    '_hemi-L_' + mesh + '.surf'
+            else:
+                assert hemi == 'rh'
+                new_cbs_meshfile = cbs_meshfolder + participant + \
+                    '_hemi-R_' + mesh + '.surf'
+            print(cbs_meshfile)
+            print(new_cbs_meshfile)
+            os.rename(cbs_meshfile, new_cbs_meshfile)
+
+
 if __name__ == "__main__":
     for subject in subjects_list:
-        # Import derivatives
+        # ## Import T1w images ##
+        # transfer_anat(subject)
+        # ## Import cmasks ##
+        transfer_cmasks(subject)
+        # ## Import Freesurfer meshes ##
+        # transfer_meshes(subject)
         # for session_name in session_names:
-        #     transfer_estimates(subject, session_name, dfm, dfs, dfc)
-        # Import T1w images
-        transfer_anat(subject)
+            ## Import mean EPI ##
+            # transfer_wmeanepi(subject, session_name, dfm, dfs)
+            ## Import derivatives ##
+            # transfer_estimates(subject, session_name, dfm, dfs, dfc)
+
+
