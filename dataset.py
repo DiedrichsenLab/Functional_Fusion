@@ -92,7 +92,7 @@ class DataSetMDTB(DataSet):
         dir = self.estimates_dir.format(participant_id) + f'/{sess_id}'
         fnames,info = self.get_data_fnames(participant_id,sess_id)
         # data = np.random.normal(0,1,(737,atlas_maps[0].P))
-        data = am.get_data(fnames,atlas_maps)
+        data = am.get_data3D(fnames,atlas_maps)
         # Load design matrix for optimal reweighting
         X = np.load(dir+f'/{participant_id}_{sess_id}_designmatrix.npy')
 
@@ -220,21 +220,17 @@ class DataSetHcpResting(DataSet):
                  atlas_maps, 
                  sess_id=None,
                  ):
-
+        # print(f"I'm in get_data")
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id,sess_id)
         
         # get the volumetric data for subcorticals
-        vol_list = []
+        # vol_list = []
+        data = []
         for file_name in fnames:
             vol_list_4D = self._volume_from_cifti(file_name)
-            vol_list.append(vol_list_4D)
-
-        data = am.get_data(vol_list,atlas_maps)
-
-
+            data.append(am.get_data4D(vol_list_4D,atlas_maps))
         return data
-
 
 if __name__ == '__main__':
     A = DataSetHcpResting('Y:\data\FunctionalFusion\HCP')
