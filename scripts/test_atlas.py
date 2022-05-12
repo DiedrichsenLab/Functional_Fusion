@@ -75,7 +75,6 @@ def make_hcp_suit():
     deform = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
     mask = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152AsymC_res-2_gmcmask2.nii'
 
-    cii = []
     for s in T.participant_id.values: ## for testing, just one participant is used
         # create a mapping based on atlas deformation 
         atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
@@ -84,12 +83,51 @@ def make_hcp_suit():
         # print(f"building atlas map is done")
 
         # get the data based on atlas map
-        data = hcp_dataset.get_data(s,[atlas_map],'ses-01')
+        data = hcp_dataset.get_data_vol(s,[atlas_map],'ses-01')
+    pass
 
-        # # create cifti
-        # cii.append(am.data_to_cifti(data,[suit_atlas],names=None))
-        # return data, cii
-    return data
+def make_hcp_tessel0042():
+
+    # get the tessellation file
+    tessel_dir = atlas_dir + '/tpl-fs32k'
+    # get the gifti file for the label
+    gii_label = nb.load(tessel_dir + '/Icosahedron-42.32k.L.label.gii')
+
+    # get the vertices list
+    gii_list = gii_label.agg_data()
+
+    # discard medial wall
+    gii_nm = gii_list[gii_list != 0]
+    print(gii_nm.shape)
+    # initialize the data set object 
+    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
+
+    # create and calculate the atlas map for each participant
+    T = hcp_dataset.get_participants()
+    # Make the atlas object 
+    atlas =[] 
+    bm_name = ['cortex_left','cortex_right']
+    for s in T.participant_id:
+        atlas_maps = []
+        data = [] 
+        for i,hem in enumerate(['L','R']):
+            mask = atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
+            atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
+
+            # get the data based on atlas map
+            data = hcp_dataset.get_data_surf(s,["Hello"],'ses-01')
+
+            return data
+            
+                
+            # # data = mdtb_dataset.get_data(s,[A])
+            # # data_files=mdtb_dataset.get_data_fnames(s,'ses-s1')
+            # data.append(np.random.normal(0,1,(100,atlas_maps[i].P))) # am.get_data(data_files,atlas_maps)
+            # im = am.data_to_cifti(data,atlas_maps)
+            # nb.save(im,atlas_dir + '/tpl-fs32k/tpl_gs32k_func.dscalar.nii')
+
+    
+    pass
 
 if __name__ == "__main__":
     make_mdtb_suit()
