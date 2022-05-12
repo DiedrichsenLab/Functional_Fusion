@@ -54,8 +54,11 @@ def get_cortex():
     pass
 
 def get_ts_nii():
+    """
+    getting a cifti image, converting it to 4D vol and returning a list of 3D images (for each time point)
+    """
     dir = hcp_dir + '/derivatives/100307/func'
-    ts_cifti = nb.load(dir+'/sub-100307_ses-01_task-rest_space-fsLR32k_run-01_bold.nii')
+    ts_cifti = nb.load(dir+'/ses-01'+'/sub-100307_ses-01_space-fsLR32k_run-01.dtseries.nii')
     # get brain axis models
     bmf = ts_cifti.header.get_axis(1)
     # get the data array with all the time points, all the structures
@@ -77,10 +80,13 @@ def get_ts_nii():
     # save as nii 
     N = nb.Nifti1Image(subcorticals_vol,bmf.affine)
 
-    ts_nifti = dir+'/sub-100307_ses-01_task-rest_space-subcortex_run-01_bold.nii'
-    nb.save(N,ts_nifti)
+    Vs = nb.funcs.four_to_three(N)
+    print(type(Vs))
 
-    return
+    # ts_nifti = dir+'/sub-100307_ses-01_task-rest_space-subcortex_run-01_bold.nii'
+    # nb.save(N,ts_nifti)
+
+    return Vs
 
 
 if __name__ == "__main__":
