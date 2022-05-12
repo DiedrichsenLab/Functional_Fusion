@@ -99,6 +99,7 @@ def make_hcp_tessel0042():
     # discard medial wall
     gii_nm = gii_list[gii_list != 0]
     print(gii_nm.shape)
+    
     # initialize the data set object 
     hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
 
@@ -118,15 +119,6 @@ def make_hcp_tessel0042():
             data = hcp_dataset.get_data_surf(s,["Hello"],'ses-01')
 
             return data
-            
-                
-            # # data = mdtb_dataset.get_data(s,[A])
-            # # data_files=mdtb_dataset.get_data_fnames(s,'ses-s1')
-            # data.append(np.random.normal(0,1,(100,atlas_maps[i].P))) # am.get_data(data_files,atlas_maps)
-            # im = am.data_to_cifti(data,atlas_maps)
-            # nb.save(im,atlas_dir + '/tpl-fs32k/tpl_gs32k_func.dscalar.nii')
-
-    
     pass
 
 if __name__ == "__main__":
