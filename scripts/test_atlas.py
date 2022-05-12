@@ -27,7 +27,7 @@ def make_mdtb_suit():
         mask = mdtb_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
         atlas_map = am.AtlasMapDeform(mdtb_dataset, suit_atlas, s,deform, mask)
         atlas_map.build(smooth=2.0)
-        data,info,str = mdtb_dataset.get_data3D(s,[atlas_map],'ses-s1')
+        data,info,str = mdtb_dataset.get_data(s,[atlas_map],'ses-s1')
         #a=mdtb_dataset.get_data_fnames(s,'ses-s1')
         pass
 
@@ -63,25 +63,33 @@ def make_mdtb_fs32k():
 
 def make_hcp_suit():
     # Make the atlas object for cerebellum suit
-    mask = atlas_dir + '/tpl-MNI152NLin6AsymC' + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
+    # mask = atlas_dir + '/tpl-MNI152NLin6AsymC' + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
+    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('SUIT',mask_img=mask)
     hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
     
     # create and calculate the atlas map for each participant
     T = hcp_dataset.get_participants()
-
+ 
     # hcp resting state is in MNI space, so we can use the deformation from MNI to suit space
     deform = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
+    mask = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152AsymC_res-2_gmcmask2.nii'
 
+    cii = []
     for s in T.participant_id.values: ## for testing, just one participant is used
         # create a mapping based on atlas deformation 
         atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
+        # print(f"building atlas map")
         atlas_map.build(smooth=2.0) # smoothing level?
+        # print(f"building atlas map is done")
 
         # get the data based on atlas map
-        data = hcp_dataset.get_data4D(s,[atlas_map],'ses-01')
+        data = hcp_dataset.get_data(s,[atlas_map],'ses-01')
 
-        return data
+        # # create cifti
+        # cii.append(am.data_to_cifti(data,[suit_atlas],names=None))
+        # return data, cii
+    return data
 
 if __name__ == "__main__":
     make_mdtb_suit()
