@@ -1,7 +1,7 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
 import numpy as np 
 import nibabel as nb
-from atlas_map import AtlasVolumetric, AtlasMapDeform, get_data
+from atlas_map import AtlasVolumetric, AtlasMapDeform, get_data3D
 from dataset import DataSetMDTB
 import surfAnalysisPy as surf
 
@@ -21,19 +21,21 @@ def explore_cifti():
     pass
 
 def get_cereb():
-    dir = hcp_dir + '/derivatives/100307/estimates'
-    A=nb.load(dir+'/sub-100307_ses-01_task-rest_space-fsLR32k_run-01_bold.nii')
+    dir2 = hcp_dir + '/derivatives/100307/estimates'
+    A=nb.load(dir2+'/sub-100307_ses-01_task-rest_space-fsLR32k_run-01_bold.nii')
     ser = A.header.get_axis(0)
     bmf = A.header.get_axis(1)
     bmcl = bmf[bmf.name == 'CIFTI_STRUCTURE_CEREBELLUM_LEFT']
     bmcr = bmf[bmf.name == 'CIFTI_STRUCTURE_CEREBELLUM_RIGHT']
     bmc= bmcl + bmcr
+    print(dir(bmc))
     ijk = bmc.voxel
-    X = np.zeros((90,50,50))
+    # X = np.zeros((90,50,50))
+    X = np.zeros((bmc.volume_shape[0],bmc.volume_shape[1], bmc.volume_shape[2]))
     X[ijk[:,0],ijk[:,1],ijk[:,2]] = 1
     N = nb.Nifti1Image(X,bmc.affine)
-    nb.save(N,atlas_dir + '/tpl-MNI152AsymC_res-2' + '/tpl-MNI152AsymC_res-2_gmcmask.nii')
-    pass
+    nb.save(N,atlas_dir + '/tpl-MNI152NLin6AsymC' + '/tpl-MNI152AsymC_res-2_gmcmask2.nii')
+    return bmc
 
 
 def get_cortex():
@@ -81,7 +83,6 @@ def get_ts_nii():
     N = nb.Nifti1Image(subcorticals_vol,bmf.affine)
 
     Vs = nb.funcs.four_to_three(N)
-    print(type(Vs))
 
     # ts_nifti = dir+'/sub-100307_ses-01_task-rest_space-subcortex_run-01_bold.nii'
     # nb.save(N,ts_nifti)
