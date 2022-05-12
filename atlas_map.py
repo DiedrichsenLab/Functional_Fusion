@@ -267,7 +267,7 @@ class AtlasMapSurf(AtlasMap):
         self.vox_list = self.vox_list.T
         self.vox_weight = self.vox_weight.T
 
-def get_data(fnames,atlas_maps):
+def get_data3D(fnames,atlas_maps):
     """Extracts the data for a list of fnames
     for a list of atlas_maps. This is usually called by DataSet.get_data()
     to extract the required raw data before processing it further
@@ -276,23 +276,57 @@ def get_data(fnames,atlas_maps):
         fnames (list): list of file names to be sampled
         atlas_maps (list): list of built atlas-map objects
     """
+
     n_atlas = len(atlas_maps)
     n_files = len(fnames)
+    print(n_files)
     data = []
     # Make the empty data structures
     for at in atlas_maps:
         data.append(np.full((n_files,at.vox_list.shape[0]),np.nan))
     for j,f in enumerate(fnames):
-        if isinstance(f, str):
-            V = nb.load(f)
-        else:
-            V = f
-            
+        V = nb.load(f)
         X = V.get_fdata()
+
         if (X.ndim>3):
             raise(NameError('extraction right now only for 3d-niftis'))
         # Map this file into the data structures
         X = X.ravel()
+        print(X.shape)
+        for i,at in enumerate(atlas_maps):
+            d=X[at.vox_list] * at.vox_weight  # Expanded data
+            d = np.nansum(d,axis=1)
+            d[np.nansum(at.vox_weight,axis=1)==0]=np.nan
+            data[i][j,:]=d
+    return data
+
+def get_data4D(vol_4D,atlas_maps):
+    """Extracts the data for a list of fnames
+    for a list of atlas_maps. This is usually called by DataSet.get_data()
+    to extract the required raw data before processing it further
+
+    Args:
+        fnames (list): list of file names to be sampled
+        atlas_maps (list): list of built atlas-map objects
+    """
+
+    # temp code:
+    # convert 4D to 3D
+    vol_3D_list = nb.funcs.four_to_three(vol_4D)
+
+    n_atlas = len(atlas_maps)
+    n_files = len(vol_3D_list)
+    print(n_files)
+    data = []
+    # Make the empty data structures
+    for at in atlas_maps:
+        data.append(np.full((n_files,at.vox_list.shape[0]),np.nan))
+    for j,f in enumerate(vol_3D_list):
+        V = vol_3D_list[j]
+        X = V.get_fdata()
+        # Map this file into the data structures
+        X = X.ravel()
+        # print(X.shape)
         for i,at in enumerate(atlas_maps):
             d=X[at.vox_list] * at.vox_weight  # Expanded data
             d = np.nansum(d,axis=1)
