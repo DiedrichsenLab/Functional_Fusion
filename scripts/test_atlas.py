@@ -27,7 +27,7 @@ def make_mdtb_suit():
         mask = mdtb_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
         atlas_map = am.AtlasMapDeform(mdtb_dataset, suit_atlas, s,deform, mask)
         atlas_map.build(smooth=2.0)
-        data,info,str = mdtb_dataset.get_data(s,[atlas_map],'ses-s1')
+        data,info,str = mdtb_dataset.get_data3D(s,[atlas_map],'ses-s1')
         #a=mdtb_dataset.get_data_fnames(s,'ses-s1')
         pass
 
@@ -79,7 +79,7 @@ def make_hcp_suit():
         atlas_map.build(smooth=2.0) # smoothing level?
 
         # get the data based on atlas map
-        data = hcp_dataset.get_data(s,[atlas_map],'ses-01')
+        data = hcp_dataset.get_data4D(s,[atlas_map],'ses-01')
 
         return data
 
@@ -87,6 +87,4 @@ if __name__ == "__main__":
     make_mdtb_suit()
 
 
-    # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
-    # for s in T.participant_id:
-    #     pass
+    
