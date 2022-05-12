@@ -199,6 +199,7 @@ class AtlasMapDeform(AtlasMap):
                     self.atlas.world[1],
                     self.atlas.world[2],1).squeeze().T
         N = atlas_ind.shape[1] # Number of locations in atlas
+
         if smooth is None: # Use nearest neighbor interpolation
             self.vox_list,self.vox_weight = util.coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
         else:              # Use smoothing kernel of specific size
@@ -289,7 +290,7 @@ def get_data3D(fnames,atlas_maps):
         X = V.get_fdata()
 
         if (X.ndim>3):
-            raise(NameError('extraction right now only for 3d-niftis'))
+            raise(NameError('use get_data4D for 4D data'))
         # Map this file into the data structures
         X = X.ravel()
         print(X.shape)
@@ -316,7 +317,6 @@ def get_data4D(vol_4D,atlas_maps):
 
     n_atlas = len(atlas_maps)
     n_files = len(vol_3D_list)
-    print(n_files)
     data = []
     # Make the empty data structures
     for at in atlas_maps:
@@ -326,7 +326,6 @@ def get_data4D(vol_4D,atlas_maps):
         X = V.get_fdata()
         # Map this file into the data structures
         X = X.ravel()
-        # print(X.shape)
         for i,at in enumerate(atlas_maps):
             d=X[at.vox_list] * at.vox_weight  # Expanded data
             d = np.nansum(d,axis=1)
