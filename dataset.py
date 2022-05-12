@@ -173,12 +173,12 @@ class DataSetHcpResting(DataSet):
                 subcorticals_vol[ijk[:, 0], ijk[:, 1], ijk[:, 2], :] = bm_vals.T 
 
         # save as nii 
-        nii_vol = nb.Nifti1Image(subcorticals_vol,bmf.affine)
-
+        nii_vol_4d = nb.Nifti1Image(subcorticals_vol,bmf.affine)
+        # nii_vol_3d = nb.funcs.four_to_three(nii_vol_4d)
         # if save:
         #     ts_nifti = dir+'/sub-100307_ses-01_task-rest_space-subcortex_run-01_bold.nii'
         #     nb.save(nii_vol,ts_nifti)
-        return nii_vol
+        return nii_vol_4d
     
     def _volume_from_cifti_da(self, data, axis, vol_name):
         assert isinstance(axis, nib.cifti2.BrainModelAxis)
@@ -227,8 +227,8 @@ class DataSetHcpResting(DataSet):
         # get the volumetric data for subcorticals
         vol_list = []
         for file_name in fnames:
-            vol = self._volume_from_cifti(file_name)
-            vol_list.append(vol)
+            vol_list_4D = self._volume_from_cifti(file_name)
+            vol_list.append(vol_list_4D)
 
         data = am.get_data(vol_list,atlas_maps)
 
