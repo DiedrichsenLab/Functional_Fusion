@@ -321,7 +321,7 @@ def get_data4D(vol_4D,atlas_maps):
     # Make the empty data structures
     for at in atlas_maps:
         data.append(np.full((n_files,at.vox_list.shape[0]),np.nan))
-    for j,f in enumerate(vol_3D_list):
+    for j in range(len(vol_3D_list)):
         V = vol_3D_list[j]
         X = V.get_fdata()
         # Map this file into the data structures
