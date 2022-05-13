@@ -76,7 +76,7 @@ def make_hcp_suit():
     deform = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
     mask = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152AsymC_res-2_gmcmask2.nii'
 
-    for s in T.participant_id.values: ## for testing, just one participant is used
+    for s in T.participant_id.values: 
         # create a mapping based on atlas deformation 
         atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
         # print(f"building atlas map")
@@ -134,6 +134,46 @@ def make_hcp_tessel0042():
 
     return ts_mean
 
+def hcp_fc_fp():
+    """
+    Example to get the functional connectivity finger print for hcp resting state
+    """
+    # Make the atlas object for cerebellum suit
+    # mask = atlas_dir + '/tpl-MNI152NLin6AsymC' + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
+    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    suit_atlas = am.AtlasVolumetric('SUIT',mask_img=mask)
+    # hcp resting state is in MNI space, so we can use the deformation from MNI to suit space
+    deform = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
+    mask = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152AsymC_res-2_gmcmask2.nii'
+
+    
+
+    # get the tessellation file
+    tessel_dir = atlas_dir + '/tpl-fs32k'
+    # get the gifti file for the label
+    gii_labels = [nb.load(tessel_dir + '/Icosahedron-42.32k.L.label.gii'), nb.load(tessel_dir + '/Icosahedron-42.32k.R.label.gii')]
+
+    # get the gifti of the mask
+    gii_mask = [nb.load(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'), nb.load(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii')]
+    
+    # create and calculate the atlas map for each participant
+    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
+
+    T = hcp_dataset.get_participants()
+    con_fp = [] # connectivity finger print list
+    for s in T.participant_id.values:
+        # create a mapping based on atlas deformation 
+        atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
+        # print(f"building atlas map")
+        atlas_map.build(smooth=2.0) # smoothing level?
+
+        # get the connectivity matrix and put it in a list
+        con_fp.append(hcp_dataset.get_data(s,[atlas_map], gii_labels, gii_mask,'ses-01'))
+
+    return con_fp
+
+ 
+    
 if __name__ == "__main__":
     make_mdtb_suit()
 
