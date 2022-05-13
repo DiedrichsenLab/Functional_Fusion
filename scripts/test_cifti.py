@@ -46,12 +46,14 @@ def get_cortex():
     bmcl = bmf[bmf.name == 'CIFTI_STRUCTURE_CORTEX_LEFT']
     bmcr = bmf[bmf.name == 'CIFTI_STRUCTURE_CORTEX_RIGHT']
     
-    mask=np.zeros(32492,)
-    mask[bmcr.vertex]=1
+    maskl=np.zeros(32492,)
+    maskl[bmcl.vertex]=1
+    maskr=np.zeros(32492,)
+    maskr[bmcr.vertex]=1
     colorM=np.array([[1,1,1,1],[0,0,1,1]])
-    mask_gii = surf.map.make_label_gifti(data=mask,label_names=['medwall','cortex'],label_RGBA=colorM)
+    mask_gii = surf.map.make_label_gifti(data=maskl,label_names=['medwall','cortex'],label_RGBA=colorM)
     nb.save(mask_gii,atlas_dir + '/tpl-fs32k' + '/tpl-fs32k_hemi-L_mask.label.gii')
-    mask_gii = surf.map.make_label_gifti(data=mask,label_names=['medwall','cortex'],label_RGBA=colorM,anatomical_struct='CortexRight')
+    mask_gii = surf.map.make_label_gifti(data=maskr,label_names=['medwall','cortex'],label_RGBA=colorM,anatomical_struct='CortexRight')
     nb.save(mask_gii,atlas_dir + '/tpl-fs32k' + '/tpl-fs32k_hemi-R_mask.label.gii')
     pass
 
