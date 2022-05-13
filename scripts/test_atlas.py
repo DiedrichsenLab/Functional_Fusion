@@ -8,6 +8,7 @@ import atlas_map as am
 from dataset import DataSetMDTB
 from dataset import DataSetHcpResting
 import nibabel as nb
+from matrix import indicator
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 data_dir = base_dir + '/MDTB'
@@ -87,39 +88,51 @@ def make_hcp_suit():
     pass
 
 def make_hcp_tessel0042():
+    """
+    Steps to extract the time series for a cortical tesselation in hcp resting state
+    1. Make sure that you have a mask for each hemisphere.
+        - these masks are created based on non-zero vertices in left and right hemi
+        in hcp resting state
+        - if the masks are not created,  run test_cifti.get_cortex
+    2. load in the label file for the tesselation
+    3. apply the mask to the loaded file (only keep the non-zero elements)
+    4.extract the time series for each parcel?
+    """
 
     # get the tessellation file
     tessel_dir = atlas_dir + '/tpl-fs32k'
     # get the gifti file for the label
     gii_label = nb.load(tessel_dir + '/Icosahedron-42.32k.L.label.gii')
 
-    # get the vertices list
-    gii_list = gii_label.agg_data()
+    # get the gifti of the mask
+    gii_mask = nb.load(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii')
 
-    # discard medial wall
-    gii_nm = gii_list[gii_list != 0]
-    print(gii_nm.shape)
-    
+    # get the time series for cortex left
+    hcp_dir = base_dir + '/HCP'
+    dir = hcp_dir + '/derivatives/100307/func'
+    ts_cifti = nb.load(dir+'/ses-01'+'/sub-100307_ses-01_space-fsLR32k_run-01.dtseries.nii')
+    bmf = ts_cifti.header.get_axis(1)
+    # get the data array with all the time points, all the structures
+    ts_array = ts_cifti.get_fdata()
+    ts_list = []
+    for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
+            # just get the cortical surfaces
+            if (idx == 0): # just for cortex left (idx = 0) 
+                # get the values corresponding to the brain model
+                bm_vals = ts_array[:, slc]
+                # get the voxels/vertices corresponding to the current brain model
+                bm_indices = bm.vertex  # excludes medial wall vertices???????
+                surf_data = np.zeros((bm_vals.shape[1], bm_vals.shape[0]), dtype=bm_vals.dtype)
+                surf_data[:, :] = bm_vals.T
+
+                ts_list.append(surf_data)
+
+    ts_mean = am.get_average_data(data = bm_vals, labels=gii_label, mask = gii_mask)
+
     # initialize the data set object 
     hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
 
-    # create and calculate the atlas map for each participant
-    T = hcp_dataset.get_participants()
-    # Make the atlas object 
-    atlas =[] 
-    bm_name = ['cortex_left','cortex_right']
-    for s in T.participant_id:
-        atlas_maps = []
-        data = [] 
-        for i,hem in enumerate(['L','R']):
-            mask = atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
-            atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
-
-            # get the data based on atlas map
-            data = hcp_dataset.get_data_surf(s,["Hello"],'ses-01')
-
-            return data
-    pass
+    return ts_mean
 
 if __name__ == "__main__":
     make_mdtb_suit()
