@@ -198,12 +198,9 @@ class DataSetHcpResting(DataSet):
             if (idx == 0) | (idx == 1): # just for cortex left (idx = 0) and cortex right (idx = 1)
                 # get the values corresponding to the brain model
                 bm_vals = ts_array[:, slc]
-                # get the voxels/vertices corresponding to the current brain model
-                bm_indices = bm.vertex  # excludes medial wall vertices???????
-                surf_data = np.zeros((bm_vals.shape[1], bm_vals.shape[0]), dtype=bm_vals.dtype)
-                surf_data[:, :] = bm_vals.T
-
-                ts_list.append(surf_data)
+                ts_list.append(bm_vals)
+            else:
+                break
         return ts_list
 
     def get_data_fnames(self, participant_id, session_id=None):
@@ -258,6 +255,8 @@ class DataSetHcpResting(DataSet):
 
     def get_data(self, participant_id, 
                  atlas_maps, 
+                 label_objs, 
+                 mask_obj,
                  sess_id = None):
         """
         atlas maps only needed for the cerebellum!
@@ -265,7 +264,6 @@ class DataSetHcpResting(DataSet):
 
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id,sess_id)
-        ts_list = []
         for f in fnames:
             # load the cifti 
             ts_cifti = nb.load(f)
@@ -273,11 +271,30 @@ class DataSetHcpResting(DataSet):
             # get the ts in volume for subcorticals
             ts_vol = self._volume_from_cifti(self, ts_cifti, save = False)
             # transfer to suit space applying the deformation
-            ts_list.append(am.get_data4D(ts_vol,atlas_maps))
+            ts_cerebellum = am.get_data4D(ts_vol,atlas_maps)
 
             # get the ts in surface for corticals
-            ts_list.append(self._surf_from_cifti(self, ts_cifti, save = False))
-        return
+            ts_32k = self._surf_from_cifti(self, ts_cifti, save = False)
+
+            # get the average within parcels for left and right hemi
+            ts_parcel = []
+            for hemi in [0, 1]:
+                ts_parcel.append(am.get_average_data(data = ts_32k[hemi], labels=label_objs[hemi], mask = mask_obj[hemi]))
+            
+            # concatenate them into a single array for correlation calculation
+            ts_cortex = np.concatenate(ts_parcel, axis = 1)
+
+            # calculate functional connectivity matrix
+            ## no need to define new variables, but still ... 
+            Y = ts_cerebellum.copy()
+            X = ts_cortex.copy()
+
+            # subtract mean
+            X = X - X.mean(axis = 0, keepdims = True)
+            Y = Y - Y.mean(axis = 0, keepdims = True)
+            coef = Y.T @ X
+
+        return coef
 
 if __name__ == '__main__':
     A = DataSetHcpResting('Y:\data\FunctionalFusion\HCP')
