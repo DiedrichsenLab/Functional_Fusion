@@ -143,17 +143,16 @@ class DataSetHcpResting(DataSet):
         self.all_sub = self.get_participants()
         self.derivative_dir = self.base_dir + '/derivatives'
 
-    def _volume_from_cifti(self, fname, save = False):
+    def _volume_from_cifti(self, ts_cifti, save = False):
         """
         Gets the 4D nifti object containing the time series
         for all the subcortical structures
         Args:
-            fname (str) - name of the file
+            ts_cifti (cifti obj ) - cifti object of the time series
             save (Boolean) - set to True if you want to save the 4D nifti (NOT IMPLEMENTED YET)
         Returns:
             nii_vol(nifti vol object) - nifti object containing the time series of subcorticals
         """
-        ts_cifti = nb.load(fname)
         # get brain axis models
         bmf = ts_cifti.header.get_axis(1)
         # get the data array with all the time points, all the structures
@@ -179,32 +178,28 @@ class DataSetHcpResting(DataSet):
         #     nb.save(nii_vol,ts_nifti)
         return nii_vol_4d
 
-    def _surf_from_cifti(self, fname, save = False):
+    def _surf_from_cifti(self, ts_cifti, save = False):
         """
         Gets the time series of cortical surface vertices (Left and Right)
         Args:
-            fname (str) - name of the file
+            ts_cifti (cifti obj) - cifti object of time series
             save (Boolean) - set to True if you want to save the 4D nifti (NOT IMPLEMENTED YET)
         Returns:
             cii (cifti object) - contains the time series for the cortex
         """
-        ts_cifti = nb.load(fname)
         # get brain axis models
         bmf = ts_cifti.header.get_axis(1)
-        print(dir(bmf))
+        # print(dir(bmf))
         # get the data array with all the time points, all the structures
         ts_array = ts_cifti.get_fdata()
         ts_list = []
         for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
-            print(nam)
             # just get the cortical surfaces
             if (idx == 0) | (idx == 1): # just for cortex left (idx = 0) and cortex right (idx = 1)
                 # get the values corresponding to the brain model
                 bm_vals = ts_array[:, slc]
-                print(bm_vals.shape)
                 # get the voxels/vertices corresponding to the current brain model
                 bm_indices = bm.vertex  # excludes medial wall vertices???????
-                print(bm_indices)
                 surf_data = np.zeros((bm_vals.shape[1], bm_vals.shape[0]), dtype=bm_vals.dtype)
                 surf_data[:, :] = bm_vals.T
 
@@ -224,41 +219,65 @@ class DataSetHcpResting(DataSet):
         fnames = [f'{dir}/sub-{participant_id}_{session_id}_space-fsLR32k_run-{r:02}.dtseries.nii' for r in [1, 2]]
         return fnames
 
-    def get_data_vol(self, participant_id, 
-                 atlas_maps, 
-                 sess_id=None,
-                 ):
-        # print(f"I'm in get_data")
-        # get the file name for the cifti time series
-        fnames = self.get_data_fnames(participant_id,sess_id)
+    # def get_data_vol(self, participant_id, 
+    #              atlas_maps, 
+    #              sess_id=None,
+    #              ):
+    #     # print(f"I'm in get_data")
+    #     # get the file name for the cifti time series
+    #     fnames = self.get_data_fnames(participant_id,sess_id)
         
-        # get the volumetric data for subcorticals
-        vol_ts = []
-        for file_name in fnames:
-            # for subcorticals
-            vol_4D = self._volume_from_cifti(file_name)
+    #     # get the volumetric data for subcorticals
+    #     vol_ts = []
+    #     for file_name in fnames:
+    #         # for subcorticals
+    #         vol_4D = self._volume_from_cifti(file_name)
+
             
-            # get cerebellar time series in suit space
-            vol_ts.append(am.get_data4D(vol_4D,atlas_maps))
+            
+    #         # get cerebellar time series in suit space
+    #         vol_ts.append(am.get_data4D(vol_4D,atlas_maps))
         
-        return vol_ts
+    #     return vol_ts
 
-    def get_data_surf(self, participant_id, 
+    # def get_data_surf(self, participant_id, 
+    #              atlas_maps, 
+    #              sess_id=None,
+    #              ):
+    #     # get the file name for the cifti time series
+    #     fnames = self.get_data_fnames(participant_id,sess_id)
+        
+    #     # get the volumetric data for subcorticals
+    #     surf_ts = []
+    #     for file_name in fnames:
+
+    #         # for cortical hemispheres
+    #         surf_ts.append(self._surf_from_cifti(file_name))
+        
+    #     return surf_ts
+
+    def get_data(self, participant_id, 
                  atlas_maps, 
-                 sess_id=None,
-                 ):
-        # print(f"I'm in get_data")
+                 sess_id = None):
+        """
+        atlas maps only needed for the cerebellum!
+        """
+
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id,sess_id)
-        
-        # get the volumetric data for subcorticals
-        surf_ts = []
-        for file_name in fnames:
+        ts_list = []
+        for f in fnames:
+            # load the cifti 
+            ts_cifti = nb.load(f)
 
-            # for cortical hemispheres
-            surf_ts.append(self._surf_from_cifti(file_name))
-        
-        return surf_ts
+            # get the ts in volume for subcorticals
+            ts_vol = self._volume_from_cifti(self, ts_cifti, save = False)
+            # transfer to suit space applying the deformation
+            ts_list.append(am.get_data4D(ts_vol,atlas_maps))
+
+            # get the ts in surface for corticals
+            ts_list.append(self._surf_from_cifti(self, ts_cifti, save = False))
+        return
 
 if __name__ == '__main__':
     A = DataSetHcpResting('Y:\data\FunctionalFusion\HCP')
