@@ -17,6 +17,7 @@ import sys
 sys.path.append('.')
 import surfAnalysisPy as surf
 import util
+import matrix
 
 class Atlas():
     def __init__(self):
@@ -127,7 +128,7 @@ class AtlasSurface(Atlas):
         X[self.vox[0],self.vox[1],self.vox[2]]=data
         mapped = nb.Nifti1Image(X,self.mask_img.affine)
         return mapped
-
+    
     def get_brain_model_axis(self):
         """ Returns brain model axis
 
@@ -332,6 +333,40 @@ def get_data4D(vol_4D,atlas_maps):
             d[np.nansum(at.vox_weight,axis=1)==0]=np.nan
             data[i][j,:]=d
     return data
+
+def get_average_data(data, labels_vec, mask_vec = None):
+    """
+    takes a set of vertices for a label, mask the vertices according to a mask
+    extracts the average data for all the labels
+    Args:
+        data(np.ndarray) - data you want to average within each label
+        labels_vec(np.ndarray or list?) - an array containing the corresponding label for voxels or vertices
+        mask_vec(np.ndarray or list) - an array of 0 and 1 (0 for voxels/vertices not in the mask)
+    Returns:
+        avg_data(np.ndarray: x by # of labels) - average data within all the labels 
+    """
+
+    # nb load the label file if a string is passed
+    if isinstance(labels_vec, str):
+        labels = nb.load(labels_vec)
+        labels_vec = labels.agg_data()
+
+    # apply the mask if not none
+    if mask_vec != None:
+        # load if string is passed
+        if isinstance(mask_vec, str):
+            mask = nb.load(mask_vec)
+            mask_vec = mask.agg_data()
+        labels_vec = labels_vec[mask_vec == 1]
+
+    # create an indicator matrix that will be used to get the mean data
+    ## discards label 0
+    M = matrix.indicator(labels_vec, postive = True)
+
+    # get the average data
+    avg_data = (data @ M) / np.sum(M, axis = 0)
+
+    return avg_data
 
 def data_to_cifti(data,atlas_maps,names=None):
     """Transforms a list of data sets and list of atlas maps
