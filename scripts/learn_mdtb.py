@@ -71,7 +71,6 @@ def get_mdtb_parcel(do_plot=True):
             suit_atlas.world[0],
             suit_atlas.world[1],
             suit_atlas.world[2],0)
-    Nifti = suit_atlas.data_to_nifti(data)
     
     # Read the MDTB colors: Add additional row for parcel 0 
     color_file = atlas_dir + '/tpl-SUIT/atl-MDTB10.lut'
@@ -81,6 +80,7 @@ def get_mdtb_parcel(do_plot=True):
     
     # Map Plot if requested (for a check) 
     if do_plot: 
+        Nifti = suit_atlas.data_to_nifti(data)
         surf_data = suit.flatmap.vol_to_surf(Nifti,stats='mode')
         fig = suit.flatmap.plot(surf_data,render='plotly',overlay_type='label',cmap= MDTBcolors)
         fig.show()
@@ -95,15 +95,15 @@ def learn_single(ses_id = 'ses-s1'):
     K = 10 
 
     # Make arrangement model and initialize the prior from the MDTB map 
-    prior_w = 2.0 # Weight of prior 
-    mdtb_parcel,mdtb_colors = get_mdtb_parcel()
     armodel = ar.ArrangementModel(K,P)
+    prior_w = 3.0 # Weight of prior 
+    mdtb_parcel,mdtb_colors = get_mdtb_parcel()
     logpi = ar.expand_mn(mdtb_parcel.reshape(1,P)-1,K)
     logpi = logpi.squeeze()*prior_w
     # Set parcel 0 to unassigned 
     logpi[:,mdtb_parcel==0]=0
     armodel.logpi = logpi
-    
+
     pass
 
 if __name__ == "__main__":
