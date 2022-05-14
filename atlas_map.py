@@ -14,7 +14,7 @@ import os
 import SUITPy as suit
 
 import sys
-sys.path.append('.')
+sys.path.append('D:\python_workspace')
 import surfAnalysisPy as surf
 import util
 import matrix
@@ -227,7 +227,7 @@ class AtlasMapDeform(AtlasMap):
             self.vox_weight=np.zeros((N,c.max()+1))
             self.vox_list[a,c]=linindx[b]
             self.vox_weight[a,c]=W[a,b]
-            self.vox_weight = self.vox_weight / self.vox_weight.sum(axis=1,     keepdims=True)
+            self.vox_weight = self.vox_weight / self.vox_weight.sum(axis=1, keepdims=True)
         pass
 
 class AtlasMapSurf(AtlasMap):
