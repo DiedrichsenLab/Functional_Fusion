@@ -9,9 +9,12 @@ from dataset import DataSetMDTB
 from dataset import DataSetHcpResting
 import nibabel as nb
 from matrix import indicator
+import sys
 
-# base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
-base_dir = 'Y:\data\FunctionalFusion'
+base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
+if sys.platform == "win32":  # for windows user
+    base_dir = 'Y:/data/FunctionalFusion'
+
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
