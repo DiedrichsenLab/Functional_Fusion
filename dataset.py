@@ -297,7 +297,11 @@ class DataSetHcpResting(DataSet):
 
             # X is now shape of (1200, n_corticaltess) ndarray
             # Y is now shape of (1200, n_suit_voxel) ndarray
-            coef = Y.T @ X
+            a = np.nansum((X - np.nanmean(X, axis=0)) ** 2, axis=0)
+            b = np.nansum((Y - np.nanmean(Y, axis=0)) ** 2, axis=0)
+            var = np.sqrt(b.reshape(-1, 1) @ a.reshape(1, -1))
+            cov = Y.T @ X
+            coef = cov/var
 
         return coef
 
