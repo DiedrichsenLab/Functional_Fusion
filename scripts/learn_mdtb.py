@@ -10,12 +10,19 @@ import generativeMRF.full_model as fm
 import generativeMRF.spatial as sp
 import generativeMRF.arrangements as ar
 import generativeMRF.emissions as em
+import generativeMRF.evaluation as ev
 import torch as pt
-import Functional_Fusion.matrix as matrix 
+import Functional_Fusion.matrix as matrix
+import matplotlib.pyplot as plt
+import sys
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
+
+if sys.platform == "win32":
+    base_dir = 'Y:\data\FunctionalFusion'
+    sys.path.append('../')
 
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
@@ -84,9 +91,30 @@ def get_mdtb_parcel(do_plot=True):
         surf_data = suit.flatmap.vol_to_surf(Nifti,stats='mode')
         fig = suit.flatmap.plot(surf_data,render='plotly',overlay_type='label',cmap= MDTBcolors)
         fig.show()
-    return data,MDTBcolors 
+    return data,MDTBcolors
 
-def learn_single(ses_id = 'ses-s1'):
+def _plot_maps(data, sub=None, render_type='plotly', save=None):
+    # Read the MDTB colors: Add additional row for parcel 0
+    color_file = atlas_dir + '/tpl-SUIT/atl-MDTB10.lut'
+    color_info = pd.read_csv(color_file, sep=' ', header=None)
+    MDTBcolors = np.zeros((11, 3))
+    MDTBcolors[1:11, :] = color_info.iloc[:, 1:4].to_numpy()
+
+    if sub is not None:
+        Nifti = suit_atlas.data_to_nifti(data[sub])
+    else:
+        Nifti = suit_atlas.data_to_nifti(data)
+
+    surf_data = suit.flatmap.vol_to_surf(Nifti, stats='mode')
+    fig = suit.flatmap.plot(surf_data, render=render_type,
+                            overlay_type='label', cmap=MDTBcolors)
+
+    if save is not None:
+        fig.write_image(save)
+
+    fig.show()
+
+def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
     """Learn a single data set 
     """
 
@@ -94,15 +122,43 @@ def learn_single(ses_id = 'ses-s1'):
     P = Data.shape[2]
     K = 10 
 
-    # Make arrangement model and initialize the prior from the MDTB map 
-    armodel = ar.ArrangementModel(K,P)
+    # Make arrangement model and initialize the prior from the MDTB map
     prior_w = 3.0 # Weight of prior 
     mdtb_parcel,mdtb_colors = get_mdtb_parcel()
     logpi = ar.expand_mn(mdtb_parcel.reshape(1,P)-1,K)
     logpi = logpi.squeeze()*prior_w
     # Set parcel 0 to unassigned 
     logpi[:,mdtb_parcel==0]=0
-    armodel.logpi = logpi
+
+    # Making emission model for fitting, the input N here
+    # doesn't matter and will be overwrite internally by X
+    ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
+                                         remove_redundancy=False)
+    em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign, uniform_kappa=True)
+    em_model.initialize(Data)
+
+    # Initilize parameters from prior
+    group_prior = logpi.softmax(dim=0).unsqueeze(0).repeat(em_model.num_subj,1,1)
+    em_model.Mstep(group_prior)
+    M = fm.FullModel(ar_model, em_model)
+
+    # Step 5: Estimate the parameter thetas to fit the new model using EM
+    M, ll, theta, U_hat = M.fit_em(Y=Data, iter=max_iter, tol=0.00001, fit_arrangement=True)
+
+    # plot emission log-likelihood
+    plt.plot(ll, color='b')
+    plt.show()
+
+    # PLOT 1 - group logpi
+    _plot_maps(pt.argmax(M.arrange.logpi, dim=0)+1, save="group_logpi.pdf")
+
+    # PLOT 2 - top row: the indiviudal Uhat without group logpi
+    U_hat_em = M.emission.Estep()
+    _plot_maps(pt.argmax(U_hat_em, dim=1)+1, sub=0, save="sub0_U_emission.pdf")
+
+    # PLOT 3 - bottom row: the indiviudal Uhat + group logpi
+    U_hat_complete, _ = M.Estep(Y=Data)
+    _plot_maps(pt.argmax(U_hat_complete, dim=1)+1, sub=0, save="sub0_U_complete.pdf")
 
     pass
 
