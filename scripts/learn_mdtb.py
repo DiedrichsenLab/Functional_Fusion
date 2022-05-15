@@ -123,7 +123,7 @@ def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
     K = 10 
 
     # Make arrangement model and initialize the prior from the MDTB map
-    prior_w = 3.0 # Weight of prior 
+    prior_w = 7.0 # Weight of prior
     mdtb_parcel,mdtb_colors = get_mdtb_parcel()
     logpi = ar.expand_mn(mdtb_parcel.reshape(1,P)-1,K)
     logpi = logpi.squeeze()*prior_w
@@ -152,13 +152,17 @@ def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
     # PLOT 1 - group logpi
     _plot_maps(pt.argmax(M.arrange.logpi, dim=0)+1, save="group_logpi.pdf")
 
-    # PLOT 2 - top row: the indiviudal Uhat without group logpi
-    U_hat_em = M.emission.Estep()
-    _plot_maps(pt.argmax(U_hat_em, dim=1)+1, sub=0, save="sub0_U_emission.pdf")
+    # Make inference on first half of the data - now Data shape (n_sub, 29, P)
+    M.emission.X = pt.tensor(Xdesign[0:29,:])
+    U_hat_em = M.emission.Estep(Y=Data[:,0:29,:])
+    U_hat_complete, _ = M.Estep(Y=Data[:,0:29,:])
 
-    # PLOT 3 - bottom row: the indiviudal Uhat + group logpi
-    U_hat_complete, _ = M.Estep(Y=Data)
-    _plot_maps(pt.argmax(U_hat_complete, dim=1)+1, sub=0, save="sub0_U_complete.pdf")
+    for s in [8,9,10,11]:
+        # PLOT 2 - top row: the indiviudal Uhat without group logpi
+        _plot_maps(pt.argmax(U_hat_em, dim=1)+1, sub=s)
+
+        # PLOT 3 - bottom row: the indiviudal Uhat + group logpi
+        _plot_maps(pt.argmax(U_hat_complete, dim=1)+1, sub=s)
 
     pass
 
