@@ -140,11 +140,11 @@ class DataSetMDTB(DataSet):
             # contrast for all instructions
             CI = matrix.indicator(info.run*info.instruction,positive=True)
             C = np.c_[C,CI]
-            reg_in = np.arange(n_cond*2,dtype=int)
+            reg_in = np.arange(n_cond*16,dtype=int)
             # Subset of info sutructire
             ii = (info.cond_num>0)
             data_info = info[ii].copy().reset_index()
-            names=[f'{d.cond_name}-run{d.half}' for i,d in data_info.iterrows()]
+            names=[f'{d.cond_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
         elif type == 'CondAll':
             pass
         pass
