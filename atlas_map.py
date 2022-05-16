@@ -278,7 +278,6 @@ def get_data3D(fnames,atlas_maps):
 
     n_atlas = len(atlas_maps)
     n_files = len(fnames)
-    print(n_files)
     data = []
     # Make the empty data structures
     for at in atlas_maps:
@@ -291,7 +290,6 @@ def get_data3D(fnames,atlas_maps):
             raise(NameError('use get_data4D for 4D data'))
         # Map this file into the data structures
         X = X.ravel()
-        print(X.shape)
         for i,at in enumerate(atlas_maps):
             d=X[at.vox_list] * at.vox_weight  # Expanded data
             d = np.nansum(d,axis=1)
