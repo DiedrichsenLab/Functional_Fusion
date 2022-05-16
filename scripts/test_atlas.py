@@ -138,7 +138,7 @@ def make_hcp_tessel0042():
 
     return ts_mean
 
-def hcp_fc_fp():
+def hcp_fc_fp(tessel=162):
     """
     Example to get the functional connectivity finger print for hcp resting state
     """
@@ -155,8 +155,8 @@ def hcp_fc_fp():
     # get the tessellation file
     tessel_dir = atlas_dir + '/tpl-fs32k'
     # get the gifti file for the label
-    gii_labels = [nb.load(tessel_dir + '/Icosahedron-162.32k.L.label.gii'),
-                  nb.load(tessel_dir + '/Icosahedron-162.32k.R.label.gii')]
+    gii_labels = [nb.load(tessel_dir + f'/Icosahedron-{tessel}.32k.L.label.gii'),
+                  nb.load(tessel_dir + f'/Icosahedron-{tessel}.32k.R.label.gii')]
 
     # get the gifti of the mask
     gii_mask = [nb.load(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'),

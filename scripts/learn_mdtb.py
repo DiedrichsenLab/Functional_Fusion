@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 import atlas_map as am
-from dataset import DataSetMDTB
+from dataset import DataSetMDTB, DataSetHcpResting
 import nibabel as nb
 import SUITPy as suit
 import generativeMRF.full_model as fm
@@ -24,13 +24,16 @@ if sys.platform == "win32":
     base_dir = 'Y:\data\FunctionalFusion'
     sys.path.append('../')
 
+hcp_dir = base_dir + '/HCP'
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
 # Globals are ugly, but somewhat usegul here 
 mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
 suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
+
 mdtb_dataset = DataSetMDTB(data_dir)
+hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
 
 def show_mdtb_suit(subj,sess,cond): 
     T = mdtb_dataset.get_participants()
@@ -67,6 +70,87 @@ def get_mdtb_data(ses_id='ses-s1'):
     Data -=(Xhalf@np.linalg.pinv(Xhalf)@Data)
 
     return Data, Xcond
+
+def get_hcp_data(tessel=162, ses_id=['ses-01'], range=None, save=False):
+    """Get the HCP resting-state connnectivity profile
+       The running time of this function is very slow (~1m per subject/sess)
+    Args:
+        tessel: the cortical map used to generate connectivity
+        ses_id: session id
+        range: the index of subject among unrelated 100 dataset
+               default - None, which means get all participants
+    Returns:
+        the HCP rs-FC, shape (n_subj, N, P) - N is based on tessel
+    """
+    suit_atlas = am.AtlasVolumetric('SUIT', mask_img=mask)
+    deform = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
+    MNI_mask = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152AsymC_res-2_gmcmask2.nii'
+
+    # get the tessellation file
+    tessel_dir = atlas_dir + '/tpl-fs32k'
+    # get the gifti file for the label
+    gii_labels = [nb.load(tessel_dir + f'/Icosahedron-{tessel}.32k.L.label.gii'),
+                  nb.load(tessel_dir + f'/Icosahedron-{tessel}.32k.R.label.gii')]
+
+    # get the gifti of the mask
+    gii_mask = [nb.load(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'),
+                nb.load(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii')]
+
+    T = hcp_dataset.get_participants()
+
+    if range is not None:
+        id = T.participant_id.values[range]
+    else:
+        id = T.participant_id.values
+
+    output = []
+    for s in id:
+        con_fp = []  # connectivity finger print list
+        for sess in ses_id:
+            # create a mapping based on atlas deformation
+            atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s, deform, MNI_mask)
+            # print(f"building atlas map")
+            atlas_map.build(smooth=2.0)  # smoothing level?
+
+            # get the connectivity matrix and put it in a list
+            data = hcp_dataset.get_data(s, [atlas_map], gii_labels, gii_mask, sess)
+
+            if save:
+                # save as np.ndarry as .csv under the same folder in fusion
+                print(f'Saving sub-{s}, {sess} rs-FC')
+                target_dir = hcp_dir + f'/derivatives/{s}/func/{sess}'
+                pd.DataFrame(data.T).to_csv(target_dir+f'/sub-{s}_{sess}_tessel-{tessel}_conn.csv')
+
+            con_fp.append(pt.tensor(data.T))
+
+        sub_data = pt.vstack(con_fp)
+        output.append(sub_data)
+
+    return pt.stack(output)  # output is torch tensor
+
+def get_hcp_data_from_csv(tessel=162, ses_id=['ses-01'], range=None):
+
+    T = hcp_dataset.get_participants()
+
+    if range is not None:
+        id = T.participant_id.values[range]
+    else:
+        id = T.participant_id.values
+
+    output = []
+    for s in id:
+        con_fp = []  # connectivity finger print list
+        for sess in ses_id:
+            print(f'Loading sub-{s}, {sess} rs-FC')
+            target_dir = hcp_dir + f'/derivatives/{s}/func/{sess}'
+            data = pd.read_csv(target_dir+f'/sub-{s}_{sess}_tessel-{tessel}_conn.csv', index_col=0)
+
+            con_fp.append(pt.tensor(np.asarray(data)))
+
+        sub_data = pt.vstack(con_fp)
+        output.append(sub_data)
+
+    return pt.stack(output)  # output is torch tensor
 
 def get_mdtb_parcel(do_plot=True):
     """Samples the existing MDTB10 parcellation
@@ -117,7 +201,8 @@ def _plot_maps(data, sub=None, render_type='plotly', save=None):
 def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
     """Learn a single data set 
     """
-
+    # Data_HCP = get_hcp_data(ses_id=['ses-01','ses-02'], range=np.arange(2), save=True)
+    Data_HCP = get_hcp_data_from_csv(ses_id=['ses-01','ses-02'], range=np.arange(2))
     Data,Xdesign = get_mdtb_data(ses_id)
     P = Data.shape[2]
     K = 10 

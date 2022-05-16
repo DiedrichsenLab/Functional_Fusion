@@ -264,6 +264,7 @@ class DataSetHcpResting(DataSet):
 
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id,sess_id)
+        coef = []
         for f in fnames:
             # load the cifti 
             ts_cifti = nb.load(f)
@@ -301,9 +302,9 @@ class DataSetHcpResting(DataSet):
             b = np.nansum((Y - np.nanmean(Y, axis=0)) ** 2, axis=0)
             var = np.sqrt(b.reshape(-1, 1) @ a.reshape(1, -1))
             cov = Y.T @ X
-            coef = cov/var
+            coef.append(cov/var)
 
-        return coef
+        return np.concatenate((coef[0], coef[1]), axis=1)  # shape (P, 2 * n_tessl)
 
 if __name__ == '__main__':
     A = DataSetHcpResting('Y:\data\FunctionalFusion\HCP')
