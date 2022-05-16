@@ -85,14 +85,32 @@ class DataSetMDTB(DataSet):
 
     def get_data(self,participant_id,
                     atlas_maps,
-                    sess_id,
+                    ses_id,
                     type='CondSes'):
-        dir = self.estimates_dir.format(participant_id) + f'/{sess_id}'
-        fnames,info = self.get_data_fnames(participant_id,sess_id)
+        """ MDTB extraction of atlasmap locations 
+        from nii files - and filterting or averaring 
+        as specified. 
+
+        Args:
+            participant_id (str): ID of participant 
+            atlas_maps (list): List of atlasmaps 
+            ses_id (str): Name of session 
+            type (str): Type of extraction: 
+                'CondSes': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run 
+                    Defaults to 'CondSes'.
+
+        Returns:
+            data_n: Univariately prewhitened data
+            data_info: Pandas data frame with information
+            names: Names for CIFTI-file per roww
+        """
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+        fnames,info = self.get_data_fnames(participant_id,ses_id)
         # data = np.random.normal(0,1,(737,atlas_maps[0].P))
         data = am.get_data(fnames,atlas_maps)
         # Load design matrix for optimal reweighting
-        X = np.load(dir+f'/{participant_id}_{sess_id}_designmatrix.npy')
+        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
 
         # determine the different halfs
         info['half']=2-(info.run<9)
@@ -111,29 +129,41 @@ class DataSetMDTB(DataSet):
             ii = ((info.run == 1) | (info.run == 9)) & (info.cond_num>0)
             data_info = info[ii].copy().reset_index()
             names=[f'{d.cond_name}-sess{d.half}' for i,d in data_info.iterrows()]
-        elif type == 'TaskSes':
-            pass
-        elif type == 'AllSes':
+        elif type == 'CondRun':
+            n_cond = np.max(info.cond_num)
+            reg = (info.run-1)*n_cond + info.cond_num
+            reg[info.instruction==1] = 0
+            # Contrast for the regressors of interst
+            C = matrix.indicator(reg,positive=True) # Drop the instructions
+            # contrast for all instructions
+            CI = matrix.indicator(info.run*info.instruction,positive=True)
+            C = np.c_[C,CI]
+            reg_in = np.arange(n_cond*2,dtype=int)
+            # Subset of info sutructire
+            ii = (info.cond_num>0)
+            data_info = info[ii].copy().reset_index()
+            names=[f'{d.cond_name}-run{d.half}' for i,d in data_info.iterrows()]
+        elif type == 'CondAll':
             pass
         pass
         # Add the block regressors
         C = sl.block_diag(C,np.eye(16))
         Xn = X @ C
 
-        # get the resms and prewhiten the data
+        # Get the resms and prewhiten the data
         data_n = []
         for i in range(len(data)):
+            # Prewhiten the data univariately
             resms = data[i][-1,:]
             data[i] = data[i][0:-1,:]
             data[i] = data[i] / np.sqrt(np.abs(resms))
             # Append the intercept regressors
             data[i] = np.concatenate([data[i],np.zeros((16,data[i].shape[1]))])
-
+            # Do the averaging / reweighting: 
             d = np.linalg.solve(Xn.T @ Xn, Xn.T @ X @ data[i])
+            # Put the data in the list 
             data_n.append(d[reg_in,:])
         return data_n, data_info, names
-
-
 
 class DataSetHcpResting(DataSet):
     def __init__(self, dir):
