@@ -14,6 +14,7 @@ import os
 import SUITPy as suit
 import surfAnalysisPy as surf
 import util
+import matrix
 
 class Atlas():
     def __init__(self):
@@ -124,7 +125,7 @@ class AtlasSurface(Atlas):
         X[self.vox[0],self.vox[1],self.vox[2]]=data
         mapped = nb.Nifti1Image(X,self.mask_img.affine)
         return mapped
-
+    
     def get_brain_model_axis(self):
         """ Returns brain model axis
 
@@ -196,6 +197,7 @@ class AtlasMapDeform(AtlasMap):
                     self.atlas.world[1],
                     self.atlas.world[2],1).squeeze().T
         N = atlas_ind.shape[1] # Number of locations in atlas
+
         if smooth is None: # Use nearest neighbor interpolation
             self.vox_list,self.vox_weight = util.coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
         else:              # Use smoothing kernel of specific size
@@ -222,7 +224,7 @@ class AtlasMapDeform(AtlasMap):
             self.vox_weight=np.zeros((N,c.max()+1))
             self.vox_list[a,c]=linindx[b]
             self.vox_weight[a,c]=W[a,b]
-            self.vox_weight = self.vox_weight / self.vox_weight.sum(axis=1,     keepdims=True)
+            self.vox_weight = self.vox_weight / self.vox_weight.sum(axis=1, keepdims=True)
         pass
 
 class AtlasMapSurf(AtlasMap):
@@ -264,7 +266,7 @@ class AtlasMapSurf(AtlasMap):
         self.vox_list = self.vox_list.T
         self.vox_weight = self.vox_weight.T
 
-def get_data(fnames,atlas_maps):
+def get_data3D(fnames,atlas_maps):
     """Extracts the data for a list of fnames
     for a list of atlas_maps. This is usually called by DataSet.get_data()
     to extract the required raw data before processing it further
@@ -273,8 +275,10 @@ def get_data(fnames,atlas_maps):
         fnames (list): list of file names to be sampled
         atlas_maps (list): list of built atlas-map objects
     """
+
     n_atlas = len(atlas_maps)
     n_files = len(fnames)
+    print(n_files)
     data = []
     # Make the empty data structures
     for at in atlas_maps:
@@ -282,8 +286,42 @@ def get_data(fnames,atlas_maps):
     for j,f in enumerate(fnames):
         V = nb.load(f)
         X = V.get_fdata()
+
         if (X.ndim>3):
-            raise(NameError('extraction right now only for 3d-niftis'))
+            raise(NameError('use get_data4D for 4D data'))
+        # Map this file into the data structures
+        X = X.ravel()
+        print(X.shape)
+        for i,at in enumerate(atlas_maps):
+            d=X[at.vox_list] * at.vox_weight  # Expanded data
+            d = np.nansum(d,axis=1)
+            d[np.nansum(at.vox_weight,axis=1)==0]=np.nan
+            data[i][j,:]=d
+    return data
+
+def get_data4D(vol_4D,atlas_maps):
+    """Extracts the data for a list of fnames
+    for a list of atlas_maps. This is usually called by DataSet.get_data()
+    to extract the required raw data before processing it further
+
+    Args:
+        fnames (list): list of file names to be sampled
+        atlas_maps (list): list of built atlas-map objects
+    """
+
+    # temp code:
+    # convert 4D to 3D
+    vol_3D_list = nb.funcs.four_to_three(vol_4D)
+
+    n_atlas = len(atlas_maps)
+    n_files = len(vol_3D_list)
+    data = []
+    # Make the empty data structures
+    for at in atlas_maps:
+        data.append(np.full((n_files,at.vox_list.shape[0]),np.nan))
+    for j in range(len(vol_3D_list)):
+        V = vol_3D_list[j]
+        X = V.get_fdata()
         # Map this file into the data structures
         X = X.ravel()
         for i,at in enumerate(atlas_maps):
@@ -292,6 +330,36 @@ def get_data(fnames,atlas_maps):
             d[np.nansum(at.vox_weight,axis=1)==0]=np.nan
             data[i][j,:]=d
     return data
+
+def get_average_data(data, labels, mask = None):
+    """
+    takes a set of vertices for a label, mask the vertices according to a mask
+    extracts the average data for all the labels
+    Args:
+        data(np.ndarray) - data you want to average within each label
+        labels(NiftiImage object) - an array containing the corresponding label for voxels or vertices
+        mask(NiftiImage object) - an array of 0 and 1 (0 for voxels/vertices not in the mask)
+    Returns:
+        avg_data(np.ndarray: x by # of labels) - average data within all the labels 
+    """
+
+    # get the array containing labels of each voxel/vertex
+    labels_vec = labels.agg_data()
+
+    # apply the mask if not none
+    if mask != None:
+
+        mask_vec = mask.agg_data()
+        labels_vec = labels_vec[mask_vec == 1]
+
+    # create an indicator matrix that will be used to get the mean data
+    ## discards label 0
+    M = matrix.indicator(labels_vec, positive = True)
+
+    # get the average data
+    avg_data = (data @ M) / np.sum(M, axis = 0)
+
+    return avg_data
 
 def data_to_cifti(data,atlas_maps,names=None):
     """Transforms a list of data sets and list of atlas maps
