@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import atlas_map as am
 from dataset import DataSetMDTB, DataSetHcpResting
+from scipy.linalg import block_diag
 import nibabel as nb
 import SUITPy as suit
 import generativeMRF.full_model as fm
@@ -49,27 +50,31 @@ def show_mdtb_suit(subj,sess,cond):
     print(f'Showing {D.cond_name[cond]}')
     pass 
 
-def get_mdtb_data(ses_id='ses-s1'):
+def get_mdtb_data(ses_id='ses-s1', type='CondSes'):
     T = mdtb_dataset.get_participants()
     
     # Assemble the data 
     Data = None 
     for i,s in enumerate (T.participant_id): 
 
-        C = nb.load(mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses_id}_CondSes.dscalar.nii')
+        C = nb.load(mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses_id}_{type}.dscalar.nii')
         if Data is None:
             Data = np.zeros((len(T.participant_id),C.shape[0],C.shape[1]))
         Data[i,:,:] = C.get_fdata()
 
     # Get design matrix 
-    D = pd.read_csv(mdtb_dataset.data_dir.format(s) + f'/{s}_{ses_id}_info-CondSes.tsv',sep='\t')
+    D = pd.read_csv(mdtb_dataset.data_dir.format(s) + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
     Xcond = matrix.indicator(D.cond_num)
 
     # center the data for each voxel for each half of the experiment 
-    Xhalf = matrix.indicator(D.half)
-    Data -=(Xhalf@np.linalg.pinv(Xhalf)@Data)
+    if type=='CondSes':
+        Xmean = matrix.indicator(D.half)
+        Data -= (Xmean @ np.linalg.pinv(Xmean) @ Data)
+    elif type=='CondRun':
+        Xmean = matrix.indicator(D.run)
+        Data -= (Xmean @ np.linalg.pinv(Xmean) @ Data)
 
-    return Data, Xcond
+    return Data, Xcond, D
 
 def get_hcp_data(tessel=162, ses_id=['ses-01'], range=None, save=False):
     """Get the HCP resting-state connnectivity profile
@@ -177,7 +182,8 @@ def get_mdtb_parcel(do_plot=True):
         fig.show()
     return data,MDTBcolors
 
-def _plot_maps(data, sub=None, render_type='plotly', save=None):
+def _plot_maps(data, sub=None, stats='mode', render_type='plotly',
+               overlay='label', color=None, save=None):
     # Read the MDTB colors: Add additional row for parcel 0
     color_file = atlas_dir + '/tpl-SUIT/atl-MDTB10.lut'
     color_info = pd.read_csv(color_file, sep=' ', header=None)
@@ -189,9 +195,13 @@ def _plot_maps(data, sub=None, render_type='plotly', save=None):
     else:
         Nifti = suit_atlas.data_to_nifti(data)
 
-    surf_data = suit.flatmap.vol_to_surf(Nifti, stats='mode')
-    fig = suit.flatmap.plot(surf_data, render=render_type,
-                            overlay_type='label', cmap=MDTBcolors)
+    surf_data = suit.flatmap.vol_to_surf(Nifti, stats=stats)
+    if color is not None:
+        fig = suit.flatmap.plot(surf_data, render=render_type,
+                                overlay_type=overlay, cmap=MDTBcolors)
+    else:
+        fig = suit.flatmap.plot(surf_data, render=render_type,
+                                overlay_type=overlay)
 
     if save is not None:
         fig.write_image(save)
@@ -251,6 +261,113 @@ def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
 
     pass
 
+def learn_runs(K=10, max_iter=100, run_test=np.arange(58, 122),
+               runs=np.arange(1, 17), sub=None, do_plot=True):
+    Data_s1, Xdesign_s1, _ = get_mdtb_data('ses-s1')
+    Data_s2, Xdesign_s2, _ = get_mdtb_data('ses-s2')
+    Data = np.concatenate((Data_s1, Data_s2), axis=1)
+
+    # Create combined X design matrix
+    # Z1 = np.zeros((Xdesign_s1.shape[0], Xdesign_s2.shape[1]), dtype=Xdesign_s1.dtype)
+    # Z2 = np.zeros((Xdesign_s2.shape[0], Xdesign_s1.shape[1]), dtype=Xdesign_s2.dtype)
+    # Xdesign = np.asarray(np.bmat([[Xdesign_s1, Z1], [Z2, Xdesign_s2]]))
+    Xdesign = pt.tensor(block_diag(Xdesign_s1, Xdesign_s2))
+    del Data_s1, Data_s2, Xdesign_s1, Xdesign_s2
+
+    # Make arrangement model and initialize the prior from the MDTB map
+    P = Data.shape[2]
+    prior_w = 7.0  # Weight of prior
+    mdtb_parcel, mdtb_colors = get_mdtb_parcel(do_plot=False)
+    logpi = ar.expand_mn(mdtb_parcel.reshape(1, P) - 1, K)
+    logpi = logpi.squeeze() * prior_w
+    # Set parcel 0 to unassigned
+    logpi[:, mdtb_parcel == 0] = 0
+
+    # Making emission model for fitting, the input N here
+    # doesn't matter and will be overwrite internally by X
+    ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
+                                         remove_redundancy=False)
+    em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign, uniform_kappa=True)
+    em_model.initialize(Data)
+
+    # Initilize parameters from group prior and train the model
+    group_prior = logpi.softmax(dim=0).unsqueeze(0).repeat(em_model.num_subj,1,1)
+    em_model.Mstep(group_prior)
+    M = fm.FullModel(ar_model, em_model)
+    M, ll, theta, U_hat = M.fit_em(Y=Data, iter=max_iter, tol=0.00001, fit_arrangement=True)
+
+    # plot emission log-likelihood and group prior
+    plt.plot(ll, color='b')
+    plt.show()
+    # _plot_maps(pt.argmax(M.arrange.logpi, dim=0) + 1, save="group_logpi.pdf")
+    prior = pt.softmax(M.arrange.logpi, dim=0).unsqueeze(0).repeat(Data.shape[0], 1, 1)
+    M.emission.X = Xdesign[run_test, :]
+    group_baseline = ev.coserr(pt.tensor(Data[:, run_test, :]),
+                               pt.matmul(Xdesign[run_test], M.emission.V), prior,
+                               adjusted=True, soft_assign=True)
+    lower_bound = ev.coserr(pt.tensor(Data[:, run_test, :]),
+                            pt.matmul(Xdesign[run_test], M.emission.V),
+                            pt.softmax(M.emission.Estep(Y=Data[:,run_test,:]), dim=1),
+                            adjusted=True, soft_assign=True)
+
+    ############################# Cross-validation starts here #############################
+    # Make inference on the selected run's data - run_infer
+    Data_cv, Xdesign_cv, D = get_mdtb_data(ses_id='ses-s1', type='CondRun')
+    Xdesign_cv = pt.tensor(np.concatenate((Xdesign_cv,np.zeros((Xdesign_cv.shape[0], 32))), axis=1))
+    indices, cos_em, cos_complete, uhat_em_all, uhat_complete_all = [],[],[],[],[]
+    for i in runs:
+        indices.append(np.asarray(np.where(D.run==i)).reshape(-1))
+        acc_run_idx = np.concatenate(indices).ravel()
+        M.emission.X = Xdesign_cv[acc_run_idx,:]
+
+        # Infer on current accumulated runs data
+        U_hat_em = M.emission.Estep(Y=Data_cv[:,acc_run_idx,:])
+        U_hat_complete, _ = M.Estep(Y=Data_cv[:,acc_run_idx,:])
+        uhat_em_all.append(U_hat_em)
+        uhat_complete_all.append(U_hat_complete)
+
+        # Calculate cosine error/u abs error between another test data
+        # and U_hat inferred from testing
+        coserr_Uem = ev.coserr(pt.tensor(Data[:,run_test,:]),
+                               pt.matmul(Xdesign[run_test], M.emission.V),
+                               pt.softmax(U_hat_em, dim=1),
+                               adjusted=True, soft_assign=True)
+        coserr_Uall = ev.coserr(pt.tensor(Data[:,run_test,:]),
+                                pt.matmul(Xdesign[run_test], M.emission.V), U_hat_complete,
+                                adjusted=True, soft_assign=True)
+
+        cos_em.append(coserr_Uem)
+        cos_complete.append(coserr_Uall)
+        # uerr_Uem = ev.rmse_YUhat(U_hat_em, pt.tensor(Data[:, 58:90, :]),
+        #                          M.emission.V[29:61, :])
+        # uerr_Uall = ev.rmse_YUhat(U_hat_complete, pt.tensor(Data[:, 58:90, :]),
+        #                          M.emission.V[29:61, :])
+
+    return group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
+
 if __name__ == "__main__":
-    learn_single()
+    # Data_HCP = get_hcp_data(ses_id=['ses-01', 'ses-02'], range=np.arange(63, 64), save=True)
+    # data = get_hcp_data_from_csv(tessel=162, ses_id=['ses-01'], range=[0])
+    # data = data[0, :, :].cpu().detach().numpy()
+    # _plot_maps(data, sub=1, stats='nanmean', overlay='func', color=None, save=None)
+    gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_runs(K=10,
+                                                                          runs=np.arange(1, 17))
+
+    plt.figure()
+    x = np.arange(len(np.arange(1, 17)))
+
+    plt.errorbar(x, pt.stack(cos_em).mean(dim=1),
+             yerr=pt.stack(cos_em).std(dim=1)/np.sqrt(24), capsize=10, label='emission only')
+    plt.errorbar(x, pt.stack(cos_complete).mean(dim=1),
+             yerr=pt.stack(cos_complete).std(dim=1)/np.sqrt(24), capsize=10, label='emi + prior')
+    plt.axhline(y=lb.mean(), color='r', linestyle=':', label='lower bound')
+    plt.axhline(y=gbase.mean(), color='k', linestyle=':', label='goup prior')
+    # plt.xticks(x, ['s1-r1', 's1-r2', 's1-rall', 's2-rall'])
+    plt.xlabel('Inferred on')
+    plt.ylabel('Adjusted cosine error')
+    # plt.ylim(0, 0.35)
+    plt.legend(loc='upper right')
+    plt.title('test on session 2 - all runs')
+
+    plt.show()
     pass
