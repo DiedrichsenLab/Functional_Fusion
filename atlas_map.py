@@ -136,6 +136,36 @@ class AtlasSurface(Atlas):
                                             name=self.name)
         return bm
 
+    def get_parcel_axis(self, label_gii):
+        """Creates parcel axis using the label gifti file and adds it as an attribute to the atlas class
+        Args:
+            label_gii (str): string representing full path to the label.gii files containing parcels
+        Returns: 
+            labels_vec (np.ndarray): (#vertices,) array containing masked labels. Can be used to get the average within each parcel
+        """
+        # load the label file
+        self.label_gii = nb.load(label_gii)
+
+        # get the labels into an array
+        self.label_vec = self.label_gii.agg_data()
+
+        # apply the mask
+        self.label_vec = self.label_vec[self.vertex_mask == 1] # this is returned to make averaging data easier!
+
+        # loop over labels and create brain models
+        bm_list = []
+        for l in np.unique(self.label_vec):
+            # Create BrainModelAxis for each label
+            bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == 1,
+                                                    name=self.name)
+            # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
+            bm_list.append((f"label-{l:02}", bm))
+
+        # create parcel axis from the list of brain models created for labels
+        self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+        
+        return self.label_vec 
+
 class AtlasMap():
     def __init__(self, dataset, atlas, participant_id):
         """AtlasMap stores the mapping rules from a specific data set (and participant) to the desired atlas space in form of a voxel list
@@ -169,7 +199,6 @@ class AtlasMap():
             file_name (string): full filepath and name
         """
         pass
-
 
 class AtlasMapDeform(AtlasMap):
     def __init__(self, dataset, atlas, participant_id, deform_img,mask_img):
@@ -353,7 +382,6 @@ def get_average_data(data, labels, mask = None):
         labels_vec = labels_vec[mask_vec == 1]
 
     # create an indicator matrix that will be used to get the mean data
-    ## discards label 0
     M = matrix.indicator(labels_vec, positive = True)
 
     # get the average data
