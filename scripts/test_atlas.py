@@ -134,10 +134,23 @@ def make_hcp_tessel0042():
     ts_mean = am.get_average_data(data = bm_vals, labels=gii_label, mask = gii_mask)
 
     # initialize the data set object 
-    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
+    # hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
 
     return ts_mean
 
+def make_tessels0042_atlas():
+
+    # get the path to the label file
+    tessel_dir = atlas_dir + '/tpl-fs32k'+'/Icosahedron-42.32k.L.label.gii'
+
+    # get the mask
+    mask = atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'
+    # create an instance of AtlasSurface for the mask
+    myAtlas = am.AtlasSurface('cortex_left',mask_gii=mask)
+    # add parcel axis to the atlas
+    bs = myAtlas.get_parcel_axis(tessel_dir)
+
+    return bs, myAtlas
 def hcp_fc_fp(tessel=162):
     """
     Example to get the functional connectivity finger print for hcp resting state
@@ -163,18 +176,18 @@ def hcp_fc_fp(tessel=162):
                 nb.load(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii')]
     
     # create and calculate the atlas map for each participant
-    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
+    # hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
 
-    T = hcp_dataset.get_participants()
-    con_fp = [] # connectivity finger print list
-    for s in T.participant_id.values:
-        # create a mapping based on atlas deformation 
-        atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
-        # print(f"building atlas map")
-        atlas_map.build(smooth=2.0) # smoothing level?
+    # T = hcp_dataset.get_participants()
+    # con_fp = [] # connectivity finger print list
+    # for s in T.participant_id.values:
+    #     # create a mapping based on atlas deformation 
+    #     atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
+    #     # print(f"building atlas map")
+    #     atlas_map.build(smooth=2.0) # smoothing level?
 
-        # get the connectivity matrix and put it in a list
-        con_fp.append(hcp_dataset.get_data(s,[atlas_map], gii_labels, gii_mask,'ses-01'))
+    #     # get the connectivity matrix and put it in a list
+    #     con_fp.append(hcp_dataset.get_data(s,[atlas_map], gii_labels, gii_mask,'ses-01'))
 
     return con_fp
 
