@@ -382,28 +382,40 @@ if __name__ == "__main__":
     # _plot_maps(data, sub=1, stats='nanmean', overlay='func', color=None, save=None)
 
 
-    gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_runs(K=10,
-                                                                          runs=np.arange(1, 17))
-    df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1), pt.stack(cos_em), pt.stack(cos_complete)), dim=0)
-    df1 = pd.DataFrame(df1).to_csv('coserrs.csv')
+    # gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_runs(K=10,
+    #                                                                       runs=np.arange(1, 17))
+    # df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1), pt.stack(cos_em), pt.stack(cos_complete)), dim=0)
+    # df1 = pd.DataFrame(df1).to_csv('coserrs.csv')
+    #
+    # pt.save(pt.stack(uhat_em_all), 'uhat_em_all.pt')
+    # pt.save(pt.stack(uhat_complete_all), 'uhat_complete_all.pt')
+    # plt.figure()
+    # x = np.arange(len(np.arange(1, 17)))
+    #
+    # plt.errorbar(x, pt.stack(cos_em).mean(dim=1),
+    #          yerr=pt.stack(cos_em).std(dim=1)/np.sqrt(24), capsize=10, label='emission only')
+    # plt.errorbar(x, pt.stack(cos_complete).mean(dim=1),
+    #          yerr=pt.stack(cos_complete).std(dim=1)/np.sqrt(24), capsize=10, label='emi + prior')
+    # plt.axhline(y=lb.mean(), color='r', linestyle=':', label='lower bound')
+    # plt.axhline(y=gbase.mean(), color='k', linestyle=':', label='goup prior')
+    # plt.xticks(np.arange(16))
+    # plt.xlabel('Inferred on individual runs')
+    # plt.ylabel('Adjusted cosine error')
+    # plt.ylim(0.2, 0.30)
+    # plt.legend(loc='upper right')
+    # plt.title('test on session 2 - all runs')
+    # plt.savefig('results.eps', format='eps')
+    # plt.show()
 
-    pt.save(pt.stack(uhat_em_all), 'uhat_em_all.pt')
-    pt.save(pt.stack(uhat_complete_all), 'uhat_complete_all.pt')
-    plt.figure()
-    x = np.arange(len(np.arange(1, 17)))
+    # # Save as dataframe properly
+    # nsub_list = np.arange(24)
+    # labels_col = ['sub_' + f'{x+1:02}' for x in nsub_list]
+    #
+    # runs = np.arange(1, 17)
+    # labels_row = ['group map', 'noise_floor'] + ['dataOnly_run_' + f'{x:02}' for x in runs] + ['data+prior_run_' + f'{x:02}' for x in runs]
+    # data.columns = labels_col
+    # data.index = labels_row
+    # data.to_csv("cosine_err.csv")
+    # print(data)
 
-    plt.errorbar(x, pt.stack(cos_em).mean(dim=1),
-             yerr=pt.stack(cos_em).std(dim=1)/np.sqrt(24), capsize=10, label='emission only')
-    plt.errorbar(x, pt.stack(cos_complete).mean(dim=1),
-             yerr=pt.stack(cos_complete).std(dim=1)/np.sqrt(24), capsize=10, label='emi + prior')
-    plt.axhline(y=lb.mean(), color='r', linestyle=':', label='lower bound')
-    plt.axhline(y=gbase.mean(), color='k', linestyle=':', label='goup prior')
-    plt.xticks(np.arange(16))
-    plt.xlabel('Inferred on individual runs')
-    plt.ylabel('Adjusted cosine error')
-    plt.ylim(0.2, 0.30)
-    plt.legend(loc='upper right')
-    plt.title('test on session 2 - all runs')
-    plt.savefig('results.eps', format='eps')
-    plt.show()
     pass
