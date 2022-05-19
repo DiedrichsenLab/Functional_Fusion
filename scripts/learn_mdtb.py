@@ -189,7 +189,7 @@ def _plot_maps(data, sub=None, stats='mode', render_type='plotly',
     color_info = pd.read_csv(color_file, sep=' ', header=None)
     MDTBcolors = np.zeros((11, 3))
     MDTBcolors[1:11, :] = color_info.iloc[:, 1:4].to_numpy()
-
+    plt.figure()
     if sub is not None:
         Nifti = suit_atlas.data_to_nifti(data[sub])
     else:
@@ -204,9 +204,12 @@ def _plot_maps(data, sub=None, stats='mode', render_type='plotly',
                                 overlay_type=overlay)
 
     if save is not None:
-        fig.write_image(save)
-
-    fig.show()
+        if render_type == 'matplotlib':
+            plt.savefig(save, format='pdf')
+            plt.clf()
+        else:
+            fig.write_image(save)
+            fig.show()
 
 def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
     """Learn a single data set 
@@ -263,16 +266,15 @@ def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
 
 def learn_runs(K=10, max_iter=100, run_test=np.arange(58, 122),
                runs=np.arange(1, 17), sub=None, do_plot=True):
-    Data_s1, Xdesign_s1, _ = get_mdtb_data('ses-s1')
-    Data_s2, Xdesign_s2, _ = get_mdtb_data('ses-s2')
-    Data = np.concatenate((Data_s1, Data_s2), axis=1)
-
-    # Create combined X design matrix
-    # Z1 = np.zeros((Xdesign_s1.shape[0], Xdesign_s2.shape[1]), dtype=Xdesign_s1.dtype)
-    # Z2 = np.zeros((Xdesign_s2.shape[0], Xdesign_s1.shape[1]), dtype=Xdesign_s2.dtype)
-    # Xdesign = np.asarray(np.bmat([[Xdesign_s1, Z1], [Z2, Xdesign_s2]]))
-    Xdesign = pt.tensor(block_diag(Xdesign_s1, Xdesign_s2))
-    del Data_s1, Data_s2, Xdesign_s1, Xdesign_s2
+    Data_1, Xdesign_1, D1 = get_mdtb_data(ses_id='ses-s1', type='CondRun')
+    Data_2, Xdesign_2, D2 = get_mdtb_data(ses_id='ses-s2', type='CondRun')
+    Xdesign = pt.tensor(block_diag(Xdesign_1, Xdesign_2))
+    Data = np.concatenate((Data_1, Data_2), axis=1)
+    D1['sess'] = 1  # Add a column of sess = 1
+    D2['sess'] = 2  # Add a column of sess = 2
+    D = pd.concat([D1, D2], axis=0)
+    run_idx = pt.tensor(D[['sess', 'run']].values)
+    run_idx = pt.unique(run_idx[:, 0] * 100 + run_idx[:, 1], return_inverse=True)[1]
 
     # Make arrangement model and initialize the prior from the MDTB map
     P = Data.shape[2]
@@ -283,57 +285,85 @@ def learn_runs(K=10, max_iter=100, run_test=np.arange(58, 122),
     # Set parcel 0 to unassigned
     logpi[:, mdtb_parcel == 0] = 0
 
-    # Making emission model for fitting, the input N here
-    # doesn't matter and will be overwrite internally by X
+    # Train on sc 1 data
+    run_idx_1 = pt.tensor(D1[['sess', 'run']].values)
+    run_idx_1 = pt.unique(run_idx_1[:, 0] * 100 + run_idx_1[:, 1], return_inverse=True)[1]
     ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
                                          remove_redundancy=False)
-    em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign, uniform_kappa=True)
-    em_model.initialize(Data)
+    em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
+    em_model.initialize(Data_1, D=run_idx_1)
 
-    # Initilize parameters from group prior and train the model
-    group_prior = logpi.softmax(dim=0).unsqueeze(0).repeat(em_model.num_subj,1,1)
-    em_model.Mstep(group_prior)
+    # Initilize parameters from group prior and train the m odel
+    mdtb_prior = logpi.softmax(dim=0).unsqueeze(0).repeat(em_model.num_subj,1,1)
+    em_model.Mstep(mdtb_prior)
     M = fm.FullModel(ar_model, em_model)
-    M, ll, theta, U_hat = M.fit_em(Y=Data, iter=max_iter, tol=0.00001, fit_arrangement=True)
-
-    # plot emission log-likelihood and group prior
+    M, ll, theta, U_hat = M.fit_em(Y=Data_1, iter=max_iter, tol=0.00001, fit_arrangement=True)
     plt.plot(ll, color='b')
     plt.show()
-    # _plot_maps(pt.argmax(M.arrange.logpi, dim=0) + 1, save="group_logpi.pdf")
+
+    ### fig a: Plot group prior
+    _plot_maps(pt.argmax(M.arrange.logpi, dim=0) + 1, color=True, render_type='matplotlib',
+               save='group_prior.pdf')
     prior = pt.softmax(M.arrange.logpi, dim=0).unsqueeze(0).repeat(Data.shape[0], 1, 1)
-    M.emission.X = Xdesign[run_test, :]
-    group_baseline = ev.coserr(pt.tensor(Data[:, run_test, :]),
-                               pt.matmul(Xdesign[run_test], M.emission.V), prior,
+
+    # train emission model on sc2 by frezzing arrangement model learned from sc1
+    data_sc2, Xdesign_sc2, _ = get_mdtb_data(ses_id='ses-s2')
+    Xdesign_sc2 = pt.tensor(Xdesign_sc2)
+    em_model2 = em.MixVMF(K=K, N=40, P=P, X=Xdesign_sc2, uniform_kappa=True)
+    em_model2.initialize(data_sc2)
+    em_model2.Mstep(prior)  # give a good starting value by U_hat learned from sc1
+    #M2 = fm.FullModel(M.arrange, em_model2)
+    # M2, _, _, U_hat_sc2 = M2.fit_em(Y=data_sc2, iter=max_iter, tol=0.00001, fit_arrangement=False)
+
+    group_baseline = ev.coserr(pt.tensor(data_sc2),
+                               pt.matmul(Xdesign_sc2, em_model2.V), prior,
                                adjusted=True, soft_assign=True)
-    lower_bound = ev.coserr(pt.tensor(Data[:, run_test, :]),
-                            pt.matmul(Xdesign[run_test], M.emission.V),
-                            pt.softmax(M.emission.Estep(Y=Data[:,run_test,:]), dim=1),
+    lower_bound = ev.coserr(pt.tensor(data_sc2),
+                            pt.matmul(Xdesign_sc2, em_model2.V),
+                            pt.softmax(em_model2.Estep(Y=data_sc2, pure_compute=True), dim=1),
                             adjusted=True, soft_assign=True)
 
     ############################# Cross-validation starts here #############################
     # Make inference on the selected run's data - run_infer
-    Data_cv, Xdesign_cv, D = get_mdtb_data(ses_id='ses-s1', type='CondRun')
-    Xdesign_cv = pt.tensor(np.concatenate((Xdesign_cv,np.zeros((Xdesign_cv.shape[0], 32))), axis=1))
+    Data_cv, Xdesign_cv, D_cv = get_mdtb_data(ses_id='ses-s1', type='CondRun')
+    Xdesign_cv = pt.tensor(Xdesign_cv)
     indices, cos_em, cos_complete, uhat_em_all, uhat_complete_all = [],[],[],[],[]
     for i in runs:
-        indices.append(np.asarray(np.where(D.run==i)).reshape(-1))
+        indices.append(np.asarray(np.where(D_cv.run==i)).reshape(-1))
         acc_run_idx = np.concatenate(indices).ravel()
         M.emission.X = Xdesign_cv[acc_run_idx,:]
 
         # Infer on current accumulated runs data
-        U_hat_em = M.emission.Estep(Y=Data_cv[:,acc_run_idx,:])
-        U_hat_complete, _ = M.Estep(Y=Data_cv[:,acc_run_idx,:])
+        U_hat_em = M.emission.Estep(Y=Data_cv[:,acc_run_idx,:], pure_compute=True)
+        U_hat_complete, _ = M.arrange.Estep(U_hat_em)
+        # U_hat_complete, _ = M.Estep(Y=Data_cv[:,acc_run_idx,:])
         uhat_em_all.append(U_hat_em)
         uhat_complete_all.append(U_hat_complete)
 
+        if i == 1:
+            UEM = pt.argmax(U_hat_em, dim=1)+1
+            UALL = pt.argmax(U_hat_complete, dim=1) + 1
+            _plot_maps(UEM, sub=1, color=True, render_type='matplotlib',
+                       save=f'emiloglik_only_{1}_run1.pdf')
+            _plot_maps(UALL, sub=1, color=True, render_type='matplotlib',
+                       save=f'all_{1}_run1.pdf')
+
+        if i == 16:
+            UEM = pt.argmax(U_hat_em, dim=1)+1
+            UALL = pt.argmax(U_hat_complete, dim=1) + 1
+            _plot_maps(UEM, sub=1, color=True, render_type='matplotlib',
+                       save=f'emiloglik_only_{1}_run16.pdf')
+            _plot_maps(UALL, sub=1, color=True, render_type='matplotlib',
+                       save=f'all_{1}_run16.pdf')
+
         # Calculate cosine error/u abs error between another test data
         # and U_hat inferred from testing
-        coserr_Uem = ev.coserr(pt.tensor(Data[:,run_test,:]),
-                               pt.matmul(Xdesign[run_test], M.emission.V),
+        coserr_Uem = ev.coserr(pt.tensor(data_sc2),
+                               pt.matmul(Xdesign_sc2, em_model2.V),
                                pt.softmax(U_hat_em, dim=1),
                                adjusted=True, soft_assign=True)
-        coserr_Uall = ev.coserr(pt.tensor(Data[:,run_test,:]),
-                                pt.matmul(Xdesign[run_test], M.emission.V), U_hat_complete,
+        coserr_Uall = ev.coserr(pt.tensor(data_sc2),
+                                pt.matmul(Xdesign_sc2, em_model2.V), U_hat_complete,
                                 adjusted=True, soft_assign=True)
 
         cos_em.append(coserr_Uem)
@@ -346,13 +376,19 @@ def learn_runs(K=10, max_iter=100, run_test=np.arange(58, 122),
     return group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
 
 if __name__ == "__main__":
-    # Data_HCP = get_hcp_data(ses_id=['ses-01', 'ses-02'], range=np.arange(63, 64), save=True)
+    # Data_HCP = get_hcp_data(ses_id=['ses-01', 'ses-02'], range=np.arange(77, 100), save=True)
     # data = get_hcp_data_from_csv(tessel=162, ses_id=['ses-01'], range=[0])
     # data = data[0, :, :].cpu().detach().numpy()
     # _plot_maps(data, sub=1, stats='nanmean', overlay='func', color=None, save=None)
+
+
     gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_runs(K=10,
                                                                           runs=np.arange(1, 17))
+    df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1), pt.stack(cos_em), pt.stack(cos_complete)), dim=0)
+    df1 = pd.DataFrame(df1).to_csv('coserrs.csv')
 
+    pt.save(pt.stack(uhat_em_all), 'uhat_em_all.pt')
+    pt.save(pt.stack(uhat_complete_all), 'uhat_complete_all.pt')
     plt.figure()
     x = np.arange(len(np.arange(1, 17)))
 
@@ -362,12 +398,12 @@ if __name__ == "__main__":
              yerr=pt.stack(cos_complete).std(dim=1)/np.sqrt(24), capsize=10, label='emi + prior')
     plt.axhline(y=lb.mean(), color='r', linestyle=':', label='lower bound')
     plt.axhline(y=gbase.mean(), color='k', linestyle=':', label='goup prior')
-    # plt.xticks(x, ['s1-r1', 's1-r2', 's1-rall', 's2-rall'])
-    plt.xlabel('Inferred on')
+    plt.xticks(np.arange(16))
+    plt.xlabel('Inferred on individual runs')
     plt.ylabel('Adjusted cosine error')
-    # plt.ylim(0, 0.35)
+    plt.ylim(0.2, 0.30)
     plt.legend(loc='upper right')
     plt.title('test on session 2 - all runs')
-
+    plt.savefig('results.eps', format='eps')
     plt.show()
     pass
