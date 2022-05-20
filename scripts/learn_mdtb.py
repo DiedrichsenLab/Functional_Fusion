@@ -1,4 +1,5 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
+from time import gmtime
 import pandas as pd
 from pathlib import Path
 import numpy as np
@@ -15,6 +16,7 @@ import generativeMRF.evaluation as ev
 import torch as pt
 import Functional_Fusion.matrix as matrix
 import matplotlib.pyplot as plt
+import seaborn as sb
 import sys
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
@@ -375,6 +377,29 @@ def learn_runs(K=10, max_iter=100, run_test=np.arange(58, 122),
 
     return group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
 
+
+def figure_indiv_group(): 
+    D = pd.read_csv('scripts/indiv_group_err.csv')
+    nf = D['noise_floor'].mean()
+    gm = D['group map'].mean()
+    T=pd.DataFrame()
+    co = ['emission','emisssion+arrangement']
+    for i,c in enumerate(['dataOnly_run_','data+prior_run_']):
+        for r in range(16):
+            dict = {'subj':np.arange(24)+1,
+                'cond':[co[i]]*24,
+                'run':np.ones((24,))*(r+1),
+                'data':(D[f'{c}{r+1:02d}']-D['noise_floor'])+nf}
+            T=pd.concat([T,pd.DataFrame(dict)],ignore_index = True)
+    fig=plt.figure(figsize=(3.5,5))
+    sb.lineplot(data=T,y='data',x='run',hue='cond',markers=True, dashes=False)
+    plt.xticks(ticks=np.arange(16)+1)
+    plt.axhline(nf,color='k',ls=':')
+    plt.axhline(gm,color='b',ls=':')
+    plt.ylim([0.21,0.3])
+    fig.savefig('indiv_group_err.pdf',format='pdf')
+    pass 
+
 if __name__ == "__main__":
     # Data_HCP = get_hcp_data(ses_id=['ses-01', 'ses-02'], range=np.arange(77, 100), save=True)
     # data = get_hcp_data_from_csv(tessel=162, ses_id=['ses-01'], range=[0])
@@ -417,5 +442,5 @@ if __name__ == "__main__":
     # data.index = labels_row
     # data.to_csv("cosine_err.csv")
     # print(data)
-
+    figure_indiv_group()
     pass
