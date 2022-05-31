@@ -4,13 +4,13 @@ function [ output_args ] = nishimoto_imana( what, varargin )
 % PATH DEFINITIONS
 
 % Add dependencies to path
-% if isdir('/Volumes/diedrichsen_data$/data')
-%     workdir='/Volumes/diedrichsen_data$/data';
-% elseif isdir('/srv/diedrichsen/data')''
-%     workdir='/srv/diedrichsen/data';
-% else
-%     fprintf('Workdir not found. Mount or connect to server and try again.');
-% end
+if isdir('/Volumes/diedrichsen_data$/data')
+    workdir='/Volumes/diedrichsen_data$/data';
+elseif isdir('/srv/diedrichsen/data')
+    workdir='/srv/diedrichsen/data';
+else
+    fprintf('Workdir not found. Mount or connect to server and try again.');
+end
 % addpath(sprintf('%s/../matlab/spm12',workdir));
 % addpath(sprintf('%s/../matlab/spm12/toolbox/suit/',workdir));
 % addpath(sprintf('%s/../matlab/dataframe',workdir));
@@ -29,11 +29,10 @@ suit_defaults;
 
 
 %========================================================================================================================
-
 global base_dir
 
-% base_dir = sprintf('%s/FunctionalFusion/Nishimoto_103Task/',workdir);
-base_dir = '/Users/ladan/Documents/DATA/nishimoto';
+base_dir = sprintf('%s/FunctionalFusion/Nishimoto_103Task/',workdir);
+% base_dir = '/Users/ladan/Documents/DATA/nishimoto';
 
 %%% Freesurfer stuff
 path1 = getenv('PATH');
@@ -62,6 +61,7 @@ wb_dir   = 'surfaceWB';
 % list of subjects
 subj_str = {'sub-01','sub-02','sub-03','sub-04','sub-05','sub-06'};
 subj_id  = [1, 2, 3, 4, 5, 6];
+run_list = {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [1, 2, 3, 4, 5, 6]};
 
 % AC coordinates
 loc_AC = {[-103, -140, -140],...       %sub-01
@@ -71,9 +71,32 @@ loc_AC = {[-103, -140, -140],...       %sub-01
           [-100, -134, -134],...       %sub-05
           [-102, -134, -145],...       %sub-06
         };
+<<<<<<< Updated upstream
 numDumm = 3 + (6/2); % based on the paper and comments on https://openneuro.org/datasets/ds002306/versions/1.1.0
 sess = [1, 2, 3];
 run_list  = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+=======
+    
+
+% numDumm = 3; % based on the paper and comments on
+% https://openneuro.org/datasets/ds002306/versions/1.1.0 (BASED ON THE TSV FILES THIS DOESN'T SEEM TO BE CORRECT - IF WE REMOVE DUMMIES, THE ONSETS FOR SOME REGRESSORS WILL BE NEGATIVE!!!!)
+
+% =========================================================================
+% SUMMARY of the task design from the paper
+% Each task has 12 instances: 8 (training) + 4 (testing)
+% 3 days, 6 runs per day: 12 training runs + 6 test runs
+% each run contains 77-83 trials lasting for 6-12 seconds
+% Task order is pseudorandomized in the training runs! ("some tasks depended on each other and were therefore presented close to each other in time")
+% In the test runs, 103 tasks were presented four times in the same order across all six runs
+% Task order is fixed in the testing runs.
+% Looking at the tsv files, the order during training runs is the same
+% across all participants.
+% =========================================================================
+sess = {'training', 'test'}; % training runs are considered to be ses-01 and testing runs are ses-02
+numTRs = 281;
+numDummys = 0;
+% run_list  = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+>>>>>>> Stashed changes
 switch what
     case 'ANAT:reslice_lpi' % reslice anatomical to LPI
         sn = subj_id;
@@ -183,12 +206,20 @@ switch what
             spm_jobman('run',matlabbatch);
         end % s (subject)
     
-    case 'FUNC:rm_dumm' % removing dummies and renaming
+    case 'FUNC:get_run_info' % loads in the excel file with run info
+    case 'FUNC:unzip' % removing dummies and renaming 
+        % "WARNING" NO NEED TO REMOVE DUMMIES (WE THINK SO),SO THE REMOVING
+        % PART IS COMMENTED OUT AND THIS CASE WILL ONLY BE USED FOR
+        % RENAMING THE FILES.
+        % Files are renamed based on an excel file which you can find in
+        % the repository(MultTask_RunOrderInfo.xlsx)
         % removes dummies from the beginning of the functional images and
         % save the new images with new names so that we don't lose the
         % original images. For code efficiency, it will also rename the tsv
-        % files
-        % Example usage: nishimoto_imana('FUNC:rm_dumm', 'sn', [1])
+        % files. Runs done on the same day are considered as one session. 
+        % this case calls FUNC:get_in_info to get the run information and
+        % assign runs to sessions
+        % Example usage: nishimoto_imana('FUNC:unzip', 'sn', [1])
         sn = subj_id;
         
         vararginoptions(varargin, 'sn')
@@ -197,33 +228,58 @@ switch what
             % go to subject's directory
             func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
             cd(func_subj_dir)
-%             funScans = dir('*bold*.nii');
-            funScans = temp_list;
-            for i = 1:length(funScans)
-                srcfilename = sprintf('%s%sbold.nii', subj_str{s}, funScans{i});
-                desfilename = sprintf('%s_run-%02d.nii', subj_str{s}, i);
-                mkdir temp;
-                unzip(srcfilename)
+            % unzip the files
+            gunzip('*.gz');
+            % loop over sessions
+            for ss = [1, 2]
+                % get the session name
+                ses_name = sess{ss};
+                % get the functional scans for the session
+                fun_scans = dir(sprintf('%s*-%s*bold.nii', subj_str{s}, ses_name));
                 
-                spm_file_split(funScans{i}.name,'temp');
-                spm_file_split(sprintf('%s%sbold.nii', subj_str{s}, funScans{i}),'temp');
                 
-                cd temp;
-                list = dir('sub-*.nii');
-                list = list(numDummys+1:end);  % Remove dummies
-                V    = {list(:).name};
-                spm_file_merge(V,srcfilename);
-                movefile(srcfilename,fullfile(func_subj_dir, desfilename))
-                cd ..
-                rmdir('temp','s');
-                % change the names of the tsv files
-                tsv_source = sprintf('%s%sevents.tsv', subj_str{s}, funScans{i});
-                tsv_dest = sprintf('%s_run-%02d_events.tsv', subj_str{s}, i);
-                movefile(fullfile(func_subj_dir, tsv_source), fullfile(func_subj_dir, tsv_dest))
-                fprintf('-Dummies removed for run-%02d done for %s \n', i, subj_str{s});
-            end % i (number of runs: funScans)
+                % loop over functional scans and rename
+                for i = 1:length(fun_scans)
+                    fprintf('- Doing %s %s run %02d\n', subj_str{s}, ses_name, i);
+                    src_filename = fun_scans(i).name;
+                    des_filename = sprintf('%s_ses-%02d_run-%02d.nii', subj_str{s}, ss, i);
+                    movefile(src_filename,fullfile(func_subj_dir, des_filename))
+                    
+                    % change the names of the tsv files
+                    tsv_source = sprintf('%s_task-%s_run-%02d_events.tsv', subj_str{s}, ses_name, i);
+                    tsv_dest = sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ss, i);
+                    movefile(fullfile(func_subj_dir, tsv_source), fullfile(func_subj_dir, tsv_dest))
+                end % i (runs within a scan)
+            end % ss (session)
         end % sn (subjects)    
-    case 'FUNC:realign'
+    case 'FUNC:realign' % Realign functional images
+        % SPM realigns all volumes to the first volume of first run
+        % example usage: nishimoto_imana('FUNC:realign', 'sn', 1, 'ses', 1)
+        
+        sn   = subj_id; % list of subjects
+        ses = 1;           % list of sessions
+        
+        vararginoptions(varargin, {'sn', 'ses', 'runs'});
+        
+        runs = run_list{ses};
+        
+        for s = sn
+            % loop over tasks
+            fprintf('- realigning functional runs for %s\n', subj_str{s});
+            func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
+            % cd to the folder with raw functional data
+            cd(func_subj_dir)
+            spm_jobman('initcfg')
+            
+            data = {}; % initialize data cell array which will contain file names for runs/TR images
+            for r = runs
+                for j = 1:numTRs(ti)-numDummys
+                    data{r}{j,1} = sprintf('%s_ses-%02d_run-%02d.nii,%d', subj_str{s},ses, r,j);
+                end % j (TRs/images)
+            end % r (runs)
+            spmj_realign(data);
+            fprintf('- runs realigned for %s  ses %02d\n',subj_str{s}, ses);
+        end % s (sn)
     case 'FUNC:move_data' 
     case 'FUNC:coreg' 
     case 'FUNC:make_samealign'
@@ -237,16 +293,17 @@ switch what
         
         sn = subj_id;
         hrf_cutoff = Inf;
-        vararginoptions(varargin, {'sn', 'hrf_cutoff'});
+        ses = 1;
+        vararginoptions(varargin, {'sn', 'hrf_cutoff', 'ses'});
         
-        prefix = 'r'; % prefix of the preprocessed epi we want to use
+        prefix = ''; % prefix of the preprocessed epi we want to use
         glm = 1;
         for s = sn
             func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
             % loop over runs
-            for ss = [1, 2]
+%             for ss = [1, 2]
                 % create a directory to save the design
-                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('ses-%d', ss));
+                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('ses-%02d', ses));
                 dircheck(subj_est_dir)
                 
                 T = []; % task/condition + session + run info
@@ -259,7 +316,7 @@ switch what
                 J.timing.fmri_t0 = 1;
                 
                 % get the list of runs for the current session
-                runs_list = sess{ss};
+                runs_list = sess{ses};
                 
                 % loop through runs within the current sessions
                 for run = 1:length(runs_list)
@@ -274,7 +331,7 @@ switch what
                     % get the path to the tsv file
                     tsv_path = fullfile(base_dir, subj_str{s}, func_dir);
                     % get the tsvfile for the current run
-                    D = dload(fullfile(tsv_path, sprintf('%s_run-%02d_events.tsv', subj_str{s}, run)));
+                    D = dload(fullfile(tsv_path, sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ses, run)));
                     
                     % get unique conditions
                     unique_conds = unique(D.trial_type, 'stable');
@@ -291,7 +348,7 @@ switch what
                         
                         % filling in "reginfo"
                         TT.sn    = s;
-                        TT.sess  = ss;
+                        TT.sess  = ses;
                         TT.run   = run;
                         TT.CN    = unique_conds(ic);
                         TT.cond  = ic;
@@ -305,7 +362,12 @@ switch what
                         
                         % get onset and duration (should be in seconds)
                         onset    = D.onset(idx) - (J.timing.RT*numDummys);
-                        duration = D.duration(idx); 
+                        fprintf("The onset is %f\n", onset)
+                        if onset < 0 
+                            warning("negative onset found")
+                        end
+                        duration = D.duration(idx);
+                        fprintf("The duration is %f\n", duration);
                         
                         J.sess(run).cond(ic).onset    = onset;
                         J.sess(run).cond(ic).duration = duration;
@@ -332,15 +394,16 @@ switch what
 %                 
 %                 spm_rwls_run_fmri_spec(J);
                 
-                save(fullfile(J.dir{1},sprintf('%s_ses-%d_reginfo.tsv', subj_str{s}, ss)), '-struct', 'T');
-                fprintf('- estimates for glm_%d session %d has been saved for %s \n', glm, ss, subj_str{s});
-            end % ss (session)
+                save(fullfile(J.dir{1},sprintf('%s_ses-%d_reginfo.tsv', subj_str{s}, ses)), '-struct', 'T');
+                fprintf('- estimates for glm_%d session %d has been saved for %s \n', glm, ses, subj_str{s});
+%             end % ss (session)
             
             
         end % sn (subject)
         
     case 'GLM:estimate'
-    case 'GLM:contrast' 
+    case 'GLM:T_contrast' 
+    case 'GLM:F_contrast'
         
         
     case 'SURF:reconall'       % Freesurfer reconall routine
