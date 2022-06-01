@@ -339,40 +339,40 @@ switch what
         end % s (sn) 
     case 'FUNC:make_samealign' % align all the functionals
         % Aligns all functional images to rmean functional image
-        % Example usage: nishimoto_imana('FUNC:make_samealign', 'sn', 1, 'sess', [1, 2])
+        % Example usage: nishimoto_imana('FUNC:make_samealign', 'sn', [1, 2], 'prefix', 'r')
         
         sn          = subj_id;     % subject list
-        sess        = [1, 2];      % session list
-        prefix_mepi = 'r';         % prefix for the meanepi: r or rbb if bias corrected
+        prefix = 'r';              % prefix for the meanepi: r or rbb if bias corrected
         
-        vararginoptions(varargin, {'sn', 'sess', 'prefix', 'prefix_mepi'});
+        vararginoptions(varargin, {'sn', 'prefix'});
                 
         for s = sn
             % Get the directory of subjects functional
             subj_func_dir = fullfile(base_dir, subj_str{s}, func_dir);
             
-            for ss = sess
-                    fprintf('- make_samealign  %s \n', subj_str{s})
-                    cd(subj_func_dir);
-                    
-                    % Select image for reference
-                    P{1} = fullfile(subj_func_dir, sprintf('%smean%s_ses.nii', prefix_mepi, ss, task_names{ti}));
-                    
-                    % Select images to be realigned
-                    Q = {};
-                    for r = runs
-
-                        for i = 1:numTRs(ti)-numDummys
-                            Q{end+1}    = fullfile(imagingDir, task_names{ti}, subj_name,...
-                                sprintf('%srun_%02d_sess-%02d_%s.nii,%d', prefix, r, ss, task_names{ti}, i));
-                        end
-                    end % r(runs)
-                    
-                    % Run spmj_makesamealign_nifti
-                    spmj_makesamealign_nifti(char(P),char(Q));
-                    fprintf('functional images realigned for %s task %s\n', subj_name, task_names{ti})
+            % get the images from both sessions
+            for ss = [1, 2]
+                % get the list of runs for the session
+                runs = run_list{ss};
+                fprintf('- make_samealign  %s \n', subj_str{s})
+                cd(subj_func_dir);
+                
+                % Select image for reference 
+                %%% note that functional images are aligned with the first
+                %%% run from first session hence, the ref is always rmean<subj>_ses-01_run-01
+                P{1} = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, ss));
+                
+                % Select images to be realigned
+                Q = {};
+                for r = runs
+                    for i = 1:numTRs(ti)-numDummys
+                        Q{end+1}    = fullfile(subj_func_dir,...
+                                      sprintf('%s%s_ses-%02d_run-%02d.nii,%d', prefix, subj_str{s}, ss, r, i));
+                    end
+                end % r(runs)
+                
+                spmj_makesamealign_nifti(char(P),char(Q));
             end % ss (sess)
-            
         end % s (sn)
     case 'FUNC:make_maskImage' % make a brain mask in functional space
         
@@ -681,12 +681,3 @@ if ~exist(dir,'dir')
     mkdir(dir);
 end
 end
-
-function unzip()
-if ~isfile(source) && isfile(sprintf('%s.gz', source))  % unzip file
-    gunzip(sprintf('%s.gz', source));
-end
-end
-
-
-
