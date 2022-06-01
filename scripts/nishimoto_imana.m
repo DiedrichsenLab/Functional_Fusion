@@ -341,8 +341,8 @@ switch what
         % Aligns all functional images to rmean functional image
         % Example usage: nishimoto_imana('FUNC:make_samealign', 'sn', [1, 2], 'prefix', 'r')
         
-        sn          = subj_id;     % subject list
-        prefix = 'r';              % prefix for the meanepi: r or rbb if bias corrected
+        sn     = subj_id;     % subject list
+        prefix = 'r';         % prefix for the meanepi: r or rbb if bias corrected
         
         vararginoptions(varargin, {'sn', 'prefix'});
                 
@@ -365,16 +365,60 @@ switch what
                 % Select images to be realigned
                 Q = {};
                 for r = runs
-                    for i = 1:numTRs(ti)-numDummys
+                    for i = 1:numTRs - numDummys
                         Q{end+1}    = fullfile(subj_func_dir,...
-                                      sprintf('%s%s_ses-%02d_run-%02d.nii,%d', prefix, subj_str{s}, ss, r, i));
+                                               sprintf('%s%s_ses-%02d_run-%02d.nii,%d', prefix, subj_str{s}, ss, r, i));
                     end
                 end % r(runs)
                 
                 spmj_makesamealign_nifti(char(P),char(Q));
             end % ss (sess)
         end % s (sn)
-    case 'FUNC:make_maskImage' % make a brain mask in functional space
+    case 'FUNC:make_maskImage' % Make mask images (noskull and grey_only)
+        % Make maskImage in functional space
+        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'sn', [1, 2], 'prefix', 'r')
+        
+        sn     = subj_id; % list of subjects
+        prefix = 'r';     % prefix for the meanepi: r or rbb if bias corrected
+        
+        vararginoptions(varargin, {'sn', 'task', 'sess', 'prefix_mepi'});
+        
+        
+        for s = sn
+            % Get the directory of subjects anatomical and functional
+            subj_anat_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            subj_func_dir = fullfile(base_dir, subj_str{s}, func_dir);
+
+            fprintf('- make mask for %s\n', subj_str{s});
+            cd(subj_func_dir);
+            
+            nam{1}  = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}));
+            nam{2}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
+            nam{3}  = fullfile(subj_anat_dir, sprintf('c2%s_T1w_lpi.nii', subj_str{s}));
+            nam{4}  = fullfile(subj_anat_dir, sprintf('c3%s_T1w_lpi.nii', subj_str{s}));
+            spm_imcalc(nam, 'rmask_noskull.nii', 'i1>1 & (i2+i3+i4)>0.2')
+            
+            nam     = {};
+            nam{1}  = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}));
+            nam{2}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
+            spm_imcalc(nam, 'rmask_gray.nii', 'i1>2 & i2>0.4')
+            
+            nam     = {};
+            nam{1}  = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}));
+            nam{2}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
+            nam{2}  = fullfile(subj_anat_dir, sprintf('c5%s_T1w_lpi.nii', subj_str{s}));
+            spm_imcalc(nam, 'rmask_grayEyes.nii', 'i1>2400 & i2+i3>0.4')
+            
+            nam     = {};
+            nam{1}  = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}));
+            nam{2}  = fullfile(subj_anat_dir, sprintf('c5%s_T1w_lpi.nii', subj_str{s}));
+            nam{3}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
+            nam{4}  = fullfile(subj_anat_dir, sprintf('c2%s_T1w_lpi.nii', subj_str{s}));
+            nam{5}  = fullfile(subj_anat_dir, sprintf('c3%s_T1w_lpi.nii', subj_str{s}));
+            spm_imcalc(nam, 'rmask_noskullEyes.nii', 'i1>2000 & (i2+i3+i4+i5)>0.2')
+
+        end % s (sn)
+    
         
     case 'GLM:design1' % make the design matrix for the glm
         % models each condition as a separate regressors
