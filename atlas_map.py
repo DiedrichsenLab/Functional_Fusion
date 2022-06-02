@@ -136,27 +136,42 @@ class AtlasSurface(Atlas):
                                             name=self.name)
         return bm
 
-    def get_parcel_axis(self, label_gii):
-        """Creates parcel axis using the label gifti file and adds it as an attribute to the atlas class
+class AtlasSurfaceParcel(Atlas):
+    def __init__(self,name,label_gii,mask_gii=None):
+        """AtlasSurfaceParcel class constructor
+
         Args:
-            label_gii (str): string representing full path to the label.gii files containing parcels
-        Returns: 
-            labels_vec (np.ndarray): (#vertices,) array containing masked labels. Can be used to get the average within each parcel
+            name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            
+            mask_gii (str): gifti file name of mask image defining atlas locations
         """
-        # load the label file
+        self.name = name
         self.label_gii = nb.load(label_gii)
-
+        
         # get the labels into an array
-        self.label_vec = self.label_gii.agg_data()
+        self.label_vec = self.label_gii.agg_data() # this
 
-        # apply the mask
-        self.label_vec = self.label_vec[self.vertex_mask == 1] # this is returned to make averaging data easier!
+        # Use of mask it not tested-treat with care
+        if mask_gii is not None:
+            self.mask_gii = nb.load(mask_gii)
+            Xmask = self.mask_gii.agg_data()
+            self.vertex_mask = (Xmask>0)
+            self.vertex = np.nonzero(Xmask>0)[0]
+            self.label_vec = self.label_vec[self.vertex_mask]
+        self.P = np.unique(self.label_vec).shape[0]
+        
+    def get_parcel_axis(self):
+        """ Returns parcel axis
+
+        Returns:
+            bm (cifti2.ParcelAxis)
+        """
 
         # loop over labels and create brain models
         bm_list = []
         for l in np.unique(self.label_vec):
             # Create BrainModelAxis for each label
-            bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == 1,
+            bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
                                                     name=self.name)
             # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
             bm_list.append((f"label-{l:02}", bm))
@@ -164,7 +179,7 @@ class AtlasSurface(Atlas):
         # create parcel axis from the list of brain models created for labels
         self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
         
-        return self.label_vec 
+        return self.parcels 
 
 class AtlasMap():
     def __init__(self, dataset, atlas, participant_id):

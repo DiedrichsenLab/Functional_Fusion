@@ -141,16 +141,24 @@ def make_hcp_tessel0042():
 def make_tessels0042_atlas():
 
     # get the path to the label file
-    tessel_dir = atlas_dir + '/tpl-fs32k'+'/Icosahedron-42.32k.L.label.gii'
+    tessel_file = atlas_dir + '/tpl-fs32k'+'/Icosahedron-42.32k.L.label.gii'
 
     # get the mask
     mask = atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'
     # create an instance of AtlasSurface for the mask
-    myAtlas = am.AtlasSurface('cortex_left',mask_gii=mask)
-    # add parcel axis to the atlas
-    bs = myAtlas.get_parcel_axis(tessel_dir)
+    myAtlas = am.AtlasSurfaceParcel('cortex_left',tessel_file)
+    p_axis = myAtlas.get_parcel_axis()
+    return myAtlas,p_axis
 
-    return bs, myAtlas
+def test_pdscalar_file(): 
+    atlas, p_axis = make_tessels0042_atlas()
+    D= np.random.normal(0,1,(5,len(p_axis)))
+    names = [f'row {r:02}' for r in range(D.shape[0])]
+    row_axis = nb.cifti2.ScalarAxis(names)
+    header = nb.Cifti2Header.from_axes((row_axis,p_axis))
+    cifti_img = nb.Cifti2Image(dataobj=D,header=header)
+    nb.save(cifti_img,'test.pscalar.nii')
+
 def hcp_fc_fp(tessel=162):
     """
     Example to get the functional connectivity finger print for hcp resting state
@@ -194,5 +202,6 @@ def hcp_fc_fp(tessel=162):
 
 if __name__ == "__main__":
     # make_mdtb_suit()
-    hcp_fc_fp()
+    test_pdscalar_file()
+    pass
 

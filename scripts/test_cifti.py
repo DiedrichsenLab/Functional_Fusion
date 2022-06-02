@@ -20,6 +20,20 @@ def explore_cifti():
         print(idx,str(nam),slc)
     pass
 
+def explore_pconn():
+    # B = nb.load('RSN-networks.32k_fs_LR.dlabel.nii') 
+    A = nb.load('./test_data/HCP_Yeo2011_17Networks.32k_fs_LR.pconn.nii')
+    ser = A.header.get_axis(0)
+    bmf = A.header.get_axis(1)
+
+    for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
+        print(idx,str(nam),slc)
+    pass
+
+def test_pdscalar(): 
+    
+
+
 def get_cereb():
     dir2 = hcp_dir + '/derivatives/100307/estimates'
     A=nb.load(dir2+'/sub-100307_ses-01_task-rest_space-fsLR32k_run-01_bold.nii')
@@ -93,7 +107,7 @@ def get_ts_nii():
 
 
 if __name__ == "__main__":
-    explore_cifti()
+    explore_pconn()
 
 
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
