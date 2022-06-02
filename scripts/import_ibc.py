@@ -24,96 +24,20 @@ from nilearn.image import load_img, mean_img
 
 # ############################# FUNCTIONS ##############################
 
-def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
-                       df1, df2, df3):
+
+def epi(sub, sname, original_sourcepath, destination_sourcepath, df1, df2):
     session = df1[df1[sub].values == sname].index.values[0]
-    target_path = target_derivatives + '/' + sub + '/estimates/' + session
-    if not os.path.exists(target_path):
-        os.makedirs(target_path)
+    target_dir = os.path.join(destination_sourcepath, sub, 'func', session)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
     else:
-        for ng in glob.glob(target_path + '/*.nii.gz'):
+        for ng in glob.glob(target_dir + '/*epi.nii.gz'):
             os.remove(ng)
-    runs = df2[df2.session == sname].srun.values
-    tasks = df2[df2.session == sname].task.values
-    phasedir = df2[df2.session == sname].phase.values
-    session_folder = source_derivatives + sub + '/' + session
-    for rn, tk, ph in zip(runs, tasks, phasedir):
-        if tk == 'RSVPLanguage':
-            zfolder = session_folder + '/res_stats_' + tk + \
-                '_%02d_' % (rn - 1) + ph + '/z_score_maps/'
-        elif tk in ['MTTWE', 'MTTNS']:
-            zfolder = session_folder + '/res_stats_' + tk + \
-                '%d_' % rn + ph + '/z_score_maps/'
-        elif sub == 'sub-11' and sname == 'preference' and rn == 6:
-            tk = 'PreferenceFaces'
-            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
-                '_run-01/z_score_maps/'
-        elif sub == 'sub-11' and sname == 'preference' and rn == 7:
-            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
-                '_run-02/z_score_maps/'
-        else:
-            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
-                '/z_score_maps/'
-        if tk in ['VSTM' + '%d' % s for s in np.arange(1, 3)]:
-            conditions = df3[df3.task == 'VSTM'].condition.values
-            regressors = df3[df3.task == 'VSTM'].regressor.values
-        elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
-            conditions = df3[df3.task == 'Self'].condition.values
-            regressors = df3[df3.task == 'Self'].regressor.values
-        elif tk in ['WedgeClock', 'WedgeAnti']:
-            conditions = df3[df3.task == 'Wedge'].condition.values
-            regressors = df3[df3.task == 'Wedge'].regressor.values
-        elif tk in ['ExpRing', 'ContRing']:
-            conditions = df3[df3.task == 'Ring'].condition.values
-            regressors = df3[df3.task == 'Ring'].regressor.values
-        else:
-            conditions = df3[df3.task == tk].condition.values
-            regressors = df3[df3.task == tk].regressor.values
-        for cond, reg in zip(conditions, regressors):
-            source_file = zfolder + cond + '.nii.gz'
-            with subprocess.Popen(["scp", '-o BatchMode=yes', source_file,
-                                  target_path]) as p:
-                p.wait()
-            f = target_path + '/' + cond + '.nii.gz'
-            ff = target_path + '/' + sub + '_' + session + '_run-' + \
-                '%02d' % rn + '_reg-' + '%02d' % reg + '_zmap.nii.gz'
-            print(f)
-            print(ff)
-            os.rename(f, ff)
+    func_folder = os.path.join(original_sourcepath, sub, session, 'fmap')
 
 
-def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
-    session = df1[df1[sub].values == sname].index.values[0]
-    ifolder = target_derivatives + '/' + sub + '/estimates/' + session
-    if not os.path.exists(ifolder):
-        os.makedirs(ifolder)
-    else:
-        if not glob.glob(ifolder + '/*.tsv'):
-            for ng in glob.glob(ifolder + '/*.tsv'):
-                os.remove(ng)
-    run_numbers = df2[df2.session == sname].srun.values
-    task_names = df2[df2.session == sname].task.values
-    sessinfo = np.empty((0, 4))
-    for rnum, tname in zip(run_numbers, task_names):
-        if sub == 'sub-11' and rnum == 6 and \
-           tname == 'PreferencePaintings':
-            tname = 'PreferenceFaces'
-        condition_names = df3[df3.task == tname].condition.tolist()
-        reg_numbers = df3[df3.task == tname].regressor.tolist()
-        rnum_rep = np.repeat(rnum, len(condition_names)).tolist()
-        tname_rep = np.repeat(tname, len(condition_names)).tolist()
-        rstack = np.vstack((rnum_rep, tname_rep, condition_names,
-                            reg_numbers)).T
-        sessinfo = np.vstack((sessinfo, rstack))
-    dff = pd.DataFrame(sessinfo, columns = ['run','task_name','cond_name',
-                                            'reg_num'])
-    dff_fname = sub + '_' + session + '_reginfo.tsv'
-    dff_path = os.path.join(ifolder, dff_fname)
-    dff.to_csv(dff_path, sep='\t', index=False)
-
-
-def epi(sub, sname, source_derivatives, target_derivatives, df1, df2,
-        first_run_only = False):
+def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
+         first_run_only = False):
     session = df1[df1[sub].values == sname].index.values[0]
     target_dir = target_derivatives + '/' + sub + '/func/' + session
     if not os.path.exists(target_dir):
@@ -262,6 +186,94 @@ def transfer_meshes(sub, source_derivatives, target_derivatives):
             os.rename(target_meshfile, new_target_meshfile)
 
 
+def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
+                       df1, df2, df3):
+    session = df1[df1[sub].values == sname].index.values[0]
+    target_path = target_derivatives + '/' + sub + '/estimates/' + session
+    if not os.path.exists(target_path):
+        os.makedirs(target_path)
+    else:
+        for ng in glob.glob(target_path + '/*.nii.gz'):
+            os.remove(ng)
+    runs = df2[df2.session == sname].srun.values
+    tasks = df2[df2.session == sname].task.values
+    phasedir = df2[df2.session == sname].phase.values
+    session_folder = source_derivatives + sub + '/' + session
+    for rn, tk, ph in zip(runs, tasks, phasedir):
+        if tk == 'RSVPLanguage':
+            zfolder = session_folder + '/res_stats_' + tk + \
+                '_%02d_' % (rn - 1) + ph + '/z_score_maps/'
+        elif tk in ['MTTWE', 'MTTNS']:
+            zfolder = session_folder + '/res_stats_' + tk + \
+                '%d_' % rn + ph + '/z_score_maps/'
+        elif sub == 'sub-11' and sname == 'preference' and rn == 6:
+            tk = 'PreferenceFaces'
+            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
+                '_run-01/z_score_maps/'
+        elif sub == 'sub-11' and sname == 'preference' and rn == 7:
+            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
+                '_run-02/z_score_maps/'
+        else:
+            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
+                '/z_score_maps/'
+        if tk in ['VSTM' + '%d' % s for s in np.arange(1, 3)]:
+            conditions = df3[df3.task == 'VSTM'].condition.values
+            regressors = df3[df3.task == 'VSTM'].regressor.values
+        elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
+            conditions = df3[df3.task == 'Self'].condition.values
+            regressors = df3[df3.task == 'Self'].regressor.values
+        elif tk in ['WedgeClock', 'WedgeAnti']:
+            conditions = df3[df3.task == 'Wedge'].condition.values
+            regressors = df3[df3.task == 'Wedge'].regressor.values
+        elif tk in ['ExpRing', 'ContRing']:
+            conditions = df3[df3.task == 'Ring'].condition.values
+            regressors = df3[df3.task == 'Ring'].regressor.values
+        else:
+            conditions = df3[df3.task == tk].condition.values
+            regressors = df3[df3.task == tk].regressor.values
+        for cond, reg in zip(conditions, regressors):
+            source_file = zfolder + cond + '.nii.gz'
+            with subprocess.Popen(["scp", '-o BatchMode=yes', source_file,
+                                  target_path]) as p:
+                p.wait()
+            f = target_path + '/' + cond + '.nii.gz'
+            ff = target_path + '/' + sub + '_' + session + '_run-' + \
+                '%02d' % rn + '_reg-' + '%02d' % reg + '_zmap.nii.gz'
+            print(f)
+            print(ff)
+            os.rename(f, ff)
+
+
+def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
+    session = df1[df1[sub].values == sname].index.values[0]
+    ifolder = target_derivatives + '/' + sub + '/estimates/' + session
+    if not os.path.exists(ifolder):
+        os.makedirs(ifolder)
+    else:
+        if not glob.glob(ifolder + '/*.tsv'):
+            for ng in glob.glob(ifolder + '/*.tsv'):
+                os.remove(ng)
+    run_numbers = df2[df2.session == sname].srun.values
+    task_names = df2[df2.session == sname].task.values
+    sessinfo = np.empty((0, 4))
+    for rnum, tname in zip(run_numbers, task_names):
+        if sub == 'sub-11' and rnum == 6 and \
+           tname == 'PreferencePaintings':
+            tname = 'PreferenceFaces'
+        condition_names = df3[df3.task == tname].condition.tolist()
+        reg_numbers = df3[df3.task == tname].regressor.tolist()
+        rnum_rep = np.repeat(rnum, len(condition_names)).tolist()
+        tname_rep = np.repeat(tname, len(condition_names)).tolist()
+        rstack = np.vstack((rnum_rep, tname_rep, condition_names,
+                            reg_numbers)).T
+        sessinfo = np.vstack((sessinfo, rstack))
+    dff = pd.DataFrame(sessinfo, columns = ['run','task_name','cond_name',
+                                            'reg_num'])
+    dff_fname = sub + '_' + session + '_reginfo.tsv'
+    dff_path = os.path.join(ifolder, dff_fname)
+    dff.to_csv(dff_path, sep='\t', index=False)
+
+
 # ############################### INPUTS ###############################
 
 subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
@@ -278,9 +290,11 @@ session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # ############################# PARAMETERS #############################
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc/'
+drago_sourcedata = drago + 'sourcedata'
 drago_derivatives = drago + 'derivatives/'
 home = str(Path.home())
 cbs = os.path.join(home, 'diedrichsen_data/data/FunctionalFusion/ibc')
+cbs_sourcedata = os.path.join(cbs, 'raw')
 cbs_derivatives = os.path.join(cbs, 'derivatives')
 
 sess_map = 'ibc_sessions_map.tsv'
@@ -307,9 +321,12 @@ if __name__ == "__main__":
         transfer_meshes(subject, drago_derivatives, cbs_derivatives)
 
         for session_name in session_names:
+            ## Import source data
+            
+            
             ## Import mean EPI ##
-            epi(subject, session_name, drago_derivatives, cbs_derivatives,
-                dfm, dfs, first_run_only = True)
+            wepi(subject, session_name, drago_derivatives, cbs_derivatives,
+                 dfm, dfs, first_run_only = True)
 
             ## Import derivatives ##
             transfer_estimates(subject, session_name, drago_derivatives,
