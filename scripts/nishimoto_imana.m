@@ -101,7 +101,7 @@ numDummys = 0; % we need to make sure that this is correct
 % =========================================================================
 
 switch what
-    case 'ANAT:reslice_lpi' % reslice anatomical to LPI
+    case 'ANAT:reslice_lpi'  % reslice anatomical to LPI
         % Example usage:nishimoto_imana('ANAT:reslice_lpi')
         sn = subj_id;
         
@@ -129,7 +129,7 @@ switch what
             V.mat(1:3,4)    = [0 0 0];
             spm_write_vol(V,dat);
         end % sn (subjects)
-    case 'ANAT:center_ac'   % recenter to AC (manually retrieve coordinates)
+    case 'ANAT:center_ac'    % recenter to AC (manually retrieve coordinates)
         % Example usage: nishimoto_imana('ANAT:center_ac')
         % run spm display to get the AC coordinates
         fprintf('MANUALLY RETRIEVE AC COORDINATES')
@@ -154,8 +154,10 @@ switch what
             V.mat(1:3,4)    = loc_AC{s};
             spm_write_vol(V,dat);
         end % s (subjects)
-    case 'ANAT:segment'     % segment the anatomical image
-        % also saves the bias corrected anatomical
+    case 'ANAT:segment'      % segment the anatomical image
+        % also saves the bias field estimated in SPM
+        % ********IF YOU WANT TO APPLY SPM BIAS CORRECTION TO, USE
+        % ANAT:T1w_bcorrect CASE***********************
         % Example usage: nishimoto_imana('ANAT:segment')
         % check results when done
         sn = subj_id;
@@ -210,8 +212,27 @@ switch what
             matlabbatch{1}.spm.spatial.preproc=J;
             spm_jobman('run',matlabbatch);
         end % s (subject)
-    
-    case 'FUNC:rename'         % removing dummies and renaming 
+    case 'ANAT:T1w_bcorrect' % bias correction for anatomical T1w
+        % nishimoto_imana('ANAT:T1w_bcorrect')
+        sn = subj_id;
+        vararginoptions(varargin, {'sn'});
+        
+        for s = sn
+            fprintf('- Bias correcting the anatomica image for %s\n', subj_str{s});
+            % Get the directory of subjects anatomical and functional
+            subj_anat_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            % make copy of original mean epi, and work on that
+            % Get the name of the anatomical image
+            source  = fullfile(subj_anat_dir, sprintf('%s_T1w_lpi.nii', subj_str{s}));
+            dest    = fullfile(subj_anat_dir, sprintf('b%s_T1w_lpi.nii', subj_str{s}));
+            copyfile(source, dest);
+            
+            % bias correct mean image for grey/white signal intensities
+            P{1}    = dest;
+            spmj_bias_correct(P);
+        end % s (sn)
+        
+    case 'FUNC:rename'           % removing dummies and renaming 
         % "WARNING" NO NEED TO REMOVE DUMMIES (WE THINK SO),SO THE REMOVING
         % PART IS COMMENTED OUT AND THIS CASE WILL ONLY BE USED FOR
         % RENAMING THE FILES.
@@ -255,7 +276,7 @@ switch what
                 end % i (runs within a scan)
             end % ss (session)
         end % sn (subjects)    
-    case 'FUNC:realign'        % realign functional images
+    case 'FUNC:realign'          % realign functional images
         % SPM realigns all volumes to the first volume of first run
         % example usage: nishimoto_imana('FUNC:realign', 'sn', 1)
         
@@ -281,16 +302,35 @@ switch what
             spmj_realign(data);
             fprintf('- runs realigned for %s  ses %02d\n',subj_str{s}, ses);
         end % s (sn)
-    case 'FUNC:coreg'          % coregistration with the anatomicals
+    case 'FUNC:meanepi_bcorrect' % Bias correction for the mean image before coreg
+        % uses the bias field estimated in SPM segmenttion
+        % Example usage: nishimoto_imana('FUNC:meanepi_bcorrect')
+        sn = subj_id;
+        vararginoptions(varargin, {'sn'});
+        
+        for s = sn
+            fprintf('- Bias correcting mean epi for %s\n', subj_str{s});
+            % Get the directory of subjects anatomical and functional
+            subj_func_dir = fullfile(base_dir, subj_str{s}, func_dir);
+            % make copy of original mean epi, and work on that
+            source  = fullfile(subj_func_dir, sprintf('mean%s_ses-01_run-01.nii', subj_str{s}));
+            dest    = fullfile(subj_func_dir, sprintf('bmean%s_ses-01_run-01.nii', subj_str{s}));
+            copyfile(source, dest);
+            
+            % bias correct mean image for grey/white signal intensities
+            P{1}    = dest;
+            spmj_bias_correct(P);
+        end % s (sn)
+    case 'FUNC:coreg'            % coregistration with the anatomicals
         % (1) Manually seed the functional/anatomical registration
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: nishimoto_imana('FUNC:coreg')
+        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', 1, 'prefix', 'rb')
         
-        sn     = subj_id;  % list of subjects        
-        step   = 'manual'; % first 'manual' then 'auto'
-        prefix = 'r';      % to use the bias corrected version, set it to 'rbb'
+        sn     = subj_id;   % list of subjects        
+        step   = 'manual';  % first 'manual' then 'auto'
+        prefix = 'rb';      % to use the bias corrected version, set it to 'rbb'
         % ===================
         % After the manual registration, the mean functional image will be
         % saved with r as the prefix which will then be used in the
@@ -337,9 +377,9 @@ switch what
             % So if you continually update rmeanepi, you'll end up with a file
             % called r...rrrmeanepi.
         end % s (sn) 
-    case 'FUNC:make_samealign' % align all the functionals
+    case 'FUNC:make_samealign'   % align all the functionals
         % Aligns all functional images to rmean functional image
-        % Example usage: nishimoto_imana('FUNC:make_samealign', 'sn', [1, 2], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:make_samealign', 'sn', [2], 'prefix', 'r')
         
         sn     = subj_id;     % subject list
         prefix = 'r';         % prefix for the meanepi: r or rbb if bias corrected
@@ -360,7 +400,7 @@ switch what
                 % Select image for reference 
                 %%% note that functional images are aligned with the first
                 %%% run from first session hence, the ref is always rmean<subj>_ses-01_run-01
-                P{1} = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, ss));
+                P{1} = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix,subj_str{s}));
                 
                 % Select images to be realigned
                 Q = {};
@@ -374,9 +414,9 @@ switch what
                 spmj_makesamealign_nifti(char(P),char(Q));
             end % ss (sess)
         end % s (sn)
-    case 'FUNC:make_maskImage' % Make mask images (noskull and grey_only)
+    case 'FUNC:make_maskImage'   % make mask images (noskull and grey_only)
         % Make maskImage in functional space
-        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'sn', [1, 2], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'sn', [2], 'prefix', 'r')
         
         sn     = subj_id; % list of subjects
         prefix = 'r';     % prefix for the meanepi: r or rbb if bias corrected
@@ -396,17 +436,17 @@ switch what
             nam{2}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
             nam{3}  = fullfile(subj_anat_dir, sprintf('c2%s_T1w_lpi.nii', subj_str{s}));
             nam{4}  = fullfile(subj_anat_dir, sprintf('c3%s_T1w_lpi.nii', subj_str{s}));
-            spm_imcalc(nam, 'rmask_noskull.nii', 'i1>1 & (i2+i3+i4)>0.2')
+            spm_imcalc(nam, 'rmask_noskull.nii', 'i1>0 & (i2+i3+i4)>0.1')
             
             nam     = {};
             nam{1}  = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}));
             nam{2}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
-            spm_imcalc(nam, 'rmask_gray.nii', 'i1>2 & i2>0.4')
+            spm_imcalc(nam, 'rmask_gray.nii', 'i1>0 & i2>0.1')
             
             nam     = {};
             nam{1}  = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}));
             nam{2}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
-            nam{2}  = fullfile(subj_anat_dir, sprintf('c5%s_T1w_lpi.nii', subj_str{s}));
+            nam{3}  = fullfile(subj_anat_dir, sprintf('c5%s_T1w_lpi.nii', subj_str{s}));
             spm_imcalc(nam, 'rmask_grayEyes.nii', 'i1>2400 & i2+i3>0.4')
             
             nam     = {};
@@ -418,8 +458,7 @@ switch what
             spm_imcalc(nam, 'rmask_noskullEyes.nii', 'i1>2000 & (i2+i3+i4+i5)>0.2')
 
         end % s (sn)
-    
-        
+           
     case 'GLM:design1' % make the design matrix for the glm
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
