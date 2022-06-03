@@ -169,9 +169,9 @@ class DataSetHcpResting(DataSet):
             # fill in data
             if (idx != 0) & (idx != 1): # indices 0 and 1 are cortical hemispheres
                 # print(str(nam))
-                subcorticals_vol[ijk[:, 0], ijk[:, 1], ijk[:, 2], :] = bm_vals.T 
+                subcorticals_vol[ijk[:, 0], ijk[:, 1], ijk[:, 2], :] = bm_vals.T
 
-        # save as nii 
+        # save as nii
         nii_vol_4d = nb.Nifti1Image(subcorticals_vol,bmf.affine)
         # if save:
         #     ts_nifti = dir+'/sub-100307_ses-01_task-rest_space-subcortex_run-01_bold.nii'
@@ -216,46 +216,46 @@ class DataSetHcpResting(DataSet):
         fnames = [f'{dir}/sub-{participant_id}_{session_id}_space-fsLR32k_run-{r:02}.dtseries.nii' for r in [1, 2]]
         return fnames
 
-    # def get_data_vol(self, participant_id, 
-    #              atlas_maps, 
+    # def get_data_vol(self, participant_id,
+    #              atlas_maps,
     #              sess_id=None,
     #              ):
     #     # print(f"I'm in get_data")
     #     # get the file name for the cifti time series
     #     fnames = self.get_data_fnames(participant_id,sess_id)
-        
+
     #     # get the volumetric data for subcorticals
     #     vol_ts = []
     #     for file_name in fnames:
     #         # for subcorticals
     #         vol_4D = self._volume_from_cifti(file_name)
 
-            
-            
+
+
     #         # get cerebellar time series in suit space
     #         vol_ts.append(am.get_data4D(vol_4D,atlas_maps))
-        
+
     #     return vol_ts
 
-    # def get_data_surf(self, participant_id, 
-    #              atlas_maps, 
+    # def get_data_surf(self, participant_id,
+    #              atlas_maps,
     #              sess_id=None,
     #              ):
     #     # get the file name for the cifti time series
     #     fnames = self.get_data_fnames(participant_id,sess_id)
-        
+
     #     # get the volumetric data for subcorticals
     #     surf_ts = []
     #     for file_name in fnames:
 
     #         # for cortical hemispheres
     #         surf_ts.append(self._surf_from_cifti(file_name))
-        
+
     #     return surf_ts
 
-    def get_data(self, participant_id, 
-                 atlas_maps, 
-                 label_objs, 
+    def get_data(self, participant_id,
+                 atlas_maps,
+                 label_objs,
                  mask_obj,
                  sess_id = None):
         """
@@ -266,7 +266,7 @@ class DataSetHcpResting(DataSet):
         fnames = self.get_data_fnames(participant_id,sess_id)
         coef = []
         for f in fnames:
-            # load the cifti 
+            # load the cifti
             ts_cifti = nb.load(f)
 
             # get the ts in volume for subcorticals
@@ -283,12 +283,12 @@ class DataSetHcpResting(DataSet):
                 ts_parcel.append(am.get_average_data(data=ts_32k[hemi],
                                                      labels=label_objs[hemi],
                                                      mask=mask_obj[hemi]))
-            
+
             # concatenate them into a single array for correlation calculation
             ts_cortex = np.concatenate(ts_parcel, axis = 1)
 
             # calculate functional connectivity matrix
-            ## no need to define new variables, but still ... 
+            ## no need to define new variables, but still ...
             Y = np.asarray(ts_cerebellum.copy()[0])
             X = ts_cortex.copy()
 

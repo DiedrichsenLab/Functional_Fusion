@@ -125,7 +125,7 @@ class AtlasSurface(Atlas):
         X[self.vox[0],self.vox[1],self.vox[2]]=data
         mapped = nb.Nifti1Image(X,self.mask_img.affine)
         return mapped
-    
+
     def get_brain_model_axis(self):
         """ Returns brain model axis
 
@@ -142,12 +142,12 @@ class AtlasSurfaceParcel(Atlas):
 
         Args:
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
-            
+
             mask_gii (str): gifti file name of mask image defining atlas locations
         """
         self.name = name
         self.label_gii = nb.load(label_gii)
-        
+
         # get the labels into an array
         self.label_vec = self.label_gii.agg_data() # this
 
@@ -159,7 +159,7 @@ class AtlasSurfaceParcel(Atlas):
             self.vertex = np.nonzero(Xmask>0)[0]
             self.label_vec = self.label_vec[self.vertex_mask]
         self.P = np.unique(self.label_vec).shape[0]
-        
+
     def get_parcel_axis(self):
         """ Returns parcel axis
 
@@ -170,16 +170,17 @@ class AtlasSurfaceParcel(Atlas):
         # loop over labels and create brain models
         bm_list = []
         for l in np.unique(self.label_vec):
-            # Create BrainModelAxis for each label
-            bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
+            if l > 0:
+                # Create BrainModelAxis for each label
+                bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
                                                     name=self.name)
-            # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
-            bm_list.append((f"label-{l:02}", bm))
+                # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
+                bm_list.append((f"label-{l:02}", bm))
 
         # create parcel axis from the list of brain models created for labels
         self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
-        
-        return self.parcels 
+
+        return self.parcels
 
 class AtlasMap():
     def __init__(self, dataset, atlas, participant_id):
@@ -188,10 +189,10 @@ class AtlasMap():
             dataset_id (string): name of
             participant_id (string): Participant name
         """
+        self.P = atlas.P       #  Number of brain locations
+        self.name = atlas.name
         self.participant_id = participant_id
         self.dataset = dataset # Reference to corresponding data set
-        self.atlas = atlas     # Reference to corresponding altas
-        self.P = atlas.P       #  Number of brain locations
 
     def build(self):
         """
@@ -226,7 +227,7 @@ class AtlasMapDeform(AtlasMap):
             mask_img (str): Name of masking image that defines the functional data space.
         """
         super().__init__(dataset,atlas,participant_id)
-        self.name = atlas.name
+        self.world = atlas.world
         self.deform_img = nb.load(deform_img)
         self.mask_img = nb.load(mask_img)
 
@@ -237,9 +238,9 @@ class AtlasMapDeform(AtlasMap):
         """
         # Caluculate locations of atlas in individual (deformed) coordinates
         atlas_ind = suit.reslice.sample_image(self.deform_img,
-                    self.atlas.world[0],
-                    self.atlas.world[1],
-                    self.atlas.world[2],1).squeeze().T
+                    self.world[0],
+                    self.world[1],
+                    self.world[2],1).squeeze().T
         N = atlas_ind.shape[1] # Number of locations in atlas
 
         if smooth is None: # Use nearest neighbor interpolation
@@ -283,7 +284,7 @@ class AtlasMapSurf(AtlasMap):
             mask_img (str): Name of masking image that defines the functional data space.
         """
         super().__init__(dataset,atlas,participant_id)
-        self.name = atlas.name
+        self.vertex = atlas.vertex
         self.white_surf = nb.load(white_surf)
         self.pial_surf = nb.load(pial_surf)
         self.mask_img = nb.load(mask_img)
@@ -294,8 +295,8 @@ class AtlasMapSurf(AtlasMap):
         each of the nodes
         """
         n_points = len(depths)
-        c1 = self.white_surf.darrays[0].data[self.atlas.vertex,:].T
-        c2 = self.pial_surf.darrays[0].data[self.atlas.vertex,:].T
+        c1 = self.white_surf.darrays[0].data[self.vertex,:].T
+        c2 = self.pial_surf.darrays[0].data[self.vertex,:].T
         n_vert = c1.shape[1]
         if c2.shape[1] != n_vert:
             raise(NameError('White and pial surfaces should have same number of vertices.'))
@@ -384,7 +385,7 @@ def get_average_data(data, labels, mask = None):
         labels(NiftiImage object) - an array containing the corresponding label for voxels or vertices
         mask(NiftiImage object) - an array of 0 and 1 (0 for voxels/vertices not in the mask)
     Returns:
-        avg_data(np.ndarray: x by # of labels) - average data within all the labels 
+        avg_data(np.ndarray: x by # of labels) - average data within all the labels
     """
 
     # get the array containing labels of each voxel/vertex
