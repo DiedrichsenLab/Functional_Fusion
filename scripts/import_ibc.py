@@ -27,13 +27,30 @@ from nilearn.image import load_img, mean_img
 
 def epi(sub, sname, original_sourcepath, destination_sourcepath, df1, df2):
     session = df1[df1[sub].values == sname].index.values[0]
+    func_folder = os.path.join(original_sourcepath, sub, session, 'func')
     target_dir = os.path.join(destination_sourcepath, sub, 'func', session)
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
     else:
         for ng in glob.glob(target_dir + '/*epi.nii.gz'):
             os.remove(ng)
-    func_folder = os.path.join(original_sourcepath, sub, session, 'fmap')
+    runs = df2[df2.session == sname].srun.values
+    tasks = df2[df2.session == sname].task.values
+    phasedir = df2[df2.session == sname].phase.values
+    for i, (rn, tk, ph) in enumerate(zip(runs, tasks, phasedir)):
+        epi_fname = sub + '_' + session + '_task-' + tk + \
+                    '_dir-' + ph + '_bold.nii.gz'
+        epi_path = os.path.join(func_folder, epi_fname)
+        with subprocess.Popen(["scp", '-o BatchMode=yes', epi_path,
+                               target_dir]) as epi:
+            epi.wait()
+        target_epi = os.path.join(target_dir, epi_fname)
+        new_epi_path = os.path.join(
+            target_dir,
+            sub + '_' + session + '_run-' + '%02d' % rn + '_bold.nii.gz')
+        print(target_epi)
+        print(new_epi_path)
+        os.rename(target_epi, new_epi_path)
 
 
 def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
@@ -93,7 +110,7 @@ def compute_wmeanepi(sub, sname, target_derivatives, df1):
             Y = np.nanmean(X, axis=3)
             meanimg = nb.Nifti1Image(Y, img.affine)
             meanimg_path = os.path.join(
-                sdir, 'sub-01_ses-03_run-01_mean.nii.gz'
+                sdir, 'sub-01_ses-03_run-01_mean.nii.gz')
             nb.save(meanimg, meanimg_path)
             print(meanimg_path)
         else:
@@ -276,22 +293,25 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 
 # ############################### INPUTS ###############################
 
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [14]
 
-session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+subjects_numbers = [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1]
+
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
 #                  'clips4', 'lyon1', 'lyon2']
 # session_names = ['self', 'clips4', 'lyon1', 'lyon2']
-# session_names = ['archi']
+session_names = ['archi']
 
 
 # ############################# PARAMETERS #############################
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc/'
-drago_sourcedata = drago + 'sourcedata'
-drago_derivatives = drago + 'derivatives/'
+drago_sourcedata = os.path.join(drago, 'sourcedata')
+drago_derivatives = os.path.join(drago + 'derivatives/')
+
 home = str(Path.home())
 cbs = os.path.join(home, 'diedrichsen_data/data/FunctionalFusion/ibc')
 cbs_sourcedata = os.path.join(cbs, 'raw')
@@ -306,35 +326,35 @@ dfc = pd.read_csv(open(task_conditions), sep='\t')
 
 subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 
-
 # ############################# RUN ####################################
 
 if __name__ == "__main__":
     for subject in subjects_list:
         ## Import T1w images ##
-        transfer_anat(subject, drago_derivatives, cbs_derivatives)
+        # transfer_anat(subject, drago_derivatives, cbs_derivatives)
 
         ## Import cmasks ##
-        transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
+        # transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
 
         ## Import Freesurfer meshes ##
-        transfer_meshes(subject, drago_derivatives, cbs_derivatives)
+        # transfer_meshes(subject, drago_derivatives, cbs_derivatives)
 
         for session_name in session_names:
             ## Import source data
-            
-            
+            epi(subject, session_name, drago_sourcedata, cbs_sourcedata,
+                dfm, dfs)
+
             ## Import mean EPI ##
-            wepi(subject, session_name, drago_derivatives, cbs_derivatives,
-                 dfm, dfs, first_run_only = True)
+            # wepi(subject, session_name, drago_derivatives, cbs_derivatives,
+            #      dfm, dfs, first_run_only = True)
 
             ## Import derivatives ##
-            transfer_estimates(subject, session_name, drago_derivatives,
-                               cbs_derivatives, dfm, dfs, dfc)
+            # transfer_estimates(subject, session_name, drago_derivatives,
+            #                    cbs_derivatives, dfm, dfs, dfc)
 
             ## Generate tsv files with session info ##
-            generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
-                              dfs, dfc)
+            # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
+            #                   dfs, dfc)
 
             ## Compute mean EPI ##
-            compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
+            # compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
