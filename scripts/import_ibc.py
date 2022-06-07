@@ -38,8 +38,21 @@ def epi(sub, sname, original_sourcepath, destination_sourcepath, df1, df2):
     tasks = df2[df2.session == sname].task.values
     phasedir = df2[df2.session == sname].phase.values
     for i, (rn, tk, ph) in enumerate(zip(runs, tasks, phasedir)):
-        epi_fname = sub + '_' + session + '_task-' + tk + \
-                    '_dir-' + ph + '_bold.nii.gz'
+        if tk == 'RSVPLanguage':
+            epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
+                '_run-%02d' % (rn - 1) + '_bold.nii.gz'
+        elif tk in ['MTTWE', 'MTTNS']:
+            epi_fname = sub + '_' + session + '_task-' + tk + \
+                '_dir-' + ph + '_run-%02d' % rn + '_bold.nii.gz'
+        elif tk in ['VSTM' + '%d' % s for s in np.arange(1, 3)]:
+            epi_fname = sub + '_' + session + '_task-VSTM_dir-' + \
+                ph + '_run-%02d' % rn + '_bold.nii.gz'
+        elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
+            epi_fname = sub + '_' + session + '_task-Self_dir-' + \
+                ph + '_run-%02d' % rn + '_bold.nii.gz'
+        else:
+            epi_fname = sub + '_' + session + '_task-' + tk + \
+                '_dir-' + ph + '_bold.nii.gz'
         epi_path = os.path.join(func_folder, epi_fname)
         with subprocess.Popen(["scp", '-o BatchMode=yes', epi_path,
                                target_dir]) as epi:
@@ -56,13 +69,13 @@ def epi(sub, sname, original_sourcepath, destination_sourcepath, df1, df2):
 def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
          first_run_only = False):
     session = df1[df1[sub].values == sname].index.values[0]
-    target_dir = target_derivatives + '/' + sub + '/func/' + session
+    func_folder = os.path.join(source_derivatives, sub, session, 'func/')
+    target_dir = os.path.join(target_derivatives, sub, 'func', session)
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
     else:
         for ng in glob.glob(target_dir + '/*bold.nii.gz'):
             os.remove(ng)
-    func_folder = source_derivatives + sub + '/' + session + '/func/'
     runs = df2[df2.session == sname].srun.values
     tasks = df2[df2.session == sname].task.values
     phasedir = df2[df2.session == sname].phase.values
@@ -71,16 +84,16 @@ def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
             break
         if tk == 'RSVPLanguage':
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
-                '_dir-' + ph + '_run-' + '%02d' % (rn - 1) + '_bold.nii.gz'
+                '_dir-' + ph + '_run-%02d' % (rn - 1) + '_bold.nii.gz'
         elif tk in ['MTTWE', 'MTTNS']:
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
-                '_dir-' + ph + '_run-' + '%02d' % rn + '_bold.nii.gz'
+                '_dir-' + ph + '_run-%02d' % rn + '_bold.nii.gz'
         elif tk in ['VSTM' + '%d' % s for s in np.arange(1, 3)]:
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-VSTM_dir-' + \
-                ph + '_run-' + '%02d' % rn + '_bold.nii.gz'
+                ph + '_run-%02d' % rn + '_bold.nii.gz'
         elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-Self_dir-' + \
-                ph + '_run-' + '%02d' % rn + '_bold.nii.gz'
+                ph + '_run-%02d' % rn + '_bold.nii.gz'
         else:
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
                 '_dir-' + ph + '_bold.nii.gz'
@@ -98,7 +111,7 @@ def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
 
 def compute_wmeanepi(sub, sname, target_derivatives, df1):
     session = df1[df1[sub].values == sname].index.values[0]
-    sdir = target_derivatives + '/' + sub + '/func/' + session
+    sdir = os.path.join(target_derivatives, sub, 'func', session)
     wepis_paths = glob.glob(sdir + '/*_bold.nii.gz')
     for wepi_path in wepis_paths:
         wepi_fname = re.match(
@@ -122,15 +135,16 @@ def compute_wmeanepi(sub, sname, target_derivatives, df1):
 
 
 def transfer_anat(sub, source_derivatives, target_derivatives):
-    target_anatpath = target_derivatives + '/' + sub + '/anat/'
+    target_anatpath = os.path.join(target_derivatives, sub, 'anat/')
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
     else:
         for ng in glob.glob(target_anatpath + '*_T1w.nii.gz'):
             os.remove(ng)
-    source_anatsess = source_derivatives + sub + '/ses-00/anat/'
-    source_anatfile = source_anatsess + sub + '_ses-00_T1w.nii.gz'
-    w_source_anatfile = source_anatsess + 'w' + sub + '_ses-00_T1w.nii.gz'
+    source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat/')
+    source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
+    w_source_anatfile = os.path.join(source_anatsess,
+                                     'w' + sub + '_ses-00_T1w.nii.gz')
     for afile in [source_anatfile, w_source_anatfile]:
         with subprocess.Popen(["scp", '-o BatchMode=yes', afile,
                                target_anatpath]) as a:
@@ -174,14 +188,14 @@ def transfer_cmasks(sub, source_derivatives, target_derivatives):
 
 
 def transfer_meshes(sub, source_derivatives, target_derivatives):
-    target_meshfolder = target_derivatives + '/' + sub + '/anat/'
+    source_meshfolder = os.path.join(source_derivatives, sub, 'ses-00/anat',
+                                     sub, 'surf/')
+    target_meshfolder = os.path.join(target_derivatives, sub, 'anat/')
     if not os.path.exists(target_meshfolder):
         os.makedirs(target_meshfolder)
     else:
         for ng in glob.glob(target_meshfolder + '*.surf'):
             os.remove(ng)
-    source_meshfolder = \
-                source_derivatives + sub + '/ses-00/anat/' + sub + '/surf/'
     hemispheres = ['lh', 'rh']
     meshes = ['orig', 'pial', 'sulc', 'white']
     for hemi in hemispheres:
@@ -294,23 +308,22 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 # ############################### INPUTS ###############################
 
 # subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
-subjects_numbers = [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
 #                  'clips4', 'lyon1', 'lyon2']
-# session_names = ['self', 'clips4', 'lyon1', 'lyon2']
-session_names = ['archi']
+session_names = ['mtt2']
 
 
 # ############################# PARAMETERS #############################
 
-drago = 'agrilopi@drago:/storage/store2/data/ibc/'
+drago = 'agrilopi@drago:/storage/store2/data/ibc'
 drago_sourcedata = os.path.join(drago, 'sourcedata')
-drago_derivatives = os.path.join(drago + 'derivatives/')
+drago_derivatives = os.path.join(drago + 'derivatives')
 
 home = str(Path.home())
 cbs = os.path.join(home, 'diedrichsen_data/data/FunctionalFusion/ibc')
