@@ -6,7 +6,7 @@ Script to transfer IBC data from Drago to CBS
 Author: Ana Luisa Pinho
 
 Created: April 2022
-Last update: May 2022
+Last update: June 2022
 """
 
 import os
@@ -44,9 +44,21 @@ def epi(sub, sname, original_sourcepath, destination_sourcepath, df1, df2):
         elif tk in ['MTTWE', 'MTTNS']:
             epi_fname = sub + '_' + session + '_task-' + tk + \
                 '_dir-' + ph + '_run-%02d' % rn + '_bold.nii.gz'
+        elif sub == 'sub-11' and sname == 'preference' and rn == 6:
+            tk = 'PreferenceFaces'
+            epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
+                '_run-01_bold.nii.gz'
+        elif sub == 'sub-11' and sname == 'preference' and rn == 7:
+            epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
+                '_run-02_bold.nii.gz'
         elif tk in ['VSTM' + '%d' % s for s in np.arange(1, 3)]:
-            epi_fname = sub + '_' + session + '_task-VSTM_dir-' + \
-                ph + '_run-%02d' % rn + '_bold.nii.gz'
+            if tk == 'VSTM1':
+                epi_fname = sub + '_' + session + '_task-VSTM_dir-' + ph + \
+                    '_run-01_bold.nii.gz'
+            else:
+                assert tk == 'VSTM2'
+                epi_fname = sub + '_' + session + '_task-VSTM_dir-' + ph + \
+                    '_run-02_bold.nii.gz'
         elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
             epi_fname = sub + '_' + session + '_task-Self_dir-' + \
                 ph + '_run-%02d' % rn + '_bold.nii.gz'
@@ -80,7 +92,7 @@ def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
     tasks = df2[df2.session == sname].task.values
     phasedir = df2[df2.session == sname].phase.values
     for i, (rn, tk, ph) in enumerate(zip(runs, tasks, phasedir)):
-        if first_run_only == True and i > 0:
+        if first_run_only is True and i > 0:
             break
         if tk == 'RSVPLanguage':
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
@@ -88,9 +100,21 @@ def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
         elif tk in ['MTTWE', 'MTTNS']:
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
                 '_dir-' + ph + '_run-%02d' % rn + '_bold.nii.gz'
+        elif sub == 'sub-11' and sname == 'preference' and rn == 6:
+            tk = 'PreferenceFaces'
+            wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
+                '_dir-' + ph + '_run-01_bold.nii.gz'
+        elif sub == 'sub-11' and sname == 'preference' and rn == 7:
+            wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
+                '_dir-' + ph + '_run-02_bold.nii.gz'
         elif tk in ['VSTM' + '%d' % s for s in np.arange(1, 3)]:
-            wepi_fname = 'wrdc' + sub + '_' + session + '_task-VSTM_dir-' + \
-                ph + '_run-%02d' % rn + '_bold.nii.gz'
+            if tk == 'VSTM1':
+                wepi_fname = 'wrdc' + sub + '_' + session + \
+                    '_task-VSTM_dir-' + ph + '_run-01_bold.nii.gz'
+            else:
+                assert tk == 'VSTM2'
+                wepi_fname = 'wrdc' + sub + '_' + session + \
+                    '_task-VSTM_dir-' + ph + '_run-02_bold.nii.gz'
         elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-Self_dir-' + \
                 ph + '_run-%02d' % rn + '_bold.nii.gz'
@@ -308,15 +332,15 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 # ############################### INPUTS ###############################
 
 # subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 # subjects_numbers = [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1]
+subjects_numbers = [1]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
 #                  'clips4', 'lyon1', 'lyon2']
-session_names = ['mtt2']
+session_names = ['enumeration']
 
 
 # ############################# PARAMETERS #############################
