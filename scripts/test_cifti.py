@@ -11,8 +11,8 @@ atlas_dir = base_dir + '/Atlases'
 hcp_dir = base_dir + '/HCP'
 
 def explore_cifti():
-    dir = hcp_dir + '/derivatives/100307/estimates'
-    A=nb.load(dir+'/sub-100307_ses-01_task-rest_space-fsLR32k_run-01_bold.nii')
+    dir = hcp_dir + '/derivatives/100307/func'
+    A=nb.load(dir+'/sub-100307_run-0_space-MSMSulc.dtseries.nii')
     ser = A.header.get_axis(0)
     bmf = A.header.get_axis(1)
 
@@ -31,29 +31,27 @@ def explore_pconn():
     pass
 
 def test_pdscalar(): 
-    
+    pass 
 
 
-def get_cereb():
-    dir2 = hcp_dir + '/derivatives/100307/estimates'
-    A=nb.load(dir2+'/sub-100307_ses-01_task-rest_space-fsLR32k_run-01_bold.nii')
+def get_cereb_mask():
+    dir2 = hcp_dir + '/derivatives/100307/func'
+    A=nb.load(dir2+'/sub-100307_run-0_space-MSMSulc.dtseries.nii')
     ser = A.header.get_axis(0)
     bmf = A.header.get_axis(1)
     bmcl = bmf[bmf.name == 'CIFTI_STRUCTURE_CEREBELLUM_LEFT']
     bmcr = bmf[bmf.name == 'CIFTI_STRUCTURE_CEREBELLUM_RIGHT']
     bmc= bmcl + bmcr
-    print(dir(bmc))
     ijk = bmc.voxel
-    # X = np.zeros((90,50,50))
-    X = np.zeros((bmc.volume_shape[0],bmc.volume_shape[1], bmc.volume_shape[2]))
+    X = np.zeros((bmc.volume_shape))
     X[ijk[:,0],ijk[:,1],ijk[:,2]] = 1
     N = nb.Nifti1Image(X,bmc.affine)
-    nb.save(N,atlas_dir + '/tpl-MNI152NLin6AsymC' + '/tpl-MNI152AsymC_res-2_gmcmask2.nii')
+    nb.save(N,atlas_dir + '/tpl-MNI152NLin6AsymC' + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii')
     return bmc
 
 
 def get_cortex():
-    dir = hcp_dir + '/derivatives/100307/estimates'
+    dir = hcp_dir + '/derivatives/100307/func'
     A=nb.load(dir+'/sub-100307_ses-01_task-rest_space-fsLR32k_run-01_bold.nii')
     ser = A.header.get_axis(0)
     bmf = A.header.get_axis(1)
@@ -107,8 +105,8 @@ def get_ts_nii():
 
 
 if __name__ == "__main__":
-    explore_pconn()
-
+    # get_cereb_mask()
+    explore_cifti()
 
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
     # for s in T.participant_id:

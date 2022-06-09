@@ -11,10 +11,11 @@ from numpy.linalg import inv
 import nibabel as nb
 import os
 
-import SUITPy as suit
-import surfAnalysisPy as surf
 import util
 import matrix
+import SUITPy as suit
+import surfAnalysisPy as surf
+
 
 class Atlas():
     def __init__(self):
@@ -244,7 +245,10 @@ class AtlasMapDeform(AtlasMap):
         N = atlas_ind.shape[1] # Number of locations in atlas
 
         if smooth is None: # Use nearest neighbor interpolation
-            self.vox_list,self.vox_weight = util.coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
+            linindx,good = util.coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
+            self.vox_list = linindx.reshape(-1,1)
+            self.vox_weight = np.ones((linindx.shape[0],1))
+            self.vox_weight[np.logical_not(good)]=np.nan
         else:              # Use smoothing kernel of specific size
             # Get world coordinates and linear coordinates for all available voxels
             M = self.mask_img.get_fdata()
