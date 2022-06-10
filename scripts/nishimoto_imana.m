@@ -54,7 +54,7 @@ setenv('PATH', path1);
 % defining the names of other directories
 func_dir = 'func';
 anat_dir = 'anat';
-est_dir  = 'est';
+est_dir  = 'estimates';
 fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
@@ -82,7 +82,7 @@ numDummys = 0; % we need to make sure that this is correct
 % based on comments here there should be 6 dummies: https://openneuro.org/datasets/ds002306/versions/1.1.0 
 % based on the paper, there are 6 dummies: 3 dummies in the beginning of
 % the run and 3 dummies at the end (281 - 6 = 275, the paper says 275 time points)
-% BUT, using the times recorded in the tsv files if we subtract the 3
+% BUT, using the times recorded in the tsv files, if we subtract the 3
 % dummies in the beginning, the onsets become negative, no dummies are
 % removed for now, as we think the times reported in the tsv files are
 % including the dummies
@@ -93,7 +93,8 @@ numDummys = 0; % we need to make sure that this is correct
 % Each task has 12 instances: 8 (training) + 4 (testing)
 % 3 days, 6 runs per day: 12 training runs + 6 test runs
 % each run contains 77-83 trials lasting for 6-12 seconds
-% Task order is pseudorandomized in the training runs! ("some tasks depended on each other and were therefore presented close to each other in time")
+% Task order is pseudorandomized in the training runs! 
+%("some tasks depended on each other and were therefore presented close to each other in time")
 % In the test runs, 103 tasks were presented four times in the same order across all six runs
 % Task order is fixed in the testing runs.
 % Looking at the tsv files, the order during training runs is the same
@@ -212,7 +213,7 @@ switch what
             matlabbatch{1}.spm.spatial.preproc=J;
             spm_jobman('run',matlabbatch);
         end % s (subject)
-    case 'ANAT:T1w_bcorrect' % bias correction for anatomical T1w
+    case 'ANAT:T1w_bcorrect' % bias correction for anatomical T1w (optional)
         % nishimoto_imana('ANAT:T1w_bcorrect')
         sn = subj_id;
         vararginoptions(varargin, {'sn'});
@@ -244,7 +245,7 @@ switch what
         % files. Runs done on the same day are considered as one session. 
         % this case calls FUNC:get_in_info to get the run information and
         % assign runs to sessions
-        % Example usage: nishimoto_imana('FUNC:rename', 'sn', [1])
+        % Example usage: nishimoto_imana('FUNC:rename', 'sn', 2)
         sn = subj_id;
         
         vararginoptions(varargin, 'sn')
@@ -266,7 +267,7 @@ switch what
                 for i = 1:length(fun_scans)
                     fprintf('- Doing %s %s run %02d\n', subj_str{s}, ses_name, i);
                     src_filename = fun_scans(i).name;
-                    des_filename = sprintf('%s_ses-%02d_run-%02d.nii', subj_str{s}, ss, i);
+                    des_filename = sprintf('%s_ses-%02d_run-%02d.nii', subj_str{s}, ss, run_list{ss}(i));
                     movefile(src_filename,fullfile(func_subj_dir, des_filename))
                     
                     % change the names of the tsv files
@@ -278,7 +279,7 @@ switch what
         end % sn (subjects)    
     case 'FUNC:realign'          % realign functional images
         % SPM realigns all volumes to the first volume of first run
-        % example usage: nishimoto_imana('FUNC:realign', 'sn', 1)
+        % example usage: nishimoto_imana('FUNC:realign', 'sn', 2)
         
         sn   = subj_id; % list of subjects
         
@@ -302,7 +303,7 @@ switch what
             spmj_realign(data);
             fprintf('- runs realigned for %s  ses %02d\n',subj_str{s}, ses);
         end % s (sn)
-    case 'FUNC:meanepi_bcorrect' % Bias correction for the mean image before coreg
+    case 'FUNC:meanepi_bcorrect' % bias correction for the mean image before coreg (optional)
         % uses the bias field estimated in SPM segmenttion
         % Example usage: nishimoto_imana('FUNC:meanepi_bcorrect')
         sn = subj_id;
@@ -326,7 +327,7 @@ switch what
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', 1, 'prefix', 'rb')
+        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1, 3, 4, 5, 6], 'prefix', 'r')
         
         sn     = subj_id;   % list of subjects        
         step   = 'manual';  % first 'manual' then 'auto'
@@ -336,7 +337,7 @@ switch what
         % saved with r as the prefix which will then be used in the
         % automatic registration
         vararginoptions(varargin, {'sn', 'step', 'prefix'});
-        
+        spm_jobman('initcfg')
         for s = sn
             % Get the directory of subjects anatomical and functional
             subj_anat_dir = fullfile(base_dir, subj_str{s}, anat_dir);
@@ -379,7 +380,7 @@ switch what
         end % s (sn) 
     case 'FUNC:make_samealign'   % align all the functionals
         % Aligns all functional images to rmean functional image
-        % Example usage: nishimoto_imana('FUNC:make_samealign', 'sn', [2], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [1])
         
         sn     = subj_id;     % subject list
         prefix = 'r';         % prefix for the meanepi: r or rbb if bias corrected
@@ -416,12 +417,12 @@ switch what
         end % s (sn)
     case 'FUNC:make_maskImage'   % make mask images (noskull and grey_only)
         % Make maskImage in functional space
-        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'sn', [2], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 1)
         
         sn     = subj_id; % list of subjects
         prefix = 'r';     % prefix for the meanepi: r or rbb if bias corrected
         
-        vararginoptions(varargin, {'sn', 'task', 'sess', 'prefix_mepi'});
+        vararginoptions(varargin, {'sn', 'prefix'});
         
         
         for s = sn
@@ -458,8 +459,17 @@ switch what
             spm_imcalc(nam, 'rmask_noskullEyes.nii', 'i1>2000 & (i2+i3+i4+i5)>0.2')
 
         end % s (sn)
+    case 'FUNC:run'              % add functional pipelines here
+        % Example usage: nishimoto_imana('FUNC:run', 'sn', [3, 4, 5, 6])
+        
+        sn  = subj_id;        
+        vararginoptions(varargin, {'sn'});
+%         nishimoto_imana('FUNC:realign', 'sn', sn);
+        nishimoto_imana('FUNC:coreg', 'sn', sn, 'prefix', 'r')
+        nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', sn);
+        nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', sn);  
            
-    case 'GLM:design1' % make the design matrix for the glm
+    case 'GLM:design1'  % make the design matrix for the glm
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
         % represents all the instances
@@ -470,14 +480,14 @@ switch what
         ses = 1;
         vararginoptions(varargin, {'sn', 'hrf_cutoff', 'ses'});
         
-        prefix = ''; % prefix of the preprocessed epi we want to use
+        prefix = 'r'; % prefix of the preprocessed epi we want to use
         glm = 1;
         for s = sn
             func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
             % loop over runs
 %             for ss = [1, 2]
                 % create a directory to save the design
-                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('ses-%02d', ses));
+                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses));
                 dircheck(subj_est_dir)
                 
                 T = []; % task/condition + session + run info
@@ -490,15 +500,16 @@ switch what
                 J.timing.fmri_t0 = 1;
                 
                 % get the list of runs for the current session
-                runs_list = sess{ses};
+                runs = run_list{ses};
                 
                 % loop through runs within the current sessions
-                for run = 1:length(runs_list)
+                icondUni = 0;
+                for run = 1:length(runs)
                     
 %                   % fill in nifti image names for the current run
                     N = cell(numTRs - numDummys, 1); % preallocating!
                     for i = 1:(numTRs-numDummys)
-                        N{i} = fullfile(func_subj_dir, sprintf('%s%s_run-%02d.nii', prefix, subj_str{s}, i));
+                        N{i} = fullfile(func_subj_dir, sprintf('%s%s_ses-%02d_run-%02d.nii, %d', prefix, subj_str{s}, ses, run, i));
                     end % i (image numbers)
                     J.sess(run).scans = N; % scans in the current runs
                     
@@ -513,20 +524,22 @@ switch what
                     % loop over trials within the current run and build up
                     % the design matrix
                     for ic = 1:length(unique_conds)
+                        icondUni = icondUni+1;
                         % get the indices corresponding to the current
                         % condition.
                         % this line is necessary as there are some
                         % conditions with more than 1 repetition
                         idx = strcmp(D.trial_type, unique_conds{ic});
-                        fprintf('* %d instances found for condition %s in run %02d\n', sum(idx), unique_conds{ic}, run)
+%                         fprintf('* %d instances found for condition %s in run %02d\n', sum(idx), unique_conds{ic}, run)
                         
                         % filling in "reginfo"
-                        TT.sn    = s;
-                        TT.sess  = ses;
-                        TT.run   = run;
-                        TT.CN    = unique_conds(ic);
-                        TT.cond  = ic;
-                        TT.n_rep = sum(idx);
+                        TT.sn      = s;
+                        TT.sess    = ses;
+                        TT.run     = run;
+                        TT.CN      = unique_conds(ic);
+                        TT.cond    = ic;
+                        TT.condUni = icondUni;
+                        TT.n_rep   = sum(idx);
                         
                         % filling in fields of J (SPM Job)
                         J.sess(run).cond(ic).name = unique_conds{ic};
@@ -536,12 +549,12 @@ switch what
                         
                         % get onset and duration (should be in seconds)
                         onset    = D.onset(idx) - (J.timing.RT*numDummys);
-                        fprintf("The onset is %f\n", onset)
+%                         fprintf("The onset is %f\n", onset)
                         if onset < 0 
                             warning("negative onset found")
                         end
                         duration = D.duration(idx);
-                        fprintf("The duration is %f\n", duration);
+%                         fprintf("The duration is %f\n", duration);
                         
                         J.sess(run).cond(ic).onset    = onset;
                         J.sess(run).cond(ic).duration = duration;
@@ -556,30 +569,57 @@ switch what
                     J.sess(run).hpf       = hrf_cutoff; % set to 'inf' if using J.cvi = 'FAST'. SPM HPF not applied
                 end % run (runs of current session)
                 
-%                 J.fact             = struct('name', {}, 'levels', {});
-%                 J.bases.hrf.derivs = [0 0];
-%                 J.bases.hrf.params = [4.5 11];                                  % set to [] if running wls
-%                 J.volt             = 1;
-%                 J.global           = 'None';
-%                 J.mask             = {fullfile(imagingDir, task_names{task_num}, subj_name,'rmask_noskull.nii,1')};
-%                 J.mthresh          = 0.05;
-%                 J.cvi_mask         = {fullfile(imagingDir, task_names{task_num}, subj_name,'rmask_gray.nii')};
-%                 J.cvi              =  'fast';
-%                 
-%                 spm_rwls_run_fmri_spec(J);
+                J.fact             = struct('name', {}, 'levels', {});
+                J.bases.hrf.derivs = [0 0];
+                J.bases.hrf.params = [4.5 11];                                  % set to [] if running wls
+                J.volt             = 1;
+                J.global           = 'None';
+                J.mask             = {fullfile(func_subj_dir,'rmask_noskull.nii,1')};
+                J.mthresh          = 0.05;
+                J.cvi_mask         = {fullfile(func_subj_dir,'rmask_gray.nii')};
+                J.cvi              =  'fast';
                 
-                save(fullfile(J.dir{1},sprintf('%s_ses-%d_reginfo.tsv', subj_str{s}, ses)), '-struct', 'T');
+                spm_rwls_run_fmri_spec(J);
+                
+                dsave(fullfile(J.dir{1},sprintf('%s_ses-%d_reginfo.tsv', subj_str{s}, ses)), T);
                 fprintf('- estimates for glm_%d session %d has been saved for %s \n', glm, ses, subj_str{s});
 %             end % ss (session)
             
             
-        end % sn (subject)
+        end % sn (subject)      
+    case 'GLM:estimate' % estimate beta values
+        % Example usage: nishimoto_imana('GLM:estimate', 'glm', 1, 'ses', 1)
         
-    case 'GLM:estimate'
+        sn       = subj_id; % subject list
+        glm      = 1;       % glm number
+        ses      = 1;       % session number
+        
+        vararginoptions(varargin, {'sn', 'glm', 'ses'})
+        
+        for s = sn
+            fprintf('- Doing glm estimation for glm %02d %s\n', glm, subj_str{s});
+            subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses));         
+            
+            load(fullfile(subj_est_dir,'SPM.mat'));
+            SPM.swd = subj_est_dir;
+            
+            spm_rwls_spm(SPM);
+        end % s (sn),
     case 'GLM:T_contrast' 
     case 'GLM:F_contrast'
+    
+    case 'GLM:run'    % add glm routines you want to run as pipeline
+        % Example usage: nishimoto_imana('GLM:run', 'sn', [1, 3, 4, 5, 6], 'glm', 1, 'ses', 1)
         
+        sn = subj_id;
+        ses = 1;
+        glm = 1;
         
+        vararginoptions(varargin, {'sn', 'ses', 'glm'});
+        
+        nishimoto_imana('GLM:design1', 'sn', sn, 'ses', ses);
+        nishimoto_imana('GLM:estimate', 'sn', sn, 'glm', glm, 'ses', ses);
+         
     case 'SURF:reconall'       % Freesurfer reconall routine
         % Calls recon-all, which performs, all of the
         % FreeSurfer cortical reconstruction process
@@ -655,9 +695,9 @@ switch what
         nishimoto_imana('SURF:xhemireg')
         nishimoto_imana('SURF:map_ico')
         nishimoto_imana('SURF:fs2wb')
+         
         
-        
-    case 'SUIT:isolate_segment' % Segment cerebellum into grey and white matter
+    case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
         % Example usage: nishimoto_bids_imana('SUIT:isolate_segment', 'sn', 1);
         
         sn = subj_id;
@@ -726,7 +766,7 @@ switch what
             
         end % s (sn)
     case 'SUIT:normalize_darte'   
-    case 'SUIT:reslice'                      %reslice cerebellum into suit space to check normalization
+    case 'SUIT:reslice'            %reslice cerebellum into suit space to check normalization
         % 'suit_normalise_dartel'.
         % example: nishimoto_bids_imana('SUIT:reslice','anatomical','pcereb')
         % make sure that you reslice into 2mm^3 resolution
