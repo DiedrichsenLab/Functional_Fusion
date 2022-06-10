@@ -327,7 +327,7 @@ switch what
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1, 3, 4, 5, 6], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
         
         sn     = subj_id;   % list of subjects        
         step   = 'manual';  % first 'manual' then 'auto'
@@ -347,8 +347,8 @@ switch what
             
             switch step
                 case 'manual'
-                    coregtool;
-                    keyboard;
+%                     coregtool;
+%                     keyboard;
                 case 'auto'
                     % do nothing
             end % switch step
@@ -363,12 +363,20 @@ switch what
             J.eoptions.sep      = [4 2];
             J.eoptions.tol      = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
             J.eoptions.fwhm     = [7 7];
-            matlabbatch{1}.spm.spatial.coreg.estimate=J;
-            spm_jobman('run',matlabbatch);
+%             matlabbatch{1}.spm.spatial.coreg.estimate=J;
+%             spm_jobman('run',matlabbatch);
             
             % (3) Manually check again
-            coregtool;
-            keyboard();
+%             coregtool;
+%             keyboard();
+            % checking the affine matrix
+            T1_vol = spm_vol(J.ref);
+            T1_vol = T1_vol{1};
+            T2_vol = spm_vol(J.source);
+            T2_vol = T2_vol{1};
+            x = spm_coreg(T2_vol, T1_vol);
+            M = spm_matrix(x);
+            display(M)
             
             % NOTE:
             % Overwrites meanepi, unless you update in step one, which saves it
