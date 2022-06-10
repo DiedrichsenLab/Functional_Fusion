@@ -335,12 +335,12 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 # subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 # subjects_numbers = [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1]
+subjects_numbers = [13, 14, 15]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-# session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-#                  'clips4', 'lyon1', 'lyon2']
-session_names = ['enumeration']
+session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+                 'clips4', 'lyon1', 'lyon2']
+# session_names = ['enumeration']
 
 
 # ############################# PARAMETERS #############################
