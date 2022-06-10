@@ -31,7 +31,7 @@ def get_hcp_data(res=162):
     deform = mni_atlas + '/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
     mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
     atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, 'group',deform,mask)
-    atlas_map.build(smooth=None)
+    atlas_map.build(smooth=2.0)
 
     # Get the parcelation 
     surf_parcel =[] 
@@ -43,16 +43,18 @@ def get_hcp_data(res=162):
     T = hcp_dataset.get_participants() 
     for s in T.participant_id[0:2]:
         print(f'Extract {s}')
-        data,info,names = hcp_dataset.get_cereb_connectivity(s,atlas_map,   surf_parcel)
-        pass
+        coef = hcp_dataset.get_cereb_connectivity(s,atlas_map, surf_parcel)
+        # Average across runs 
+        coef = np.nanmean(coef,axis=0)
 
-
-        C=am.data_to_cifti(data,[atlas_map],names)
-        dest_dir = mdtb_dataset.data_dir.format(s)
+        # Build a connectivity CIFTI-file and save 
+        bmc = suit_atlas.get_brain_model_axis()
+        bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
+        header = nb.Cifti2Header.from_axes((bpa,bmc))
+        cifti_img = nb.Cifti2Image(dataobj=coef,header=header)
+        dest_dir = hcp_dataset.data_dir.format(s)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        nb.save(C, dest_dir + f'/{s}_space-SUIT3_{ses_id}_CondSes.dscalar.nii')
-        info.to_csv(dest_dir + f'/{s}_{ses_id}_info-CondSes.tsv',sep='\t')
-
+        nb.save(cifti_img, dest_dir + f'/sub-{s}.dpconn.nii')
 
 
 if __name__ == "__main__":

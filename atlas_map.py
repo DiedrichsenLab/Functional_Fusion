@@ -142,9 +142,10 @@ class AtlasSurfaceParcel(Atlas):
         """AtlasSurfaceParcel class constructor
 
         Args:
-            name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
-
-            mask_gii (str): gifti file name of mask image defining atlas locations
+            name (str): 
+                Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            mask_gii (str): 
+                gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space 
         """
         self.name = name
         self.label_gii = nb.load(label_gii)
@@ -156,10 +157,29 @@ class AtlasSurfaceParcel(Atlas):
         if mask_gii is not None:
             self.mask_gii = nb.load(mask_gii)
             Xmask = self.mask_gii.agg_data()
-            self.vertex_mask = (Xmask>0)
-            self.vertex = np.nonzero(Xmask>0)[0]
-            self.label_vec = self.label_vec[self.vertex_mask]
-        self.P = np.unique(self.label_vec).shape[0]
+            self.label_vec = self.label_vec[Xmask==0]=0
+        # Find the number of parcels with label > 0 
+        self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
+
+    def agg_data(self,data,func=np.nanmean):
+        """Aggregate data into the parcels - 
+        Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1.... 
+
+        Args:
+            data (nparray): 
+                NxP array of data   
+            func (function): 
+                Aggregation function - needs to take data,axis=1 as input arguments 
+        Returns: 
+            Aggregated data: 
+        """
+
+        # get the aggregrated data - assumes consequtive labels 
+        agg_data = np.empty((data.shape[0],self.P))
+        for p in range(self.P):
+            agg_data[:,p]=func(data[:,self.label_vec==p],axis=1)
+        return agg_data
+
 
     def get_parcel_axis(self):
         """ Returns parcel axis
@@ -176,7 +196,7 @@ class AtlasSurfaceParcel(Atlas):
                 bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
                                                     name=self.name)
                 # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
-                bm_list.append((f"label-{l:02}", bm))
+                bm_list.append((f"{self.name}-{l:02}", bm))
 
         # create parcel axis from the list of brain models created for labels
         self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
@@ -380,34 +400,6 @@ def get_data4D(vol_4D,atlas_maps):
             data[i][j,:]=d
     return data
 
-def get_average_data(data, labels, mask = None):
-    """
-    takes a set of vertices for a label, mask the vertices according to a mask
-    extracts the average data for all the labels
-    Args:
-        data(np.ndarray) - data you want to average within each label
-        labels(NiftiImage object) - an array containing the corresponding label for voxels or vertices
-        mask(NiftiImage object) - an array of 0 and 1 (0 for voxels/vertices not in the mask)
-    Returns:
-        avg_data(np.ndarray: x by # of labels) - average data within all the labels
-    """
-
-    # get the array containing labels of each voxel/vertex
-    labels_vec = labels.agg_data()
-
-    # apply the mask if not none
-    if mask != None:
-
-        mask_vec = mask.agg_data()
-        labels_vec = labels_vec[mask_vec == 1]
-
-    # create an indicator matrix that will be used to get the mean data
-    M = matrix.indicator(labels_vec, positive = True)
-
-    # get the average data
-    avg_data = (data @ M) / np.sum(M, axis = 0)
-
-    return avg_data
 
 def data_to_cifti(data,atlas_maps,names=None):
     """Transforms a list of data sets and list of atlas maps

@@ -157,9 +157,10 @@ def surf_from_cifti(ts_cifti,
         for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
             # just get the cortical surfaces
             if nam in struct_names: 
+                values = np.full((ts_array.shape[0],bmf.nvertices[nam]),np.nan)
                 # get the values corresponding to the brain model
-                bm_vals = ts_array[:, slc]
-                ts_list.append(bm_vals)
+                values[:,bm.vertex] = ts_array[:, slc]
+                ts_list.append(values)
             else:
                 break
         return ts_list

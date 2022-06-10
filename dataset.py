@@ -142,7 +142,6 @@ class DataSetHcpResting(DataSet):
         # self.func_dir = self.base_dir + '/{0}/estimates'
         self.all_sub = self.get_participants()
         self.derivative_dir = self.base_dir + '/derivatives'
-        self.func_dir = self.base_dir + '/func'
 
     def get_data_fnames(self, participant_id):
         """ Gets all raw data files
@@ -159,38 +158,33 @@ class DataSetHcpResting(DataSet):
 
     def get_ts_volume(self,
                 participant_id,
-                atlas_map): 
+                atlas_map,
+                runs=[0,1,2,3]): 
         """ Returns the time series data for an atlas map 
             sample from voxels
         Args:
             participant_id (_type_): _description_
             atlas_map (_type_): _description_
         """
-        pass
-    # def get_data_vol(self, participant_id,
-    #              atlas_maps,
-    #              sess_id=None,
-    #              ):
-    #     # print(f"I'm in get_data")
-    #     # get the file name for the cifti time series
-    #     fnames = self.get_data_fnames(participant_id,sess_id)
+        # get the file name for the cifti time series
+        fnames = self.get_data_fnames(participant_id)
+        ts_volume = []
+        for r in runs:
+            # load the cifti
+            ts_cifti = nb.load(fnames[r])
 
-    #     # get the volumetric data for subcorticals
-    #     vol_ts = []
-    #     for file_name in fnames:
-    #         # for subcorticals
-    #         vol_4D = self._volume_from_cifti(file_name)
+            # get the ts in volume for subcorticals
+            ts_vol = util.volume_from_cifti(ts_cifti)
+            # transfer to suit space applying the deformation
+            ts_vol = am.get_data4D(ts_vol, [atlas_map])
+            ts_volume.append(ts_vol[0])
 
-
-
-    #         # get cerebellar time series in suit space
-    #         vol_ts.append(am.get_data4D(vol_4D,atlas_maps))
-
-    #     return vol_ts
+        return ts_volume
 
     def get_ts_surface(self,
                     participant_id,
-                    atlas_parcel):
+                    atlas_parcel,
+                    runs=[0,1,2,3]):
         """Returns the information from the CIFTI file
         in the 32K surface for left and right hemisphere. 
 
@@ -198,23 +192,28 @@ class DataSetHcpResting(DataSet):
             participant_id (_type_): _description_
             atlas_parcel (_type_): _description_
         """
-        pass 
-    # def get_data_surf(self, participant_id,
-    #              atlas_maps,
-    #              sess_id=None,
-    #              ):
-    #     # get the file name for the cifti time series
-    #     fnames = self.get_data_fnames(participant_id,sess_id)
+        hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
+        # get the file name for the cifti time series
+        fnames = self.get_data_fnames(participant_id)
+        coef = None
+        ts_cortex=[]
+        for r in runs:
+            # load the cifti
+            ts_cifti = nb.load(fnames[r])
 
-    #     # get the volumetric data for subcorticals
-    #     surf_ts = []
-    #     for file_name in fnames:
+            # get the ts in surface for corticals
+            ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
+            ts_parcel = [] 
+            for hem in range(2):
 
-    #         # for cortical hemispheres
-    #         surf_ts.append(self._surf_from_cifti(file_name))
+                # get the average within parcels 
+                ts_parcel.append(
+                    atlas_parcels[hem].agg_data(ts_32k[hem])
+                    )
 
-    #     return surf_ts
-
+            # concatenate them into a single array for correlation calculation
+            ts_cortex.append(ts_parcel)
+        return ts_cortex  # shape (n_tessl,P)
 
 
     def get_cereb_connectivity(self, 
@@ -229,6 +228,7 @@ class DataSetHcpResting(DataSet):
         hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id)
+        coef = None
         for r in runs:
             # load the cifti
             ts_cifti = nb.load(fnames[r])
@@ -241,20 +241,27 @@ class DataSetHcpResting(DataSet):
 
             # get the ts in surface for corticals
             ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
+            ts_parcel = [] 
             for hem in range(2):
 
                 # get the average within parcels 
-                ts_parcel.append(am.get_average_data(data=ts_32k,
-                                                     labels=label_objs[hemi],
-                                                     mask=mask_obj[hemi]))
+                ts_parcel.append(
+                    cortical_atlas_parcels[hem].agg_data(ts_32k[hem])
+                    )
 
             # concatenate them into a single array for correlation calculation
             ts_cortex = np.concatenate(ts_parcel, axis = 1)
 
-            # calculate functional connectivity matrix
-            ## no need to define new variables, but still ...
+            # Standardize the time series for easier calculation 
             ts_cerebellum = util.zstandarize_ts(ts_cerebellum)
             ts_cortex = util.zstandarize_ts(ts_cortex)
 
-        return np.concatenate((coef[0], coef[1]), axis=1)  # shape (P, 2 * n_tessl)
+            # Correlation calculation 
+            if coef is None:
+                coef=np.empty((len(runs),ts_cortex.shape[1],
+                                ts_cerebellum.shape[1]))
+            N = ts_cerebellum.shape[0]
+            coef[r,:,:] = ts_cortex.T @ ts_cerebellum / N
+
+        return coef  # shape (n_tessl,P)
 
