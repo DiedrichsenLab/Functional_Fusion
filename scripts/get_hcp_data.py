@@ -14,7 +14,7 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 
-data_dir = base_dir + '/HCP'
+hcp_dir = base_dir + '/HCP'
 atlas_dir = base_dir + '/Atlases'
 hem_name = ['cortex_left','cortex_right']
 
@@ -24,7 +24,7 @@ def get_hcp_data(res=162):
     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
     
     # initialize the data set object
-    hcp_dataset = DataSetHcpResting(data_dir)
+    hcp_dataset = DataSetHcpResting(hcp_dir)
     
     # Get the deformation map from MNI to SUIT 
     mni_atlas = atlas_dir + '/tpl-MNI152NLin6AsymC'
@@ -56,8 +56,40 @@ def get_hcp_data(res=162):
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(cifti_img, dest_dir + f'/sub-{s}.dpconn.nii')
 
+def avrg_hcp_dpconn(res=162):
+    # initialize the data set object
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+    T = hcp_dataset.get_participants()
+    for i,s in enumerate(T.participant_id): 
+        data_dir = hcp_dataset.data_dir.format(s)
+        Ci = nb.load(data_dir + f'/sub-{s}.dpconn.nii')
+        if i==0: 
+            R = np.empty((T.shape[0],Ci.shape[0],Ci.shape[1]))
+        R[i,:,:]=np.asanyarray(Ci.dataobj)
+    Rm = np.nanmean(R,axis=0)
+    Cm = nb.Cifti2Image(Rm,Ci.header)
+    nb.save(Cm,hcp_dir + '/group_162_dpconn.nii')
+    pass
+
+
+def parcel_hcp_dpconn(dpconn_file):
+    """
+    Args:
+        dpconn_file (_type_): _description_
+    """
+    C = nb.load(dpconn_file)
+    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    label = atlas_dir + '/tpl-SUIT/atl-MDTB10_space-SUIT_dseg.nii'
+    mdtb_atlas = am.AtlasVolumeParcel('MDTB10',label_img=label,mask_img=mask)
+    R = mdtb_atlas.agg_data(np.asanyarray(C.dataobj))
+    bm_cortex = C.header.get_axis(0)
+    names = [f'MDTB {r+1:02}' for r in range(R.shape[1])]
+    row_axis = nb.cifti2.ScalarAxis(names)
+    cifti_img = nb.Cifti2Image(R.T,[row_axis,bm_cortex])
+    return cifti_img
+
 
 if __name__ == "__main__":
-    get_hcp_data()
-    pass
+    C=parcel_hcp_dpconn(hcp_dir + '/group_162_dpconn.nii')
+    nb.save(C,hcp_dir + '/group_162.pscalar.nii')
 

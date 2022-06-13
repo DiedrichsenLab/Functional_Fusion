@@ -44,7 +44,7 @@ def import_func_resting(source_dir, dest_dir, participant_id):
 
 if __name__ == "__main__":
     T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
-    for s in T.participant_id[0:2]:
+    for s in T.participant_id:
         print(f"-Start importing subject {s}")
         # old_id = s.replace('sub-','s',1)
         dir1 = os.path.join(orig_dir, str(s))

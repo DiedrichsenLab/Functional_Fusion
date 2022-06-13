@@ -137,6 +137,78 @@ class AtlasSurface(Atlas):
                                             name=self.name)
         return bm
 
+class AtlasVolumeParcel(Atlas):
+    def __init__(self,name,label_img,mask_img=None):
+        """AtlasSurfaceParcel class constructor
+
+        Args:
+            name (str): 
+                Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            mask_gii (str): 
+                gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space 
+        """
+        self.name = name
+        self.label_img = nb.load(label_img)
+
+        if mask_img is not None: 
+            self.mask_img = nb.load(mask_img)
+        else:
+            self.mask_img = self.label_img
+        
+        Xmask = self.mask_img.get_data()
+        i,j,k = np.where(Xmask>0)
+        self.vox = np.vstack((i,j,k))
+        self.world = util.affine_transform_mat(self.vox,self.mask_img.affine)
+        self.label_vec = suit.reslice.sample_image(self.label_img,
+                    self.world[0],
+                    self.world[1],
+                    self.world[2],
+                    0)
+        # Find the number of parcels with label > 0 
+        self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
+
+    def agg_data(self,data,func=np.nanmean):
+        """Aggregate data into the parcels - 
+        Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1.... 
+
+        Args:
+            data (nparray): 
+                NxP array of data   
+            func (function): 
+                Aggregation function - needs to take data,axis=1 as input arguments 
+        Returns: 
+            Aggregated data: 
+        """
+
+        # get the aggregrated data - assumes consequtive labels [1...P]
+        agg_data = np.empty((data.shape[0],self.P))
+        for p in range(self.P):
+            agg_data[:,p]=func(data[:,self.label_vec==p+1],axis=1)
+        return agg_data
+
+
+    def get_parcel_axis(self):
+        """ Returns parcel axis
+
+        Returns:
+            bm (cifti2.ParcelAxis)
+        """
+
+        # loop over labels and create brain models
+        bm_list = []
+        for l in np.unique(self.label_vec):
+            if l > 0:
+                # Create BrainModelAxis for each label
+                bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
+                                                    name=self.name)
+                # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
+                bm_list.append((f"{self.name}-{l:02}", bm))
+
+        # create parcel axis from the list of brain models created for labels
+        self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+
+        return self.parcels
+
 class AtlasSurfaceParcel(Atlas):
     def __init__(self,name,label_gii,mask_gii=None):
         """AtlasSurfaceParcel class constructor
@@ -174,10 +246,10 @@ class AtlasSurfaceParcel(Atlas):
             Aggregated data: 
         """
 
-        # get the aggregrated data - assumes consequtive labels 
+        # get the aggregrated data - assumes consequtive labels [1..P]
         agg_data = np.empty((data.shape[0],self.P))
         for p in range(self.P):
-            agg_data[:,p]=func(data[:,self.label_vec==p],axis=1)
+            agg_data[:,p]=func(data[:,self.label_vec==p+1],axis=1)
         return agg_data
 
 
