@@ -59,7 +59,7 @@ def show_mdtb_suit(subj,sess,cond):
     print(f'Showing {D.cond_name[cond]}')
     pass
 
-def get_mdtb_fs32k():
+def get_mdtb_fs32k(ses_id='ses-s1',type='CondSes'):
     # Make the atlas object
     atlas =[]
     bm_name = ['cortex_left','cortex_right']
@@ -76,22 +76,26 @@ def get_mdtb_fs32k():
         data = []
         for i,hem in enumerate(['L','R']):
             adir = mdtb_dataset.anatomical_dir.format(s)
+            edir = mdtb_dataset.estimates_dir.format(s)
             pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
             white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
-            mask = adir + f'/{s}_desc-brain_mask.nii'
+            mask = edir + f'/ses-s1/{s}_ses-s1_mask.nii'
             atlas_maps.append(am.AtlasMapSurf(mdtb_dataset, atlas[i],
                             s,white,pial, mask))
             atlas_maps[i].build()
-            # data = mdtb_dataset.get_data(s,[A])
-            # data_files=mdtb_dataset.get_data_fnames(s,'ses-s1')
-            data.append(np.random.normal(0,1,(100,atlas_maps[i].P))) # am.get_data(data_files,atlas_maps)
-        im = am.data_to_cifti(data,atlas_maps)
-        nb.save(im,atlas_dir + '/tpl-fs32k/tpl_fs32k_func.dscalar.nii')
+        print(f'Extract {s}')
+        data,info,names = mdtb_dataset.get_data(s,atlas_maps,
+                                                ses_id=ses_id,
+                                                type=type)
+        C=am.data_to_cifti(data,atlas_maps,names)
+        dest_dir = mdtb_dataset.data_dir.format(s)
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+        nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
         pass
 
 
 if __name__ == "__main__":
-    get_mdtb_suit(ses_id='ses-s1',type='CondRun')
+    get_mdtb_fs32k(ses_id='ses-s1',type='CondSes')
     pass
 
 

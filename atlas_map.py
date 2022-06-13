@@ -384,6 +384,7 @@ class AtlasMapSurf(AtlasMap):
         self.white_surf = nb.load(white_surf)
         self.pial_surf = nb.load(pial_surf)
         self.mask_img = nb.load(mask_img)
+        self.atlas = atlas
 
     def build(self,smooth = None, depths=[0,0.2,0.4,0.6,0.8,1.0]):
         """
@@ -403,7 +404,10 @@ class AtlasMapSurf(AtlasMap):
             indices[i,:,:] = (1-depths[i])*c1+depths[i]*c2
 
         self.vox_list,good = util.coords_to_linvidxs(indices,self.mask_img,mask=True)
-        self.vox_weight = good / good.sum(axis=0)
+        all = good.sum(axis=0)
+        print(f'{self.name} has {np.sum(all==0)} vertices without data')
+        all[all==0]=1
+        self.vox_weight = good / all
         self.vox_list = self.vox_list.T
         self.vox_weight = self.vox_weight.T
 

@@ -52,16 +52,16 @@ if __name__ == "__main__":
         # dir1 = orig_dir + f'/sc1/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/anat'
         # id.import_anat(dir1,dir2,'anatomical',s)
-        # dir1 = orig_dir + f'/sc1/surfaceWB/{old_id}'
-        # dir2 = target_dir + f'/derivatives/{s}/anat'
-        # id.import_freesurfer(dir1,dir2,old_id,s)
+        dir1 = orig_dir + f'/sc1/surfaceWB/{old_id}'
+        dir2 = target_dir + f'/derivatives/{s}/anat'
+        id.import_freesurfer(dir1,dir2,old_id,s)
         print(s)
-        info_dict={'run':'run',
-                   'inst':'instruction',
-                   'TN':'task_name',
-                   'CN':'cond_name',
-                   'task':'task_num',
-                   'cond':'cond_num'}
-        dir1 = orig_dir + f'/sc2/GLM_firstlevel_7/{old_id}'
-        dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s2'
-        id.import_spm_glm(dir1,dir2,s,'ses-s2',info_dict)
+        # info_dict={'run':'run',
+        #           'inst':'instruction',
+        #           'TN':'task_name',
+        #           'CN':'cond_name',
+        #           'task':'task_num',
+        #           'cond':'cond_num'}
+        # dir1 = orig_dir + f'/sc2/GLM_firstlevel_7/{old_id}'
+        # dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s2'
+        # id.import_spm_glm(dir1,dir2,s,'ses-s2',info_dict)
