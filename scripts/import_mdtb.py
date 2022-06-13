@@ -13,11 +13,11 @@ orig_dir = base_dir + '/Cerebellum/super_cerebellum'
 target_dir = base_dir + '/FunctionalFusion/MDTB'
 
 
-def fix_sc2_reginfo(): 
+def fix_sc2_reginfo():
     D = pd.read_csv(orig_dir + '/sc1_sc2_taskConds_conn.txt',sep='\t')
     T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
     for s in T.participant_id:
-        for ses in [1,2]: 
+        for ses in [1,2]:
             info = target_dir + f'/derivatives/{s}/estimates/ses-s{ses}/{s}_ses-s{ses}_reginfo.tsv'
             T1 = pd.read_csv(info,delimiter='\t')
             T1['task_num']=T1['task_num'].astype(int)
@@ -29,19 +29,17 @@ def fix_sc2_reginfo():
             T1['common']=np.zeros((T1.shape[0],),dtype=int)
 
             D1 = D[D.StudyNum==ses]
-            for i in range(T1.cond_num.max()): 
+            for i in range(T1.cond_num.max()):
                 indx = np.nonzero((D1.condNum==i+1).to_numpy())[0][0]
                 cnu = D1.condNumUni.to_numpy()
                 T1.cond_num_uni[T1.cond_num==i+1]=cnu[indx]
-            for i in range(T1.task_num.max()): 
+            for i in range(T1.task_num.max()):
                 indx = np.nonzero((D1.taskNum==i+1).to_numpy())[0][0]
                 tnu = D1.taskNumUni.to_numpy()
                 shc = D1.overlap.to_numpy()
                 T1.task_num_uni[T1.task_num==i+1]=tnu[indx]
                 T1.common[T1.task_num==i+1]=shc[indx]
             T1.to_csv(info,sep='\t')
-
-
 
 if __name__ == "__main__":
     # fix_sc2_reginfo()

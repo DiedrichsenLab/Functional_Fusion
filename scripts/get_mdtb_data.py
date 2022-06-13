@@ -42,7 +42,7 @@ def get_mdtb_suit(ses_id='ses-s1',type='CondSes'):
         nb.save(C, dest_dir + f'/{s}_space-SUIT3_{ses_id}_{type}.dscalar.nii')
         info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
 
-def show_mdtb_suit(subj,sess,cond): 
+def show_mdtb_suit(subj,sess,cond):
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
     mdtb_dataset = DataSetMDTB(data_dir)
@@ -57,7 +57,7 @@ def show_mdtb_suit(subj,sess,cond):
     fig = suit.flatmap.plot(surf_data[:,cond],render='plotly')
     fig.show()
     print(f'Showing {D.cond_name[cond]}')
-    pass 
+    pass
 
 def get_mdtb_fs32k():
     # Make the atlas object
@@ -86,7 +86,7 @@ def get_mdtb_fs32k():
             # data_files=mdtb_dataset.get_data_fnames(s,'ses-s1')
             data.append(np.random.normal(0,1,(100,atlas_maps[i].P))) # am.get_data(data_files,atlas_maps)
         im = am.data_to_cifti(data,atlas_maps)
-        nb.save(im,atlas_dir + '/tpl-fs32k/tpl_gs32k_func.dscalar.nii')
+        nb.save(im,atlas_dir + '/tpl-fs32k/tpl_fs32k_func.dscalar.nii')
         pass
 
 

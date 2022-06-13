@@ -26,25 +26,20 @@ def import_func_resting(source_dir, dest_dir, participant_id):
         dest_dir (str): destination directory
         participant_id (str): ID of participant
     """
-    for ss in [1, 2]:
-        src = []
-        dest = []
-        # add a folder for session
-        dest_sess_dir = dest_dir + f"/ses-{ss:02}"
-        # Make the destination directory
-        Path(dest_sess_dir).mkdir(parents=True, exist_ok=True)
+    run_name=['REST1_LR','REST1_RL','REST2_LR','REST2_RL']
+    # Make the destination directory
+    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    for run,run_n in enumerate(run_name):
 
         # move data into the corresponding session folder
-        src.append(f'/rfMRI_REST{ss:01}_LR/rfMRI_REST{ss:01}_LR_Atlas_hp2000_clean.dtseries.nii')
-        dest.append(f'/sub-{participant_id}_ses-{ss:02}_space-fsLR32k_run-01.dtseries.nii')
+        src=(f'/rfMRI_{run_n}/rfMRI_{run_n}_Atlas_hp2000_clean.dtseries.nii')
+        dest=(f'/sub-{participant_id}_run-{run}_space-MSMSulc.dtseries.nii')
 
-        src.append(f'/rfMRI_REST{ss:01}_RL/rfMRI_REST{ss:01}_RL_Atlas_hp2000_clean.dtseries.nii')
-        dest.append(f'/sub-{participant_id}_ses-{ss:02}_space-fsLR32k_run-02.dtseries.nii')
-        for i in range(len(src)):
-            try:
-                shutil.copyfile(source_dir+'/MNINonLinear/Results'+src[i], dest_sess_dir+dest[i])
-            except:
-                print('skipping ' + src[i])
+        try:
+            shutil.copyfile(source_dir+'/MNINonLinear/Results'+src, 
+                    dest_dir+dest)
+        except:
+            print('skipping ' + src)
 
 
 if __name__ == "__main__":

@@ -134,9 +134,30 @@ def make_hcp_tessel0042():
     ts_mean = am.get_average_data(data = bm_vals, labels=gii_label, mask = gii_mask)
 
     # initialize the data set object 
-    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
+    # hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
 
     return ts_mean
+
+def make_tessels0042_atlas():
+
+    # get the path to the label file
+    tessel_file = atlas_dir + '/tpl-fs32k'+'/Icosahedron-42.32k.L.label.gii'
+
+    # get the mask
+    mask = atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'
+    # create an instance of AtlasSurface for the mask
+    myAtlas = am.AtlasSurfaceParcel('cortex_left',tessel_file)
+    p_axis = myAtlas.get_parcel_axis()
+    return myAtlas,p_axis
+
+def test_pdscalar_file(): 
+    atlas, p_axis = make_tessels0042_atlas()
+    D= np.random.normal(0,1,(5,len(p_axis)))
+    names = [f'row {r:02}' for r in range(D.shape[0])]
+    row_axis = nb.cifti2.ScalarAxis(names)
+    header = nb.Cifti2Header.from_axes((row_axis,p_axis))
+    cifti_img = nb.Cifti2Image(dataobj=D,header=header)
+    nb.save(cifti_img,'test.pscalar.nii')
 
 def hcp_fc_fp(tessel=162):
     """
@@ -163,23 +184,24 @@ def hcp_fc_fp(tessel=162):
                 nb.load(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii')]
     
     # create and calculate the atlas map for each participant
-    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
+    # hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
 
-    T = hcp_dataset.get_participants()
-    con_fp = [] # connectivity finger print list
-    for s in T.participant_id.values:
-        # create a mapping based on atlas deformation 
-        atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
-        # print(f"building atlas map")
-        atlas_map.build(smooth=2.0) # smoothing level?
+    # T = hcp_dataset.get_participants()
+    # con_fp = [] # connectivity finger print list
+    # for s in T.participant_id.values:
+    #     # create a mapping based on atlas deformation 
+    #     atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
+    #     # print(f"building atlas map")
+    #     atlas_map.build(smooth=2.0) # smoothing level?
 
-        # get the connectivity matrix and put it in a list
-        con_fp.append(hcp_dataset.get_data(s,[atlas_map], gii_labels, gii_mask,'ses-01'))
+    #     # get the connectivity matrix and put it in a list
+    #     con_fp.append(hcp_dataset.get_data(s,[atlas_map], gii_labels, gii_mask,'ses-01'))
 
     return con_fp
 
 
 if __name__ == "__main__":
     # make_mdtb_suit()
-    hcp_fc_fp()
+    test_pdscalar_file()
+    pass
 
