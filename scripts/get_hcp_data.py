@@ -41,7 +41,7 @@ def get_hcp_data(res=162):
         surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i],gifti))
 
     T = hcp_dataset.get_participants() 
-    for s in T.participant_id[0:2]:
+    for s in T.participant_id:
         print(f'Extract {s}')
         coef = hcp_dataset.get_cereb_connectivity(s,atlas_map, surf_parcel)
         # Average across runs 
@@ -90,6 +90,7 @@ def parcel_hcp_dpconn(dpconn_file):
 
 
 if __name__ == "__main__":
-    C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
-    nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
+    get_hcp_data()
+    # C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
+    # nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
 
