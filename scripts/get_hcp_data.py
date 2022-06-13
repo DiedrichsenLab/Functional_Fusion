@@ -54,7 +54,7 @@ def get_hcp_data(res=162):
         cifti_img = nb.Cifti2Image(dataobj=coef,header=header)
         dest_dir = hcp_dataset.data_dir.format(s)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        nb.save(cifti_img, dest_dir + f'/sub-{s}.dpconn.nii')
+        nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
 
 def avrg_hcp_dpconn(res=162):
     # initialize the data set object
@@ -62,13 +62,13 @@ def avrg_hcp_dpconn(res=162):
     T = hcp_dataset.get_participants()
     for i,s in enumerate(T.participant_id): 
         data_dir = hcp_dataset.data_dir.format(s)
-        Ci = nb.load(data_dir + f'/sub-{s}.dpconn.nii')
+        Ci = nb.load(data_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
         if i==0: 
             R = np.empty((T.shape[0],Ci.shape[0],Ci.shape[1]))
         R[i,:,:]=np.asanyarray(Ci.dataobj)
     Rm = np.nanmean(R,axis=0)
     Cm = nb.Cifti2Image(Rm,Ci.header)
-    nb.save(Cm,hcp_dir + '/group_162_dpconn.nii')
+    nb.save(Cm,hcp_dir + '/group_tessel-{res}.dpconn.nii')
     pass
 
 
@@ -90,6 +90,6 @@ def parcel_hcp_dpconn(dpconn_file):
 
 
 if __name__ == "__main__":
-    C=parcel_hcp_dpconn(hcp_dir + '/group_162_dpconn.nii')
-    nb.save(C,hcp_dir + '/group_162.pscalar.nii')
+    C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
+    nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
 
