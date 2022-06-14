@@ -68,7 +68,7 @@ def avrg_hcp_dpconn(res=162):
         R[i,:,:]=np.asanyarray(Ci.dataobj)
     Rm = np.nanmean(R,axis=0)
     Cm = nb.Cifti2Image(Rm,Ci.header)
-    nb.save(Cm,hcp_dir + '/group_tessel-{res}.dpconn.nii')
+    nb.save(Cm,hcp_dir + f'/group_tessel-{res}.dpconn.nii')
     pass
 
 
@@ -90,7 +90,7 @@ def parcel_hcp_dpconn(dpconn_file):
 
 
 if __name__ == "__main__":
-    get_hcp_data()
-    # C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
-    # nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
-
+    # get_hcp_data()
+    # avrg_hcp_dpconn()
+    C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
+    nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
