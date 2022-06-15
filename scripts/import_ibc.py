@@ -170,7 +170,7 @@ def epi(sub, sname, original_sourcepath, destination_sourcepath, df1, df2):
 def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
          first_run_only = False):
     session = df1[df1[sub].values == sname].index.values[0]
-    func_folder = os.path.join(source_derivatives, sub, session, 'func/')
+    func_folder = os.path.join(source_derivatives, sub, session, 'func')
     target_dir = os.path.join(target_derivatives, sub, 'func', session)
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
@@ -210,13 +210,14 @@ def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
         else:
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
                 '_dir-' + ph + '_bold.nii.gz'
-        wepi = func_folder + wepi_fname
+        wepi = os.path.join(func_folder, wepi_fname)
         with subprocess.Popen(["scp", '-o BatchMode=yes', wepi,
                                target_dir]) as epi:
             epi.wait()
-        target_epi = target_dir + '/' + wepi_fname
-        new_target_epi = target_dir + '/' + sub + '_' + session + '_run-' + \
-            '%02d' % rn + '_bold.nii.gz'
+        target_epi = os.path.join(target_dir, wepi_fname)
+        new_target_epi = os.path.join(
+            target_dir,
+            sub + '_' + session + '_run-' + '%02d' % rn + '_bold.nii.gz')
         print(target_epi)
         print(new_target_epi)
         os.rename(target_epi, new_target_epi)
@@ -250,7 +251,7 @@ def compute_wmeanepi(sub, sname, target_derivatives, df1):
 def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
                        df1, df2, df3):
     session = df1[df1[sub].values == sname].index.values[0]
-    target_path = target_derivatives + '/' + sub + '/estimates/' + session
+    target_path = os.path.join(target_derivatives, sub, 'estimates', session)
     if not os.path.exists(target_path):
         os.makedirs(target_path)
     else:
@@ -259,24 +260,34 @@ def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
     runs = df2[df2.session == sname].srun.values
     tasks = df2[df2.session == sname].task.values
     phasedir = df2[df2.session == sname].phase.values
-    session_folder = source_derivatives + sub + '/' + session
+    session_folder = os.path.join(source_derivatives, sub, session)
     for rn, tk, ph in zip(runs, tasks, phasedir):
         if tk == 'RSVPLanguage':
-            zfolder = session_folder + '/res_stats_' + tk + \
-                '_%02d_' % (rn - 1) + ph + '/z_score_maps/'
+            zfolder = os.path.join(
+                session_folder,
+                'res_stats_' + tk + '_%02d_' % (rn - 1) + ph,
+                'z_score_maps')
         elif tk in ['MTTWE', 'MTTNS']:
-            zfolder = session_folder + '/res_stats_' + tk + \
-                '%d_' % rn + ph + '/z_score_maps/'
+            zfolder = os.path.join(
+                session_folder,
+                'res_stats_' + tk + '%d_' % rn + ph,
+                'z_score_maps')
         elif sub == 'sub-11' and sname == 'preference' and rn == 6:
             tk = 'PreferenceFaces'
-            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
-                '_run-01/z_score_maps/'
+            zfolder = os.path.join(
+                session_folder,
+                'res_stats_' + tk + '_' + ph + '_run-01',
+                'z_score_maps')
         elif sub == 'sub-11' and sname == 'preference' and rn == 7:
-            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
-                '_run-02/z_score_maps/'
+            zfolder = os.path.join(
+                session_folder,
+                'res_stats_' + tk + '_' + ph + '_run-02',
+                'z_score_maps')
         else:
-            zfolder = session_folder + '/res_stats_' + tk + '_' + ph + \
-                '/z_score_maps/'
+            zfolder = os.path.join(
+                session_folder,
+                'res_stats_' + tk + '_' + ph,
+                'z_score_maps')
         if tk in ['VSTM' + '%d' % s for s in np.arange(1, 3)]:
             conditions = df3[df3.task == 'VSTM'].condition.values
             regressors = df3[df3.task == 'VSTM'].regressor.values
@@ -297,9 +308,11 @@ def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
             with subprocess.Popen(["scp", '-o BatchMode=yes', source_file,
                                   target_path]) as p:
                 p.wait()
-            f = target_path + '/' + cond + '.nii.gz'
-            ff = target_path + '/' + sub + '_' + session + '_run-' + \
-                '%02d' % rn + '_reg-' + '%02d' % reg + '_zmap.nii.gz'
+            f = os.path.join(target_path, cond + '.nii.gz')
+            ff = os.path.join(
+                target_path,
+                sub + '_' + session + '_run-' + '%02d' % rn + '_reg-' + \
+                '%02d' % reg + '_zmap.nii.gz')
             print(f)
             print(ff)
             os.rename(f, ff)
