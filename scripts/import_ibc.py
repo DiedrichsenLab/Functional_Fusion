@@ -25,6 +25,95 @@ from nilearn.image import load_img, mean_img
 # ############################# FUNCTIONS ##############################
 
 
+def transfer_anat(sub, source_derivatives, target_derivatives):
+    target_anatpath = os.path.join(target_derivatives, sub, 'anat')
+    if not os.path.exists(target_anatpath):
+        os.makedirs(target_anatpath)
+    else:
+        for ng in glob.glob(target_anatpath + '*_T1w.nii.gz'):
+            os.remove(ng)
+    source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat/')
+    source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
+    w_source_anatfile = os.path.join(source_anatsess,
+                                     'w' + sub + '_ses-00_T1w.nii.gz')
+    for afile in [source_anatfile, w_source_anatfile]:
+        with subprocess.Popen(["scp", '-o BatchMode=yes', afile,
+                               target_anatpath]) as a:
+            a.wait()
+        if afile == source_anatfile:
+            t1 = os.path.join(target_anatpath, sub + '_ses-00_T1w.nii.gz')
+            new_t1 = os.path.join(target_anatpath,
+                                  sub + '_space-native_T1w.nii.gz')
+        else:
+            assert afile == w_source_anatfile
+            t1 = os.path.join(
+                target_anatpath, 'w' + sub + '_ses-00_T1w.nii.gz')
+            new_t1 = os.path.join(target_anatpath, sub + '_T1w.nii.gz')
+        print(t1)
+        print(new_t1)
+        os.rename(t1, new_t1)
+
+
+def transfer_cmasks(sub, source_derivatives, target_derivatives):
+    target_anatpath = os.path.join(target_derivatives, sub, 'anat')
+    if not os.path.exists(target_anatpath):
+        os.makedirs(target_anatpath)
+    else:
+        for ng in glob.glob(target_anatpath + 'mwc*.nii.gz'):
+            os.remove(ng)
+    source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat')
+    source_c1 = os.path.join(source_anatsess, 'mwc1' + sub + '_ses-00_T1w.nii.gz')
+    source_c2 = os.path.join(source_anatsess, 'mwc2' + sub + '_ses-00_T1w.nii.gz')
+    for cfile in [source_c1, source_c2]:
+        with subprocess.Popen(["scp", '-o BatchMode=yes', cfile,
+                               target_anatpath]) as c:
+            c.wait()
+        if cfile == source_c1:
+            cmask = os.path.join(target_anatpath,
+                                 'mwc1' + sub + '_ses-00_T1w.nii.gz')
+            new_cmask = os.path.join(target_anatpath,
+                                     sub + '_mask-c1_T1w.nii.gz')
+        else:
+            assert cfile == source_c2
+            cmask = os.path.join(target_anatpath,
+                                 'mwc2' + sub + '_ses-00_T1w.nii.gz')
+            new_cmask = os.path.join(target_anatpath,
+                                     sub + '_mask-c2_T1w.nii.gz')
+        print(cmask)
+        print(new_cmask)
+        os.rename(cmask, new_cmask)
+
+
+def transfer_meshes(sub, source_derivatives, target_derivatives):
+    source_meshfolder = os.path.join(source_derivatives, sub, 'ses-00/anat',
+                                     sub, 'surf/')
+    target_meshfolder = os.path.join(target_derivatives, sub, 'anat/')
+    if not os.path.exists(target_meshfolder):
+        os.makedirs(target_meshfolder)
+    else:
+        for ng in glob.glob(target_meshfolder + '*.surf'):
+            os.remove(ng)
+    hemispheres = ['lh', 'rh']
+    meshes = ['orig', 'pial', 'sulc', 'white']
+    for hemi in hemispheres:
+        for mesh in meshes:
+            source_meshfile = os.path.join(source_meshfolder, hemi + '.' + mesh)
+            with subprocess.Popen(["scp", '-o BatchMode=yes', source_meshfile,
+                                   target_meshfolder]) as m:
+                m.wait()
+            target_meshfile = os.path.join(target_meshfolder, hemi + '.' + mesh)
+            if hemi == 'lh':
+                new_target_meshfile = os.path.join(
+                    target_meshfolder, sub + '_hemi-L_' + mesh + '.surf')
+            else:
+                assert hemi == 'rh'
+                new_target_meshfile = os.path.join(
+                    target_meshfolder, sub + '_hemi-R_' + mesh + '.surf')
+            print(target_meshfile)
+            print(new_target_meshfile)
+            os.rename(target_meshfile, new_target_meshfile)
+
+
 def epi(sub, sname, original_sourcepath, destination_sourcepath, df1, df2):
     session = df1[df1[sub].values == sname].index.values[0]
     func_folder = os.path.join(original_sourcepath, sub, session, 'func')
@@ -156,95 +245,6 @@ def compute_wmeanepi(sub, sname, target_derivatives, df1):
             wmeanepi_fullpath = os.path.join(sdir, wepi_fname + '_mean.nii.gz')
             wmeanepi.to_filename(os.path.join(wmeanepi_fullpath))
             print(wmeanepi_fullpath)
-
-
-def transfer_anat(sub, source_derivatives, target_derivatives):
-    target_anatpath = os.path.join(target_derivatives, sub, 'anat')
-    if not os.path.exists(target_anatpath):
-        os.makedirs(target_anatpath)
-    else:
-        for ng in glob.glob(target_anatpath + '*_T1w.nii.gz'):
-            os.remove(ng)
-    source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat/')
-    source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
-    w_source_anatfile = os.path.join(source_anatsess,
-                                     'w' + sub + '_ses-00_T1w.nii.gz')
-    for afile in [source_anatfile, w_source_anatfile]:
-        with subprocess.Popen(["scp", '-o BatchMode=yes', afile,
-                               target_anatpath]) as a:
-            a.wait()
-        if afile == source_anatfile:
-            t1 = os.path.join(target_anatpath, sub + '_ses-00_T1w.nii.gz')
-            new_t1 = os.path.join(target_anatpath,
-                                  sub + '_space-native_T1w.nii.gz')
-        else:
-            assert afile == w_source_anatfile
-            t1 = os.path.join(
-                target_anatpath, 'w' + sub + '_ses-00_T1w.nii.gz')
-            new_t1 = os.path.join(target_anatpath, sub + '_T1w.nii.gz')
-        print(t1)
-        print(new_t1)
-        os.rename(t1, new_t1)
-
-
-def transfer_cmasks(sub, source_derivatives, target_derivatives):
-    target_anatpath = os.path.join(target_derivatives, sub, 'anat')
-    if not os.path.exists(target_anatpath):
-        os.makedirs(target_anatpath)
-    else:
-        for ng in glob.glob(target_anatpath + 'mwc*.nii.gz'):
-            os.remove(ng)
-    source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat')
-    source_c1 = os.path.join(source_anatsess, 'mwc1' + sub + '_ses-00_T1w.nii.gz')
-    source_c2 = os.path.join(source_anatsess, 'mwc2' + sub + '_ses-00_T1w.nii.gz')
-    for cfile in [source_c1, source_c2]:
-        with subprocess.Popen(["scp", '-o BatchMode=yes', cfile,
-                               target_anatpath]) as c:
-            c.wait()
-        if cfile == source_c1:
-            cmask = os.path.join(target_anatpath,
-                                 'mwc1' + sub + '_ses-00_T1w.nii.gz')
-            new_cmask = os.path.join(target_anatpath,
-                                     sub + '_mask-c1_T1w.nii.gz')
-        else:
-            assert cfile == source_c2
-            cmask = os.path.join(target_anatpath,
-                                 'mwc2' + sub + '_ses-00_T1w.nii.gz')
-            new_cmask = os.path.join(target_anatpath,
-                                     sub + '_mask-c2_T1w.nii.gz')
-        print(cmask)
-        print(new_cmask)
-        os.rename(cmask, new_cmask)
-
-
-def transfer_meshes(sub, source_derivatives, target_derivatives):
-    source_meshfolder = os.path.join(source_derivatives, sub, 'ses-00/anat',
-                                     sub, 'surf/')
-    target_meshfolder = os.path.join(target_derivatives, sub, 'anat/')
-    if not os.path.exists(target_meshfolder):
-        os.makedirs(target_meshfolder)
-    else:
-        for ng in glob.glob(target_meshfolder + '*.surf'):
-            os.remove(ng)
-    hemispheres = ['lh', 'rh']
-    meshes = ['orig', 'pial', 'sulc', 'white']
-    for hemi in hemispheres:
-        for mesh in meshes:
-            source_meshfile = os.path.join(source_meshfolder, hemi + '.' + mesh)
-            with subprocess.Popen(["scp", '-o BatchMode=yes', source_meshfile,
-                                   target_meshfolder]) as m:
-                m.wait()
-            target_meshfile = os.path.join(target_meshfolder, hemi + '.' + mesh)
-            if hemi == 'lh':
-                new_target_meshfile = os.path.join(
-                    target_meshfolder, sub + '_hemi-L_' + mesh + '.surf')
-            else:
-                assert hemi == 'rh'
-                new_target_meshfile = os.path.join(
-                    target_meshfolder, sub + '_hemi-R_' + mesh + '.surf')
-            print(target_meshfile)
-            print(new_target_meshfile)
-            os.rename(target_meshfile, new_target_meshfile)
 
 
 def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
@@ -391,6 +391,9 @@ if __name__ == "__main__":
             # wepi(subject, session_name, drago_derivatives, cbs_derivatives,
             #      dfm, dfs, first_run_only = True)
 
+            ## Compute mean EPI ##
+            # compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
+
             ## Import derivatives ##
             # transfer_estimates(subject, session_name, drago_derivatives,
             #                    cbs_derivatives, dfm, dfs, dfc)
@@ -398,6 +401,3 @@ if __name__ == "__main__":
             ## Generate tsv files with session info ##
             generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
                               dfs, dfc)
-
-            ## Compute mean EPI ##
-            # compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
