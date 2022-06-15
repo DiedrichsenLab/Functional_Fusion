@@ -159,7 +159,7 @@ def compute_wmeanepi(sub, sname, target_derivatives, df1):
 
 
 def transfer_anat(sub, source_derivatives, target_derivatives):
-    target_anatpath = os.path.join(target_derivatives, sub, 'anat/')
+    target_anatpath = os.path.join(target_derivatives, sub, 'anat')
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
     else:
@@ -174,38 +174,44 @@ def transfer_anat(sub, source_derivatives, target_derivatives):
                                target_anatpath]) as a:
             a.wait()
         if afile == source_anatfile:
-            t1 = target_anatpath + sub + '_ses-00_T1w.nii.gz'
-            new_t1 = target_anatpath + sub + '_space-native_T1w.nii.gz'
+            t1 = os.path.join(target_anatpath, sub + '_ses-00_T1w.nii.gz')
+            new_t1 = os.path.join(target_anatpath,
+                                  sub + '_space-native_T1w.nii.gz')
         else:
             assert afile == w_source_anatfile
-            t1 = target_anatpath + 'w' + sub + '_ses-00_T1w.nii.gz'
-            new_t1 = target_anatpath + sub + '_T1w.nii.gz'
+            t1 = os.path.join(
+                target_anatpath, 'w' + sub + '_ses-00_T1w.nii.gz')
+            new_t1 = os.path.join(target_anatpath, sub + '_T1w.nii.gz')
         print(t1)
         print(new_t1)
         os.rename(t1, new_t1)
 
 
 def transfer_cmasks(sub, source_derivatives, target_derivatives):
-    target_anatpath = target_derivatives + '/' + sub + '/anat/'
+    target_anatpath = os.path.join(target_derivatives, sub, 'anat')
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
     else:
         for ng in glob.glob(target_anatpath + 'mwc*.nii.gz'):
             os.remove(ng)
-    source_anatsess = source_derivatives + sub + '/ses-00/anat/'
-    source_c1 = source_anatsess + 'mwc1' + sub + '_ses-00_T1w.nii.gz'
-    source_c2 = source_anatsess + 'mwc2' + sub + '_ses-00_T1w.nii.gz'
+    source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat')
+    source_c1 = os.path.join(source_anatsess, 'mwc1' + sub + '_ses-00_T1w.nii.gz')
+    source_c2 = os.path.join(source_anatsess, 'mwc2' + sub + '_ses-00_T1w.nii.gz')
     for cfile in [source_c1, source_c2]:
         with subprocess.Popen(["scp", '-o BatchMode=yes', cfile,
                                target_anatpath]) as c:
             c.wait()
         if cfile == source_c1:
-            cmask = target_anatpath + 'mwc1' + sub + '_ses-00_T1w.nii.gz'
-            new_cmask = target_anatpath + sub + '_mask-c1_T1w.nii.gz'
+            cmask = os.path.join(target_anatpath,
+                                 'mwc1' + sub + '_ses-00_T1w.nii.gz')
+            new_cmask = os.path.join(target_anatpath,
+                                     sub + '_mask-c1_T1w.nii.gz')
         else:
             assert cfile == source_c2
-            cmask = target_anatpath + 'mwc2' + sub + '_ses-00_T1w.nii.gz'
-            new_cmask = target_anatpath + sub + '_mask-c2_T1w.nii.gz'
+            cmask = os.path.join(target_anatpath,
+                                 'mwc2' + sub + '_ses-00_T1w.nii.gz')
+            new_cmask = os.path.join(target_anatpath,
+                                     sub + '_mask-c2_T1w.nii.gz')
         print(cmask)
         print(new_cmask)
         os.rename(cmask, new_cmask)
@@ -224,18 +230,18 @@ def transfer_meshes(sub, source_derivatives, target_derivatives):
     meshes = ['orig', 'pial', 'sulc', 'white']
     for hemi in hemispheres:
         for mesh in meshes:
-            source_meshfile = source_meshfolder + hemi + '.' + mesh
+            source_meshfile = os.path.join(source_meshfolder, hemi + '.' + mesh)
             with subprocess.Popen(["scp", '-o BatchMode=yes', source_meshfile,
                                    target_meshfolder]) as m:
                 m.wait()
-            target_meshfile = target_meshfolder + hemi + '.' + mesh
+            target_meshfile = os.path.join(target_meshfolder, hemi + '.' + mesh)
             if hemi == 'lh':
-                new_target_meshfile = target_meshfolder + sub + '_hemi-L_' + \
-                    mesh + '.surf'
+                new_target_meshfile = os.path.join(
+                    target_meshfolder, sub + '_hemi-L_' + mesh + '.surf')
             else:
                 assert hemi == 'rh'
-                new_target_meshfile = target_meshfolder + sub + '_hemi-R_' + \
-                    mesh + '.surf'
+                new_target_meshfile = os.path.join(
+                    target_meshfolder, sub + '_hemi-R_' + mesh + '.surf')
             print(target_meshfile)
             print(new_target_meshfile)
             os.rename(target_meshfile, new_target_meshfile)
@@ -301,7 +307,7 @@ def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
 
 def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
     session = df1[df1[sub].values == sname].index.values[0]
-    ifolder = target_derivatives + '/' + sub + '/estimates/' + session
+    ifolder = os.path.join(target_derivatives, sub, 'estimates', session)
     if not os.path.exists(ifolder):
         os.makedirs(ifolder)
     else:
@@ -332,10 +338,10 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 # ############################### INPUTS ###############################
 
 # subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 # subjects_numbers = [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [13, 14, 15]
+# subjects_numbers = [13, 14, 15]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
@@ -347,7 +353,7 @@ session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
 
 drago = 'agrilopi@drago:/storage/store2/data/ibc'
 drago_sourcedata = os.path.join(drago, 'sourcedata')
-drago_derivatives = os.path.join(drago + 'derivatives')
+drago_derivatives = os.path.join(drago, 'derivatives')
 
 home = str(Path.home())
 cbs = os.path.join(home, 'diedrichsen_data/data/FunctionalFusion/ibc')
@@ -378,8 +384,8 @@ if __name__ == "__main__":
 
         for session_name in session_names:
             ## Import source data
-            epi(subject, session_name, drago_sourcedata, cbs_sourcedata,
-                dfm, dfs)
+            # epi(subject, session_name, drago_sourcedata, cbs_sourcedata,
+            #     dfm, dfs)
 
             ## Import mean EPI ##
             # wepi(subject, session_name, drago_derivatives, cbs_derivatives,
@@ -390,8 +396,8 @@ if __name__ == "__main__":
             #                    cbs_derivatives, dfm, dfs, dfc)
 
             ## Generate tsv files with session info ##
-            # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
-            #                   dfs, dfc)
+            generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
+                              dfs, dfc)
 
             ## Compute mean EPI ##
             # compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
