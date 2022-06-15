@@ -62,8 +62,10 @@ def transfer_cmasks(sub, source_derivatives, target_derivatives):
         for ng in glob.glob(target_anatpath + 'mwc*.nii.gz'):
             os.remove(ng)
     source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat')
-    source_c1 = os.path.join(source_anatsess, 'mwc1' + sub + '_ses-00_T1w.nii.gz')
-    source_c2 = os.path.join(source_anatsess, 'mwc2' + sub + '_ses-00_T1w.nii.gz')
+    source_c1 = os.path.join(source_anatsess,
+                             'mwc1' + sub + '_ses-00_T1w.nii.gz')
+    source_c2 = os.path.join(source_anatsess,
+                             'mwc2' + sub + '_ses-00_T1w.nii.gz')
     for cfile in [source_c1, source_c2]:
         with subprocess.Popen(["scp", '-o BatchMode=yes', cfile,
                                target_anatpath]) as c:
@@ -97,11 +99,13 @@ def transfer_meshes(sub, source_derivatives, target_derivatives):
     meshes = ['orig', 'pial', 'sulc', 'white']
     for hemi in hemispheres:
         for mesh in meshes:
-            source_meshfile = os.path.join(source_meshfolder, hemi + '.' + mesh)
+            source_meshfile = os.path.join(
+                source_meshfolder, hemi + '.' + mesh)
             with subprocess.Popen(["scp", '-o BatchMode=yes', source_meshfile,
                                    target_meshfolder]) as m:
                 m.wait()
-            target_meshfile = os.path.join(target_meshfolder, hemi + '.' + mesh)
+            target_meshfile = os.path.join(
+                target_meshfolder, hemi + '.' + mesh)
             if hemi == 'lh':
                 new_target_meshfile = os.path.join(
                     target_meshfolder, sub + '_hemi-L_' + mesh + '.surf')
