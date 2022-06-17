@@ -93,7 +93,7 @@ def get_mdtb_fs32k(ses_id='ses-s1',type='CondSes'):
         nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
         pass
 
-def parcel_mdtb_fs32k(res=164,ses_id='ses-s1',type='CondSes'):
+def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
     # Make the atlas object
     surf_parcel =[] 
     hem_name = ['cortex_left','cortex_right']
@@ -114,11 +114,16 @@ def parcel_mdtb_fs32k(res=164,ses_id='ses-s1',type='CondSes'):
         C = nb.load(s_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
         bmf = C.header.get_axis(1)
         bmp = [] 
+        R = []
         for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
-            R = surf_parcel[h].agg_data(np.asanyarray(C.dataobj[:,slc]))
-            bmp.append(surf_parcel[h].get_parcel_axis())
-        C=am.data_to_cifti(data,atlas_maps,names)
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            D = np.asanyarray(C.dataobj[:,slc])
+            X = np.zeros((D.shape[0],surf_parcel[0].label_vec.shape[0]))
+            X[:,bm.vertex]=D
+            R.append(surf_parcel[idx].agg_data(X))
+            bmp.append(surf_parcel[idx].get_parcel_axis())
+        header = nb.Cifti2Header.from_axes((C.header.get_axis(0),bmp[0]+bmp[1]))
+        cifti_img = nb.Cifti2Image(dataobj=np.c_[R[0],R[1]],header=header)
+        nb.save(cifti_img,s_dir + f'/{s}_space-fs32k_{ses_id}_{type}_Iso-{res}.pscalar.nii')
         pass
 
 def avrg_hcp_dpconn(res=162):
