@@ -25,7 +25,29 @@ from nilearn.image import load_img, mean_img
 # ############################# FUNCTIONS ##############################
 
 
-def transfer_anat(sub, source_derivatives, target_derivatives):
+def transfer_t1w(sub, source_raw, target_raw):
+    target_anatpath = os.path.join(target_raw, sub, 'anat')
+    if not os.path.exists(target_anatpath):
+        os.makedirs(target_anatpath)
+    else:
+        for ng in glob.glob(target_anatpath + '*_T1w.nii.gz'):
+            os.remove(ng)
+    source_anatsess = os.path.join(source_raw, sub, 'ses-00/anat/')
+    source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
+
+    with subprocess.Popen(["scp", '-o BatchMode=yes', source_anatfile,
+                           target_anatpath]) as a:
+        a.wait()
+
+    t1 = os.path.join(target_anatpath, sub + '_ses-00_T1w.nii.gz')
+    new_t1 = os.path.join(target_anatpath, sub + '_space-native_T1w.nii.gz')
+
+    print(t1)
+    print(new_t1)
+    os.rename(t1, new_t1)
+
+
+def transfer_t1w_derivatives(sub, source_derivatives, target_derivatives):
     target_anatpath = os.path.join(target_derivatives, sub, 'anat')
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
@@ -36,19 +58,22 @@ def transfer_anat(sub, source_derivatives, target_derivatives):
     source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
     w_source_anatfile = os.path.join(source_anatsess,
                                      'w' + sub + '_ses-00_T1w.nii.gz')
+
     for afile in [source_anatfile, w_source_anatfile]:
         with subprocess.Popen(["scp", '-o BatchMode=yes', afile,
                                target_anatpath]) as a:
             a.wait()
         if afile == source_anatfile:
             t1 = os.path.join(target_anatpath, sub + '_ses-00_T1w.nii.gz')
-            new_t1 = os.path.join(target_anatpath,
-                                  sub + '_space-native_T1w.nii.gz')
+            new_t1 = os.path.join(
+                target_anatpath,
+                sub + '_space-native_desc-resampled_T1w.nii.gz')
         else:
             assert afile == w_source_anatfile
             t1 = os.path.join(
                 target_anatpath, 'w' + sub + '_ses-00_T1w.nii.gz')
-            new_t1 = os.path.join(target_anatpath, sub + '_T1w.nii.gz')
+            new_t1 = os.path.join(target_anatpath,
+                                  sub + '_space-MNI_T1w.nii.gz')
         print(t1)
         print(new_t1)
         os.rename(t1, new_t1)
@@ -390,8 +415,11 @@ subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 
 if __name__ == "__main__":
     for subject in subjects_list:
-        ## Import T1w images ##
-        # transfer_anat(subject, drago_derivatives, cbs_derivatives)
+        ## Import T1w raw ##
+        transfer_t1w(subject, drago_sourcedata, cbs_sourcedata)
+
+        ## Import T1w resampled-only AND normalized ##
+        # transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
 
         ## Import cmasks ##
         # transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
@@ -399,7 +427,7 @@ if __name__ == "__main__":
         ## Import Freesurfer meshes ##
         # transfer_meshes(subject, drago_derivatives, cbs_derivatives)
 
-        for session_name in session_names:
+        # for session_name in session_names:
             ## Import source data
             # epi(subject, session_name, drago_sourcedata, cbs_sourcedata,
             #     dfm, dfs)
@@ -416,5 +444,5 @@ if __name__ == "__main__":
             #                    cbs_derivatives, dfm, dfs, dfc)
 
             ## Generate tsv files with session info ##
-            generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
-                              dfs, dfc)
+            # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
+            #                   dfs, dfc)
