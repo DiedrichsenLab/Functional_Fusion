@@ -30,7 +30,7 @@ def transfer_t1w(sub, source_raw, target_raw):
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
     else:
-        for ng in glob.glob(target_anatpath + '*_T1w.nii.gz'):
+        for ng in glob.glob(target_anatpath + '/*_T1w.nii.gz'):
             os.remove(ng)
     source_anatsess = os.path.join(source_raw, sub, 'ses-00/anat/')
     source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
@@ -52,7 +52,7 @@ def transfer_t1w_derivatives(sub, source_derivatives, target_derivatives):
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
     else:
-        for ng in glob.glob(target_anatpath + '*_T1w.nii.gz'):
+        for ng in glob.glob(target_anatpath + '/*_T1w.nii.gz'):
             os.remove(ng)
     source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat/')
     source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
@@ -84,7 +84,7 @@ def transfer_cmasks(sub, source_derivatives, target_derivatives):
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
     else:
-        for ng in glob.glob(target_anatpath + 'mwc*.nii.gz'):
+        for ng in glob.glob(target_anatpath + '/mwc*.nii.gz'):
             os.remove(ng)
     source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat')
     source_c1 = os.path.join(source_anatsess,
@@ -118,7 +118,7 @@ def transfer_meshes(sub, source_derivatives, target_derivatives):
     if not os.path.exists(target_meshfolder):
         os.makedirs(target_meshfolder)
     else:
-        for ng in glob.glob(target_meshfolder + '*.surf'):
+        for ng in glob.glob(target_meshfolder + '/*.surf'):
             os.remove(ng)
     hemispheres = ['lh', 'rh']
     meshes = ['orig', 'pial', 'sulc', 'white']
@@ -379,11 +379,11 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 
 # ############################### INPUTS ###############################
 
-# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 # subjects_numbers = [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [13, 14, 15]
+# subjects_numbers = [1]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
@@ -419,10 +419,10 @@ if __name__ == "__main__":
         transfer_t1w(subject, drago_sourcedata, cbs_sourcedata)
 
         ## Import T1w resampled-only AND normalized ##
-        # transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
+        transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
 
         ## Import cmasks ##
-        # transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
+        transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
 
         ## Import Freesurfer meshes ##
         # transfer_meshes(subject, drago_derivatives, cbs_derivatives)
