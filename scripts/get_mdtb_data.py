@@ -103,7 +103,6 @@ def parcel_mdtb_fs32k(res=164,ses_id='ses-s1',type='CondSes'):
         gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
         surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i],gifti))
 
-
     # initialize the data set object
     mdtb_dataset = DataSetMDTB(data_dir)
 
@@ -114,10 +113,10 @@ def parcel_mdtb_fs32k(res=164,ses_id='ses-s1',type='CondSes'):
         s_dir = mdtb_dataset.data_dir.format(s)
         C = nb.load(s_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
         bmf = C.header.get_axis(1)
-        
+        bmp = [] 
         for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
             R = surf_parcel[h].agg_data(np.asanyarray(C.dataobj[:,slc]))
-            bm.append(surf_parcel[h].get_parcel_axis())
+            bmp.append(surf_parcel[h].get_parcel_axis())
         C=am.data_to_cifti(data,atlas_maps,names)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         pass
@@ -157,7 +156,8 @@ def parcel_hcp_dpconn(dpconn_file):
 
 
 if __name__ == "__main__":
-    get_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
+    parcel_mdtb_fs32k()
+    # get_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
     pass
 
 
