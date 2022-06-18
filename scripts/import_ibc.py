@@ -143,14 +143,19 @@ def transfer_meshes(sub, source_derivatives, target_derivatives):
             os.rename(target_meshfile, new_target_meshfile)
 
 
-def epi(sub, sname, original_sourcepath, destination_sourcepath, df1, df2):
+def source_funcdata(sub, sname, original_sourcepath, destination_sourcepath,
+                    df1, df2, data_type='bold.nii.gz'):
+    """
+    Data_type accepts 'bold.nii.gz' or 'events.tsv' strings as arguments.
+    Default is 'bold.nii.gz'.
+    """
     session = df1[df1[sub].values == sname].index.values[0]
     func_folder = os.path.join(original_sourcepath, sub, session, 'func')
     target_dir = os.path.join(destination_sourcepath, sub, 'func', session)
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
     else:
-        for ng in glob.glob(target_dir + '/*epi.nii.gz'):
+        for ng in glob.glob(target_dir + '/*' + data_type):
             os.remove(ng)
     runs = df2[df2.session == sname].srun.values
     tasks = df2[df2.session == sname].task.values
@@ -158,31 +163,31 @@ def epi(sub, sname, original_sourcepath, destination_sourcepath, df1, df2):
     for i, (rn, tk, ph) in enumerate(zip(runs, tasks, phasedir)):
         if tk == 'RSVPLanguage':
             epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
-                '_run-%02d' % (rn - 1) + '_bold.nii.gz'
+                '_run-%02d' % (rn - 1) + '_' + data_type
         elif tk in ['MTTWE', 'MTTNS']:
             epi_fname = sub + '_' + session + '_task-' + tk + \
-                '_dir-' + ph + '_run-%02d' % rn + '_bold.nii.gz'
+                '_dir-' + ph + '_run-%02d' % rn + '_' + data_type
         elif sub == 'sub-11' and sname == 'preference' and rn == 6:
             tk = 'PreferenceFaces'
             epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
-                '_run-01_bold.nii.gz'
+                '_run-01_' + data_type
         elif sub == 'sub-11' and sname == 'preference' and rn == 7:
             epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
-                '_run-02_bold.nii.gz'
+                '_run-02_' + data_type
         elif tk in ['VSTM' + '%d' % s for s in np.arange(1, 3)]:
             if tk == 'VSTM1':
                 epi_fname = sub + '_' + session + '_task-VSTM_dir-' + ph + \
-                    '_run-01_bold.nii.gz'
+                    '_run-01_' + data_type
             else:
                 assert tk == 'VSTM2'
                 epi_fname = sub + '_' + session + '_task-VSTM_dir-' + ph + \
-                    '_run-02_bold.nii.gz'
+                    '_run-02_' + data_type
         elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
             epi_fname = sub + '_' + session + '_task-Self_dir-' + \
-                ph + '_run-%02d' % rn + '_bold.nii.gz'
+                ph + '_run-%02d' % rn + '_' + data_type
         else:
             epi_fname = sub + '_' + session + '_task-' + tk + \
-                '_dir-' + ph + '_bold.nii.gz'
+                '_dir-' + ph + '_' + data_type
         epi_path = os.path.join(func_folder, epi_fname)
         with subprocess.Popen(["scp", '-o BatchMode=yes', epi_path,
                                target_dir]) as epi:
@@ -190,7 +195,7 @@ def epi(sub, sname, original_sourcepath, destination_sourcepath, df1, df2):
         target_epi = os.path.join(target_dir, epi_fname)
         new_epi_path = os.path.join(
             target_dir,
-            sub + '_' + session + '_run-' + '%02d' % rn + '_bold.nii.gz')
+            sub + '_' + session + '_run-' + '%02d' % rn + '_' + data_type)
         print(target_epi)
         print(new_epi_path)
         os.rename(target_epi, new_epi_path)
@@ -379,8 +384,8 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 
 # ############################### INPUTS ###############################
 
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 # subjects_numbers = [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1]
@@ -416,21 +421,21 @@ subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 if __name__ == "__main__":
     for subject in subjects_list:
         ## Import T1w raw ##
-        transfer_t1w(subject, drago_sourcedata, cbs_sourcedata)
+        # transfer_t1w(subject, drago_sourcedata, cbs_sourcedata)
 
         ## Import T1w resampled-only AND normalized ##
-        transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
+        # transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
 
         ## Import cmasks ##
-        transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
+        # transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
 
         ## Import Freesurfer meshes ##
         # transfer_meshes(subject, drago_derivatives, cbs_derivatives)
 
-        # for session_name in session_names:
-            ## Import source data
-            # epi(subject, session_name, drago_sourcedata, cbs_sourcedata,
-            #     dfm, dfs)
+        for session_name in session_names:
+            ## Import raw epi ##
+            # source_funcdata(subject, session_name, drago_sourcedata,
+            #                 cbs_sourcedata, dfm, dfs)
 
             ## Import mean EPI ##
             # wepi(subject, session_name, drago_derivatives, cbs_derivatives,
@@ -438,6 +443,10 @@ if __name__ == "__main__":
 
             ## Compute mean EPI ##
             # compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
+
+            ## Import paradigm descriptors ##
+            source_funcdata(subject, session_name, drago_sourcedata,
+                            cbs_sourcedata, dfm, dfs, data_type='events.tsv')
 
             ## Import derivatives ##
             # transfer_estimates(subject, session_name, drago_derivatives,
