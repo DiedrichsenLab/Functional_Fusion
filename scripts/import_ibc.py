@@ -52,7 +52,7 @@ def transfer_t1w_derivatives(sub, source_derivatives, target_derivatives):
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
     else:
-        for ng in glob.glob(target_anatpath + '/*_T1w.nii.gz'):
+        for ng in glob.glob(target_anatpath + '/sub-*_space-*_T1w.nii.gz'):
             os.remove(ng)
     source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat/')
     source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
@@ -84,7 +84,7 @@ def transfer_cmasks(sub, source_derivatives, target_derivatives):
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
     else:
-        for ng in glob.glob(target_anatpath + '/mwc*.nii.gz'):
+        for ng in glob.glob(target_anatpath + '/sub-*_mask-*_T1w.nii.gz'):
             os.remove(ng)
     source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat')
     source_c1 = os.path.join(source_anatsess,
@@ -260,7 +260,7 @@ def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
 def compute_wmeanepi(sub, sname, target_derivatives, df1):
     session = df1[df1[sub].values == sname].index.values[0]
     sdir = os.path.join(target_derivatives, sub, 'func', session)
-    wepis_paths = glob.glob(sdir + '/*_bold.nii.gz')
+    wepis_paths = glob.glob(sdir + '/*_mean.nii.gz')
     for wepi_path in wepis_paths:
         wepi_fname = re.match(
             sdir + '/(.*)_bold.nii.gz', wepi_path).groups()[0]
@@ -384,15 +384,15 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 
 # ############################### INPUTS ###############################
 
-# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 # subjects_numbers = [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1]
 
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-                 'clips4', 'lyon1', 'lyon2']
+session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+# session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+#                  'clips4', 'lyon1', 'lyon2']
 # session_names = ['enumeration']
 
 
@@ -433,20 +433,20 @@ if __name__ == "__main__":
         # transfer_meshes(subject, drago_derivatives, cbs_derivatives)
 
         for session_name in session_names:
-            ## Import raw epi ##
-            # source_funcdata(subject, session_name, drago_sourcedata,
-            #                 cbs_sourcedata, dfm, dfs)
+            ## Import raw EPI ##
+            source_funcdata(subject, session_name, drago_sourcedata,
+                            cbs_sourcedata, dfm, dfs)
 
-            ## Import mean EPI ##
+            ## Import normalized-EPI ##
             # wepi(subject, session_name, drago_derivatives, cbs_derivatives,
             #      dfm, dfs, first_run_only = True)
 
-            ## Compute mean EPI ##
+            ## Compute mean normalized-EPI ##
             # compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
 
             ## Import paradigm descriptors ##
-            source_funcdata(subject, session_name, drago_sourcedata,
-                            cbs_sourcedata, dfm, dfs, data_type='events.tsv')
+            # source_funcdata(subject, session_name, drago_sourcedata,
+            #                 cbs_sourcedata, dfm, dfs, data_type='events.tsv')
 
             ## Import derivatives ##
             # transfer_estimates(subject, session_name, drago_derivatives,
