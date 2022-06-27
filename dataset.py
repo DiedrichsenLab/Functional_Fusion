@@ -174,170 +174,125 @@ class DataSetHcpResting(DataSet):
         self.all_sub = self.get_participants()
         self.derivative_dir = self.base_dir + '/derivatives'
 
-    def _volume_from_cifti(self, ts_cifti, save=False):
-        """
-        Gets the 4D nifti object containing the time series
-        for all the subcortical structures
-        Args:
-            ts_cifti (cifti obj ) - cifti object of the time series
-            save (Boolean) - set to True if you want to save the 4D nifti (NOT IMPLEMENTED YET)
-        Returns:
-            nii_vol(nifti vol object) - nifti object containing the time series of subcorticals
-        """
-        # get brain axis models
-        bmf = ts_cifti.header.get_axis(1)
-        # get the data array with all the time points, all the structures
-        ts_array = ts_cifti.get_fdata(dtype=np.float32)
-
-        # initialize a matrix representing 4D data (x, y, z, time_point)
-        subcorticals_vol = np.zeros(bmf.volume_shape + (ts_array.shape[0],))
-        for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
-            # get the values corresponding to the brain model
-            bm_vals = ts_array[:, slc]
-
-            # get the voxels/vertices corresponding to the current brain model
-            ijk = bm.voxel
-            # fill in data
-            if (idx != 0) & (idx != 1): # indices 0 and 1 are cortical hemispheres
-                # print(str(nam))
-                subcorticals_vol[ijk[:, 0], ijk[:, 1], ijk[:, 2], :] = bm_vals.T 
-
-        # save as nii 
-        nii_vol_4d = nb.Nifti1Image(subcorticals_vol,bmf.affine)
-        # if save:
-        #     ts_nifti = dir+'/sub-100307_ses-01_task-rest_space-subcortex_run-01_bold.nii'
-        #     nb.save(nii_vol,ts_nifti)
-        return nii_vol_4d
-
-    def _surf_from_cifti(self, ts_cifti, save = False):
-        """
-        Gets the time series of cortical surface vertices (Left and Right)
-        Args:
-            ts_cifti (cifti obj) - cifti object of time series
-            save (Boolean) - set to True if you want to save the 4D nifti (NOT IMPLEMENTED YET)
-        Returns:
-            cii (cifti object) - contains the time series for the cortex
-        """
-        # get brain axis models
-        bmf = ts_cifti.header.get_axis(1)
-        # print(dir(bmf))
-        # get the data array with all the time points, all the structures
-        ts_array = ts_cifti.get_fdata()
-        ts_list = []
-        for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
-            # just get the cortical surfaces
-            if (idx == 0) | (idx == 1): # just for cortex left (idx = 0) and cortex right (idx = 1)
-                # get the values corresponding to the brain model
-                bm_vals = ts_array[:, slc]
-                ts_list.append(bm_vals)
-            else:
-                break
-        return ts_list
-
-    def get_data_fnames(self, participant_id, session_id=None):
+    def get_data_fnames(self, participant_id):
         """ Gets all raw data files
         Args:
             participant_id (str): Subject
-            session_id (str): Session ID. Defaults to None.
         Returns:
             fnames (list): List of fnames
-            T (pd.DataFrame): Info structure for regressors (reginfo)
         """
-        dir = self.func_dir.format(f"{participant_id}") + f'/{session_id}'
-        fnames = [f'{dir}/sub-{participant_id}_{session_id}_space-fsLR32k_run-{r:02}.dtseries.nii' for r in [1, 2]]
+        dir = self.derivative_dir + f"/{participant_id}" + "/func"
+        fnames = []
+        for r in range(4):
+            fnames.append(f'{dir}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
         return fnames
 
-    # def get_data_vol(self, participant_id, 
-    #              atlas_maps, 
-    #              sess_id=None,
-    #              ):
-    #     # print(f"I'm in get_data")
-    #     # get the file name for the cifti time series
-    #     fnames = self.get_data_fnames(participant_id,sess_id)
-        
-    #     # get the volumetric data for subcorticals
-    #     vol_ts = []
-    #     for file_name in fnames:
-    #         # for subcorticals
-    #         vol_4D = self._volume_from_cifti(file_name)
-
-            
-            
-    #         # get cerebellar time series in suit space
-    #         vol_ts.append(am.get_data4D(vol_4D,atlas_maps))
-        
-    #     return vol_ts
-
-    # def get_data_surf(self, participant_id, 
-    #              atlas_maps, 
-    #              sess_id=None,
-    #              ):
-    #     # get the file name for the cifti time series
-    #     fnames = self.get_data_fnames(participant_id,sess_id)
-        
-    #     # get the volumetric data for subcorticals
-    #     surf_ts = []
-    #     for file_name in fnames:
-
-    #         # for cortical hemispheres
-    #         surf_ts.append(self._surf_from_cifti(file_name))
-        
-    #     return surf_ts
-
-    def get_data(self, participant_id, 
-                 atlas_maps, 
-                 label_objs, 
-                 mask_obj,
-                 sess_id = None):
+    def get_ts_volume(self,
+                participant_id,
+                atlas_map,
+                runs=[0,1,2,3]): 
+        """ Returns the time series data for an atlas map 
+            sample from voxels
+        Args:
+            participant_id (_type_): _description_
+            atlas_map (_type_): _description_
         """
-        atlas maps only needed for the cerebellum!
-        """
-
         # get the file name for the cifti time series
-        fnames = self.get_data_fnames(participant_id,sess_id)
-        coef = []
-        for f in fnames:
-            # load the cifti 
-            ts_cifti = nb.load(f)
+        fnames = self.get_data_fnames(participant_id)
+        ts_volume = []
+        for r in runs:
+            # load the cifti
+            ts_cifti = nb.load(fnames[r])
 
             # get the ts in volume for subcorticals
-            ts_vol = self._volume_from_cifti(ts_cifti)
+            ts_vol = util.volume_from_cifti(ts_cifti)
             # transfer to suit space applying the deformation
-            ts_cerebellum = am.get_data4D(ts_vol, atlas_maps)
+            ts_vol = am.get_data4D(ts_vol, [atlas_map])
+            ts_volume.append(ts_vol[0])
+
+        return ts_volume
+
+    def get_ts_surface(self,
+                    participant_id,
+                    atlas_parcel,
+                    runs=[0,1,2,3]):
+        """Returns the information from the CIFTI file
+        in the 32K surface for left and right hemisphere. 
+
+        Args:
+            participant_id (_type_): _description_
+            atlas_parcel (_type_): _description_
+        """
+        hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
+        # get the file name for the cifti time series
+        fnames = self.get_data_fnames(participant_id)
+        coef = None
+        ts_cortex=[]
+        for r in runs:
+            # load the cifti
+            ts_cifti = nb.load(fnames[r])
 
             # get the ts in surface for corticals
-            ts_32k = self._surf_from_cifti(ts_cifti, save=False)
+            ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
+            ts_parcel = [] 
+            for hem in range(2):
 
-            # get the average within parcels for left and right hemi
-            ts_parcel = []
-            for hemi in [0, 1]:
-                ts_parcel.append(am.get_average_data(data=ts_32k[hemi],
-                                                     labels=label_objs[hemi],
-                                                     mask=mask_obj[hemi]))
-            
+                # get the average within parcels 
+                ts_parcel.append(
+                    atlas_parcels[hem].agg_data(ts_32k[hem])
+                    )
+
+            # concatenate them into a single array for correlation calculation
+            ts_cortex.append(ts_parcel)
+        return ts_cortex  # shape (n_tessl,P)
+
+
+    def get_cereb_connectivity(self, 
+                 participant_id,
+                 cereb_atlas_map,
+                 cortical_atlas_parcels,
+                 runs=[0,1,2,3]):
+        """
+        Uses the original CIFTI files to produce cerebellar connectivity 
+        file
+        """
+        hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
+        # get the file name for the cifti time series
+        fnames = self.get_data_fnames(participant_id)
+        coef = None
+        for r in runs:
+            # load the cifti
+            ts_cifti = nb.load(fnames[r])
+
+            # get the ts in volume for subcorticals
+            ts_vol = util.volume_from_cifti(ts_cifti)
+            # transfer to suit space applying the deformation
+            ts_cerebellum = am.get_data4D(ts_vol, [cereb_atlas_map])
+            ts_cerebellum = ts_cerebellum[0]
+
+            # get the ts in surface for corticals
+            ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
+            ts_parcel = [] 
+            for hem in range(2):
+
+                # get the average within parcels 
+                ts_parcel.append(
+                    cortical_atlas_parcels[hem].agg_data(ts_32k[hem])
+                    )
+
             # concatenate them into a single array for correlation calculation
             ts_cortex = np.concatenate(ts_parcel, axis = 1)
 
-            # calculate functional connectivity matrix
-            ## no need to define new variables, but still ... 
-            Y = np.asarray(ts_cerebellum.copy()[0])
-            X = ts_cortex.copy()
+            # Standardize the time series for easier calculation 
+            ts_cerebellum = util.zstandarize_ts(ts_cerebellum)
+            ts_cortex = util.zstandarize_ts(ts_cortex)
 
-            # subtract mean
-            X = X - X.mean(axis = 0, keepdims = True)
-            Y = Y - Y.mean(axis = 0, keepdims = True)
+            # Correlation calculation 
+            if coef is None:
+                coef=np.empty((len(runs),ts_cortex.shape[1],
+                                ts_cerebellum.shape[1]))
+            N = ts_cerebellum.shape[0]
+            coef[r,:,:] = ts_cortex.T @ ts_cerebellum / N
 
-            # X is now shape of (1200, n_corticaltess) ndarray
-            # Y is now shape of (1200, n_suit_voxel) ndarray
-            a = np.nansum((X - np.nanmean(X, axis=0)) ** 2, axis=0)
-            b = np.nansum((Y - np.nanmean(Y, axis=0)) ** 2, axis=0)
-            var = np.sqrt(b.reshape(-1, 1) @ a.reshape(1, -1))
-            cov = Y.T @ X
-            coef.append(cov/var)
+        return coef  # shape (n_tessl,P)
 
-        return np.concatenate((coef[0], coef[1]), axis=1)  # shape (P, 2 * n_tessl)
-
-if __name__ == '__main__':
-    A = DataSetHcpResting('Y:\data\FunctionalFusion\HCP')
-    part = A.get_participants()
-    data = A.get_data(part['participant_id'][0], sess_id="01")

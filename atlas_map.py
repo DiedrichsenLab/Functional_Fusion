@@ -11,10 +11,11 @@ from numpy.linalg import inv
 import nibabel as nb
 import os
 
-import SUITPy as suit
-import surfAnalysisPy as surf
 import util
 import matrix
+import SUITPy as suit
+import surfAnalysisPy as surf
+
 
 class Atlas():
     def __init__(self):
@@ -125,7 +126,7 @@ class AtlasSurface(Atlas):
         X[self.vox[0],self.vox[1],self.vox[2]]=data
         mapped = nb.Nifti1Image(X,self.mask_img.affine)
         return mapped
-    
+
     def get_brain_model_axis(self):
         """ Returns brain model axis
 
@@ -136,6 +137,144 @@ class AtlasSurface(Atlas):
                                             name=self.name)
         return bm
 
+class AtlasVolumeParcel(Atlas):
+    def __init__(self,name,label_img,mask_img=None):
+        """AtlasSurfaceParcel class constructor
+
+        Args:
+            name (str): 
+                Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            mask_gii (str): 
+                gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space 
+        """
+        self.name = name
+        self.label_img = nb.load(label_img)
+
+        if mask_img is not None: 
+            self.mask_img = nb.load(mask_img)
+        else:
+            self.mask_img = self.label_img
+        
+        Xmask = self.mask_img.get_data()
+        i,j,k = np.where(Xmask>0)
+        self.vox = np.vstack((i,j,k))
+        self.world = util.affine_transform_mat(self.vox,self.mask_img.affine)
+        self.label_vec = suit.reslice.sample_image(self.label_img,
+                    self.world[0],
+                    self.world[1],
+                    self.world[2],
+                    0)
+        # Find the number of parcels with label > 0 
+        self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
+
+    def agg_data(self,data,func=np.nanmean):
+        """Aggregate data into the parcels - 
+        Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1.... 
+
+        Args:
+            data (nparray): 
+                NxP array of data   
+            func (function): 
+                Aggregation function - needs to take data,axis=1 as input arguments 
+        Returns: 
+            Aggregated data: 
+        """
+
+        # get the aggregrated data - assumes consequtive labels [1...P]
+        agg_data = np.empty((data.shape[0],self.P))
+        for p in range(self.P):
+            agg_data[:,p]=func(data[:,self.label_vec==p+1],axis=1)
+        return agg_data
+
+
+    def get_parcel_axis(self):
+        """ Returns parcel axis
+
+        Returns:
+            bm (cifti2.ParcelAxis)
+        """
+
+        # loop over labels and create brain models
+        bm_list = []
+        for l in np.unique(self.label_vec):
+            if l > 0:
+                # Create BrainModelAxis for each label
+                bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
+                                                    name=self.name)
+                # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
+                bm_list.append((f"{self.name}-{l:02}", bm))
+
+        # create parcel axis from the list of brain models created for labels
+        self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+
+        return self.parcels
+
+class AtlasSurfaceParcel(Atlas):
+    def __init__(self,name,label_gii,mask_gii=None):
+        """AtlasSurfaceParcel class constructor
+
+        Args:
+            name (str): 
+                Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            mask_gii (str): 
+                gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space 
+        """
+        self.name = name
+        self.label_gii = nb.load(label_gii)
+
+        # get the labels into an array
+        self.label_vec = self.label_gii.agg_data() # this
+
+        # Use of mask it not tested-treat with care
+        if mask_gii is not None:
+            self.mask_gii = nb.load(mask_gii)
+            Xmask = self.mask_gii.agg_data()
+            self.label_vec = self.label_vec[Xmask==0]=0
+        # Find the number of parcels with label > 0 
+        self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
+
+    def agg_data(self,data,func=np.nanmean):
+        """Aggregate data into the parcels - 
+        Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1.... 
+
+        Args:
+            data (nparray): 
+                NxP array of data   
+            func (function): 
+                Aggregation function - needs to take data,axis=1 as input arguments 
+        Returns: 
+            Aggregated data: 
+        """
+
+        # get the aggregrated data - assumes consequtive labels [1..P]
+        agg_data = np.empty((data.shape[0],self.P))
+        for p in range(self.P):
+            agg_data[:,p]=func(data[:,self.label_vec==p+1],axis=1)
+        return agg_data
+
+
+    def get_parcel_axis(self):
+        """ Returns parcel axis
+
+        Returns:
+            bm (cifti2.ParcelAxis)
+        """
+
+        # loop over labels and create brain models
+        bm_list = []
+        for l in np.unique(self.label_vec):
+            if l > 0:
+                # Create BrainModelAxis for each label
+                bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
+                                                    name=self.name)
+                # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
+                bm_list.append((f"{self.name}-{l:02}", bm))
+
+        # create parcel axis from the list of brain models created for labels
+        self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+
+        return self.parcels
+
 class AtlasMap():
     def __init__(self, dataset, atlas, participant_id):
         """AtlasMap stores the mapping rules from a specific data set (and participant) to the desired atlas space in form of a voxel list
@@ -143,10 +282,10 @@ class AtlasMap():
             dataset_id (string): name of
             participant_id (string): Participant name
         """
+        self.P = atlas.P       #  Number of brain locations
+        self.name = atlas.name
         self.participant_id = participant_id
         self.dataset = dataset # Reference to corresponding data set
-        self.atlas = atlas     # Reference to corresponding altas
-        self.P = atlas.P       #  Number of brain locations
 
     def build(self):
         """
@@ -170,7 +309,6 @@ class AtlasMap():
         """
         pass
 
-
 class AtlasMapDeform(AtlasMap):
     def __init__(self, dataset, atlas, participant_id, deform_img,mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
@@ -182,7 +320,7 @@ class AtlasMapDeform(AtlasMap):
             mask_img (str): Name of masking image that defines the functional data space.
         """
         super().__init__(dataset,atlas,participant_id)
-        self.name = atlas.name
+        self.world = atlas.world
         self.deform_img = nb.load(deform_img)
         self.mask_img = nb.load(mask_img)
 
@@ -193,13 +331,16 @@ class AtlasMapDeform(AtlasMap):
         """
         # Caluculate locations of atlas in individual (deformed) coordinates
         atlas_ind = suit.reslice.sample_image(self.deform_img,
-                    self.atlas.world[0],
-                    self.atlas.world[1],
-                    self.atlas.world[2],1).squeeze().T
+                    self.world[0],
+                    self.world[1],
+                    self.world[2],1).squeeze().T
         N = atlas_ind.shape[1] # Number of locations in atlas
 
         if smooth is None: # Use nearest neighbor interpolation
-            self.vox_list,self.vox_weight = util.coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
+            linindx,good = util.coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
+            self.vox_list = linindx.reshape(-1,1)
+            self.vox_weight = np.ones((linindx.shape[0],1))
+            self.vox_weight[np.logical_not(good)]=np.nan
         else:              # Use smoothing kernel of specific size
             # Get world coordinates and linear coordinates for all available voxels
             M = self.mask_img.get_fdata()
@@ -239,10 +380,11 @@ class AtlasMapSurf(AtlasMap):
             mask_img (str): Name of masking image that defines the functional data space.
         """
         super().__init__(dataset,atlas,participant_id)
-        self.name = atlas.name
+        self.vertex = atlas.vertex
         self.white_surf = nb.load(white_surf)
         self.pial_surf = nb.load(pial_surf)
         self.mask_img = nb.load(mask_img)
+        self.atlas = atlas
 
     def build(self,smooth = None, depths=[0,0.2,0.4,0.6,0.8,1.0]):
         """
@@ -250,8 +392,8 @@ class AtlasMapSurf(AtlasMap):
         each of the nodes
         """
         n_points = len(depths)
-        c1 = self.white_surf.darrays[0].data[self.atlas.vertex,:].T
-        c2 = self.pial_surf.darrays[0].data[self.atlas.vertex,:].T
+        c1 = self.white_surf.darrays[0].data[self.vertex,:].T
+        c2 = self.pial_surf.darrays[0].data[self.vertex,:].T
         n_vert = c1.shape[1]
         if c2.shape[1] != n_vert:
             raise(NameError('White and pial surfaces should have same number of vertices.'))
@@ -262,7 +404,10 @@ class AtlasMapSurf(AtlasMap):
             indices[i,:,:] = (1-depths[i])*c1+depths[i]*c2
 
         self.vox_list,good = util.coords_to_linvidxs(indices,self.mask_img,mask=True)
-        self.vox_weight = good / good.sum(axis=0)
+        all = good.sum(axis=0)
+        print(f'{self.name} has {np.sum(all==0)} vertices without data')
+        all[all==0]=1
+        self.vox_weight = good / all
         self.vox_list = self.vox_list.T
         self.vox_weight = self.vox_weight.T
 
@@ -329,35 +474,6 @@ def get_data4D(vol_4D,atlas_maps):
             data[i][j,:]=d
     return data
 
-def get_average_data(data, labels, mask = None):
-    """
-    takes a set of vertices for a label, mask the vertices according to a mask
-    extracts the average data for all the labels
-    Args:
-        data(np.ndarray) - data you want to average within each label
-        labels(NiftiImage object) - an array containing the corresponding label for voxels or vertices
-        mask(NiftiImage object) - an array of 0 and 1 (0 for voxels/vertices not in the mask)
-    Returns:
-        avg_data(np.ndarray: x by # of labels) - average data within all the labels 
-    """
-
-    # get the array containing labels of each voxel/vertex
-    labels_vec = labels.agg_data()
-
-    # apply the mask if not none
-    if mask != None:
-
-        mask_vec = mask.agg_data()
-        labels_vec = labels_vec[mask_vec == 1]
-
-    # create an indicator matrix that will be used to get the mean data
-    ## discards label 0
-    M = matrix.indicator(labels_vec, positive = True)
-
-    # get the average data
-    avg_data = (data @ M) / np.sum(M, axis = 0)
-
-    return avg_data
 
 def data_to_cifti(data,atlas_maps,names=None):
     """Transforms a list of data sets and list of atlas maps
