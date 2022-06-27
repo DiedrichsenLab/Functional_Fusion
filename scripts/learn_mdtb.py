@@ -192,6 +192,7 @@ def _plot_maps(data, sub=None, stats='mode', render_type='plotly',
     plt.figure()
     if sub is not None:
         Nifti = suit_atlas.data_to_nifti(data[sub])
+        nb.save(Nifti, 'MDTB_10_16runs.nii')
     else:
         Nifti = suit_atlas.data_to_nifti(data)
 
@@ -205,11 +206,28 @@ def _plot_maps(data, sub=None, stats='mode', render_type='plotly',
 
     if save is not None:
         if render_type == 'matplotlib':
-            plt.savefig(save, format='pdf')
+            plt.savefig(save, format='png')
             plt.clf()
         else:
             fig.write_image(save)
             fig.show()
+
+def _make_maps(data, sub=None, stats='mode', save=None, fname=None):
+    # Read the MDTB colors: Add additional row for parcel 0
+    color_file = atlas_dir + '/tpl-SUIT/atl-MDTB10.lut'
+    color_info = pd.read_csv(color_file, sep=' ', header=None)
+    MDTBcolors = np.zeros((11, 3))
+    MDTBcolors[1:11, :] = color_info.iloc[:, 1:4].to_numpy()
+    plt.figure()
+    if sub is not None:
+        Nifti = suit_atlas.data_to_nifti(data[sub])
+    else:
+        Nifti = suit_atlas.data_to_nifti(data)
+    if save:
+        if fname is None:
+            fname = 'test.nii'
+        nb.save(Nifti, fname)
+
 
 def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
     """Learn a single data set 
@@ -264,7 +282,7 @@ def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
 
     pass
 
-def learn_runs(K=10, max_iter=100, run_test=np.arange(58, 122),
+def learn_runs(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
                runs=np.arange(1, 17), sub=None, do_plot=True):
     Data_1, Xdesign_1, D1 = get_mdtb_data(ses_id='ses-s1', type='CondRun')
     Data_2, Xdesign_2, D2 = get_mdtb_data(ses_id='ses-s2', type='CondRun')
@@ -290,8 +308,14 @@ def learn_runs(K=10, max_iter=100, run_test=np.arange(58, 122),
     run_idx_1 = pt.unique(run_idx_1[:, 0] * 100 + run_idx_1[:, 1], return_inverse=True)[1]
     ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
                                          remove_redundancy=False)
-    em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
-    em_model.initialize(Data_1, D=run_idx_1)
+    if e == 'GME':
+        em_model = em.MixGaussianExp(K=K, N=40, P=P, X=Xdesign_1, num_signal_bins=100, std_V=True)
+        em_model.Estep(Data_1)  # sample s and s2 in E-step
+    elif e == 'VMF':
+        em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
+        em_model.initialize(Data_1, D=run_idx_1)
+    else:
+        raise NameError('Unrecognized emission type.')
 
     # Initilize parameters from group prior and train the m odel
     mdtb_prior = logpi.softmax(dim=0).unsqueeze(0).repeat(em_model.num_subj,1,1)
@@ -302,59 +326,81 @@ def learn_runs(K=10, max_iter=100, run_test=np.arange(58, 122),
     plt.show()
 
     ### fig a: Plot group prior
-    _plot_maps(pt.argmax(M.arrange.logpi, dim=0) + 1, color=True, render_type='matplotlib',
-               save='group_prior.pdf')
+    # _plot_maps(pt.argmax(M.arrange.logpi, dim=0) + 1, color=True, render_type='matplotlib',
+    #            save='group_prior.pdf')
     prior = pt.softmax(M.arrange.logpi, dim=0).unsqueeze(0).repeat(Data.shape[0], 1, 1)
 
     # train emission model on sc2 by frezzing arrangement model learned from sc1
     data_sc2, Xdesign_sc2, _ = get_mdtb_data(ses_id='ses-s2')
     Xdesign_sc2 = pt.tensor(Xdesign_sc2)
-    em_model2 = em.MixVMF(K=K, N=40, P=P, X=Xdesign_sc2, uniform_kappa=True)
-    em_model2.initialize(data_sc2)
+    if e == 'GME':
+        em_model2 = em.MixGaussianExp(K=K, N=40, P=P, X=Xdesign_sc2, num_signal_bins=100, std_V=True)
+        em_model2.Estep(data_sc2)
+    elif e == 'VMF':
+        em_model2 = em.MixVMF(K=K, N=40, P=P, X=Xdesign_sc2, uniform_kappa=True)
+        em_model2.initialize(data_sc2)
+    else:
+        raise NameError('Unrecognized emission type.')
     em_model2.Mstep(prior)  # give a good starting value by U_hat learned from sc1
-    #M2 = fm.FullModel(M.arrange, em_model2)
-    # M2, _, _, U_hat_sc2 = M2.fit_em(Y=data_sc2, iter=max_iter, tol=0.00001, fit_arrangement=False)
+    # M2 = fm.FullModel(M.arrange, em_model2)
+    # M2, ll_2, _, U_hat_sc2 = M2.fit_em(Y=data_sc2, iter=max_iter, tol=0.01, fit_arrangement=False)
 
     group_baseline = ev.coserr(pt.tensor(data_sc2),
                                pt.matmul(Xdesign_sc2, em_model2.V), prior,
                                adjusted=True, soft_assign=True)
-    lower_bound = ev.coserr(pt.tensor(data_sc2),
-                            pt.matmul(Xdesign_sc2, em_model2.V),
-                            pt.softmax(em_model2.Estep(Y=data_sc2, pure_compute=True), dim=1),
-                            adjusted=True, soft_assign=True)
+    if e == 'GME':
+        lower_bound = ev.coserr(pt.tensor(data_sc2),
+                                pt.matmul(Xdesign_sc2, em_model2.V),
+                                pt.softmax(em_model2.Estep(Y=data_sc2), dim=1),
+                                adjusted=True, soft_assign=True)
+    elif e == 'VMF':
+        lower_bound = ev.coserr(pt.tensor(data_sc2),
+                                pt.matmul(Xdesign_sc2, em_model2.V),
+                                pt.softmax(em_model2.Estep(Y=data_sc2, pure_compute=True), dim=1),
+                                adjusted=True, soft_assign=True)
+    else:
+        raise NameError('Unrecognized emission type.')
 
     ############################# Cross-validation starts here #############################
     # Make inference on the selected run's data - run_infer
     Data_cv, Xdesign_cv, D_cv = get_mdtb_data(ses_id='ses-s1', type='CondRun')
     Xdesign_cv = pt.tensor(Xdesign_cv)
     indices, cos_em, cos_complete, uhat_em_all, uhat_complete_all = [],[],[],[],[]
+    T = pd.DataFrame()
     for i in runs:
         indices.append(np.asarray(np.where(D_cv.run==i)).reshape(-1))
         acc_run_idx = np.concatenate(indices).ravel()
         M.emission.X = Xdesign_cv[acc_run_idx,:]
 
         # Infer on current accumulated runs data
-        U_hat_em = M.emission.Estep(Y=Data_cv[:,acc_run_idx,:], pure_compute=True)
+        if e == 'GME':
+            U_hat_em = M.emission.Estep(Y=Data_cv[:,acc_run_idx,:])
+        elif e == 'VMF':
+            U_hat_em = M.emission.Estep(Y=Data_cv[:, acc_run_idx, :], pure_compute=True)
+        else:
+            raise NameError('Unrecognized emission type.')
+
         U_hat_complete, _ = M.arrange.Estep(U_hat_em)
         # U_hat_complete, _ = M.Estep(Y=Data_cv[:,acc_run_idx,:])
         uhat_em_all.append(U_hat_em)
         uhat_complete_all.append(U_hat_complete)
 
-        if i == 1:
-            UEM = pt.argmax(U_hat_em, dim=1)+1
-            UALL = pt.argmax(U_hat_complete, dim=1) + 1
-            _plot_maps(UEM, sub=1, color=True, render_type='matplotlib',
-                       save=f'emiloglik_only_{1}_run1.pdf')
-            _plot_maps(UALL, sub=1, color=True, render_type='matplotlib',
-                       save=f'all_{1}_run1.pdf')
+        # if i == 1:
+        #     UEM = pt.argmax(U_hat_em, dim=1)+1
+        #     UALL = pt.argmax(U_hat_complete, dim=1) + 1
+        #     _plot_maps(UEM, sub=1, color=True, render_type='matplotlib',
+        #                save=f'emiloglik_only_{1}_run1.pdf')
+        #     _plot_maps(UALL, sub=1, color=True, render_type='matplotlib',
+        #                save=f'all_{1}_run1.pdf')
 
-        if i == 16:
-            UEM = pt.argmax(U_hat_em, dim=1)+1
-            UALL = pt.argmax(U_hat_complete, dim=1) + 1
-            _plot_maps(UEM, sub=1, color=True, render_type='matplotlib',
-                       save=f'emiloglik_only_{1}_run16.pdf')
-            _plot_maps(UALL, sub=1, color=True, render_type='matplotlib',
-                       save=f'all_{1}_run16.pdf')
+        # if i == 16:
+        #     UEM = pt.argmax(U_hat_em, dim=1)+1
+        #     UALL = pt.argmax(U_hat_complete, dim=1) + 1
+        #     for s in range(24):
+        #         _plot_maps(UEM, sub=s, color=True, render_type='matplotlib',
+        #                    save=f'emiloglik_only_{s}_run16.png')
+                # _plot_maps(UALL, sub=s, color=True, render_type='matplotlib',
+                #            save=f'all_{s}_run16.png')
 
         # Calculate cosine error/u abs error between another test data
         # and U_hat inferred from testing
@@ -372,8 +418,23 @@ def learn_runs(K=10, max_iter=100, run_test=np.arange(58, 122),
         #                          M.emission.V[29:61, :])
         # uerr_Uall = ev.rmse_YUhat(U_hat_complete, pt.tensor(Data[:, 58:90, :]),
         #                          M.emission.V[29:61, :])
+        for sub, a in enumerate(coserr_Uem):
+            D1 = {}
+            D1['type'] = ['emissionOnly']
+            D1['runs'] = [i]
+            D1['coserr'] = [a.item()]
+            D1['subject'] = [sub+1]
+            T = pd.concat([T, pd.DataFrame(D1)])
 
-    return group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
+        for sub, b in enumerate(coserr_Uall):
+            D2 = {}
+            D2['type'] = ['emissionAndPrior']
+            D2['runs'] = [i]
+            D2['coserr'] = [b.item()]
+            D2['subject'] = [sub + 1]
+            T = pd.concat([T, pd.DataFrame(D2)])
+
+    return T, group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
 
 if __name__ == "__main__":
     # Data_HCP = get_hcp_data(ses_id=['ses-01', 'ses-02'], range=np.arange(77, 100), save=True)
@@ -381,17 +442,22 @@ if __name__ == "__main__":
     # data = data[0, :, :].cpu().detach().numpy()
     # _plot_maps(data, sub=1, stats='nanmean', overlay='func', color=None, save=None)
 
+    A = pt.load('D:/data/nips_2022_supp/uhat_complete_all.pt')[15]
+    parcel = pt.argmax(A, dim=1) + 1
+    for i in range(parcel.shape[0]):
+        outname = f'MDTB10_16runs_sub-{i}.nii'
+        _make_maps(parcel, sub=i, save=True, fname=outname)
 
-    # gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_runs(K=10,
-    #                                                                       runs=np.arange(1, 17))
-    # df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1), pt.stack(cos_em), pt.stack(cos_complete)), dim=0)
-    # df1 = pd.DataFrame(df1).to_csv('coserrs.csv')
-    #
+    T, gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_runs(K=10, e='VMF',
+                                                                          runs=np.arange(1, 17))
+    df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1)), dim=0)
+    df1 = pd.DataFrame(df1).to_csv('coserrs_gb_lb_VMF.csv')
+    T.to_csv('coserrs_VMF.csv')
     # pt.save(pt.stack(uhat_em_all), 'uhat_em_all.pt')
     # pt.save(pt.stack(uhat_complete_all), 'uhat_complete_all.pt')
+
     # plt.figure()
     # x = np.arange(len(np.arange(1, 17)))
-    #
     # plt.errorbar(x, pt.stack(cos_em).mean(dim=1),
     #          yerr=pt.stack(cos_em).std(dim=1)/np.sqrt(24), capsize=10, label='emission only')
     # plt.errorbar(x, pt.stack(cos_complete).mean(dim=1),
@@ -401,7 +467,7 @@ if __name__ == "__main__":
     # plt.xticks(np.arange(16))
     # plt.xlabel('Inferred on individual runs')
     # plt.ylabel('Adjusted cosine error')
-    # plt.ylim(0.2, 0.30)
+    # plt.ylim(0.2, 0.32)
     # plt.legend(loc='upper right')
     # plt.title('test on session 2 - all runs')
     # plt.savefig('results.eps', format='eps')
