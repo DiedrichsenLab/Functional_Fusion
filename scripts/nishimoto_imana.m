@@ -280,9 +280,15 @@ switch what
     case 'FUNC:realign'          % realign functional images
         % SPM realigns all volumes to the first volume of first run
         % example usage: nishimoto_imana('FUNC:realign', 'sn', 2)
+<<<<<<< Updated upstream
         
         sn   = subj_id; % list of subjects
         
+=======
+        
+        sn   = subj_id; % list of subjects
+        
+>>>>>>> Stashed changes
         vararginoptions(varargin, {'sn', 'ses', 'runs'});
                 
         for s = sn
@@ -467,6 +473,32 @@ switch what
             spm_imcalc(nam, 'rmask_noskullEyes.nii', 'i1>2000 & (i2+i3+i4+i5)>0.2')
 
         end % s (sn)
+<<<<<<< Updated upstream
+=======
+    case 'FUNC:check_coreg'      % prints out the transformation matrix for coreg
+        % Run this case to get the transformation matrix and then use it
+        % for translation/rotation to check the coreg.
+        % the coreg case just estimates the transformation matrix, it
+        % doesn't reslice! So you need to check it yourself!!!!
+        % Input each subject separately
+        % Example usage: nishimoto_imana('FUNC:check_coreg', 'sn', 1)
+        
+        sn = 1; 
+        
+        vararginoptions(varargin, {'sn'});
+        
+        anat_file = fullfile(base_dir, subj_str{sn}, 'anat', sprintf('%s_T1w_lpi.nii', subj_str{sn}));
+        func_file = fullfile(base_dir, subj_str{sn}, 'func', sprintf('rmask_noskull.nii')); %???????????????
+        
+        T1_vol = spm_vol(anat_file);
+        T2_vol = spm_vol(func_file);
+        
+        x = spm_coreg(T2_vol, T1_vol);
+        M = spm_matrix(x);
+        
+        spm_get_space(T2, M * T2_vol.mat);
+        
+>>>>>>> Stashed changes
     case 'FUNC:run'              % add functional pipelines here
         % Example usage: nishimoto_imana('FUNC:run', 'sn', [3, 4, 5, 6])
         
