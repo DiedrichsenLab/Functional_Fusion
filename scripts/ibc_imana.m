@@ -67,15 +67,20 @@ run_list = {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [13, 14, 15, 16, 17, 18]};
 
 % AC coordinates
 loc_AC = {
+          [-113, -142, -80],...       %sub-01
+          [-121, -148, -82],...       %sub-02
+          [-117, -152, -76],...       %sub-04
+          [-118, -161, -77],...       %sub-05
+          [-116, -158, -77],...       %sub-06
+          [-102, -134, -145],...      %sub-07
           [-127, -158, -80],...       %sub-08
           [-121, -155, -79],...       %sub-09
           [-114, -158, -79],...       %sub-11
           [-113, -155, -82],...       %sub-12
           [-128, -142, -76],...       %sub-13
           [-118, -154, -79],...       %sub-14
-          [-110, -146, -76],...       %sub-15 %b has to be redone once Ana transfers the correct file
-        };
-    
+          [-110, -146, -76],...       %sub-15 % has to be redone once Ana transfers the correct file
+          };
 
 sess = {'training', 'test'}; % training runs are considered to be ses-01 and testing runs are ses-02
 numTRs = 281;
