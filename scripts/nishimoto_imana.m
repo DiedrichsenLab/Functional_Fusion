@@ -327,10 +327,10 @@ switch what
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1, 3, 4, 5, 6], 'prefix', 'r')
         
         sn       = subj_id;   % list of subjects        
-        step     = 'manual';  % first 'manual' then 'auto'
+        step     = 'auto';  % first 'manual' then 'auto'
         prefix   = 'rb';      % to use the bias corrected version, set it to 'rbb'
         % ===================
         % After the manual registration, the mean functional image will be
@@ -348,13 +348,13 @@ switch what
             switch step
                 case 'manual'
                     coregtool;
-%                     keyboard;
+                    keyboard;
                 case 'auto'
                     % do nothing
             end % switch step
             
             % (2) Automatically co-register functional and anatomical images
-            J.ref = {fullfile(subj_anat_dir, sprintf('%s_T1w.nii', subj_str{s}))}; % just one anatomical or more than one?
+            J.ref = {fullfile(subj_anat_dir, sprintf('%s_T1w_lpi.nii', subj_str{s}))}; % just one anatomical or more than one?
             
             J.source = {fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}))};
             
@@ -371,14 +371,6 @@ switch what
             % (3) Manually check again
 %             coregtool;
 %             keyboard();
-            % checking the affine matrix
-            T1_vol = spm_vol(J.ref);
-            T1_vol = T1_vol{1};
-            T2_vol = spm_vol(J.source);
-            T2_vol = T2_vol{1};
-            x = spm_coreg(T2_vol, T1_vol);
-            M = spm_matrix(x);
-            display(M)
             
             % NOTE:
             % Overwrites meanepi, unless you update in step one, which saves it
@@ -388,16 +380,16 @@ switch what
             % So if you continually update rmeanepi, you'll end up with a file
             % called r...rrrmeanepi.
         end % s (sn) 
-    case 'FUNC:coreg_check'      % write out resliced images to check coregistration with the anatomicals
+    case 'FUNC:coreg_check'      % write out resliced images to check coreg
         % (1) Manually seed the functional/anatomical registration
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:coreg_check', 'sn', [1], 'prefix', 'r')
         
         sn       = subj_id;   % list of subjects        
         step     = 'auto';  % first 'manual' then 'auto'
-        prefix   = 'r';      % to use the bias corrected version, set it to 'rbb'
+        prefix   = '';      % to use the bias corrected version, set it to 'rbb'
         % ===================
         % After the manual registration, the mean functional image will be
         % saved with r as the prefix which will then be used in the
@@ -420,13 +412,13 @@ switch what
             end % switch step
             
             % (2) Automatically co-register functional and anatomical images
-            J.ref = {fullfile(subj_anat_dir, sprintf('%s_T1w.nii', subj_str{s}))}; % just one anatomical or more than one?
+            J.ref = {fullfile(subj_anat_dir, sprintf('%s_T1w_lpi.nii', subj_str{s}))}; % just one anatomical or more than one?
             
             J.source = {fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}))};
             
             J.other             = {''};
             J.eoptions.cost_fun = 'nmi';
-            J.eoptions.prefix   = 'c';
+            J.roptions.prefix   = 'c';
             J.eoptions.sep      = [4 2];
             J.eoptions.tol      = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
             J.eoptions.fwhm     = [7 7];
@@ -435,17 +427,9 @@ switch what
             matlabbatch{1}.spm.spatial.coreg.estwrite=J;
             spm_jobman('run',matlabbatch);
             
-            % (3) Manually check again
-%             coregtool;
-%             keyboard();
-%             % checking the affine matrix
-%             T1_vol = spm_vol(J.ref);
-%             T1_vol = T1_vol{1};
-%             T2_vol = spm_vol(J.source);
-%             T2_vol = T2_vol{1};
-%             x = spm_coreg(T2_vol, T1_vol);
-%             M = spm_matrix(x);
-%             display(M)
+            % (3) Manually check 
+            coregtool;
+            keyboard();
             
             % NOTE:
             % Overwrites meanepi, unless you update in step one, which saves it
@@ -455,6 +439,38 @@ switch what
             % So if you continually update rmeanepi, you'll end up with a file
             % called r...rrrmeanepi.
         end % s (sn)
+    case 'FUNC:coreg_trans'      % prints out the transformation matrix for coreg
+        % Run this case to get the transformation matrix and then use it
+        % for translation/rotation to check the coreg.
+        % the coreg case just estimates the transformation matrix, it
+        % doesn't reslice! So you need to check it yourself!!!!
+        % writes out matrices in functional folders
+        % Example usage: nishimoto_imana('FUNC:coreg_trans', 'sn', [4, 5, 6])
+        
+        sn = subj_id; 
+        ses = 1;
+        
+        vararginoptions(varargin, {'sn', 'ses'});
+        
+        for s = sn
+            fprintf('- getting matrix for %s\n', subj_str{s});
+            anat_dir = fullfile(base_dir, subj_str{s}, 'anat');
+            func_dir = fullfile(base_dir, subj_str{s}, 'func');
+            anat_file = fullfile(anat_dir, sprintf('%s_T1w_lpi.nii', subj_str{s}));
+            func_file = fullfile(func_dir, sprintf('rmask_noskull.nii')); %???????????????
+            
+            T1_vol = spm_vol(anat_file);
+            T2_vol = spm_vol(func_file);
+            
+            x = spm_coreg(T2_vol, T1_vol);
+            M = spm_matrix(x);
+            % write it out
+            writematrix(M, fullfile(func_dir,sprintf('%s_ses-%02d_trans.txt', subj_str{s}, ses)));
+            
+            M_world = spm_get_space(func_file, M * T2_vol.mat);
+            % write it out
+            writematrix(M_world, fullfile(func_dir,sprintf('%s_ses-%02d_v2w.txt', subj_str{s}, ses)));
+        end % s (sn)            
     case 'FUNC:make_samealign'   % align all the functionals
         % Aligns all functional images to rmean functional image
         % Example usage: nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [1])
@@ -494,7 +510,7 @@ switch what
         end % s (sn)
     case 'FUNC:make_maskImage'   % make mask images (noskull and grey_only)
         % Make maskImage in functional space
-        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 1)
+        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r')
         
         sn     = subj_id; % list of subjects
         prefix = 'r';     % prefix for the meanepi: r or rbb if bias corrected
@@ -536,41 +552,6 @@ switch what
             spm_imcalc(nam, 'rmask_noskullEyes.nii', 'i1>2000 & (i2+i3+i4+i5)>0.2')
 
         end % s (sn)
-
-    case 'FUNC:check_coreg'      % prints out the transformation matrix for coreg
-        % Run this case to get the transformation matrix and then use it
-        % for translation/rotation to check the coreg.
-        % the coreg case just estimates the transformation matrix, it
-        % doesn't reslice! So you need to check it yourself!!!!
-        % writes out matrices in functional folders
-        % Example usage: nishimoto_imana('FUNC:check_coreg', 'sn', [4, 5, 6])
-        
-        sn = subj_id; 
-        ses = 1;
-        
-        vararginoptions(varargin, {'sn', 'ses'});
-        
-        for s = sn
-            fprintf('- getting matrix for %s\n', subj_str{s});
-            anat_dir = fullfile(base_dir, subj_str{s}, 'anat');
-            func_dir = fullfile(base_dir, subj_str{s}, 'func');
-            anat_file = fullfile(anat_dir, sprintf('%s_T1w_lpi.nii', subj_str{s}));
-            func_file = fullfile(func_dir, sprintf('rmask_noskull.nii')); %???????????????
-            
-            T1_vol = spm_vol(anat_file);
-            T2_vol = spm_vol(func_file);
-            
-            x = spm_coreg(T2_vol, T1_vol);
-            M = spm_matrix(x);
-            % write it out
-            writematrix(M, fullfile(func_dir,sprintf('%s_ses-%02d_trans.txt', subj_str{s}, ses)));
-            
-            M_world = spm_get_space(func_file, M * T2_vol.mat);
-            % write it out
-            writematrix(M_world, fullfile(func_dir,sprintf('%s_ses-%02d_v2w.txt', subj_str{s}, ses)));
-        end % s (sn)
-        
-        
     case 'FUNC:run'              % add functional pipelines here
         % Example usage: nishimoto_imana('FUNC:run', 'sn', [4, 5, 6])
         
@@ -585,7 +566,7 @@ switch what
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
         % represents all the instances
-        % nishimoto_imana('GLM:design1', 'sn', [1])
+        % nishimoto_imana('GLM:design1', 'sn', [2, 4, 5, 6])
         
         sn = subj_id;
         hrf_cutoff = Inf;
