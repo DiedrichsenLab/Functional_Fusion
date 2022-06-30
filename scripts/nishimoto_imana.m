@@ -536,6 +536,7 @@ switch what
             spm_imcalc(nam, 'rmask_noskullEyes.nii', 'i1>2000 & (i2+i3+i4+i5)>0.2')
 
         end % s (sn)
+
     case 'FUNC:check_coreg'      % prints out the transformation matrix for coreg
         % Run this case to get the transformation matrix and then use it
         % for translation/rotation to check the coreg.
