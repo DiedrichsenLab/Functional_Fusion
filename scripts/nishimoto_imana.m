@@ -76,6 +76,7 @@ loc_AC = {[-103, -140, -140],...       %sub-01
     
 
 sess = {'training', 'test'}; % training runs are considered to be ses-01 and testing runs are ses-02
+ses_str = {'ses-01', 'ses-02'};
 numTRs = 281;
 % =========================================================================
 numDummys = 0; % we need to make sure that this is correct
@@ -93,11 +94,11 @@ numDummys = 0; % we need to make sure that this is correct
 % Each task has 12 instances: 8 (training) + 4 (testing)
 % 3 days, 6 runs per day: 12 training runs + 6 test runs
 % each run contains 77-83 trials lasting for 6-12 seconds
-% Task order is pseudorandomized in the training runs! 
+% Task order is pseudorandomized in the training runs! =
 %("some tasks depended on each other and were therefore presented close to each other in time")
 % In the test runs, 103 tasks were presented four times in the same order across all six runs
 % Task order is fixed in the testing runs.
-% Looking at the tsv files, the order during training runs is the same
+% Looking at the tsv files, the order during =training runs is the same
 % across all participants.
 % =========================================================================
 
@@ -213,7 +214,7 @@ switch what
             matlabbatch{1}.spm.spatial.preproc=J;
             spm_jobman('run',matlabbatch);
         end % s (subject)
-    case 'ANAT:T1w_bcorrect' % bias correction for anatomical T1w (optional)
+    case 'ANAT:T1w_bcorrect' % =bias correction for anatomical T1w (optional)
         % nishimoto_imana('ANAT:T1w_bcorrect')
         sn = subj_id;
         vararginoptions(varargin, {'sn'});
@@ -245,7 +246,7 @@ switch what
         % files. Runs done on the same day are considered as one session. 
         % this case calls FUNC:get_in_info to get the run information and
         % assign runs to sessions
-        % Example usage: nishimoto_imana('FUNC:rename', 'sn', 2)
+        % Example usage: nishimoto_imana('FUNC:rename', 'sn', 1)
         sn = subj_id;
         
         vararginoptions(varargin, 'sn')
@@ -279,7 +280,7 @@ switch what
         end % sn (subjects)    
     case 'FUNC:realign'          % realign functional images
         % SPM realigns all volumes to the first volume of first run
-        % example usage: nishimoto_imana('FUNC:realign', 'sn', 2)
+        % example usage: nishimoto_imana('FUNC:realign', 'sn', 1)
         
         sn   = subj_id; % list of subjects
         
@@ -329,9 +330,9 @@ switch what
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
         % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
         
-        sn     = subj_id;   % list of subjects        
-        step   = 'manual';  % first 'manual' then 'auto'
-        prefix = 'rb';      % to use the bias corrected version, set it to 'rbb'
+        sn       = subj_id;   % list of subjects        
+        step     = 'manual';  % first 'manual' then 'auto'
+        prefix   = 'rb';      % to use the bias corrected version, set it to 'rbb'
         % ===================
         % After the manual registration, the mean functional image will be
         % saved with r as the prefix which will then be used in the
@@ -347,14 +348,14 @@ switch what
             
             switch step
                 case 'manual'
-%                     coregtool;
-%                     keyboard;
+                    coregtool;
+                    keyboard;
                 case 'auto'
                     % do nothing
             end % switch step
             
             % (2) Automatically co-register functional and anatomical images
-            J.ref = {fullfile(subj_anat_dir, sprintf('%s_T1w.nii', subj_str{s}))}; % just one anatomical or more than one?
+            J.ref = {fullfile(subj_anat_dir, sprintf('%s_T1w_lpi.nii', subj_str{s}))}; % just one anatomical or more than one?
             
             J.source = {fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}))};
             
@@ -363,20 +364,14 @@ switch what
             J.eoptions.sep      = [4 2];
             J.eoptions.tol      = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
             J.eoptions.fwhm     = [7 7];
-%             matlabbatch{1}.spm.spatial.coreg.estimate=J;
-%             spm_jobman('run',matlabbatch);
+            
+            % 
+            matlabbatch{1}.spm.spatial.coreg.estimate=J;
+            spm_jobman('run',matlabbatch);
             
             % (3) Manually check again
 %             coregtool;
 %             keyboard();
-            % checking the affine matrix
-            T1_vol = spm_vol(J.ref);
-            T1_vol = T1_vol{1};
-            T2_vol = spm_vol(J.source);
-            T2_vol = T2_vol{1};
-            x = spm_coreg(T2_vol, T1_vol);
-            M = spm_matrix(x);
-            display(M)
             
             % NOTE:
             % Overwrites meanepi, unless you update in step one, which saves it
@@ -386,6 +381,97 @@ switch what
             % So if you continually update rmeanepi, you'll end up with a file
             % called r...rrrmeanepi.
         end % s (sn) 
+    case 'FUNC:coreg_check'      % write out resliced images to check coreg
+        % (1) Manually seed the functional/anatomical registration
+        % - Do "coregtool" on the matlab command window
+        % - Select anatomical image and mean functional image to overlay
+        % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
+        % Example usage: nishimoto_imana('FUNC:coreg_check', 'sn', [1], 'prefix', 'r')
+        
+        sn       = subj_id;   % list of subjects        
+        step     = 'auto';  % first 'manual' then 'auto'
+        prefix   = '';      % to use the bias corrected version, set it to 'rbb'
+        % ===================
+        % After the manual registration, the mean functional image will be
+        % saved with r as the prefix which will then be used in the
+        % automatic registration
+        vararginoptions(varargin, {'sn', 'step', 'prefix'});
+        spm_jobman('initcfg')
+        for s = sn
+            % Get the directory of subjects anatomical and functional
+            subj_anat_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            subj_func_dir = fullfile(base_dir, subj_str{s}, func_dir);
+            
+            cd(subj_anat_dir); % goes to subjects anatomical dir so that coreg tool starts from that directory (just for convenience)
+            
+            switch step
+                case 'manual'
+                    coregtool;
+%                     keyboard;
+                case 'auto'
+                    % do nothing
+            end % switch step
+            
+            % (2) Automatically co-register functional and anatomical images
+            J.ref = {fullfile(subj_anat_dir, sprintf('%s_T1w_lpi.nii', subj_str{s}))}; % just one anatomical or more than one?
+            
+            J.source = {fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}))};
+            
+            J.other             = {''};
+            J.eoptions.cost_fun = 'nmi';
+            J.roptions.prefix   = 'c';
+            J.eoptions.sep      = [4 2];
+            J.eoptions.tol      = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
+            J.eoptions.fwhm     = [7 7];
+            
+            % 
+            matlabbatch{1}.spm.spatial.coreg.estwrite=J;
+            spm_jobman('run',matlabbatch);
+            
+            % (3) Manually check 
+            coregtool;
+            keyboard();
+            
+            % NOTE:
+            % Overwrites meanepi, unless you update in step one, which saves it
+            % as rmeanepi.
+            % Each time you click "update" in coregtool, it saves current
+            % alignment by appending the prefix 'r' to the current file
+            % So if you continually update rmeanepi, you'll end up with a file
+            % called r...rrrmeanepi.
+        end % s (sn)
+    case 'FUNC:coreg_trans'      % prints out the transformation matrix for coreg
+        % Run this case to get the transformation matrix and then use it
+        % for translation/rotation to check the coreg.
+        % the coreg case just estimates the transformation matrix, it
+        % doesn't reslice! So you need to check it yourself!!!!
+        % writes out matrices in functional folders
+        % Example usage: nishimoto_imana('FUNC:coreg_trans', 'sn', [4, 5, 6])
+        
+        sn = subj_id; 
+        ses = 1;
+        
+        vararginoptions(varargin, {'sn', 'ses'});
+        
+        for s = sn
+            fprintf('- getting matrix for %s\n', subj_str{s});
+            anat_dir = fullfile(base_dir, subj_str{s}, 'anat');
+            func_dir = fullfile(base_dir, subj_str{s}, 'func');
+            anat_file = fullfile(anat_dir, sprintf('%s_T1w_lpi.nii', subj_str{s}));
+            func_file = fullfile(func_dir, sprintf('rmask_noskull.nii')); %???????????????
+            
+            T1_vol = spm_vol(anat_file);
+            T2_vol = spm_vol(func_file);
+            
+            x = spm_coreg(T2_vol, T1_vol);
+            M = spm_matrix(x);
+            % write it out
+            writematrix(M, fullfile(func_dir,sprintf('%s_ses-%02d_trans.txt', subj_str{s}, ses)));
+            
+            M_world = spm_get_space(func_file, M * T2_vol.mat);
+            % write it out
+            writematrix(M_world, fullfile(func_dir,sprintf('%s_ses-%02d_v2w.txt', subj_str{s}, ses)));
+        end % s (sn)            
     case 'FUNC:make_samealign'   % align all the functionals
         % Aligns all functional images to rmean functional image
         % Example usage: nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [1])
@@ -468,7 +554,7 @@ switch what
 
         end % s (sn)
     case 'FUNC:run'              % add functional pipelines here
-        % Example usage: nishimoto_imana('FUNC:run', 'sn', [3, 4, 5, 6])
+        % Example usage: nishimoto_imana('FUNC:run', 'sn', [4, 5, 6])
         
         sn  = subj_id;        
         vararginoptions(varargin, {'sn'});
@@ -477,7 +563,7 @@ switch what
         nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', sn);
         nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', sn);  
            
-    case 'GLM:design1'  % make the design matrix for the glm
+    case 'GLM:design1'    % make the design matrix for the glm
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
         % represents all the instances
@@ -495,7 +581,7 @@ switch what
             % loop over runs
 %             for ss = [1, 2]
                 % create a directory to save the design
-                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses));
+                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
                 dircheck(subj_est_dir)
                 
                 T = []; % task/condition + session + run info
@@ -589,14 +675,14 @@ switch what
                 
                 spm_rwls_run_fmri_spec(J);
                 
-                dsave(fullfile(J.dir{1},sprintf('%s_ses-%d_reginfo.tsv', subj_str{s}, ses)), T);
+                dsave(fullfile(J.dir{1},sprintf('%s_ses-%02d_reginfo.tsv', subj_str{s}, ses)), T);
                 fprintf('- estimates for glm_%d session %d has been saved for %s \n', glm, ses, subj_str{s});
 %             end % ss (session)
             
             
         end % sn (subject)      
-    case 'GLM:estimate' % estimate beta values
-        % Example usage: nishimoto_imana('GLM:estimate', 'glm', 1, 'ses', 1)
+    case 'GLM:estimate'   % estimate beta values
+        % Example usage: nishimoto_imana('GLM:estimate', 'glm', 1, 'ses', 1, 'sn', 1)
         
         sn       = subj_id; % subject list
         glm      = 1;       % glm number
@@ -613,8 +699,107 @@ switch what
             
             spm_rwls_spm(SPM);
         end % s (sn),
-    case 'GLM:T_contrast' 
-    case 'GLM:F_contrast'
+    case 'GLM:check'      % visually inspect design matrix
+        % run GLM:make_design, GLM:estimate, and GLM:contrast before this step
+        % Example usage:nishimoto_imana('GLM:check', 'sn', 1, 'ses', 1, 'glm', 1)
+        
+        sn       = subj_id; % list of subjects you want to inspect
+        ses      = 1;       % session number
+        glm      = 1;       % glm number
+        runs     = 1:5;     % list of runs you want to inspect or the number of the run you want to expect
+        
+        vararginoptions(varargin, {'sn', 'ses', 'glm', 'runs'});
+
+        for s = sn 
+            % glm subject directory
+            glm_dir = fullfile(base_dir,subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
+            
+            % load SPM.mat file
+            load(fullfile(glm_dir, 'SPM.mat'));
+            
+            for r = runs
+                % get the design matrix for run r
+                X = SPM.xX.X(SPM.Sess(r).row, SPM.Sess(r).col);
+                
+                % get the variance of beta estimates
+                indx = SPM.Sess(r).col;
+                Bcov = SPM.xX.Bcov(indx, indx);
+                
+                % create visualizations
+                h = figure('Name', sprintf('%s run %02d', subj_str{s}, r));
+                subplot(1, 2, 1)
+                imagesc(X); colorbar;
+                title(sprintf('Design Matrix session %02d for run %02d GLM %02d', ses, r, glm));
+                subplot(1, 2, 2)
+                imagesc(Bcov); axis square; colorbar;
+                title(sprintf('Variance of Beta estimates session %02d for run %02d GLM %02d', ses, r, glm));
+                
+                keyboard;
+                
+            end % r (runs)
+        end % s (sn)
+    case 'GLM:T_contrast' % make T contrasts for each condition
+        %%% Calculating contrast images.
+        % Example usage: cereb_seq_imana('GLM:contrast', 'sn', 1, 'glm', 7, 'task_num', 2, 'baseline', 'rest')
+        %                cereb_seq_imana('GLM:contrast', 'sn', 1, 'glm', 4, 'task_num', 1, 'baseline', 'rest')
+        
+        sn             = subj_id;    % subjects list
+        ses            = 1;              % task number
+        glm            = 1;              % glm number
+        baseline       = 'rest';         % contrast will be calculated against base (available options: 'rest')
+        
+        vararginoptions(varargin, {'sn', 'glm', 'ses', 'baseline'})
+        
+        for s = sn
+            
+            % get the subject id folder name
+            fprintf('Contrasts for session %02d %s\n', ses, subj_str{s})
+            glm_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses}); 
+            
+            cd(glm_dir);
+            
+            % load the SPM.mat file
+            load(fullfile(glmDirSubj, 'SPM.mat'))
+            
+            SPM  = rmfield(SPM,'xCon');
+            T    = load(fullfile(glm_dir, sprintf('%s_%s_reginfo.tsv', subj_str{s}, ses_str{ses})));
+            
+            % t contrast for each condition type
+            ucondition = unique(T.cond)';
+            idx = 1;
+            for ic = ucondition
+                switch baseline
+                    case 'myBase' % contrast vs future baseline :)))
+                        % put your new contrasts here!
+                    case 'rest' % contrast against rest
+                        con                          = zeros(1,size(SPM.xX.X,2));
+                        con(:,logical(T.cond == ic)) = 1;
+                        con                          = con/abs(sum(con));            
+                end % switch base
+
+                % set the name of the contrast
+                contrast_name = sprintf('%s-%s', char(unique(T.CN(T.cond == ic))), baseline);
+                SPM.xCon(idx) = spm_FcUtil('Set', contrast_name, 'T', 'c', con', SPM.xX.xKXs);
+                
+                idx = idx + 1;
+            end % ic (conditions)
+            
+            SPM = spm_contrasts(SPM,1:length(SPM.xCon));
+            save('SPM.mat', 'SPM','-v7.3');
+            SPM = rmfield(SPM,'xVi'); % 'xVi' take up a lot of space and slows down code!
+            save(fullfile(glmDir, subj_str{s}, 'SPM_light.mat'), 'SPM')
+
+            % rename contrast images and spmT images
+            conName = {'con','spmT'};
+            for i = 1:length(SPM.xCon)
+                for n = 1:numel(conName)
+                    oldName = fullfile(glmDirSubj, sprintf('%s_%2.4d.nii',conName{n},i));
+                    newName = fullfile(glmDirSubj, sprintf('%s_%s.nii',conName{n},SPM.xCon(i).name));
+                    movefile(oldName, newName);
+                end % conditions (n, conName: con and spmT)
+            end % i (contrasts)
+        end % sn
+    case 'GLM:F_contrast' % make F contrast
     
     case 'GLM:run'    % add glm routines you want to run as pipeline
         % Example usage: nishimoto_imana('GLM:run', 'sn', [1, 3, 4, 5, 6], 'glm', 1, 'ses', 1)
@@ -755,7 +940,7 @@ switch what
             % cerebGrey  : cerebellar grey matter mask
             cerebGrey  = fullfile(suit_subj_dir, sprintf('c1%s_T1w.nii', subj_str{s}));
             % bufferVox  : buffer voxels
-            bufferVox = fullfile(suitDir, 'anatomicals', subj_name, sprintf('sess-%02d', ss), 'buffer_voxels.nii');
+            bufferVox = fullfile(suitDir, 'anatomicals', subj_str{s}, ses_str{ss}, 'buffer_voxels.nii');
             
             % isolate overlapping voxels
             spm_imcalc({cortexGrey,cerebGrey}, bufferVox,'(i1.*i2)')
@@ -763,8 +948,8 @@ switch what
             % mask buffer
             spm_imcalc({bufferVox},bufferVox,'i1>0')
             
-            cerebGreyC  = fullfile(suitDir, 'anatomicals', subj_name, sprintf('sess-%02d', ss), 'cereb_prob_corr_grey.nii');
-            cortexGreyC = fullfile(suitDir, 'anatomicals', subj_name, sprintf('sess-%02d', ss), 'cortical_mask_grey_corr.nii');
+            cerebGreyC  = fullfile(suitDir, 'anatomicals', subj_str{s}, ses_str{ss}, 'cereb_prob_corr_grey.nii');
+            cortexGreyC = fullfile(suitDir, 'anatomicals', subj_str{s}, sprintf('sess-%02d', ss), 'cortical_mask_grey_corr.nii');
             
             % remove buffer from the cerebellum
             spm_imcalc({cerebGrey,bufferVox}, cerebGreyC,'i1-i2');
