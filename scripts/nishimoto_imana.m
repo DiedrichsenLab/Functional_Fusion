@@ -328,7 +328,7 @@ switch what
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1, 3, 4, 5, 6], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
         
         sn       = subj_id;   % list of subjects        
         step     = 'manual';  % first 'manual' then 'auto'
@@ -511,7 +511,7 @@ switch what
         end % s (sn)
     case 'FUNC:make_maskImage'   % make mask images (noskull and grey_only)
         % Make maskImage in functional space
-        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 1)
         
         sn     = subj_id; % list of subjects
         prefix = 'r';     % prefix for the meanepi: r or rbb if bias corrected
@@ -567,7 +567,7 @@ switch what
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
         % represents all the instances
-        % nishimoto_imana('GLM:design1', 'sn', [2, 4, 5, 6])
+        % nishimoto_imana('GLM:design1', 'sn', [1])
         
         sn = subj_id;
         hrf_cutoff = Inf;
@@ -800,6 +800,42 @@ switch what
             end % i (contrasts)
         end % sn
     case 'GLM:F_contrast' % make F contrast
+        %%% Calculating contrast images.
+        % 'SPM_light' is created in this step (xVi is removed as it slows
+        % down code for FAST GLM).
+        % Example1: nishimoto_imana('GLM:F_contrast', 'glm', 1, 'ses', 1)
+        
+        sn       = returnSubjs;   %% list of subjects
+        ses      = 2;
+        glm      = 1;             %% The glm number
+        
+        vararginoptions(varargin, {'sn', 'glm', 'ses'})
+        
+        for s = sn
+            % subject name
+            fprintf('- Calculating F contrast for %s %s \n', ses_str{ses}, subj_str{s});
+            glm_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
+            load(fullfile(glm_dir, 'SPM.mat'))
+            
+            SPM  = rmfield(SPM,'xCon');
+            cd(fullfile(glm_dir))
+            T    = load(fullfile(glm_dir, sprintf('%s_%s_reginfo.tsv', subj_str{s}, ses_str{ses})));
+            
+            % F contrast
+            numConds = max(T.cond); 
+            con = zeros(numConds,size(SPM.xX.X,2));
+            for i=1:numConds
+                con(i,T.cond==i)=1-1/numConds;
+                con(i,T.cond>0 & T.cond~=i)=-1/numConds;
+            end
+            
+            SPM.xCon(1) = spm_FcUtil('Set',name, 'F', 'c',con',SPM.xX.xKXs);
+            SPM = spm_contrasts(SPM,1:length(SPM.xCon));
+            save('SPM.mat', 'SPM','-v6');
+            SPM = rmfield(SPM,'xVi'); % 'xVi' take up a lot of space and slows down code!
+            save(fullfile(glmDir, subj_name, 'SPM_light.mat'), 'SPM');
+
+        end % sn 
     
     case 'GLM:run'    % add glm routines you want to run as pipeline
         % Example usage: nishimoto_imana('GLM:run', 'sn', [1, 3, 4, 5, 6], 'glm', 1, 'ses', 1)
