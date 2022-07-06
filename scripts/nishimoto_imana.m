@@ -328,7 +328,7 @@ switch what
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1, 3, 4, 5, 6], 'prefix', 'r')
         
         sn       = subj_id;   % list of subjects        
         step     = 'manual';  % first 'manual' then 'auto'
@@ -511,7 +511,7 @@ switch what
         end % s (sn)
     case 'FUNC:make_maskImage'   % make mask images (noskull and grey_only)
         % Make maskImage in functional space
-        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 1)
+        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r')
         
         sn     = subj_id; % list of subjects
         prefix = 'r';     % prefix for the meanepi: r or rbb if bias corrected
@@ -567,7 +567,7 @@ switch what
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
         % represents all the instances
-        % nishimoto_imana('GLM:design1', 'sn', [1])
+        % nishimoto_imana('GLM:design1', 'sn', [2, 4, 5, 6])
         
         sn = subj_id;
         hrf_cutoff = Inf;
