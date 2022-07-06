@@ -699,49 +699,9 @@ switch what
             
             spm_rwls_spm(SPM);
         end % s (sn),
-    case 'GLM:check'      % visually inspect design matrix
-        % run GLM:make_design, GLM:estimate, and GLM:contrast before this step
-        % Example usage:nishimoto_imana('GLM:check', 'sn', 1, 'ses', 1, 'glm', 1)
-        
-        sn       = subj_id; % list of subjects you want to inspect
-        ses      = 1;       % session number
-        glm      = 1;       % glm number
-        runs     = 1:5;     % list of runs you want to inspect or the number of the run you want to expect
-        
-        vararginoptions(varargin, {'sn', 'ses', 'glm', 'runs'});
-
-        for s = sn 
-            % glm subject directory
-            glm_dir = fullfile(base_dir,subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
-            
-            % load SPM.mat file
-            load(fullfile(glm_dir, 'SPM.mat'));
-            
-            for r = runs
-                % get the design matrix for run r
-                X = SPM.xX.X(SPM.Sess(r).row, SPM.Sess(r).col);
-                
-                % get the variance of beta estimates
-                indx = SPM.Sess(r).col;
-                Bcov = SPM.xX.Bcov(indx, indx);
-                
-                % create visualizations
-                h = figure('Name', sprintf('%s run %02d', subj_str{s}, r));
-                subplot(1, 2, 1)
-                imagesc(X); colorbar;
-                title(sprintf('Design Matrix session %02d for run %02d GLM %02d', ses, r, glm));
-                subplot(1, 2, 2)
-                imagesc(Bcov); axis square; colorbar;
-                title(sprintf('Variance of Beta estimates session %02d for run %02d GLM %02d', ses, r, glm));
-                
-                keyboard;
-                
-            end % r (runs)
-        end % s (sn)
     case 'GLM:T_contrast' % make T contrasts for each condition
         %%% Calculating contrast images.
-        % Example usage: cereb_seq_imana('GLM:contrast', 'sn', 1, 'glm', 7, 'task_num', 2, 'baseline', 'rest')
-        %                cereb_seq_imana('GLM:contrast', 'sn', 1, 'glm', 4, 'task_num', 1, 'baseline', 'rest')
+        % Example usage: nishimoto_imana('GLM:T_contrast', 'sn', 1, 'glm', 1, 'ses', 1, 'baseline', 'rest')
         
         sn             = subj_id;    % subjects list
         ses            = 1;              % task number
@@ -803,7 +763,7 @@ switch what
         %%% Calculating contrast images.
         % 'SPM_light' is created in this step (xVi is removed as it slows
         % down code for FAST GLM).
-        % Example1: nishimoto_imana('GLM:F_contrast', 'glm', 1, 'ses', 1)
+        % Example1: nishimoto_imana('GLM:F_contrast', 'sn', 1, 'glm', 1, 'ses', 1)
         
         sn       = returnSubjs;   %% list of subjects
         ses      = 2;
@@ -831,16 +791,54 @@ switch what
             
             SPM.xCon(1) = spm_FcUtil('Set',name, 'F', 'c',con',SPM.xX.xKXs);
             SPM = spm_contrasts(SPM,1:length(SPM.xCon));
-            save('SPM.mat', 'SPM','-v6');
+            save('SPM.mat', 'SPM','-v7.3');
             SPM = rmfield(SPM,'xVi'); % 'xVi' take up a lot of space and slows down code!
             save(fullfile(glmDir, subj_name, 'SPM_light.mat'), 'SPM');
 
         end % sn 
-    
-    case 'GLM:run'    % add glm routines you want to run as pipeline
+    case 'GLM:check'      % visually inspect design matrix
+        % run GLM:make_design, GLM:estimate, and GLM:contrast before this step
+        % Example usage:nishimoto_imana('GLM:check', 'sn', 1, 'ses', 1, 'glm', 1)
+        
+        sn       = subj_id; % list of subjects you want to inspect
+        ses      = 1;       % session number
+        glm      = 1;       % glm number
+        runs     = 1:5;     % list of runs you want to inspect or the number of the run you want to expect
+        
+        vararginoptions(varargin, {'sn', 'ses', 'glm', 'runs'});
+
+        for s = sn 
+            % glm subject directory
+            glm_dir = fullfile(base_dir,subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
+            
+            % load SPM.mat file
+            load(fullfile(glm_dir, 'SPM.mat'));
+            
+            for r = runs
+                % get the design matrix for run r
+                X = SPM.xX.X(SPM.Sess(r).row, SPM.Sess(r).col);
+                
+                % get the variance of beta estimates
+                indx = SPM.Sess(r).col;
+                Bcov = SPM.xX.Bcov(indx, indx);
+                
+                % create visualizations
+                h = figure('Name', sprintf('%s run %02d', subj_str{s}, r));
+                subplot(1, 2, 1)
+                imagesc(X); colorbar;
+                title(sprintf('Design Matrix session %02d for run %02d GLM %02d', ses, r, glm));
+                subplot(1, 2, 2)
+                imagesc(Bcov); axis square; colorbar;
+                title(sprintf('Variance of Beta estimates session %02d for run %02d GLM %02d', ses, r, glm));
+                
+                keyboard;
+                
+            end % r (runs)
+        end % s (sn)
+    case 'GLM:run'        % add glm routines you want to run as pipeline
         % Example usage: nishimoto_imana('GLM:run', 'sn', [1, 3, 4, 5, 6], 'glm', 1, 'ses', 1)
         
-        sn = subj_id;
+        sn  = subj_id;
         ses = 1;
         glm = 1;
         
@@ -848,6 +846,8 @@ switch what
         
         nishimoto_imana('GLM:design1', 'sn', sn, 'ses', ses);
         nishimoto_imana('GLM:estimate', 'sn', sn, 'glm', glm, 'ses', ses);
+        nishimoto_imana('GLM:F_contrast', 'sn', sn, 'glm', glm, 'ses', ses)
+        nishimoto_imana('GLM:T_contrast', 'sn', sn, 'glm', glm, 'ses', ses, 'baseline', 'rest')
          
     case 'SURF:reconall'       % Freesurfer reconall routine
         % Calls recon-all, which performs, all of the
