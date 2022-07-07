@@ -8,17 +8,21 @@ import atlas_map as am
 from dataset import DataSetHcpResting
 import nibabel as nb
 import SUITPy as suit
-
+import os
+import sys
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 
+if sys.platform == "win32":  # for windows user
+    base_dir = 'Y:/data/FunctionalFusion'
+
 hcp_dir = base_dir + '/HCP'
 atlas_dir = base_dir + '/Atlases'
 hem_name = ['cortex_left','cortex_right']
 
-def get_hcp_data(res=162):    
+def get_hcp_data(res=162, index=range(0,100), refix=False):
     # Make the atlas object
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
@@ -41,9 +45,9 @@ def get_hcp_data(res=162):
         surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i],gifti))
 
     T = hcp_dataset.get_participants() 
-    for s in T.participant_id:
+    for s in T.participant_id[index]:
         print(f'Extract {s}')
-        coef = hcp_dataset.get_cereb_connectivity(s,atlas_map, surf_parcel)
+        coef = hcp_dataset.get_cereb_connectivity(s,atlas_map, surf_parcel, refix=refix)
         # Average across runs 
         coef = np.nanmean(coef,axis=0)
 
@@ -54,23 +58,35 @@ def get_hcp_data(res=162):
         cifti_img = nb.Cifti2Image(dataobj=coef,header=header)
         dest_dir = hcp_dataset.data_dir.format(s)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
+        if refix:
+            nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}-ReFIX.dpconn.nii')
+        else:
+            nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
 
-def avrg_hcp_dpconn(res=162):
+def avrg_hcp_dpconn(res=162, index=range(0,100), refix=False):
     # initialize the data set object
     hcp_dataset = DataSetHcpResting(hcp_dir)
     T = hcp_dataset.get_participants()
-    for i,s in enumerate(T.participant_id): 
+    subjects_id = T.participant_id[index]
+
+    for i,s in enumerate(subjects_id):
         data_dir = hcp_dataset.data_dir.format(s)
-        Ci = nb.load(data_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
-        if i==0: 
-            R = np.empty((T.shape[0],Ci.shape[0],Ci.shape[1]))
+        if refix:
+            Ci = nb.load(data_dir + f'/sub-{s}_tessel-{res}-ReFIX.dpconn.nii')
+        else:
+            Ci = nb.load(data_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
+
+        if i==0:
+            R = np.empty((subjects_id.shape[0],Ci.shape[0],Ci.shape[1]))
         R[i,:,:]=np.asanyarray(Ci.dataobj)
     Rm = np.nanmean(R,axis=0)
     Cm = nb.Cifti2Image(Rm,Ci.header)
-    nb.save(Cm,hcp_dir + f'/group_tessel-{res}.dpconn.nii')
-    pass
+    if refix:
+        nb.save(Cm, hcp_dir + f'/group_tessel-{res}-ReFIX.dpconn.nii')
+    else:
+        nb.save(Cm, hcp_dir + f'/group_tessel-{res}.dpconn.nii')
 
+    pass
 
 def parcel_hcp_dpconn(dpconn_file):
     """
@@ -88,9 +104,25 @@ def parcel_hcp_dpconn(dpconn_file):
     cifti_img = nb.Cifti2Image(R.T,[row_axis,bm_cortex])
     return cifti_img
 
+def indv_hcp_pscalar(res=162, index=range(0,100), refix=False):
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+    T = hcp_dataset.get_participants()
+    subjects_id = T.participant_id[index]
+    for s in T.participant_id[index]:
+        data_dir = hcp_dataset.data_dir.format(s)
+        if refix:
+            C = parcel_hcp_dpconn(data_dir + f'/sub-{s}_tessel-{res}-ReFIX.dpconn.nii')
+            nb.save(C, data_dir + f'/sub-{s}_tessel-{res}-ReFIX.pscalar.nii')
+        else:
+            C = parcel_hcp_dpconn(data_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
+            nb.save(C, data_dir + f'/sub-{s}_tessel-{res}.pscalar.nii')
+
+        print(f"-Saved scalar file for subject {s}, ReFIX={refix}")
 
 if __name__ == "__main__":
-    get_hcp_data()
-    avrg_hcp_dpconn()
-    C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
-    nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
+    get_hcp_data(index=range(0,20), refix=True) # First 20 subjects
+    avrg_hcp_dpconn(index=range(0,20), refix=True)
+    # indv_hcp_pscalar(index=range(0, 100), refix=False) # Generate individual parcel scalar
+
+    # C = parcel_hcp_dpconn(hcp_dir + '/group_tessel-162-ReFIX.dpconn.nii')
+    # nb.save(C, hcp_dir + '/group_tessel-162-ReFIX.pscalar.nii')

@@ -174,7 +174,7 @@ class DataSetHcpResting(DataSet):
         self.all_sub = self.get_participants()
         self.derivative_dir = self.base_dir + '/derivatives'
 
-    def get_data_fnames(self, participant_id):
+    def get_data_fnames(self, participant_id, refix=False):
         """ Gets all raw data files
         Args:
             participant_id (str): Subject
@@ -184,13 +184,17 @@ class DataSetHcpResting(DataSet):
         dir = self.derivative_dir + f"/{participant_id}" + "/func"
         fnames = []
         for r in range(4):
-            fnames.append(f'{dir}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
+            if refix:
+                fnames.append(f'{dir}/sub-{participant_id}_run-{r}_space-MSMSulc-ReFIX.dtseries.nii')
+            else:
+                fnames.append(f'{dir}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
         return fnames
 
     def get_ts_volume(self,
                 participant_id,
                 atlas_map,
-                runs=[0,1,2,3]): 
+                runs=[0,1,2,3],
+                refix=False):
         """ Returns the time series data for an atlas map 
             sample from voxels
         Args:
@@ -198,7 +202,7 @@ class DataSetHcpResting(DataSet):
             atlas_map (_type_): _description_
         """
         # get the file name for the cifti time series
-        fnames = self.get_data_fnames(participant_id)
+        fnames = self.get_data_fnames(participant_id, refix=refix)
         ts_volume = []
         for r in runs:
             # load the cifti
@@ -215,7 +219,8 @@ class DataSetHcpResting(DataSet):
     def get_ts_surface(self,
                     participant_id,
                     atlas_parcel,
-                    runs=[0,1,2,3]):
+                    runs=[0,1,2,3],
+                    refix=False):
         """Returns the information from the CIFTI file
         in the 32K surface for left and right hemisphere. 
 
@@ -225,7 +230,7 @@ class DataSetHcpResting(DataSet):
         """
         hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
         # get the file name for the cifti time series
-        fnames = self.get_data_fnames(participant_id)
+        fnames = self.get_data_fnames(participant_id, refix=refix)
         coef = None
         ts_cortex=[]
         for r in runs:
@@ -251,14 +256,15 @@ class DataSetHcpResting(DataSet):
                  participant_id,
                  cereb_atlas_map,
                  cortical_atlas_parcels,
-                 runs=[0,1,2,3]):
+                 runs=[0,1,2,3],
+                 refix=False):
         """
         Uses the original CIFTI files to produce cerebellar connectivity 
         file
         """
         hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
         # get the file name for the cifti time series
-        fnames = self.get_data_fnames(participant_id)
+        fnames = self.get_data_fnames(participant_id, refix=refix)
         coef = None
         for r in runs:
             # load the cifti
