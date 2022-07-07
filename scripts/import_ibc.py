@@ -387,13 +387,9 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
-# subjects_numbers = [2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1]
-
 session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
 #                  'clips4', 'lyon1', 'lyon2']
-# session_names = ['enumeration']
 
 
 # ############################# PARAMETERS #############################
@@ -424,7 +420,7 @@ if __name__ == "__main__":
         # transfer_t1w(subject, drago_sourcedata, cbs_sourcedata)
 
         ## Import T1w resampled-only AND normalized ##
-        # transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
+        transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
 
         ## Import cmasks ##
         # transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
@@ -432,10 +428,10 @@ if __name__ == "__main__":
         ## Import Freesurfer meshes ##
         # transfer_meshes(subject, drago_derivatives, cbs_derivatives)
 
-        for session_name in session_names:
+        # for session_name in session_names:
             ## Import raw EPI ##
-            source_funcdata(subject, session_name, drago_sourcedata,
-                            cbs_sourcedata, dfm, dfs)
+            # source_funcdata(subject, session_name, drago_sourcedata,
+            #                 cbs_sourcedata, dfm, dfs)
 
             ## Import normalized-EPI ##
             # wepi(subject, session_name, drago_derivatives, cbs_derivatives,
