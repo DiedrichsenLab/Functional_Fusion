@@ -109,7 +109,7 @@ switch what
         sn=varargin{1}; % subjNum
         
         subjs=length(sn);
-        for s=1:subjs,
+        for s = sn,
             
             % Get the directory of subjects anatomical
             subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
@@ -136,7 +136,7 @@ switch what
         sn=varargin{1}; % subjNum
         
         subjs=length(sn);
-        for s=1:subjs,
+        for s = sn,
             
             % Get the directory of subjects anatomical and functional
             subj_anat_dir = fullfile(base_dir, subj_str{s}, anat_dir);
@@ -167,7 +167,7 @@ switch what
         subjs=length(sn);
         
         J = [];
-        for s=1:subjs,
+        for s = sn,
             
             % Get the directory of subjects anatomical and functional
             subj_anat_dir = fullfile(base_dir, subj_str{s}, anat_dir);
@@ -209,7 +209,7 @@ switch what
         
         subjs=length(sn);
         
-        for s=1:subjs,
+        for s = sn,
             
             cd(fullfile(baseDir,imagingDir,subj_str{s}));
             
