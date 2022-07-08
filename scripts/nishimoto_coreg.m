@@ -178,13 +178,12 @@ switch what
             
             orig = fullfile(subj_func_dir, sprintf('mean%s_ses-01_run-01.nii',subj_str{s}));
             orig_copied = fullfile(subj_func_dir, sprintf('mean%s_ses-01_run-01_reg.nii',subj_str{s}));
-            command = sprintf('cp %s %s',orig,orig_copied)
-            system(command)
+            command = sprintf('cp %s %s',orig,orig_copied);
+            system(command);
 
             ref_image = fullfile(subj_func_dir, sprintf('mean%s_ses-01_run-01_func2highres.nii.gz',subj_str{s}));
-            command_gunzip = sprintf('gunzip %s', ref_image)
-            system(command_gunzip)
-            fprintf('gunzip completed for run %d \n',runs(r))
+            command_gunzip = sprintf('gunzip %s', ref_image);
+            system(command_gunzip);
             [filedir,filestem, ext] = fileparts(ref_image);
             
             J.ref = {fullfile(filedir,filestem)};
