@@ -123,10 +123,10 @@ switch what
             
             in = fullfile(subj_dir, sprintf('%s_lpi_optiBET_brain.nii.gz', anat_name));
             out = fullfile(subj_dir, sprintf('%s_lpi_brain.nii.gz', anat_name));
-            copy_command = sprintf('cp %s %s', in, out)
+            copy_command = sprintf('cp %s %s', in, out);
             system(copy_command)
             
-            fprintf('optiBET completed for %s \n',subj_name{sn(s)})
+            fprintf('optiBET completed for %s \n',subj_str{s})
             fprintf('Check the output of optiBET using FSLeyes or some other visualization software.')
            
         end
@@ -154,7 +154,7 @@ switch what
             system(reg_command)
             
             
-            fprintf('epi_reg completed for %s \n',subj_name{sn(s)})
+            fprintf('epi_reg completed for %s \n',subj_str{s})
             fprintf('Check the output of epi_reg using FSLeyes or some other visualization software.')
            
         end
@@ -197,7 +197,7 @@ switch what
             J.eoptions.fwhm = [7 7];
             matlabbatch{1}.spm.spatial.coreg.estimate=J;
             spm_jobman('run',matlabbatch);
-            fprintf('mean epi coregistered for %s \n',subj_name{sn(s)})
+            fprintf('mean epi coregistered for %s \n',subj_str{s})
             
         end    
         
@@ -213,19 +213,19 @@ switch what
         
         for s=1:subjs,
             
-            cd(fullfile(baseDir,imagingDir,subj_name{sn(s)}));
+            cd(fullfile(baseDir,imagingDir,subj_str{s}));
             
-            P{1} = fullfile(fullfile(baseDir,imagingDir,subj_name{sn(s)},sprintf('rmeanrun_%2.2d.nii',runnum)));
+            P{1} = fullfile(fullfile(baseDir,imagingDir,subj_str{s},sprintf('rmeanrun_%2.2d.nii',runnum)));
             
             % Select images to be realigned
             Q={};
             for r=1:numel(runs)
-              Q{end+1}    = fullfile(baseDir,imagingDir,subj_name{sn(s)},sprintf('run_%2.2d.nii',runs(r)));
+              Q{end+1}    = fullfile(baseDir,imagingDir,subj_str{s},sprintf('run_%2.2d.nii',runs(r)));
             end;
             
             % Run spmj_makesamealign_nifti
             spmj_makesamealign_nifti(char(P),char(Q));
-            fprintf('functional images realigned for %s \n',subj_name{sn(s)})
+            fprintf('functional images realigned for %s \n',subj_str{s})
         end
    
 end
