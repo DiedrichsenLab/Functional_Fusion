@@ -174,14 +174,8 @@ switch what
             subj_anat_dir = fullfile(base_dir, subj_str{s}, anat_dir);
             subj_func_dir = fullfile(base_dir, subj_str{s}, func_dir);
 
-            % Get the name of the anatpmical image
+            % Get the name of the anatomical image
             anat_name = sprintf('%s_T1w', subj_str{s});
-
-            
-            t1 = fullfile(subj_dir, sprintf('%s_lpi.nii', anat_name));
-            t1_brain = fullfile(subj_dir, sprintf('%s_lpi_brain.nii.gz', anat_name));
-            epi = fullfile(subj_func_dir, sprintf('mean%s_ses-01_run-01.nii',subj_str{s}));
-            out = fullfile(subj_func_dir, sprintf('mean%s_ses-01_run-01_func2highres',subj_str{s}));
             
             orig = fullfile(subj_func_dir, sprintf('mean%s_ses-01_run-01.nii',subj_str{s}));
             orig_copied = fullfile(subj_func_dir, sprintf('mean%s_ses-01_run-01_reg.nii',subj_str{s}));
