@@ -1,4 +1,4 @@
-function [ output_args ] = nishimoto_imana( what, varargin )
+function [ output_args ] = nishimoto_coreg( what, varargin )
 
 % %========================================================================================================================
 % PATH DEFINITIONS
@@ -215,10 +215,6 @@ switch what
             
             cd(fullfile(baseDir,imagingDir,subj_name{sn(s)}));
             
-            % Select image for reference
-            % For ants-registered data: TSE 
-            % P{1} = fullfile(fullfile(baseDir,anatomicalDir,subj_name{sn},'tse.nii'));
-            % for tradition way: rmeanepi 
             P{1} = fullfile(fullfile(baseDir,imagingDir,subj_name{sn(s)},sprintf('rmeanrun_%2.2d.nii',runnum)));
             
             % Select images to be realigned
