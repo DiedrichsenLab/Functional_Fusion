@@ -146,8 +146,8 @@ switch what
             anat_name = sprintf('%s_T1w', subj_str{s});
 
             
-            t1 = fullfile(subj_dir, sprintf('%s_lpi.nii', anat_name));
-            t1_brain = fullfile(subj_dir, sprintf('%s_lpi_brain.nii.gz', anat_name));
+            t1 = fullfile(subj_anat_dir, sprintf('%s_lpi.nii', anat_name));
+            t1_brain = fullfile(subj_anat_dir, sprintf('%s_lpi_brain.nii.gz', anat_name));
             epi = fullfile(subj_func_dir, sprintf('mean%s_ses-01_run-01.nii',subj_str{s}));
             out = fullfile(subj_func_dir, sprintf('mean%s_ses-01_run-01_func2highres',subj_str{s}));
             reg_command = sprintf('epi_reg --epi=%s --t1=%s --t1brain=%s --out=%s', epi, t1, t1_brain, out);
