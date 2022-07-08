@@ -123,8 +123,8 @@ switch what
             
             in = fullfile(subj_dir, sprintf('%s_lpi_optiBET_brain.nii.gz', anat_name));
             out = fullfile(subj_dir, sprintf('%s_lpi_brain.nii.gz', anat_name));
-            copy_command = sprintf('cp %s %s', in, out);
-            system(copy_command)
+            move_command = sprintf('mv %s %s', in, out);
+            system(move_command);
             
             fprintf('optiBET completed for %s \n',subj_str{s})
             fprintf('Check the output of optiBET using FSLeyes or some other visualization software.')
@@ -163,7 +163,6 @@ switch what
         % Need meanrun_01 in epi resolution coregistered to anatomical
         % example: bsp_imana('FUNC:coreg_meanepi_fsl',1,8)
         sn=varargin{1}; % subjNum
-        runnum=varargin{2} %runNum
         
         subjs=length(sn);
         
