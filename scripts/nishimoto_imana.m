@@ -36,13 +36,13 @@ base_dir = sprintf('%s/FunctionalFusion/Nishimoto_103Task/',workdir);
 
 %%% Freesurfer stuff
 path1 = getenv('PATH');
-path1 = [path1, ':/Applications/freesurfer/bin'];
+path1 = [path1, ':/srv/software/freesurfer/6.0.0/bin'];
 setenv('PATH', path1);
-path1 = [path1, ':/Applications/freesurfer/fsfast/bin'];
+path1 = [path1, ':/srv/software/freesurfer/6.0.0/fsfast/bin'];
 setenv('PATH', path1);
-path1 = [path1, ':/Applications/freesurfer/mni/bin'];
+path1 = [path1, ':/srv/software/freesurfer/6.0.0/mni/bin'];
 setenv('PATH', path1);
-setenv('FREESURFER_HOME','/Applications/freeSurfer');
+setenv('FREESURFER_HOME','/srv/software/freesurfer/6.0.0');
 setenv(fullfile(base_dir, 'surfaceFreesurfer'))
 setenv('SUBJECTS_DIR',fullfile(base_dir, 'surfaceFreesurfer'));
 % setenv('PERL5LIB','/Applications/freesurfer/mni/Library/Perl/Updates/5.10.0');
@@ -76,6 +76,7 @@ loc_AC = {[-103, -140, -140],...       %sub-01
     
 
 sess = {'training', 'test'}; % training runs are considered to be ses-01 and testing runs are ses-02
+ses_str = {'ses-01', 'ses-02'};
 numTRs = 281;
 % =========================================================================
 numDummys = 0; % we need to make sure that this is correct
@@ -245,7 +246,7 @@ switch what
         % files. Runs done on the same day are considered as one session. 
         % this case calls FUNC:get_in_info to get the run information and
         % assign runs to sessions
-        % Example usage: nishimoto_imana('FUNC:rename', 'sn', 2)
+        % Example usage: nishimoto_imana('FUNC:rename', 'sn', 1)
         sn = subj_id;
         
         vararginoptions(varargin, 'sn')
@@ -271,15 +272,16 @@ switch what
                     movefile(src_filename,fullfile(func_subj_dir, des_filename))
                     
                     % change the names of the tsv files
+                    %%% get the run id
                     tsv_source = sprintf('%s_task-%s_run-%02d_events.tsv', subj_str{s}, ses_name, i);
-                    tsv_dest = sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ss, i);
+                    tsv_dest = sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ss, run_list{ss}(i));
                     movefile(fullfile(func_subj_dir, tsv_source), fullfile(func_subj_dir, tsv_dest))
                 end % i (runs within a scan)
             end % ss (session)
         end % sn (subjects)    
     case 'FUNC:realign'          % realign functional images
         % SPM realigns all volumes to the first volume of first run
-        % example usage: nishimoto_imana('FUNC:realign', 'sn', 2)
+        % example usage: nishimoto_imana('FUNC:realign', 'sn', 1)
         
         sn   = subj_id; % list of subjects
         
@@ -327,10 +329,10 @@ switch what
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1, 3, 4, 5, 6], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
         
         sn       = subj_id;   % list of subjects        
-        step     = 'auto';  % first 'manual' then 'auto'
+        step     = 'manual';  % first 'manual' then 'auto'
         prefix   = 'rb';      % to use the bias corrected version, set it to 'rbb'
         % ===================
         % After the manual registration, the mean functional image will be
@@ -473,7 +475,7 @@ switch what
         end % s (sn)            
     case 'FUNC:make_samealign'   % align all the functionals
         % Aligns all functional images to rmean functional image
-        % Example usage: nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [1])
+        % Example usage: nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [3])
         
         sn     = subj_id;     % subject list
         prefix = 'r';         % prefix for the meanepi: r or rbb if bias corrected
@@ -510,7 +512,7 @@ switch what
         end % s (sn)
     case 'FUNC:make_maskImage'   % make mask images (noskull and grey_only)
         % Make maskImage in functional space
-        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 3)
         
         sn     = subj_id; % list of subjects
         prefix = 'r';     % prefix for the meanepi: r or rbb if bias corrected
@@ -562,11 +564,43 @@ switch what
         nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', sn);
         nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', sn);  
            
-    case 'GLM:design1'  % make the design matrix for the glm
+    case 'GLM:task_info'  % creates a text file and assign numbers to the tasks/conditions
+        % Example usage: nishimoto_imana('GLM:task_info')
+        
+        info_dir = fullfile(base_dir, 'sub-02', func_dir);
+        
+        % loop over sessions/runs and load the info tsv file for each run
+        TN_cell = {};
+        info_struct = [];
+        
+        for r = run_list{1}
+            % load the tsv file
+            tsv_file = fullfile(info_dir, sprintf('sub-02_ses-01_run-%02d_events.tsv', r));
+            T = dload(tsv_file);
+
+            % get task names:
+            TN_cell = [TN_cell; T.trial_type];
+        end % r (runs)
+
+        % get the unique task names
+        task_name = unique(TN_cell)';
+
+        % assign numbers to each task
+        task = 1:length(task_name);
+
+        % create a structure with the info you want
+        info_tmp.task_name = task_name';
+        info_tmp.task = task';
+
+        info_struct = addstruct(info_struct, info_tmp);
+        
+        % save as a tsv file 
+        dsave(fullfile(base_dir, 'tasks_info.tsv'), info_struct);        
+    case 'GLM:design1'    % make the design matrix for the glm
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
         % represents all the instances
-        % nishimoto_imana('GLM:design1', 'sn', [2, 4, 5, 6])
+        % nishimoto_imana('GLM:design1', 'sn', [1])
         
         sn = subj_id;
         hrf_cutoff = Inf;
@@ -575,12 +609,16 @@ switch what
         
         prefix = 'r'; % prefix of the preprocessed epi we want to use
         glm = 1;
+        
+        % get the info file that specifies the order of the tasks
+        Dd = dload(fullfile(base_dir, 'tasks_info.tsv'));
+        
         for s = sn
             func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
             % loop over runs
 %             for ss = [1, 2]
                 % create a directory to save the design
-                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses));
+                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
                 dircheck(subj_est_dir)
                 
                 T = []; % task/condition + session + run info
@@ -596,7 +634,7 @@ switch what
                 runs = run_list{ses};
                 
                 % loop through runs within the current sessions
-                icondUni = 0;
+                itaskUni = 0;
                 for run = 1:length(runs)
                     
 %                   % fill in nifti image names for the current run
@@ -610,50 +648,50 @@ switch what
                     tsv_path = fullfile(base_dir, subj_str{s}, func_dir);
                     % get the tsvfile for the current run
                     D = dload(fullfile(tsv_path, sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ses, run)));
-                    
-                    % get unique conditions
-                    unique_conds = unique(D.trial_type, 'stable');
-                    
+                                        
                     % loop over trials within the current run and build up
                     % the design matrix
-                    for ic = 1:length(unique_conds)
-                        icondUni = icondUni+1;
+                    for ic = 1:length(Dd.task_name)
+                        itaskUni = itaskUni+1;
                         % get the indices corresponding to the current
                         % condition.
                         % this line is necessary as there are some
                         % conditions with more than 1 repetition
-                        idx = strcmp(D.trial_type, unique_conds{ic});
-%                         fprintf('* %d instances found for condition %s in run %02d\n', sum(idx), unique_conds{ic}, run)
+                        idx = strcmp(D.trial_type, Dd.task_name{ic});
+                        fprintf('* %d instances found for condition %s in run %02d\n', sum(idx), Dd.task_name{ic}, run)
                         
+                        %
                         % filling in "reginfo"
-                        TT.sn      = s;
-                        TT.sess    = ses;
-                        TT.run     = run;
-                        TT.CN      = unique_conds(ic);
-                        TT.cond    = ic;
-                        TT.condUni = icondUni;
-                        TT.n_rep   = sum(idx);
+                        TT.sn        = s;
+                        TT.sess      = ses;
+                        TT.run       = run;
+                        TT.task_name = Dd.task_name(ic);
+                        TT.task      = ic;
+                        TT.taskUni   = itaskUni;
+                        TT.n_rep     = sum(idx);
                         
                         % filling in fields of J (SPM Job)
-                        J.sess(run).cond(ic).name = unique_conds{ic};
+                        J.sess(run).cond(ic).name = Dd.task_name{ic};
                         J.sess(run).cond(ic).tmod = 0;
                         J.sess(run).cond(ic).orth = 0;
                         J.sess(run).cond(ic).pmod = struct('name', {}, 'param', {}, 'poly', {});
                         
                         % get onset and duration (should be in seconds)
                         onset    = D.onset(idx) - (J.timing.RT*numDummys);
-%                         fprintf("The onset is %f\n", onset)
-                        if onset < 0 
+                        fprintf("The onset is %f\n", onset)
+                        if onset < 0
                             warning("negative onset found")
                         end
                         duration = D.duration(idx);
-%                         fprintf("The duration is %f\n", duration);
+                        fprintf("The duration is %f\n", duration);
                         
                         J.sess(run).cond(ic).onset    = onset;
                         J.sess(run).cond(ic).duration = duration;
                         
                         % add the condition info to the reginfo structure
                         T = addstruct(T, TT);
+                            
+                        
                     end % ic (conditions)
                     
                     J.sess(run).multi     = {''};
@@ -674,14 +712,52 @@ switch what
                 
                 spm_rwls_run_fmri_spec(J);
                 
-                dsave(fullfile(J.dir{1},sprintf('%s_ses-%d_reginfo.tsv', subj_str{s}, ses)), T);
+                dsave(fullfile(J.dir{1},sprintf('%s_ses-%02d_reginfo.tsv', subj_str{s}, ses)), T);
                 fprintf('- estimates for glm_%d session %d has been saved for %s \n', glm, ses, subj_str{s});
 %             end % ss (session)
             
             
         end % sn (subject)      
-    case 'GLM:estimate' % estimate beta values
-        % Example usage: nishimoto_imana('GLM:estimate', 'glm', 1, 'ses', 1)
+    case 'GLM:check_design' % checking the design matrix
+        % run GLM:make_design, GLM:estimate, and GLM:contrast before this step
+        % Example usage:nishimoto_imana('GLM:check_design', 'sn', 1, 'ses', 1, 'glm', 1)
+        
+        sn       = subj_id; % list of subjects you want to inspect
+        ses = 1;
+        glm      = 1;           % glm number
+        runs     = 1:12;         % list of runs you want to inspect
+        
+        vararginoptions(varargin, {'sn', 'ses', 'glm', 'runs'});
+
+        for s = sn 
+            
+            % glm subject directory
+            glm_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
+            % load SPM.mat file
+            load(fullfile(glm_dir, 'SPM.mat'));
+            
+            for r = runs
+                % get the design matrix for run r
+                X = SPM.xX.X(SPM.Sess(r).row, SPM.Sess(r).col);
+                
+                % get the variance of beta estimates
+                indx = SPM.Sess(r).col;
+                Bcov = SPM.xX.Bcov(indx, indx);
+                
+                % create visualizations
+                h = figure('Name', sprintf('%s run %02d', subj_str{s}, r));
+                subplot(1, 2, 1)
+                imagesc(X); colorbar;
+                title(sprintf('Design Matrix for run %02d GLM %02d', r, glm));
+                subplot(1, 2, 2)
+                imagesc(Bcov); axis square; colorbar;
+                title(sprintf('Variance of Beta estimates %s for run %02d GLM %02d', r, glm));
+                
+                
+            end % r (runs)
+        end % s (sn)
+    case 'GLM:estimate'   % estimate beta values
+        % Example usage: nishimoto_imana('GLM:estimate', 'glm', 1, 'ses', 1, 'sn', 1)
         
         sn       = subj_id; % subject list
         glm      = 1;       % glm number
@@ -698,13 +774,152 @@ switch what
             
             spm_rwls_spm(SPM);
         end % s (sn),
-    case 'GLM:T_contrast' 
-    case 'GLM:F_contrast'
-    
-    case 'GLM:run'    % add glm routines you want to run as pipeline
+    case 'GLM:T_contrast' % make T contrasts for each condition
+        %%% Calculating contrast images.
+        % Example usage: nishimoto_imana('GLM:T_contrast', 'sn', 1, 'glm', 1, 'ses', 1, 'baseline', 'rest')
+        
+        sn             = subj_id;    % subjects list
+        ses            = 1;              % task number
+        glm            = 1;              % glm number
+        baseline       = 'rest';         % contrast will be calculated against base (available options: 'rest')
+        
+        vararginoptions(varargin, {'sn', 'glm', 'ses', 'baseline'})
+        
+        for s = sn
+            
+            % get the subject id folder name
+            fprintf('Contrasts for session %02d %s\n', ses, subj_str{s})
+            glm_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses}); 
+            
+            cd(glm_dir);
+            
+            % load the SPM.mat file
+            load(fullfile(glm_dir, 'SPM.mat'))
+            
+            SPM  = rmfield(SPM,'xCon');
+            T    = dload(fullfile(glm_dir, sprintf('%s_%s_reginfo.tsv', subj_str{s}, ses_str{ses})));
+            
+            % t contrast for each condition type
+            utask = unique(T.task)';
+            idx = 1;
+            for ic = utask
+                switch baseline
+                    case 'myBase' % contrast vs future baseline :)))
+                        % put your new contrasts here!
+                    case 'rest' % contrast against rest
+                        con                          = zeros(1,size(SPM.xX.X,2));
+                        con(:,logical((T.task == ic)& (T.n_rep>0))) = 1;
+%                         n_rep = length(T.run(T.task == ic));
+%                         n_rep_t = T.n_rep(T.task == ic);
+%                         name = unique(T.task_name(T.task == ic));
+%                         fprintf('- task is %s: \n', name{1});
+%                         fprintf('number of reps in all runs = %d\n', n_rep);
+%                         fprintf('numberof reps recorded in tsv = %d\n', n_rep_t);
+                        con                          = con/abs(sum(con));            
+                end % switch base
+
+                % set the name of the contrast
+                contrast_name = sprintf('%s-%s', char(unique(T.task_name(T.task == ic))), baseline);
+                SPM.xCon(idx) = spm_FcUtil('Set', contrast_name, 'T', 'c', con', SPM.xX.xKXs);
+                
+                idx = idx + 1;
+            end % ic (conditions)
+            
+            SPM = spm_contrasts(SPM,1:length(SPM.xCon));
+            save('SPM.mat', 'SPM','-v7.3');
+            SPM = rmfield(SPM,'xVi'); % 'xVi' take up a lot of space and slows down code!
+            save(fullfile(glm_dir, 'SPM_light.mat'), 'SPM')
+
+            % rename contrast images and spmT images
+            conName = {'con','spmT'};
+            for i = 1:length(SPM.xCon)
+                for n = 1:numel(conName)
+                    oldName = fullfile(glm_dir, sprintf('%s_%2.4d.nii',conName{n},i));
+                    newName = fullfile(glm_dir, sprintf('%s_%s.nii',conName{n},SPM.xCon(i).name));
+                    movefile(oldName, newName);
+                end % conditions (n, conName: con and spmT)
+            end % i (contrasts)
+        end % sn
+    case 'GLM:F_contrast' % make F contrast
+        %%% Calculating contrast images.
+        % 'SPM_light' is created in this step (xVi is removed as it slows
+        % down code for FAST GLM).
+        % Example1: nishimoto_imana('GLM:F_contrast', 'sn', 1, 'glm', 1, 'ses', 1)
+        
+        sn       = returnSubjs;   %% list of subjects
+        ses      = 2;
+        glm      = 1;             %% The glm number
+        
+        vararginoptions(varargin, {'sn', 'glm', 'ses'})
+        
+        for s = sn
+            % subject name
+            fprintf('- Calculating F contrast for %s %s \n', ses_str{ses}, subj_str{s});
+            glm_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
+            load(fullfile(glm_dir, 'SPM.mat'))
+            
+            SPM  = rmfield(SPM,'xCon');
+            cd(fullfile(glm_dir))
+            T    = load(fullfile(glm_dir, sprintf('%s_%s_reginfo.tsv', subj_str{s}, ses_str{ses})));
+            
+            % F contrast
+            numConds = max(T.cond); 
+            con = zeros(numConds,size(SPM.xX.X,2));
+            for i=1:numConds
+                con(i,T.cond==i)=1-1/numConds;
+                con(i,T.cond>0 & T.cond~=i)=-1/numConds;
+            end
+            
+            SPM.xCon(1) = spm_FcUtil('Set',name, 'F', 'c',con',SPM.xX.xKXs);
+            SPM = spm_contrasts(SPM,1:length(SPM.xCon));
+            save('SPM.mat', 'SPM','-v7.3');
+            SPM = rmfield(SPM,'xVi'); % 'xVi' take up a lot of space and slows down code!
+            save(fullfile(glmDir, subj_name, 'SPM_light.mat'), 'SPM');
+
+        end % sn 
+    case 'GLM:check'      % visually inspect design matrix
+        % run GLM:make_design, GLM:estimate, and GLM:contrast before this step
+        % Example usage:nishimoto_imana('GLM:check', 'sn', 1, 'ses', 1, 'glm', 1)
+        
+        sn       = subj_id; % list of subjects you want to inspect
+        ses      = 1;       % session number
+        glm      = 1;       % glm number
+        runs     = 1:5;     % list of runs you want to inspect or the number of the run you want to expect
+        
+        vararginoptions(varargin, {'sn', 'ses', 'glm', 'runs'});
+
+        for s = sn 
+            % glm subject directory
+            glm_dir = fullfile(base_dir,subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
+            
+            % load SPM.mat file
+            load(fullfile(glm_dir, 'SPM.mat'));
+            
+            for r = runs
+                % get the design matrix for run r
+                X = SPM.xX.X(SPM.Sess(r).row, SPM.Sess(r).col);
+                
+                % get the variance of beta estimates
+                indx = SPM.Sess(r).col;
+                Bcov = SPM.xX.Bcov(indx, indx);
+                
+                % create visualizations
+                h = figure('Name', sprintf('%s run %02d', subj_str{s}, r));
+                subplot(1, 2, 1)
+                imagesc(X); colorbar;
+                title(sprintf('Design Matrix session %02d for run %02d GLM %02d', ses, r, glm));
+                subplot(1, 2, 2)
+                imagesc(Bcov); axis square; colorbar;
+                title(sprintf('Variance of Beta estimates session %02d for run %02d GLM %02d', ses, r, glm));
+                
+                keyboard;
+                
+            end % r (runs)
+        end % s (sn)
+    case 'GLM:run'        % add glm routines you want to run as pipeline
         % Example usage: nishimoto_imana('GLM:run', 'sn', [1, 3, 4, 5, 6], 'glm', 1, 'ses', 1)
         
-        sn = subj_id;
+        sn  = subj_id;
         ses = 1;
         glm = 1;
         
@@ -712,6 +927,8 @@ switch what
         
         nishimoto_imana('GLM:design1', 'sn', sn, 'ses', ses);
         nishimoto_imana('GLM:estimate', 'sn', sn, 'glm', glm, 'ses', ses);
+        nishimoto_imana('GLM:F_contrast', 'sn', sn, 'glm', glm, 'ses', ses)
+        nishimoto_imana('GLM:T_contrast', 'sn', sn, 'glm', glm, 'ses', ses, 'baseline', 'rest')
          
     case 'SURF:reconall'       % Freesurfer reconall routine
         % Calls recon-all, which performs, all of the
@@ -788,8 +1005,7 @@ switch what
         nishimoto_imana('SURF:xhemireg')
         nishimoto_imana('SURF:map_ico')
         nishimoto_imana('SURF:fs2wb')
-         
-        
+               
     case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
         % Example usage: nishimoto_bids_imana('SUIT:isolate_segment', 'sn', 1);
         
@@ -840,7 +1056,7 @@ switch what
             % cerebGrey  : cerebellar grey matter mask
             cerebGrey  = fullfile(suit_subj_dir, sprintf('c1%s_T1w.nii', subj_str{s}));
             % bufferVox  : buffer voxels
-            bufferVox = fullfile(suitDir, 'anatomicals', subj_name, sprintf('sess-%02d', ss), 'buffer_voxels.nii');
+            bufferVox = fullfile(suitDir, 'anatomicals', subj_str{s}, ses_str{ss}, 'buffer_voxels.nii');
             
             % isolate overlapping voxels
             spm_imcalc({cortexGrey,cerebGrey}, bufferVox,'(i1.*i2)')
@@ -848,8 +1064,8 @@ switch what
             % mask buffer
             spm_imcalc({bufferVox},bufferVox,'i1>0')
             
-            cerebGreyC  = fullfile(suitDir, 'anatomicals', subj_name, sprintf('sess-%02d', ss), 'cereb_prob_corr_grey.nii');
-            cortexGreyC = fullfile(suitDir, 'anatomicals', subj_name, sprintf('sess-%02d', ss), 'cortical_mask_grey_corr.nii');
+            cerebGreyC  = fullfile(suitDir, 'anatomicals', subj_str{s}, ses_str{ss}, 'cereb_prob_corr_grey.nii');
+            cortexGreyC = fullfile(suitDir, 'anatomicals', subj_str{s}, sprintf('sess-%02d', ss), 'cortical_mask_grey_corr.nii');
             
             % remove buffer from the cerebellum
             spm_imcalc({cerebGrey,bufferVox}, cerebGreyC,'i1-i2');
