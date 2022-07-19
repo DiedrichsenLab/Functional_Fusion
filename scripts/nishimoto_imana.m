@@ -233,10 +233,10 @@ switch what
             P{1}    = dest;
             spmj_bias_correct(P);
         end % s (sn)
-    case 'ANAT:bet'          % brain extraction for anatomical.nii
+    case 'ANAT:bet'          % brain extraction for the anatomical image
         % Run bash script /srv/diedrichsen/shell/optiBET.sh
         % Edit command variable to set path to optiBET.sh script
-        % Example usage: nishimoto_imana('ANAT:bet', 'sn', 1)
+        % Example usage: nishimoto_imana('ANAT:bet', 'sn', [1, 2, 3, 4, 5, 6])
         sn   = subj_id; % list of subjects
         
         vararginoptions(varargin, {'sn'});
@@ -301,11 +301,11 @@ switch what
                     des_filename = sprintf('%s_ses-%02d_run-%02d.nii', subj_str{s}, ss, run_list{ss}(i));
                     movefile(src_filename,fullfile(func_subj_dir, des_filename))
                     
-                    % change the names of the tsv files
-                    %%% get the run id
-                    tsv_source = sprintf('%s_task-%s_run-%02d_events.tsv', subj_str{s}, ses_name, i);
-                    tsv_dest = sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ss, run_list{ss}(i));
-                    movefile(fullfile(func_subj_dir, tsv_source), fullfile(func_subj_dir, tsv_dest))
+%                     % change the names of the tsv files
+%                     %%% get the run id
+%                     tsv_source = sprintf('%s_task-%s_run-%02d_events.tsv', subj_str{s}, ses_name, i);
+%                     tsv_dest = sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ss, run_list{ss}(i));
+%                     movefile(fullfile(func_subj_dir, tsv_source), fullfile(func_subj_dir, tsv_dest))
                 end % i (runs within a scan)
             end % ss (session)
         end % sn (subjects)    
@@ -354,12 +354,12 @@ switch what
             P{1}    = dest;
             spmj_bias_correct(P);
         end % s (sn)
-    case 'FUNC:coreg_spm'        % coregistration with the anatomicals
+    case 'FUNC:coreg'            % coregistration with the anatomicals using spm
         % (1) Manually seed the functional/anatomical registration
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
+        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [2], 'prefix', 'r')
         
         sn       = subj_id;   % list of subjects        
         step     = 'manual';  % first 'manual' then 'auto'
@@ -496,7 +496,7 @@ switch what
         end      
     case 'FUNC:make_samealign'   % align all the functionals
         % Aligns all functional images to rmean functional image
-        % Example usage: nishimoto_imana('FUNC:make_samealign', 'prefix', '', 'sn', [3])
+        % Example usage: nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [3, 4, 5, 6], 'tool', '')
         
         sn     = subj_id;     % subject list
         prefix = 'r';         % prefix for the meanepi: r or rbb if bias corrected
@@ -536,11 +536,10 @@ switch what
     case 'FUNC:make_maskImage'   % make mask images (noskull and grey_only)
         % Make maskImage in functional space
         % run this step after GLM!
-        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 3)
+        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', [3, 4, 5, 6])
         
         sn     = subj_id; % list of subjects
         prefix = 'r';     % prefix for the meanepi: r or rbb if bias corrected
-        
         vararginoptions(varargin, {'sn', 'prefix'});
         
         
@@ -579,14 +578,16 @@ switch what
 
         end % s (sn)
     case 'FUNC:run'              % add functional pipelines here
-        % Example usage: nishimoto_imana('FUNC:run', 'sn', [4, 5, 6])
+        % Example usage: nishimoto_imana('FUNC:run', 'sn', [2, 3, 4, 5, 6])
         
         sn  = subj_id;        
         vararginoptions(varargin, {'sn'});
-%         nishimoto_imana('FUNC:realign', 'sn', sn);
-        nishimoto_imana('FUNC:coreg', 'sn', sn, 'prefix', 'r')
-        nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', sn);
-        nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', sn);           
+        
+        nishimoto_imana('FUNC:rename', 'sn', sn)
+        nishimoto_imana('FUNC:realign', 'sn', sn);
+%         nishimoto_imana('FUNC:coreg_fsl', 'sn', sn, 'prefix', 'r')
+%         nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', sn);
+%         nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', sn);           
   
         
     case 'GLM:task_info'    % creates a text file and assign numbers to the tasks/conditions
@@ -625,17 +626,15 @@ switch what
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
         % represents all the instances
-        % nishimoto_imana('GLM:design1', 'sn', [3])
+        % nishimoto_imana('GLM:design1', 'sn', [2])
         
         sn = subj_id;
         hrf_cutoff = Inf;
         ses = 1;
-        prefix = '';
+        prefix = 'r'; % prefix of the preprocessed epi we want to use
         glm = 1;
         vararginoptions(varargin, {'sn', 'hrf_cutoff', 'ses'});
         
-        prefix = ''; % prefix of the preprocessed epi we want to use
-        glm = 1;
         
         % get the info file that specifies the order of the tasks
         Dd = dload(fullfile(base_dir, 'tasks_info.tsv'));
@@ -784,7 +783,7 @@ switch what
             end % r (runs)
         end % s (sn)
     case 'GLM:estimate'     % estimate beta values
-        % Example usage: nishimoto_imana('GLM:estimate', 'glm', 1, 'ses', 1, 'sn', 3)
+        % Example usage: nishimoto_imana('GLM:estimate', 'glm', 1, 'ses', 1, 'sn', 2)
         
         sn       = subj_id; % subject list
         glm      = 1;       % glm number
@@ -803,7 +802,7 @@ switch what
         end % s (sn),
     case 'GLM:T_contrast'   % make T contrasts for each condition
         %%% Calculating contrast images.
-        % Example usage: nishimoto_imana('GLM:T_contrast', 'sn', 1, 'glm', 1, 'ses', 1, 'baseline', 'rest')
+        % Example usage: nishimoto_imana('GLM:T_contrast', 'sn', 2, 'glm', 1, 'ses', 1, 'baseline', 'rest')
         
         sn             = subj_id;    % subjects list
         ses            = 1;              % task number
@@ -944,17 +943,17 @@ switch what
             end % r (runs)
         end % s (sn)
     case 'GLM:run'          % add glm routines you want to run as pipeline
-        % Example usage: nishimoto_imana('GLM:run', 'sn', [1, 3, 4, 5, 6], 'glm', 1, 'ses', 1)
+        % Example usage: nishimoto_imana('GLM:run', 'sn', [3, 4, 5, 6], 'glm', 1, 'ses', 1)
         
-        sn  = subj_id;
-        ses = 1;
-        glm = 1;
+        sn  = subj_id; % subject id
+        ses = 1;       % which dataset? ses1 or ses2
+        glm = 1;       % number assigned to the glm
         
         vararginoptions(varargin, {'sn', 'ses', 'glm'});
         
         nishimoto_imana('GLM:design1', 'sn', sn, 'ses', ses);
         nishimoto_imana('GLM:estimate', 'sn', sn, 'glm', glm, 'ses', ses);
-        nishimoto_imana('GLM:F_contrast', 'sn', sn, 'glm', glm, 'ses', ses)
+%         nishimoto_imana('GLM:F_contrast', 'sn', sn, 'glm', glm, 'ses', ses)
         nishimoto_imana('GLM:T_contrast', 'sn', sn, 'glm', glm, 'ses', ses, 'baseline', 'rest')
          
     
@@ -977,14 +976,14 @@ switch what
         end % s (sn)
     case 'SURF:xhemireg'       % Cross-register surfaces left / right hem
         % surface-based interhemispheric registration
-        % example: nishimoto_imana('SURF:xhemireg', 'sn', 95)
+        % example: nishimoto_imana('SURF:xhemireg', 'sn', [1, 2, 3, 4, 5])
         
         sn   = subj_id; % list of subjects
 
         vararginoptions(varargin, {'sn'})
         
         % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'FreeSurfer');
+        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
         
         for s = sn
             fprintf('- xhemiregl %s\n', subj_str{s});
@@ -997,14 +996,14 @@ switch what
         % Makes a new folder, called ['x' subj] that contains the remapped subject
         % Uses function mri_surf2surf
         % mri_surf2surf: resamples one cortical surface onto another
-        % Example usage: nishimoto_imana('SURF:map_ico', 'sn', 95)
+        % Example usage: nishimoto_imana('SURF:map_ico', 'sn', [1, 2, 3, 4, 5, 6])
         
         sn = subj_id; % list of subjects
         
         vararginoptions(varargin, {'sn'});
         
         % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'FreeSurfer');
+        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
         for s = sn
             fprintf('- map_ico %s\n', subj_str{s});
             freesurfer_mapicosahedron_xhem(subj_str{s}, fs_dir ,'smoothing',1,'hemisphere',[1, 2]);
@@ -1019,21 +1018,63 @@ switch what
         vararginoptions(varargin, {'sn', 'res', 'hemi'});
         
         % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'FreeSurfer');
+        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
         
         for s = sn 
             fprintf('- fs2wb %s\n', subj_str{s});
-            wb_subj_dir  = fullfile(base_dir, subj_str{s}, wb_dir);
-            dircheck(wb_subj_dir)
+            wb_subj_dir  = fullfile(base_dir, wb_dir, 'data', subj_str{s});
             surf_resliceFS2WB(subj_str{s}, fs_dir, wb_subj_dir, 'hemisphere', hemi, 'resolution', sprintf('%dk', res))
         end % s (sn)
-    case 'SURF:run_all'
+    case 'SURF:run_all'        % Pipeline running all of surface preprocessing routines
         % Example usage: nishimoto_imana('SURF:run_all')
-        nishimoto_imana('SURF:reconall')
-        nishimoto_imana('SURF:xhemireg')
-        nishimoto_imana('SURF:map_ico')
-        nishimoto_imana('SURF:fs2wb')
-               
+        
+        sn = subj_id;
+        
+        vararginoptions(varargin, {'sn'});
+%         nishimoto_imana('SURF:reconall')
+        nishimoto_imana('SURF:xhemireg', 'sn', sn);
+        nishimoto_imana('SURF:map_ico', 'sn', sn);
+        nishimoto_imana('SURF:fs2wb', 'sn', sn);
+    case 'SURF:vol2surf'       % Mapping volumetric data to surface
+        % first univariately whiten data and then map to surface
+        % Example usage: nishimoto_imana('vol2surf', )
+        
+        sn             = subj_id;        % subjects list
+        ses            = 1;              % task number
+        glm            = 1;              % glm number
+        type           = 'con';          % type of data to be mapped. Options are: 'con', 'beta'
+        baseline       = 'rest';         % contrast will be calculated against base (available options: 'rest')
+        kernel         = 1;              % smoothing kernel 
+        
+        vararginoptions(varargin, {'sn', 'glm', 'ses', 'baseline', 'type', 'kernel'})
+        
+        for s = sn 
+            
+            % get directory where subject surfaces are saved
+            surf_dir = fullfile(base_dir, wb_dir, 'data', subj_str{s});
+            
+            
+            % get the ResMS and prewhiten the data
+            % load ResMS and map it to surface
+            ResMsImage{1} = fullfile(glmDir, task_names{ti}, subj_name, 'ResMS.nii');
+
+            ResMs_colName{1} = 'ResMS';
+            G_ResMs = surf_vol2surf(C1.vertices, C2.vertices, ResMsImage, 'column_names', ResMs_colName, ...
+                'anatomicalStruct', hemName{h});
+            % univariate prewhitening
+            Data(:, fi)   = G.cdata ./ sqrt(G_ResMs.cdata);
+                                
+                                
+            
+            switch type
+                case 'con'
+                    files2map = dir(fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses), 'con*.nii'));
+                case 'beta'
+                    files2map = dir(fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses), 'beta*.nii'));
+            end % switch type
+            
+        end % s (subjects)
+        
     
     case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
         % Example usage: nishimoto_bids_imana('SUIT:isolate_segment', 'sn', 1);
