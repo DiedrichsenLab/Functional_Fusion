@@ -93,9 +93,76 @@ def get_mdtb_fs32k(ses_id='ses-s1',type='CondSes'):
         nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
         pass
 
+def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
+    # Make the atlas object
+    surf_parcel =[] 
+    hem_name = ['cortex_left','cortex_right']
+    # Get the parcelation 
+    for i,h in enumerate(['L','R']): 
+        dir = atlas_dir + '/tpl-fs32k'
+        gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
+        surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i],gifti))
+
+    # initialize the data set object
+    mdtb_dataset = DataSetMDTB(data_dir)
+
+    # create and calculate the atlas map for each participant
+    T = mdtb_dataset.get_participants()
+    for s in T.participant_id[0:2]:
+        print(f'Average {s}')
+        s_dir = mdtb_dataset.data_dir.format(s)
+        C = nb.load(s_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
+        bmf = C.header.get_axis(1)
+        bmp = [] 
+        R = []
+        for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
+            D = np.asanyarray(C.dataobj[:,slc])
+            X = np.zeros((D.shape[0],surf_parcel[0].label_vec.shape[0]))
+            X[:,bm.vertex]=D
+            R.append(surf_parcel[idx].agg_data(X))
+            bmp.append(surf_parcel[idx].get_parcel_axis())
+        header = nb.Cifti2Header.from_axes((C.header.get_axis(0),bmp[0]+bmp[1]))
+        cifti_img = nb.Cifti2Image(dataobj=np.c_[R[0],R[1]],header=header)
+        nb.save(cifti_img,s_dir + f'/{s}_space-fs32k_{ses_id}_{type}_Iso-{res}.pscalar.nii')
+        pass
+
+def avrg_hcp_dpconn(res=162):
+    # initialize the data set object
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+    T = hcp_dataset.get_participants()
+    for i,s in enumerate(T.participant_id): 
+        data_dir = hcp_dataset.data_dir.format(s)
+        Ci = nb.load(data_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
+        if i==0: 
+            R = np.empty((T.shape[0],Ci.shape[0],Ci.shape[1]))
+        R[i,:,:]=np.asanyarray(Ci.dataobj)
+    Rm = np.nanmean(R,axis=0)
+    Cm = nb.Cifti2Image(Rm,Ci.header)
+    nb.save(Cm,hcp_dir + f'/group_tessel-{res}.dpconn.nii')
+    pass
+
+
+def parcel_hcp_dpconn(dpconn_file):
+    """
+    Args:
+        dpconn_file (_type_): _description_
+    """
+    C = nb.load(dpconn_file)
+    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    label = atlas_dir + '/tpl-SUIT/atl-MDTB10_space-SUIT_dseg.nii'
+    mdtb_atlas = am.AtlasVolumeParcel('MDTB10',label_img=label,mask_img=mask)
+    R = mdtb_atlas.agg_data(np.asanyarray(C.dataobj))
+    bm_cortex = C.header.get_axis(0)
+    names = [f'MDTB {r+1:02}' for r in range(R.shape[1])]
+    row_axis = nb.cifti2.ScalarAxis(names)
+    cifti_img = nb.Cifti2Image(R.T,[row_axis,bm_cortex])
+    return cifti_img
+
+
 
 if __name__ == "__main__":
-    get_mdtb_fs32k(ses_id='ses-s1',type='CondSes')
+    parcel_mdtb_fs32k()
+    # get_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
     pass
 
 

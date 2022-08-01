@@ -90,7 +90,7 @@ def parcel_hcp_dpconn(dpconn_file):
 
 
 if __name__ == "__main__":
-    # get_hcp_data()
-    # avrg_hcp_dpconn()
+    get_hcp_data()
+    avrg_hcp_dpconn()
     C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
     nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
