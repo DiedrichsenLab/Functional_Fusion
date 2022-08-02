@@ -11,10 +11,10 @@ elseif isdir('/srv/diedrichsen/data')
 else
     fprintf('Workdir not found. Mount or connect to server and try again.');
 end
-% addpath(sprintf('%s/../matlab/spm12',workdir));
-% addpath(sprintf('%s/../matlab/spm12/toolbox/suit/',workdir));
-% addpath(sprintf('%s/../matlab/dataframe',workdir));
-% addpath(sprintf('%s/../matlab/imaging/tools/',workdir));
+addpath(sprintf('%s/../matlab/spm12',workdir));
+addpath(sprintf('%s/../matlab/spm12/toolbox/suit/',workdir));
+addpath(sprintf('%s/../matlab/dataframe',workdir));
+addpath(sprintf('%s/../matlab/imaging/tools/',workdir));
 
 %% ----- Initialize suit toolbox -----
 % check for SUIT installation
@@ -31,7 +31,7 @@ suit_defaults;
 %========================================================================================================================
 global base_dir
 
-base_dir = sprintf('%s/FunctionalFusion/Nishimoto_103Task/',workdir);
+base_dir = sprintf('%s/FunctionalFusion/ibc/raw',workdir);
 % base_dir = '/Users/ladan/Documents/DATA/nishimoto';
 
 %%% Freesurfer stuff
@@ -59,8 +59,10 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-subj_str = {'sub-01','sub-02','sub-03','sub-04','sub-05','sub-06'};
-subj_id  = [1, 2, 3, 4, 5, 6];
+subj_id  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+for s=1:length(subj_id)
+    subj_str{s} = ['sub-' num2str(subj_id(s), '%02d')]
+end
 % list of runs within each session
 %%% run_list{1} for session 1 and run_list{2} for session 2
 run_list = {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [13, 14, 15, 16, 17, 18]};
@@ -287,15 +289,9 @@ switch what
     case 'FUNC:realign'          % realign functional images
         % SPM realigns all volumes to the first volume of first run
         % example usage: nishimoto_imana('FUNC:realign', 'sn', 2)
-<<<<<<< Updated upstream
+        % Updated upstream
         
         sn   = subj_id; % list of subjects
-        
-=======
-        
-        sn   = subj_id; % list of subjects
-        
->>>>>>> Stashed changes
         vararginoptions(varargin, {'sn', 'ses', 'runs'});
                 
         for s = sn
@@ -480,8 +476,7 @@ switch what
             spm_imcalc(nam, 'rmask_noskullEyes.nii', 'i1>2000 & (i2+i3+i4+i5)>0.2')
 
         end % s (sn)
-<<<<<<< Updated upstream
-=======
+
     case 'FUNC:check_coreg'      % prints out the transformation matrix for coreg
         % Run this case to get the transformation matrix and then use it
         % for translation/rotation to check the coreg.
@@ -505,7 +500,7 @@ switch what
         
         spm_get_space(T2, M * T2_vol.mat);
         
->>>>>>> Stashed changes
+
     case 'FUNC:run'              % add functional pipelines here
         % Example usage: nishimoto_imana('FUNC:run', 'sn', [3, 4, 5, 6])
         
