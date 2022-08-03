@@ -31,8 +31,7 @@ suit_defaults;
 %========================================================================================================================
 global base_dir
 
-base_dir = sprintf('%s/FunctionalFusion/ibc/raw',workdir);
-% base_dir = '/Users/ladan/Documents/DATA/nishimoto';
+base_dir = sprintf('%s/FunctionalFusion/ibc',workdir);
 
 %%% Freesurfer stuff
 path1 = getenv('PATH');
@@ -52,6 +51,8 @@ path1 = [path1 '/Applications/workbench/bin_macosx64'];
 setenv('PATH', path1);
 
 % defining the names of other directories
+raw_dir = 'raw';
+derivatives_dir = 'derivatives';
 func_dir = 'func';
 anat_dir = 'anat';
 est_dir  = 'estimates';
@@ -60,9 +61,9 @@ wb_dir   = 'surfaceWB';
 
 % list of subjects
 % subj_id  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_id  = [1]
+subj_id  = [1];
 for s=1:length(subj_id)
-    subj_str{s} = ['sub-' num2str(subj_id(s), '%02d')]
+    subj_str{s} = ['sub-' num2str(subj_id(s), '%02d')];
 end
 % list of runs within each session
 %%% run_list{1} for session 1 and run_list{2} for session 2
@@ -295,25 +296,40 @@ switch what
         % Updated upstream
         
         sn   = subj_id; % list of subjects
-        %vararginoptions(varargin, {'sn', 'ses', 'runs'});
+        vararginoptions(varargin, {'sn', 'ses', 'runs'});
                 
-        for s = sn
-            func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
-            % cd to the folder with raw functional data
-            cd(func_subj_dir)
-            spm_jobman('initcfg')
-            
+        for s = sn        
             data = {}; % initialize data cell array which will contain file names for runs/TR images
+            funcraw_subjses_dir = fullfile(base_dir, raw_dir, subj_str{s}, func_dir);          
+            funcderiv_subjses_dir = fullfile(base_dir, derivatives_dir, subj_str{s}, func_dir);
             for ses = [3]
+                % cd to the folder with raw functional data
+                cd(fullfile(funcraw_subjses_dir, ['ses-' num2str(ses, '%02d')]))
+                spm_jobman('initcfg')
                 runs = run_list{ses};
                 for r = runs
+                    rname = sprintf('%s_ses-%02d_run-%02d_bold.nii.gz', subj_str{s}, ses, r);
+                    gunzip(rname)
                     for j = 1:numTRs-numDummys
-                        data{r}{j,1} = sprintf('/srv/diedrichsen/data/FunctionalFusion/ibc/raw/sub-01/func/ses-03/%s_ses-%02d_run-%02d_bold.nii.gz,%d', subj_str{s},ses, r,j);
+                        data{r}{j,1} = sprintf('%s_ses-%02d_run-%02d_bold.nii,%d', subj_str{s},ses, r,j);
                     end % j (TRs/images)
                 end % r (runs)
             end
             spmj_realign(data);
             fprintf('- runs realigned for %s  ses %02d\n',subj_str{s}, ses);
+            for ses = [3]
+                cd(fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+                if any(size(dir([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii.gz']),1))
+                    delete([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii.gz'])
+                elseif any(size(dir([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii']),1))
+                    delete([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii'])
+                end
+                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/meansub*'], fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.txt'], fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/rsub*'], fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.ps'], fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.mat'], fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+            end  
         end % s (sn)
     case 'FUNC:meanepi_bcorrect' % bias correction for the mean image before coreg (optional)
         % uses the bias field estimated in SPM segmenttion
