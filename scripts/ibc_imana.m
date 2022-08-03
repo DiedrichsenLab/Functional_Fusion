@@ -59,13 +59,15 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-subj_id  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_id  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_id  = [1]
 for s=1:length(subj_id)
     subj_str{s} = ['sub-' num2str(subj_id(s), '%02d')]
 end
 % list of runs within each session
 %%% run_list{1} for session 1 and run_list{2} for session 2
-run_list = {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [13, 14, 15, 16, 17, 18]};
+% run_list = {[1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 3, 4, 5, 6]};
+run_list = {[], [], [1]};
 
 % AC coordinates
 loc_AC = {
@@ -85,7 +87,7 @@ loc_AC = {
           };
 
 sess = {'training', 'test'}; % training runs are considered to be ses-01 and testing runs are ses-02
-numTRs = 281;
+numTRs = 139;
 % =========================================================================
 numDummys = 0; % we need to make sure that this is correct
 % based on comments here there should be 6 dummies: https://openneuro.org/datasets/ds002306/versions/1.1.0 
@@ -289,10 +291,11 @@ switch what
     case 'FUNC:realign'          % realign functional images
         % SPM realigns all volumes to the first volume of first run
         % example usage: nishimoto_imana('FUNC:realign', 'sn', 2)
+        % varargin sets the number of subjects
         % Updated upstream
         
         sn   = subj_id; % list of subjects
-        vararginoptions(varargin, {'sn', 'ses', 'runs'});
+        %vararginoptions(varargin, {'sn', 'ses', 'runs'});
                 
         for s = sn
             func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
@@ -301,11 +304,11 @@ switch what
             spm_jobman('initcfg')
             
             data = {}; % initialize data cell array which will contain file names for runs/TR images
-            for ses = [1, 2]
+            for ses = [3]
                 runs = run_list{ses};
                 for r = runs
                     for j = 1:numTRs-numDummys
-                        data{r}{j,1} = sprintf('%s_ses-%02d_run-%02d.nii,%d', subj_str{s},ses, r,j);
+                        data{r}{j,1} = sprintf('/srv/diedrichsen/data/FunctionalFusion/ibc/raw/sub-01/func/ses-03/%s_ses-%02d_run-%02d_bold.nii.gz,%d', subj_str{s},ses, r,j);
                     end % j (TRs/images)
                 end % r (runs)
             end
