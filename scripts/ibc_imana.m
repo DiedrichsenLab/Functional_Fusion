@@ -291,8 +291,7 @@ switch what
         end % sn (subjects)    
     case 'FUNC:realign'          % realign functional images
         % SPM realigns all volumes to the first volume of first run
-        % example usage: nishimoto_imana('FUNC:realign', 'sn', 2)
-        % varargin sets the number of subjects
+        % example usage: ibc_imana('FUNC:realign', 'sn', 1)
         % Updated upstream
         
         sn   = subj_id; % list of subjects
@@ -355,11 +354,10 @@ switch what
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
         % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: nishimoto_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
-        
+        % Example usage: ibc_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')ses-03
         sn     = subj_id;   % list of subjects        
         step   = 'manual';  % first 'manual' then 'auto'
-        prefix = 'rb';      % to use the bias corrected version, set it to 'rbb'
+        prefix = 'r';      % to use the bias corrected version, set it to 'rb'
         % ===================
         % After the manual registration, the mean functional image will be
         % saved with r as the prefix which will then be used in the
@@ -368,55 +366,57 @@ switch what
         spm_jobman('initcfg')
         for s = sn
             % Get the directory of subjects anatomical and functional
-            subj_anat_dir = fullfile(base_dir, subj_str{s}, anat_dir);
-            subj_func_dir = fullfile(base_dir, subj_str{s}, func_dir);
+            subj_anat_dir = fullfile(base_dir, derivatives_dir, subj_str{s}, anat_dir);
+            for ses = [3]
+                subj_func_dir = fullfile(base_dir, derivatives_dir, subj_str{s}, func_dir, ['ses-' num2str(ses, '%02d')]);
             
-            cd(subj_anat_dir); % goes to subjects anatomical dir so that coreg tool starts from that directory (just for convenience)
+                cd(subj_anat_dir); % goes to subjects anatomical dir so that coreg tool starts from that directory (just for convenience)
             
-            switch step
-                case 'manual'
-%                     coregtool;
-%                     keyboard;
-                case 'auto'
-                    % do nothing
-            end % switch step
+                switch step
+                    case 'manual'
+                        coregtool;
+                        keyboard;
+                    case 'auto'
+                        % do nothing
+                end % switch step
             
-            % (2) Automatically co-register functional and anatomical images
-            J.ref = {fullfile(subj_anat_dir, sprintf('%s_T1w.nii', subj_str{s}))}; % just one anatomical or more than one?
+                % (2) Automatically co-register functional and anatomical images
+                J.ref = {fullfile(subj_anat_dir, sprintf('%s_space-native_desc-resampled_T1w.nii', subj_str{s}))}; % just one anatomical or more than one?
             
-            J.source = {fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}))};
+                J.source = {fullfile(subj_func_dir, sprintf('%smean%s_ses-%02d_run-01.nii', prefix, subj_str{s}, num2str(ses)))};
             
-            J.other             = {''};
-            J.eoptions.cost_fun = 'nmi';
-            J.eoptions.sep      = [4 2];
-            J.eoptions.tol      = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
-            J.eoptions.fwhm     = [7 7];
-%             matlabbatch{1}.spm.spatial.coreg.estimate=J;
-%             spm_jobman('run',matlabbatch);
+                J.other             = {''};
+                J.eoptions.cost_fun = 'nmi';
+                J.eoptions.sep      = [4 2];
+                J.eoptions.tol      = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
+                J.eoptions.fwhm     = [7 7];
+                matlabbatch{1}.spm.spatial.coreg.estimate=J;
+                spm_jobman('run',matlabbatch);
             
-            % (3) Manually check again
-%             coregtool;
-%             keyboard();
-            % checking the affine matrix
-            T1_vol = spm_vol(J.ref);
-            T1_vol = T1_vol{1};
-            T2_vol = spm_vol(J.source);
-            T2_vol = T2_vol{1};
-            x = spm_coreg(T2_vol, T1_vol);
-            M = spm_matrix(x);
-            display(M)
+                % (3) Manually check again
+%               coregtool;
+%               keyboard();
+                % checking the affine matrix
+%                 T1_vol = spm_vol(J.ref);
+%                 T1_vol = T1_vol{1};
+%                 T2_vol = spm_vol(J.source);
+%                 T2_vol = T2_vol{1};
+%                 x = spm_coreg(T2_vol, T1_vol);
+%                 M = spm_matrix(x);
+%                 display(M)
             
-            % NOTE:
-            % Overwrites meanepi, unless you update in step one, which saves it
-            % as rmeanepi.
-            % Each time you click "update" in coregtool, it saves current
-            % alignment by appending the prefix 'r' to the current file
-            % So if you continually update rmeanepi, you'll end up with a file
-            % called r...rrrmeanepi.
+                % NOTE:
+                % Overwrites meanepi, unless you update in step one, which saves it
+                % as rmeanepi.
+                % Each time you click "update" in coregtool, it saves current
+                % alignment by appending the prefix 'r' to the current file
+                % So if you continually update rmeanepi, you'll end up with a file
+                % called r...rrrmeanepi.
+            end
         end % s (sn) 
     case 'FUNC:make_samealign'   % align all the functionals
         % Aligns all functional images to rmean functional image
-        % Example usage: nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [1])
+        % Example usage: ibc_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [1])
         
         sn     = subj_id;     % subject list
         prefix = 'r';         % prefix for the meanepi: r or rbb if bias corrected
@@ -444,8 +444,8 @@ switch what
                 for r = runs
                     for i = 1:numTRs - numDummys
                         Q{end+1}    = fullfile(subj_func_dir,...
-                                               sprintf('%s%s_ses-%02d_run-%02d.nii,%d', prefix, subj_str{s}, ss, r, i));
-                    end
+                                               sprintf('%s%s_ses-%02d_run-%02d.nii,%d', prefix, subj_str{s}, ss, r, i)); % for 'auto' mode in coregistration, remove prefix and explicitly add 'r' prefix in the same place
+                    en
                 end % r(runs)
                 
                 spmj_makesamealign_nifti(char(P),char(Q));
@@ -453,7 +453,7 @@ switch what
         end % s (sn)
     case 'FUNC:make_maskImage'   % make mask images (noskull and grey_only)
         % Make maskImage in functional space
-        % Example usage: nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 1)
+        % Example usage: ibc_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 1)
         
         sn     = subj_id; % list of subjects
         prefix = 'r';     % prefix for the meanepi: r or rbb if bias corrected
