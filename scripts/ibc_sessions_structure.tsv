@@ -1,82 +1,86 @@
-session	srun	task	phase
-archi	1	ArchiStandard	pa
-archi	2	ArchiSpatial	pa
-archi	3	ArchiSocial	pa
-archi	4	ArchiEmotional	pa
-archi	5	ArchiStandard	ap
-archi	6	ArchiSpatial	ap
-archi	7	ArchiSocial	ap
-archi	8	ArchiEmotional	ap
-hcp1	1	HcpEmotion	pa
-hcp1	2	HcpGambling	pa
-hcp1	3	HcpMotor	pa
-hcp1	4	HcpLanguage	pa
-hcp1	5	HcpEmotion	ap
-hcp1	6	HcpGambling	ap
-hcp1	7	HcpMotor	ap
-hcp1	8	HcpLanguage	ap
-hcp2	1	HcpRelational	pa
-hcp2	2	HcpSocial	pa
-hcp2	3	HcpWm	pa
-hcp2	4	HcpRelational	ap
-hcp2	5	HcpSocial	ap
-hcp2	6	HcpWm	ap
-rsvp-language	1	RSVPLanguage	pa
-rsvp-language	2	RSVPLanguage	pa
-rsvp-language	3	RSVPLanguage	pa
-rsvp-language	4	RSVPLanguage	ap
-rsvp-language	5	RSVPLanguage	ap
-rsvp-language	6	RSVPLanguage	ap
-mtt1	1	MTTWE	pa
-mtt1	2	MTTWE	pa
-mtt1	3	MTTWE	ap
-mtt2	1	MTTNS	pa
-mtt2	2	MTTNS	pa
-mtt2	3	MTTNS	ap
-preference	1	PreferenceFood	pa
-preference	2	PreferencePaintings	pa
-preference	3	PreferenceFaces	pa
-preference	4	PreferenceHouses	pa
-preference	5	PreferenceFood	ap
-preference	6	PreferencePaintings	ap
-preference	7	PreferenceFaces	ap
-preference	8	PreferenceHouses	ap
-tom	1	TheoryOfMind	pa
-tom	2	EmotionalPain	pa
-tom	3	PainMovie	pa
-tom	4	TheoryOfMind	ap
-tom	5	EmotionalPain	ap
-tom	6	PainMovie	ap
-enumeration	1	VSTM1	pa
-enumeration	2	VSTM1	ap
-enumeration	3	Enumeration	pa
-enumeration	4	Enumeration	ap
-enumeration	5	VSTM2	pa
-enumeration	6	VSTM2	ap
-self	1	Self1	pa
-self	2	Self2	pa
-self	3	Self3	ap
-self	4	Self4	ap
-self	5	Bang	pa
-clips4	1	WedgeClock	pa
-clips4	2	WedgeAnti	pa
-clips4	3	ExpRing	pa
-clips4	4	ContRing	ap
-clips4	5	WedgeClock	ap
-clips4	6	WedgeAnti	ap
-lyon1	1	Moto	pa
-lyon1	2	MCSE	pa
-lyon1	3	MVEB	pa
-lyon1	4	MVIS	pa
-lyon1	5	Moto	ap
-lyon1	6	MCSE	ap
-lyon1	7	MVEB	ap
-lyon1	8	MVIS	ap
-lyon2	1	Lec1	pa
-lyon2	2	Lec2	pa
-lyon2	3	Audi	pa
-lyon2	4	Visu	pa
-lyon2	5	Lec1	ap
-lyon2	6	Lec2	ap
-lyon2	7	Audi	ap
-lyon2	8	Visu	ap
+session	srun	task	phase	tr
+archi	1	ArchiStandard	pa	156
+archi	2	ArchiSpatial	pa	252
+archi	3	ArchiSocial	pa	262
+archi	4	ArchiEmotional	pa	220
+archi	5	ArchiStandard	ap	156
+archi	6	ArchiSpatial	ap	252
+archi	7	ArchiSocial	ap	262
+archi	8	ArchiEmotional	ap	220
+hcp1	1	HcpEmotion	pa	139
+hcp1	2	HcpGambling	pa	188
+hcp1	3	HcpMotor	pa	185
+hcp1	4	HcpLanguage	pa	229
+hcp1	5	HcpEmotion	ap	139
+hcp1	6	HcpGambling	ap	188
+hcp1	7	HcpMotor	ap	185
+hcp1	8	HcpLanguage	ap	229
+hcp2	1	HcpRelational	pa	311
+hcp2	2	HcpSocial	pa	196
+hcp2	3	HcpWm	pa	303
+hcp2	4	HcpRelational	ap	311
+hcp2	5	HcpSocial	ap	196
+hcp2	6	HcpWm	ap	303
+rsvp-language	1	RSVPLanguage	pa	310
+rsvp-language	2	RSVPLanguage	pa	310
+rsvp-language	3	RSVPLanguage	pa	310
+rsvp-language	4	RSVPLanguage	ap	310
+rsvp-language	5	RSVPLanguage	ap	310
+rsvp-language	6	RSVPLanguage	ap	310
+mtt1	1	RestingState	pa	1120
+mtt1	2	RestingState	ap	1120
+mtt1	3	MTTWE	pa	394
+mtt1	4	MTTWE	pa	394
+mtt1	5	MTTWE	ap	394
+mtt2	1	RestingState	pa	1120
+mtt2	2	RestingState	ap	1120
+mtt2	3	MTTNS	pa	394
+mtt2	4	MTTNS	pa	394
+mtt2	5	MTTNS	ap	394
+preference	1	PreferenceFood	pa	248
+preference	2	PreferencePaintings	pa	248
+preference	3	PreferenceFaces	pa	248
+preference	4	PreferenceHouses	pa	248
+preference	5	PreferenceFood	ap	248
+preference	6	PreferencePaintings	ap	248
+preference	7	PreferenceFaces	ap	248
+preference	8	PreferenceHouses	ap	248
+tom	1	TheoryOfMind	pa	186
+tom	2	EmotionalPain	pa	156
+tom	3	PainMovie	pa	178
+tom	4	TheoryOfMind	ap	186
+tom	5	EmotionalPain	ap	156
+tom	6	PainMovie	ap	178
+enumeration	1	VSTM1	pa	260
+enumeration	2	VSTM1	ap	260
+enumeration	3	Enumeration	pa	490
+enumeration	4	Enumeration	ap	490
+enumeration	5	VSTM2	pa	260
+enumeration	6	VSTM2	ap	260
+self	1	Self1	pa	359
+self	2	Self2	pa	359
+self	3	Self3	ap	359
+self	4	Self4	ap	480
+self	5	Bang	pa	243
+clips4	1	WedgeClock	pa	165
+clips4	2	WedgeAnti	pa	165
+clips4	3	ExpRing	pa	165
+clips4	4	ContRing	ap	165
+clips4	5	WedgeClock	ap	165
+clips4	6	WedgeAnti	ap	165
+lyon1	1	Moto	pa	359
+lyon1	2	MCSE	pa	177
+lyon1	3	MVEB	pa	203
+lyon1	4	MVIS	pa	178
+lyon1	5	Moto	ap	359
+lyon1	6	MCSE	ap	177
+lyon1	7	MVEB	ap	196
+lyon1	8	MVIS	ap	178
+lyon2	1	Lec1	pa	190
+lyon2	2	Lec2	pa	143
+lyon2	3	Audi	pa	347
+lyon2	4	Visu	pa	173
+lyon2	5	Lec1	ap	190
+lyon2	6	Lec2	ap	137
+lyon2	7	Audi	ap	347
+lyon2	8	Visu	ap	173
