@@ -6,7 +6,7 @@ Script to transfer IBC data from Drago to CBS
 Author: Ana Luisa Pinho
 
 Created: April 2022
-Last update: June 2022
+Last update: August 2022
 """
 
 import os
@@ -164,9 +164,11 @@ def source_funcdata(sub, sname, original_sourcepath, destination_sourcepath,
         if tk == 'RSVPLanguage':
             epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
                 '_run-%02d' % (rn - 1) + '_' + data_type
+        elif tk == 'RestingState' and data_type == 'events.tsv':
+            continue
         elif tk in ['MTTWE', 'MTTNS']:
             epi_fname = sub + '_' + session + '_task-' + tk + \
-                '_dir-' + ph + '_run-%02d' % rn + '_' + data_type
+                '_dir-' + ph + '_run-%02d' % (rn - 2) + '_' + data_type
         elif sub == 'sub-11' and sname == 'preference' and rn == 6:
             tk = 'PreferenceFaces'
             epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
@@ -222,7 +224,7 @@ def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
                 '_dir-' + ph + '_run-%02d' % (rn - 1) + '_bold.nii.gz'
         elif tk in ['MTTWE', 'MTTNS']:
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
-                '_dir-' + ph + '_run-%02d' % rn + '_bold.nii.gz'
+                '_dir-' + ph + '_run-%02d' % (rn - 2) + '_bold.nii.gz'
         elif sub == 'sub-11' and sname == 'preference' and rn == 6:
             tk = 'PreferenceFaces'
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
@@ -304,7 +306,7 @@ def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
         elif tk in ['MTTWE', 'MTTNS']:
             zfolder = os.path.join(
                 session_folder,
-                'res_stats_' + tk + '%d_' % rn + ph,
+                'res_stats_' + tk + '%d_' % (rn - 2) + ph,
                 'z_score_maps')
         elif sub == 'sub-11' and sname == 'preference' and rn == 6:
             tk = 'PreferenceFaces'
@@ -384,12 +386,13 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 
 # ############################### INPUTS ###############################
 
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
-session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
 #                  'clips4', 'lyon1', 'lyon2']
+session_names = ['mtt1', 'mtt2']
 
 
 # ############################# PARAMETERS #############################
@@ -420,7 +423,7 @@ if __name__ == "__main__":
         # transfer_t1w(subject, drago_sourcedata, cbs_sourcedata)
 
         ## Import T1w resampled-only AND normalized ##
-        transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
+        # transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
 
         ## Import cmasks ##
         # transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
@@ -428,7 +431,7 @@ if __name__ == "__main__":
         ## Import Freesurfer meshes ##
         # transfer_meshes(subject, drago_derivatives, cbs_derivatives)
 
-        # for session_name in session_names:
+        for session_name in session_names:
             ## Import raw EPI ##
             # source_funcdata(subject, session_name, drago_sourcedata,
             #                 cbs_sourcedata, dfm, dfs)
@@ -441,8 +444,8 @@ if __name__ == "__main__":
             # compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
 
             ## Import paradigm descriptors ##
-            # source_funcdata(subject, session_name, drago_sourcedata,
-            #                 cbs_sourcedata, dfm, dfs, data_type='events.tsv')
+            source_funcdata(subject, session_name, drago_sourcedata,
+                            cbs_sourcedata, dfm, dfs, data_type='events.tsv')
 
             ## Import derivatives ##
             # transfer_estimates(subject, session_name, drago_derivatives,
