@@ -69,6 +69,7 @@ end
 session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
 %                  'clips4', 'lyon1', 'lyon2']
+% session_names = {'hcp2'}
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -313,17 +314,19 @@ switch what
         vararginoptions(varargin, {'sn', 'ses', 'runs'});
                 
         for s = sn        
-            data = {}; % initialize data cell array which will contain file names for runs/TR images
             funcraw_subjses_dir = fullfile(base_dir, raw_dir, subj_str{s}, func_dir);          
             funcderiv_subjses_dir = fullfile(base_dir, derivatives_dir, subj_str{s}, func_dir);
             subsess = cellstr(sessmap.(['sub' num2str(s, '%02d')]));
             for smap = session_names
+                data = {}; % initialize data cell array which will contain file names for runs/TR images
                 sesstag = sessnum{find(contains(subsess,smap))};
                 ses = sscanf(sesstag,'ses-%d');
                 % cd to the folder with raw functional data
                 cd(fullfile(funcraw_subjses_dir, ['ses-' num2str(ses, '%02d')]))
                 spm_jobman('initcfg')
                 indexes = find(contains(sessid,smap))';
+                runs = double.empty;
+                trs = double.empty;
                 for j=1:length(indexes)
                     runs(j)=sessrun(indexes(j));
                     trs(j)=numTRs(indexes(j));
@@ -332,13 +335,12 @@ switch what
                     rname = sprintf('%s_ses-%02d_run-%02d_bold.nii.gz', subj_str{s}, ses, runs(r));
                     gunzip(rname)
                     for j = 1:trs(r)-numDummys
-                        data{r}{j,1} = sprintf('%s_ses-%02d_run-%02d_bold.nii,%d', subj_str{s},ses, runs(r), j);
+                        data{r}{j,1} = sprintf('%s_ses-%02d_run-%02d_bold.nii,%d', subj_str{s},ses, runs(r), j)
                     end % j (TRs/images)
                 end % r (runs)
-            end
-            spmj_realign(data);
-            fprintf('- runs realigned for %s  ses %02d\n',subj_str{s}, ses);
-            for ses = [3]
+                spmj_realign(data);
+                fprintf('- runs realigned for %s  ses %02d\n',subj_str{s}, ses);
+                % move output files to derivatives folder
                 cd(fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
                 if any(size(dir([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii.gz']),1))
                     delete([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii.gz'])
@@ -355,7 +357,7 @@ switch what
                     fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
                 movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.mat'], ...
                     fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
-            end  
+            end % smap (session_names)
         end % s (sn)
     case 'FUNC:meanepi_bcorrect' % bias correction for the mean image before coreg (optional)
         % uses the bias field estimated in SPM segmenttion
