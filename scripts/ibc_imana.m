@@ -60,15 +60,30 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-% subj_id  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_id  = [1];
+subj_id  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_id  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 for s=1:length(subj_id)
     subj_str{s} = ['sub-' num2str(subj_id(s), '%02d')];
 end
+
+session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
+% session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+%                  'clips4', 'lyon1', 'lyon2']
+
+SM = tdfread('ibc_sessions_map.tsv','\t');
+fields = fieldnames(SM);
+sessmap = RenameField(SM, fields, {'session', 'sub01', 'sub02', ...
+    'sub04', 'sub05', 'sub06', 'sub07', 'sub08', 'sub09', 'sub11', ... 
+    'sub12', 'sub13', 'sub14', 'sub15'});
+sessnum = cellstr(sessmap.session);
+
+sesstruct = tdfread('ibc_sessions_structure.tsv','\t');
+sessid = cellstr(sesstruct.session);
+sessrun = sesstruct.srun;
+
 % list of runs within each session
 %%% run_list{1} for session 1 and run_list{2} for session 2
 % run_list = {[1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 3, 4, 5, 6]};
-run_list = {[], [], [1]};
 
 % AC coordinates
 loc_AC = {
@@ -87,8 +102,8 @@ loc_AC = {
           [-110, -146, -76],...       %sub-15 % has to be redone once Ana transfers the correct file
           };
 
-sess = {'training', 'test'}; % training runs are considered to be ses-01 and testing runs are ses-02
-numTRs = 139;
+% sess = {'training', 'test'}; % training runs are considered to be ses-01 and testing runs are ses-02
+numTRs = sesstruct.tr;
 % =========================================================================
 numDummys = 0; % we need to make sure that this is correct
 % based on comments here there should be 6 dummies: https://openneuro.org/datasets/ds002306/versions/1.1.0 
@@ -301,16 +316,23 @@ switch what
             data = {}; % initialize data cell array which will contain file names for runs/TR images
             funcraw_subjses_dir = fullfile(base_dir, raw_dir, subj_str{s}, func_dir);          
             funcderiv_subjses_dir = fullfile(base_dir, derivatives_dir, subj_str{s}, func_dir);
-            for ses = [3]
+            subsess = cellstr(sessmap.(['sub' num2str(s, '%02d')]));
+            for smap = session_names
+                sesstag = sessnum{find(contains(subsess,smap))};
+                ses = sscanf(sesstag,'ses-%d');
                 % cd to the folder with raw functional data
                 cd(fullfile(funcraw_subjses_dir, ['ses-' num2str(ses, '%02d')]))
                 spm_jobman('initcfg')
-                runs = run_list{ses};
-                for r = runs
-                    rname = sprintf('%s_ses-%02d_run-%02d_bold.nii.gz', subj_str{s}, ses, r);
+                indexes = find(contains(sessid,smap))';
+                for j=1:length(indexes)
+                    runs(j)=sessrun(indexes(j));
+                    trs(j)=numTRs(indexes(j));
+                end
+                for r = 1:length(runs)
+                    rname = sprintf('%s_ses-%02d_run-%02d_bold.nii.gz', subj_str{s}, ses, runs(r));
                     gunzip(rname)
-                    for j = 1:numTRs-numDummys
-                        data{r}{j,1} = sprintf('%s_ses-%02d_run-%02d_bold.nii,%d', subj_str{s},ses, r,j);
+                    for j = 1:trs(r)-numDummys
+                        data{r}{j,1} = sprintf('%s_ses-%02d_run-%02d_bold.nii,%d', subj_str{s},ses, runs(r), j);
                     end % j (TRs/images)
                 end % r (runs)
             end
@@ -323,11 +345,16 @@ switch what
                 elseif any(size(dir([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii']),1))
                     delete([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii'])
                 end
-                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/meansub*'], fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
-                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.txt'], fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
-                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/rsub*'], fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
-                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.ps'], fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
-                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.mat'], fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/meansub*'], ...
+                    fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.txt'], ...
+                    fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/rsub*'], ...
+                    fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.ps'], ...
+                    fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
+                movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.mat'], ...
+                    fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
             end  
         end % s (sn)
     case 'FUNC:meanepi_bcorrect' % bias correction for the mean image before coreg (optional)
@@ -445,9 +472,8 @@ switch what
                     for i = 1:numTRs - numDummys
                         Q{end+1}    = fullfile(subj_func_dir,...
                                                sprintf('%s%s_ses-%02d_run-%02d.nii,%d', prefix, subj_str{s}, ss, r, i)); % for 'auto' mode in coregistration, remove prefix and explicitly add 'r' prefix in the same place
-                    en
-                end % r(runs)
-                
+                    end
+                end % r(runs)                
                 spmj_makesamealign_nifti(char(P),char(Q));
             end % ss (sess)
         end % s (sn)
