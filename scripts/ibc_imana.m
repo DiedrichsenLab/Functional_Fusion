@@ -314,9 +314,10 @@ switch what
         vararginoptions(varargin, {'sn', 'ses', 'runs'});
                 
         for s = sn        
-            funcraw_subjses_dir = fullfile(base_dir, raw_dir, subj_str{s}, func_dir);          
-            funcderiv_subjses_dir = fullfile(base_dir, derivatives_dir, subj_str{s}, func_dir);
-            subsess = cellstr(sessmap.(['sub' num2str(s, '%02d')]));
+            funcraw_subjses_dir = fullfile(base_dir, raw_dir, subj_str{s}, func_dir)          
+            funcderiv_subjses_dir = fullfile(base_dir, derivatives_dir, subj_str{s}, func_dir)
+            sbj_number = str2double((extractAfter(subj_str{s},'sub-')))
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, '%02d')]));
             for smap = session_names
                 data = {}; % initialize data cell array which will contain file names for runs/TR images
                 sesstag = sessnum{find(contains(subsess,smap))};
@@ -335,7 +336,7 @@ switch what
                     rname = sprintf('%s_ses-%02d_run-%02d_bold.nii.gz', subj_str{s}, ses, runs(r));
                     gunzip(rname)
                     for j = 1:trs(r)-numDummys
-                        data{r}{j,1} = sprintf('%s_ses-%02d_run-%02d_bold.nii,%d', subj_str{s},ses, runs(r), j)
+                        data{r}{j,1} = sprintf('%s_ses-%02d_run-%02d_bold.nii,%d', subj_str{s},ses, runs(r), j);
                     end % j (TRs/images)
                 end % r (runs)
                 spmj_realign(data);
