@@ -346,6 +346,12 @@ switch what
                     delete([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii.gz'])
                 elseif any(size(dir([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii']),1))
                     delete([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.nii'])
+                elseif any(size(dir([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.mat']),1))
+                    delete([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.mat'])
+                elseif any(size(dir([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.txt']),1))
+                    delete([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.txt'])
+                elseif any(size(dir([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.ps']),1))
+                    delete([fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]) '/*.ps'])
                 end
                 movefile([fullfile(funcraw_subjses_dir,['ses-' num2str(ses, '%02d')]) '/meansub*'], ...
                     fullfile(funcderiv_subjses_dir,['ses-' num2str(ses, '%02d')]))
