@@ -402,9 +402,14 @@ switch what
         spm_jobman('initcfg')
         for s = sn
             % Get the directory of subjects anatomical and functional
-            subj_anat_dir = fullfile(base_dir, derivatives_dir, subj_str{s}, anat_dir);
-            for ses = [3]
-                subj_func_dir = fullfile(base_dir, derivatives_dir, subj_str{s}, func_dir, ['ses-' num2str(ses, '%02d')]);
+            deriv_subj_dir = fullfile(base_dir, derivatives_dir, subj_str{s})
+            subj_anat_dir = fullfile(deriv_subj_dir, anat_dir);
+            sbj_number = str2double((extractAfter(subj_str{s},'sub-')))
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, '%02d')]));
+            for smap = session_names
+                sesstag = sessnum{find(contains(subsess,smap))};
+                ses = sscanf(sesstag,'ses-%d');
+                subj_func_dir = fullfile(deriv_subj_dir, func_dir, ['ses-' num2str(ses, '%02d')]);
             
                 cd(subj_anat_dir); % goes to subjects anatomical dir so that coreg tool starts from that directory (just for convenience)
             
@@ -415,11 +420,13 @@ switch what
                     case 'auto'
                         % do nothing
                 end % switch step
-            
+                
+                gunzip(sprintf('%s_space-native_desc-resampled_T1w.nii.gz', subj_str{s}));
+                            
                 % (2) Automatically co-register functional and anatomical images
                 J.ref = {fullfile(subj_anat_dir, sprintf('%s_space-native_desc-resampled_T1w.nii', subj_str{s}))}; % just one anatomical or more than one?
-            
-                J.source = {fullfile(subj_func_dir, sprintf('%smean%s_ses-%02d_run-01.nii', prefix, subj_str{s}, num2str(ses)))};
+   
+                J.source = {fullfile(subj_func_dir, sprintf('%smean%s_ses-%02d_run-01_bold.nii', prefix, subj_str{s}, ses))};
             
                 J.other             = {''};
                 J.eoptions.cost_fun = 'nmi';
