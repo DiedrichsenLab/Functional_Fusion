@@ -68,8 +68,9 @@ end
 subj_id = 1:length(subj_n);
 
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
-session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
-    'self', 'clips4', 'lyon1', 'lyon2'}
+% session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
+%     'self', 'clips4', 'lyon1', 'lyon2'}
+session_names = {'mtt1', 'mtt2'}
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -314,8 +315,10 @@ switch what
         vararginoptions(varargin, {'sn', 'ses', 'runs'});
                 
         for s = sn        
-            funcraw_subjses_dir = fullfile(base_dir, raw_dir, subj_str{s}, func_dir)          
-            funcderiv_subjses_dir = fullfile(base_dir, derivatives_dir, subj_str{s}, func_dir)
+            funcraw_subjses_dir = fullfile(base_dir, raw_dir, ...
+                subj_str{s}, func_dir)          
+            funcderiv_subjses_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s}, func_dir)
             sbj_number = str2double((extractAfter(subj_str{s},'sub-')))
             subsess = cellstr(sessmap.(['sub' num2str(sbj_number, '%02d')]));
             for smap = session_names
@@ -323,7 +326,8 @@ switch what
                 sesstag = sessnum{find(contains(subsess,smap))};
                 ses = sscanf(sesstag,'ses-%d');
                 % cd to the folder with raw functional data
-                cd(fullfile(funcraw_subjses_dir, ['ses-' num2str(ses, '%02d')]))
+                cd(fullfile(funcraw_subjses_dir, ...
+                    ['ses-' num2str(ses, '%02d')]))
                 spm_jobman('initcfg')
                 indexes = find(contains(sessid,smap))';
                 runs = double.empty;
@@ -333,10 +337,18 @@ switch what
                     trs(j)=numTRs(indexes(j));
                 end
                 for r = 1:length(runs)
-                    rname = sprintf('%s_ses-%02d_run-%02d_bold.nii.gz', subj_str{s}, ses, runs(r));
+                    % Skip resting-state runs
+                    if (strcmp(smap,'mtt1') || strcmp(smap,'mtt2')) & ...
+                            (r==1 || r==2)
+                        continue
+                    end
+                    rname = sprintf('%s_ses-%02d_run-%02d_bold.nii.gz', ...
+                        subj_str{s}, ses, runs(r))
                     gunzip(rname)
                     for j = 1:trs(r)-numDummys
-                        data{r}{j,1} = sprintf('%s_ses-%02d_run-%02d_bold.nii,%d', subj_str{s},ses, runs(r), j);
+                        data{r}{j,1} = sprintf(...
+                            '%s_ses-%02d_run-%02d_bold.nii,%d', ...
+                            subj_str{s},ses, runs(r), j);
                     end % j (TRs/images)
                 end % r (runs)
                 spmj_realign(data);
