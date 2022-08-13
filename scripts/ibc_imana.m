@@ -69,9 +69,8 @@ end
 subj_id = 1:length(subj_n);
 
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
-% session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
-%     'self', 'clips4', 'lyon1', 'lyon2'}
-session_names = {'mtt1', 'mtt2'}
+session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
+    'self', 'clips4', 'lyon1', 'lyon2'}
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -426,15 +425,17 @@ switch what
             P{1}    = dest;
             spmj_bias_correct(P);
         end % s (sn)
-    case 'FUNC:coreg'            % coregistration with the anatomicals
+    case 'FUNC:coreg' % coregistration with the anatomicals
         % (1) Manually seed the functional/anatomical registration
         % - Do "coregtool" on the matlab command window
         % - Select anatomical image and mean functional image to overlay
-        % - Manually adjust mean functional image and save the results ("r" will be added as a prefix)
-        % Example usage: ibc_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')ses-03
+        % - Manually adjust mean functional image and save the results 
+        %   ("r" will be added as a prefix)
+        % Example usage: 
+        % ibc_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')ses-03
         sn     = subj_id;   % list of subjects        
         step   = 'manual';  % first 'manual' then 'auto'
-        prefix = 'r';      % to use the bias corrected version, set it to 'rb'
+        prefix = 'r'; % to use the bias corrected version, set it to 'rb'
         % ===================
         % After the manual registration, the mean functional image will be
         % saved with r as the prefix which will then be used in the
@@ -443,16 +444,22 @@ switch what
         spm_jobman('initcfg')
         for s = sn
             % Get the directory of subjects anatomical and functional
-            deriv_subj_dir = fullfile(base_dir, derivatives_dir, subj_str{s})
+            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s})
             subj_anat_dir = fullfile(deriv_subj_dir, anat_dir);
-            sbj_number = str2double((extractAfter(subj_str{s},'sub-')))
-            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, '%02d')]));
+            sbj_number = str2double((extractAfter(subj_str{s}, ...
+                'sub-')))
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
+                '%02d')]));
             for smap = session_names
                 sesstag = sessnum{find(contains(subsess,smap))};
                 ses = sscanf(sesstag,'ses-%d');
-                subj_func_dir = fullfile(deriv_subj_dir, func_dir, ['ses-' num2str(ses, '%02d')]);
+                subj_func_dir = fullfile(deriv_subj_dir, func_dir, ...
+                    ['ses-' num2str(ses, '%02d')]);
             
-                cd(subj_anat_dir); % goes to subjects anatomical dir so that coreg tool starts from that directory (just for convenience)
+                % goes to subjects anatomical dir so that coreg tool ...
+                % starts from that directory (just for convenience)
+                cd(subj_anat_dir); 
             
                 switch step
                     case 'manual'
@@ -462,17 +469,31 @@ switch what
                         % do nothing
                 end % switch step
                 
-                gunzip(sprintf('%s_space-native_desc-resampled_T1w.nii.gz', subj_str{s}));
+                gunzip(sprintf(...
+                    '%s_space-native_desc-resampled_T1w.nii.gz', ...
+                    subj_str{s}));
                             
-                % (2) Automatically co-register functional and anatomical images
-                J.ref = {fullfile(subj_anat_dir, sprintf('%s_space-native_desc-resampled_T1w.nii', subj_str{s}))}; % just one anatomical or more than one?
-   
-                J.source = {fullfile(subj_func_dir, sprintf('%smean%s_ses-%02d_run-01_bold.nii', prefix, subj_str{s}, ses))};
+                % (2) Automatically co-register functional and ...
+                % anatomical images
+                J.ref = {fullfile(subj_anat_dir, sprintf(...
+                    '%s_space-native_desc-resampled_T1w.nii', ...
+                    subj_str{s}))}; % just one anatomical or more than one?
+ 
+                if strcmp(smap,'mtt1') || strcmp(smap,'mtt2')
+                    J.source = {fullfile(subj_func_dir, ...
+                        sprintf('%smean%s_ses-%02d_run-03_bold.nii', ...
+                        prefix, subj_str{s}, ses))};
+                else
+                    J.source = {fullfile(subj_func_dir, ...
+                        sprintf('%smean%s_ses-%02d_run-01_bold.nii', ...
+                        prefix, subj_str{s}, ses))};
+                end
             
                 J.other             = {''};
                 J.eoptions.cost_fun = 'nmi';
                 J.eoptions.sep      = [4 2];
-                J.eoptions.tol      = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
+                J.eoptions.tol      = [0.02 0.02 0.02 0.001 0.001 0.001 ...
+                    0.01 0.01 0.01 0.001 0.001 0.001];
                 J.eoptions.fwhm     = [7 7];
                 matlabbatch{1}.spm.spatial.coreg.estimate=J;
                 spm_jobman('run',matlabbatch);
@@ -490,12 +511,12 @@ switch what
 %                 display(M)
             
                 % NOTE:
-                % Overwrites meanepi, unless you update in step one, which saves it
-                % as rmeanepi.
-                % Each time you click "update" in coregtool, it saves current
-                % alignment by appending the prefix 'r' to the current file
-                % So if you continually update rmeanepi, you'll end up with a file
-                % called r...rrrmeanepi.
+                % Overwrites meanepi, unless you update in step one, 
+                % which saves it as rmeanepi.
+                % Each time you click "update" in coregtool, it saves 
+                % current alignment by appending the prefix 'r' to the 
+                % current file. So if you continually update rmeanepi, 
+                % you'll end up with a file called r...rrrmeanepi.
             end
         end % s (sn) 
     case 'FUNC:make_samealign'   % align all the functionals
