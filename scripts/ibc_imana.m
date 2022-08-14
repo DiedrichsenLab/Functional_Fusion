@@ -61,16 +61,16 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
 end
 subj_id = 1:length(subj_n);
 
-% session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
-session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
-    'self', 'clips4', 'lyon1', 'lyon2'}
+session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
+% session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
+%     'self', 'clips4', 'lyon1', 'lyon2'}
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -530,26 +530,55 @@ switch what
                 
         for s = sn
             % Get the directory of subjects functional
-            subj_func_dir = fullfile(base_dir, subj_str{s}, func_dir);
-            
-            % get the images from both sessions
-            for ss = [1, 2]
+            %subj_func_dir = fullfile(base_dir, subj_str{s}, func_dir);
+            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s})
+            subj_func_dir = fullfile(deriv_subj_dir, func_dir)
+            sbj_number = str2double((extractAfter(subj_str{s}, ...
+                'sub-')))
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
+                '%02d')]));
+            for smap = session_names
+                sesstag = sessnum{find(contains(subsess,smap))};
+                ses = sscanf(sesstag,'ses-%d');
+                % cd to the folder with realigned-to-sess1 functional data
+                cd(fullfile(subj_func_dir, sesstag))
+                indexes = find(contains(sessid,smap))';
+                runs = double.empty;
+                trs = double.empty;
                 % get the list of runs for the session
-                runs = run_list{ss};
+                for j=1:length(indexes)
+                    runs(j)=sessrun(indexes(j));
+                    trs(j)=numTRs(indexes(j));
+                end
                 fprintf('- make_samealign  %s \n', subj_str{s})
-                cd(subj_func_dir);
                 
                 % Select image for reference 
                 %%% note that functional images are aligned with the first
-                %%% run from first session hence, the ref is always rmean<subj>_ses-01_run-01
-                P{1} = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix,subj_str{s}));
-                
+                %%% run from first session hence, the ref is always 
+                %%% rmean<subj>_ses-01_run-01
+                if strcmp(smap,'mtt1') || strcmp(smap,'mtt2')
+                    P{1} = fullfile(subj_func_dir, sesstag, sprintf(...
+                        '%smean%s_ses-%02d_run-03_bold.nii', ...
+                        prefix, subj_str{s}, ses));
+                else
+                    P{1} = fullfile(subj_func_dir, sesstag, sprintf(...
+                        '%smean%s_ses-%02d_run-01_bold.nii', ...
+                        prefix, subj_str{s}, ses));
+                end
                 % Select images to be realigned
                 Q = {};
                 for r = runs
-                    for i = 1:numTRs - numDummys
-                        Q{end+1}    = fullfile(subj_func_dir,...
-                                               sprintf('%s%s_ses-%02d_run-%02d.nii,%d', prefix, subj_str{s}, ss, r, i)); % for 'auto' mode in coregistration, remove prefix and explicitly add 'r' prefix in the same place
+                    for i = 1:trs(r)-numDummys
+                        % for 'auto' mode in coregistration, remove prefix 
+                        % and explicitly add 'r' prefix in the same place
+%                         Q{end+1} = fullfile(subj_func_dir, ...
+%                             sprintf('%s%s_ses-%02d_run-%02d.nii,%d', ...
+%                             prefix, subj_str{s}, ses, r, i)); 
+                        Q{end+1} = fullfile(subj_func_dir, sesstag, ...
+                            sprintf(...
+                            'r%s_ses-%02d_run-%02d_bold.nii,%d', ...
+                            subj_str{s}, ses, r, i));
                     end
                 end % r(runs)                
                 spmj_makesamealign_nifti(char(P),char(Q));
