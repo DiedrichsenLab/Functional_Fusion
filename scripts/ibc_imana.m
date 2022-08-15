@@ -61,16 +61,17 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
+subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 % subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
 end
 subj_id = 1:length(subj_n);
 
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
-session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
-    'self', 'clips4', 'lyon1', 'lyon2'}
+% session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
+%     'self', 'clips4', 'lyon1', 'lyon2'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -188,7 +189,7 @@ switch what
         % also saves the bias field estimated in SPM
         % ********IF YOU WANT TO APPLY SPM BIAS CORRECTION TO, USE
         % ANAT:T1w_bcorrect CASE***********************
-        % Example usage: nishimoto_imana('ANAT:segment')
+        % Example usage: ibc_imana('ANAT:segment')
         % check results when done
         sn = subj_id;
         
@@ -199,11 +200,28 @@ switch what
         for s = sn
             fprintf('- Anatomical segmentation for %s\n', subj_str{s});
             % Get the directory of subjects anatomical
-            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s});
+            subj_anat_dir = fullfile(deriv_subj_dir, anat_dir);
             
-            % Get the name of the anatpmical image
-            anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s}); 
-            J.channel.vols     = {fullfile(subj_dir,sprintf('%s,1', anat_name))};
+            % Delete old files
+            cd(subj_anat_dir)
+            if any(size(dir([subj_anat_dir '/*.surf']), 1))
+                delete([subj_anat_dir '/*.surf'])
+            end
+            if any(size(dir([subj_anat_dir '/' subj_str{s} '_mask-*']), 1))
+                delete([subj_anat_dir '/' subj_str{s} '_mask-*'])
+            end
+            if any(size(dir(...
+                    [subj_anat_dir '/' subj_str{s} '_space-MNI-*']), 1))
+                delete([subj_anat_dir '/' subj_str{s} '_space-MNI-*'])
+            end
+            
+            % Get the name of the anatomical image
+            anat_name = sprintf(...
+                '%s_space-native_desc-resampled_T1w.nii', subj_str{s}); 
+            J.channel.vols     = {fullfile(subj_anat_dir, ...
+                sprintf('%s,1', anat_name))};
             J.channel.biasreg  = 0.001;
             J.channel.biasfwhm = 60;
             J.channel.write    = [1 0];
@@ -530,7 +548,6 @@ switch what
                 
         for s = sn
             % Get the directory of subjects functional
-            %subj_func_dir = fullfile(base_dir, subj_str{s}, func_dir);
             deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
                 subj_str{s})
             subj_func_dir = fullfile(deriv_subj_dir, func_dir);
@@ -587,46 +604,85 @@ switch what
         end % s (sn)
     case 'FUNC:make_maskImage'   % make mask images (noskull and grey_only)
         % Make maskImage in functional space
-        % Example usage: ibc_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 1)
+        % Example usage: 
+        % ibc_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 1)
         
         sn     = subj_id; % list of subjects
-        prefix = 'r';     % prefix for the meanepi: r or rbb if bias corrected
+        prefix = 'r'; % prefix for the meanepi: r or rbb if bias corrected
         
         vararginoptions(varargin, {'sn', 'prefix'});
         
         
         for s = sn
             % Get the directory of subjects anatomical and functional
-            subj_anat_dir = fullfile(base_dir, subj_str{s}, anat_dir);
-            subj_func_dir = fullfile(base_dir, subj_str{s}, func_dir);
+            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s})
+            subj_anat_dir = fullfile(deriv_subj_dir, anat_dir);
+            subj_func_dir = fullfile(deriv_subj_dir, func_dir);            
+            
+            sbj_number = str2double((extractAfter(subj_str{s}, ...
+                'sub-')))
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
+                '%02d')]));
+            sesstag = sessnum{find(contains(subsess,'archi'))};
+            ses = sscanf(sesstag,'ses-%d');
 
             fprintf('- make mask for %s\n', subj_str{s});
-            cd(subj_func_dir);
+            cd(fullfile(subj_func_dir, sesstag));
             
-            nam{1}  = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}));
-            nam{2}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
-            nam{3}  = fullfile(subj_anat_dir, sprintf('c2%s_T1w_lpi.nii', subj_str{s}));
-            nam{4}  = fullfile(subj_anat_dir, sprintf('c3%s_T1w_lpi.nii', subj_str{s}));
+            nam{1}  = fullfile(subj_func_dir, sesstag, ...
+                sprintf('%smean%s_ses-%02d_run-01_bold.nii', prefix, ...
+                subj_str{s}, ses));
+            nam{2}  = fullfile(subj_anat_dir, ...
+                sprintf('c1%s_space-native_desc-resampled_T1w.nii', ...
+                subj_str{s}));
+            nam{3}  = fullfile(subj_anat_dir, ...
+                sprintf('c2%s_space-native_desc-resampled_T1w.nii', ...
+                subj_str{s}));
+            nam{4}  = fullfile(subj_anat_dir, ...
+                sprintf('c3%s_space-native_desc-resampled_T1w.nii', ...
+                subj_str{s}));
             spm_imcalc(nam, 'rmask_noskull.nii', 'i1>0 & (i2+i3+i4)>0.1')
             
             nam     = {};
-            nam{1}  = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}));
-            nam{2}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
+            nam{1}  = fullfile(subj_func_dir, sesstag, ...
+                sprintf('%smean%s_ses-%02d_run-01_bold.nii', prefix, ...
+                subj_str{s}, ses));
+            nam{2}  = fullfile(subj_anat_dir, ...
+                sprintf('c1%s_space-native_desc-resampled_T1w.nii', ...
+                subj_str{s}));
             spm_imcalc(nam, 'rmask_gray.nii', 'i1>0 & i2>0.1')
             
             nam     = {};
-            nam{1}  = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}));
-            nam{2}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
-            nam{3}  = fullfile(subj_anat_dir, sprintf('c5%s_T1w_lpi.nii', subj_str{s}));
+            nam{1}  = fullfile(subj_func_dir, sesstag, ...
+                sprintf('%smean%s_ses-%02d_run-01_bold.nii', prefix, ...
+                subj_str{s}, ses));
+            nam{2}  = fullfile(subj_anat_dir, ...
+                sprintf('c1%s_space-native_desc-resampled_T1w.nii', ...
+                subj_str{s}));
+            nam{3}  = fullfile(subj_anat_dir, ...
+                sprintf('c5%s_space-native_desc-resampled_T1w.nii', ...
+                subj_str{s}));
             spm_imcalc(nam, 'rmask_grayEyes.nii', 'i1>2400 & i2+i3>0.4')
             
             nam     = {};
-            nam{1}  = fullfile(subj_func_dir, sprintf('%smean%s_ses-01_run-01.nii', prefix, subj_str{s}));
-            nam{2}  = fullfile(subj_anat_dir, sprintf('c5%s_T1w_lpi.nii', subj_str{s}));
-            nam{3}  = fullfile(subj_anat_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s}));
-            nam{4}  = fullfile(subj_anat_dir, sprintf('c2%s_T1w_lpi.nii', subj_str{s}));
-            nam{5}  = fullfile(subj_anat_dir, sprintf('c3%s_T1w_lpi.nii', subj_str{s}));
-            spm_imcalc(nam, 'rmask_noskullEyes.nii', 'i1>2000 & (i2+i3+i4+i5)>0.2')
+            nam{1}  = fullfile(subj_func_dir, sesstag, ...
+                sprintf('%smean%s_ses-%02d_run-01_bold.nii', prefix, ...
+                subj_str{s}, ses));
+            nam{2}  = fullfile(subj_anat_dir, ...
+                sprintf('c5%s_space-native_desc-resampled_T1w.nii', ...
+                subj_str{s}));
+            nam{3}  = fullfile(subj_anat_dir, ...
+                sprintf('c1%s_space-native_desc-resampled_T1w.nii', ...
+                subj_str{s}));
+            nam{4}  = fullfile(subj_anat_dir, ...
+                sprintf('c2%s_space-native_desc-resampled_T1w.nii', ...
+                subj_str{s}));
+            nam{5}  = fullfile(subj_anat_dir, ...
+                sprintf('c3%s_space-native_desc-resampled_T1w.nii', ...
+                subj_str{s}));
+            spm_imcalc(nam, ...
+                'rmask_noskullEyes.nii', 'i1>2000 & (i2+i3+i4+i5)>0.2')
 
         end % s (sn)
 
