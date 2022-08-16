@@ -302,3 +302,48 @@ class DataSetHcpResting(DataSet):
 
         return coef  # shape (n_tessl,P)
 
+    def get_cortical_connectivity(self,
+                 participant_id,
+                 cortical_atlas_parcels,
+                 runs=[0,1,2,3],
+                 refix=False):
+        """
+        Uses the original CIFTI files to produce cortical connectivity
+        file
+        """
+        hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
+        # get the file name for the cifti time series
+        fnames = self.get_data_fnames(participant_id, refix=refix)
+        coef_1, coef_2 = None, None
+        for r in runs:
+            # load the cifti
+            ts_cifti = nb.load(fnames[r])
+
+            # get the ts in surface for corticals
+            ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
+
+            # Standardize the time series for easier calculation
+            ts_cortex = [util.zstandarize_ts(ts) for ts in ts_32k]
+
+            ts_parcel = []
+            for hem in range(2):
+                # get the average within parcels for this hemis
+                this_ts_parcel = cortical_atlas_parcels[hem].agg_data(ts_32k[hem])
+                this_ts_parcel = util.zstandarize_ts(this_ts_parcel)
+                ts_parcel.append(this_ts_parcel)
+
+            # Correlation calculation
+            if coef_1 is None:
+                coef_1 = np.empty((len(runs),ts_parcel[0].shape[1],
+                                   ts_cortex[0].shape[1])) # (runs, parcels, vertices)
+            if coef_2 is None:
+                coef_2 = np.empty((len(runs),ts_parcel[1].shape[1],
+                                   ts_cortex[1].shape[1])) # (runs, parcels, vertices)
+
+            N1 = ts_cortex[0].shape[0]
+            N2 = ts_cortex[1].shape[0]
+            coef_1[r,:,:] = ts_parcel[0].T @ ts_cortex[0] / N1
+            coef_2[r,:,:] = ts_parcel[1].T @ ts_cortex[1] / N2
+
+        return [coef_1,coef_2]  # shape (n_tessl,P)
+

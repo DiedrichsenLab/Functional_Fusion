@@ -229,7 +229,7 @@ class AtlasSurfaceParcel(Atlas):
         if mask_gii is not None:
             self.mask_gii = nb.load(mask_gii)
             Xmask = self.mask_gii.agg_data()
-            self.label_vec = self.label_vec[Xmask==0]=0
+            self.label_vec = np.delete(self.label_vec, Xmask==0)
         # Find the number of parcels with label > 0 
         self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
 

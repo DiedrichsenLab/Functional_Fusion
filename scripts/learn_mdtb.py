@@ -19,6 +19,13 @@ import matplotlib.pyplot as plt
 import seaborn as sb
 import sys
 from get_hcp_data import get_hcp_data
+import scipy.io as spio
+import os
+
+subj_name = ['s01', 's02', 's03', 's04', 's05', 's06', 's07', 's08', 's09', 's10', 's11',
+             's12', 's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24',
+             's25', 's26', 's27', 's28', 's29', 's30', 's31']
+goodsubj = [2, 3, 4, 6, 8, 9, 10, 12, 14, 15, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 31]
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -52,6 +59,27 @@ def show_mdtb_suit(subj,sess,cond):
     fig.show()
     print(f'Showing {D.cond_name[cond]}')
     pass 
+
+def get_mdtb_cortex(hem='L'):
+    root_dir = 'D:\python_workspace\DCBC\data'
+    data = []
+    for sub in goodsubj:
+        file_path = os.path.join(root_dir, subj_name[sub-1] + "/%s.%s.wbeta.32k.func.gii" % (subj_name[sub-1], hem))
+        gifti_data = nb.load(file_path)
+        img_data = [x.data for x in gifti_data.darrays]
+        this_data = np.reshape(img_data, (len(img_data), len(img_data[0])))
+        data.append(pt.tensor(this_data))
+
+    return pt.stack(data)
+
+def get_hcp_cortex(index=range(0, 20)):
+    root_dir = 'Y:/data/HCP_UR100_rfMRI'
+    T = hcp_dataset.get_participants()
+    data = []
+    for s in T.participant_id[index]:
+        file_path = os.path.join(root_dir, s + "/MNINonLinear/Results/rfMRI_REST1_LR")
+        file = os.path.join(file_path, "rfMRI_REST1_LR_Atlas_hp2000_clean.dtseries.nii")
+        ts_cifti = nb.load(file)
 
 def get_mdtb_data(ses_id='ses-s1', type='CondSes'):
     T = mdtb_dataset.get_participants()
@@ -573,60 +601,68 @@ def learn_mdtb_hcp(K=10, max_iter=100, sub_train=None, sub_test=None, do_plot=Tr
         uhat_em_all: The exepcation obtained by data only
         uhat_complete_all: The expecation obtained by data+prior
     """
-    Data_1, Xdesign_1, D1 = get_mdtb_data(ses_id='ses-s1')
-    Data_2, Xdesign_2, D2 = get_mdtb_data(ses_id='ses-s2')
-    Xdesign = pt.tensor(block_diag(Xdesign_1, Xdesign_2))
-    Data = np.concatenate((Data_1, Data_2), axis=1)
-    D1['sess'] = 1  # Add a column of sess = 1
-    D2['sess'] = 2  # Add a column of sess = 2
+    resolution = [7, 50, 100, 200, 400, 600, 800, 1000]
+    Data = get_mdtb_cortex(hem='L')
+    # Data_2, Xdesign_2, D2 = get_mdtb_data(ses_id='ses-s2')
+    # Xdesign = pt.tensor(block_diag(Xdesign_1, Xdesign_2))
+    # Data = np.concatenate((Data_1, Data_2), axis=1)
 
     Data_hcp = get_hcp_data(res=162, index=sub_train, runs=[0,1,2,3]) #TODO
     # Make arrangement model and initialize the prior from the MDTB map
     P = Data.shape[2]
-    prior_w = 7.0  # Weight of prior
-    mdtb_parcel, mdtb_colors = get_mdtb_parcel(do_plot=False)
-    logpi = ar.expand_mn(mdtb_parcel.reshape(1, P) - 1, K)
-    logpi = logpi.squeeze() * prior_w
-    # Set parcel 0 to unassigned
-    logpi[:, mdtb_parcel == 0] = 0
+    prior_w = 3.0  # Weight of prior
 
-    # Train on sc 1 data
-    ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
-                                         remove_redundancy=False)
-    em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign, uniform_kappa=True)
-    em_model.initialize(Data)
-    em_model_2 = em.MixVMF(K=K, N=Data_hcp.shape[1], P=P, uniform_kappa=True)
-    em_model_2.initialize(Data_hcp)
+    for K in resolution:
+        print(f'Fusing the number of parcels is {K} ...')
+        gifti_data = nb.load('D:\superCerebellum\group\MDTB\MDTB_%d.32k.L.label.gii' % K)
+        img_data = [x.data for x in gifti_data.darrays]
+        mdtb_parcel = np.reshape(img_data, (len(img_data[0]),))
+        logpi = ar.expand_mn(mdtb_parcel.reshape(1, P) - 1, K)
+        logpi = logpi.squeeze() * prior_w
+        # Set parcel 0 to unassigned
+        logpi[:, mdtb_parcel == 0] = 0
 
-    # Initilize parameters from group prior and train the m odel
-    mdtb_prior = logpi.softmax(dim=0)
-    M = fm.FullMultiModel(ar_model, [em_model, em_model_2])
-    M.pre_train([Data, Data_hcp], iter=10, prior=mdtb_prior)
-    M, ll, theta, U_hat = M.fit_em(Y=[Data, Data_hcp], iter=max_iter, tol=0.00001,
-                                      fit_arrangement=True)
-    plt.plot(ll, color='b')
-    plt.show()
+        # Train on sc 1 data
+        ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
+                                             remove_redundancy=False)
+        em_model = em.MixVMF(K=K, N=Data.shape[1], P=P, uniform_kappa=True)
+        em_model.initialize(Data)
+        em_model_2 = em.MixVMF(K=K, N=Data_hcp.shape[1], P=P, uniform_kappa=True)
+        em_model_2.initialize(Data_hcp)
 
-    ### fig a: Plot group prior
-    _plot_maps(pt.argmax(M.arrange.logpi, dim=0) + 1, color=True, render_type='matplotlib',
-               save='group_prior.pdf')
-    prior = pt.softmax(M.arrange.logpi, dim=0)
+        # Initilize parameters from group prior and train the m odel
+        mdtb_prior = logpi.softmax(dim=0)
+        M = fm.FullMultiModel(ar_model, [em_model, em_model_2])
+        M.pre_train([Data.double(), pt.tensor(Data_hcp)], iter=10, prior=mdtb_prior)
+        M, ll, theta, U_hat = M.fit_em(Y=[Data.double(), pt.tensor(Data_hcp)], iter=max_iter, tol=0.00001,
+                                          fit_arrangement=True)
+        plt.plot(ll, color='b')
+        plt.show()
 
-    # train emission model on sc2 by frezzing arrangement model learned from sc1
-    data_sc2 = get_hcp_data(res=162, index=sub_test, runs=[0, 1, 2, 3]) # TODO
-    em_model2 = em.MixVMF(K=K, N=data_sc2.shape[1], P=P, uniform_kappa=True)
-    em_model2.initialize(data_sc2)
-    em_model2.Mstep(prior.unsqueeze(0).repeat(data_sc2.shape[0], 1, 1))  # give a good starting value by U_hat learned from sc1
-    #M2 = fm.FullModel(M.arrange, em_model2)
-    # M2, _, _, U_hat_sc2 = M2.fit_em(Y=data_sc2, iter=max_iter, tol=0.00001, fit_arrangement=False)
+        ### fig a: Plot group prior
+        from SUITPy import make_label_gifti
+        # _plot_maps(pt.argmax(M.arrange.logpi, dim=0) + 1, color=True, render_type='matplotlib',
+        #            save='group_prior_%d.pdf' % K)
+        # prior = pt.softmax(M.arrange.logpi, dim=0) + 1
+        parcel = pt.argmax(M.arrange.logpi, dim=0) + 1
+        G = make_label_gifti(parcel.numpy().reshape(-1,1), anatomical_struct='CortexLeft')
+        nb.save(G, 'fusion_%d.32k.L.label.gii' % K)
 
-    group_baseline = ev.coserr(pt.tensor(data_sc2),
-                               em_model2.V, prior,
-                               adjusted=True, soft_assign=True)
-    lower_bound = ev.coserr(pt.tensor(data_sc2),
-                            em_model2.V,
-                            pt.softmax(em_model2.Estep(Y=data_sc2, pure_compute=True), dim=1),
-                            adjusted=True, soft_assign=True)
+    # # train emission model on sc2 by frezzing arrangement model learned from sc1
+    # data_sc2 = get_hcp_data(res=162, index=sub_test, runs=[0, 1, 2, 3]) # TODO
+    # em_model2 = em.MixVMF(K=K, N=data_sc2.shape[1], P=P, uniform_kappa=True)
+    # em_model2.initialize(data_sc2)
+    # em_model2.Mstep(prior.unsqueeze(0).repeat(data_sc2.shape[0], 1, 1))  # give a good starting value by U_hat learned from sc1
+    # #M2 = fm.FullModel(M.arrange, em_model2)
+    # # M2, _, _, U_hat_sc2 = M2.fit_em(Y=data_sc2, iter=max_iter, tol=0.00001, fit_arrangement=False)
+    #
+    # group_baseline = ev.coserr(pt.tensor(data_sc2),
+    #                            em_model2.V, prior,
+    #                            adjusted=True, soft_assign=True)
+    # lower_bound = ev.coserr(pt.tensor(data_sc2),
+    #                         em_model2.V,
+    #                         pt.softmax(em_model2.Estep(Y=data_sc2, pure_compute=True), dim=1),
+    #                         adjusted=True, soft_assign=True)
 
     ############################# Cross-validation starts here #############################
     # Make inference on the selected run's data - run_infer
@@ -690,11 +726,11 @@ if __name__ == "__main__":
     #
     #     df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1)), dim=0)
     #     df1 = pd.DataFrame(df1).to_csv(f'coserrs_{i}.csv')
-
+    gbase, lb = learn_mdtb_hcp(K=7, sub_train=range(0,20))
     # gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_runs(K=10,
     #                                                                       runs=np.arange(1, 17))
-    # df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1), pt.stack(cos_em), pt.stack(cos_complete)), dim=0)
-    # df1 = pd.DataFrame(df1).to_csv(f'coserrs_{i}.csv')
+    df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1), pt.stack(cos_em), pt.stack(cos_complete)), dim=0)
+    df1 = pd.DataFrame(df1).to_csv(f'coserrs_{i}.csv')
 
     # gbase, lb = learn_mdtb_hcp(K=10, sub_train=range(0,1), sub_test=range(20,21))
 

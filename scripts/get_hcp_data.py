@@ -63,6 +63,46 @@ def get_hcp_data(res=162, index=range(0,100), refix=False):
         else:
             nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
 
+
+def get_hcp_cortex(res=162, index=range(0, 100), refix=False):
+    # Make the atlas object
+    mask_L = atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'
+    mask_R = atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii'
+    fs32k_L_atlas = am.AtlasSurface('CORTEX_LEFT', mask_gii=mask_L)
+    fs32k_R_atlas = am.AtlasSurface('CORTEX_RIGHT', mask_gii=mask_R)
+
+    # initialize the data set object
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+
+    # Get the parcelation
+    surf_parcel = []
+    for i, h in enumerate(['L', 'R']):
+        dir = atlas_dir + '/tpl-fs32k'
+        gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
+        surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i], gifti))
+
+    T = hcp_dataset.get_participants()
+    for s in T.participant_id[index]:
+        print(f'Extract {s}')
+        coef = hcp_dataset.get_cortical_connectivity(s, surf_parcel, refix=refix)
+        # Average across runs
+        coef = [np.nanmean(r, axis=0) for r in coef]
+
+        # Build a connectivity CIFTI-file and save
+        bmc = [fs32k_L_atlas.get_brain_model_axis(),
+               fs32k_R_atlas.get_brain_model_axis()]
+        for h in range(2): # hemisphere-wise
+            bpa = surf_parcel[h].get_parcel_axis()
+            header = nb.Cifti2Header.from_axes((bpa, bmc[h]))
+            r = coef[h][:, ~np.isnan(coef[h]).any(axis=0)]
+            cifti_img = nb.Cifti2Image(dataobj=r, header=header)
+            dest_dir = hcp_dataset.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            if refix:
+                nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}_{hem_name[h]}-ReFIX.dpconn.nii')
+            else:
+                nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}_{hem_name[h]}.dpconn.nii')
+
 def avrg_hcp_dpconn(res=162, index=range(0,100), refix=False):
     # initialize the data set object
     hcp_dataset = DataSetHcpResting(hcp_dir)
@@ -88,6 +128,32 @@ def avrg_hcp_dpconn(res=162, index=range(0,100), refix=False):
 
     pass
 
+def avrg_hcp_dpconn_cortex(res=162, index=range(0,100), refix=False):
+    # initialize the data set object
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+    T = hcp_dataset.get_participants()
+    subjects_id = T.participant_id[index]
+
+    for h in range(2):
+        for i,s in enumerate(subjects_id):
+            data_dir = hcp_dataset.data_dir.format(s)
+            if refix:
+                Ci = nb.load(data_dir + f'/sub-{s}_tessel-{res}_{hem_name[h]}-ReFIX.dpconn.nii')
+            else:
+                Ci = nb.load(data_dir + f'/sub-{s}_tessel-{res}_{hem_name[h]}.dpconn.nii')
+
+            if i==0:
+                R = np.empty((subjects_id.shape[0],Ci.shape[0],Ci.shape[1]))
+            R[i,:,:]=np.asanyarray(Ci.dataobj)
+        Rm = np.nanmean(R,axis=0)
+        Cm = nb.Cifti2Image(Rm,Ci.header)
+        if refix:
+            nb.save(Cm, hcp_dir + f'/group_tessel-{res}_{hem_name[h]}-ReFIX.dpconn.nii')
+        else:
+            nb.save(Cm, hcp_dir + f'/group_tessel-{res}_{hem_name[h]}.dpconn.nii')
+
+    pass
+
 def parcel_hcp_dpconn(dpconn_file):
     """
     Args:
@@ -102,6 +168,29 @@ def parcel_hcp_dpconn(dpconn_file):
     names = [f'MDTB {r+1:02}' for r in range(R.shape[1])]
     row_axis = nb.cifti2.ScalarAxis(names)
     cifti_img = nb.Cifti2Image(R.T,[row_axis,bm_cortex])
+    return cifti_img
+
+def parcel_hcp_dpconn_cortex(dpconn_file):
+    """
+    Args:
+        dpconn_file (_type_): _description_
+    """
+    label_file = [atlas_dir + '/tpl-fs32k/ROI.32k.L.label.gii',
+                  atlas_dir + '/tpl-fs32k/ROI.32k.R.label.gii',]
+    cifti_img = []
+    mask = [atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii',
+            atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii']
+
+    for h in range(2):
+        C = nb.load(dpconn_file[h])
+        roi_atlas = am.AtlasSurfaceParcel('ROI',label_gii=label_file[1-h], mask_gii=mask[h])
+        R = roi_atlas.agg_data(np.asanyarray(C.dataobj))
+        bm_cortex = C.header.get_axis(0)
+        names = [name.label for name in roi_atlas.label_gii.labeltable.labels[1:]]
+        row_axis = nb.cifti2.ScalarAxis(names)
+        this_cifti_img = nb.Cifti2Image(R.T,[row_axis,bm_cortex])
+        cifti_img.append(this_cifti_img)
+
     return cifti_img
 
 def indv_hcp_pscalar(res=162, index=range(0,100), refix=False):
@@ -120,9 +209,25 @@ def indv_hcp_pscalar(res=162, index=range(0,100), refix=False):
         print(f"-Saved scalar file for subject {s}, ReFIX={refix}")
 
 if __name__ == "__main__":
-    get_hcp_data(index=range(0,20), refix=True) # First 20 subjects
-    avrg_hcp_dpconn(index=range(0,20), refix=True)
+    # get_hcp_data(index=range(0,20), refix=True) # First 20 subjects
+    # avrg_hcp_dpconn(index=range(0,20), refix=True)
     # indv_hcp_pscalar(index=range(0, 100), refix=False) # Generate individual parcel scalar
-
     # C = parcel_hcp_dpconn(hcp_dir + '/group_tessel-162-ReFIX.dpconn.nii')
     # nb.save(C, hcp_dir + '/group_tessel-162-ReFIX.pscalar.nii')
+
+    # ------ START: to produce cortical-cortical connectivity cifti file ------ #
+    # Step 1: get HCP cortical resting-state FC, shape (res, vertices)
+    get_hcp_cortex(index=range(20,100))
+
+    # Step 2: average rs-FC across all subjects
+    avrg_hcp_dpconn_cortex(index=range(0, 100), refix=False)
+
+    # Step 3: get cortical-to-parcel connectivity (Always cross hemisphere:
+    # left cortex -> right parcel, or right cortex -> left parcel)
+    C = parcel_hcp_dpconn_cortex([hcp_dir + '/group_tessel-162_cortex_left.dpconn.nii',
+                                  hcp_dir + '/group_tessel-162_cortex_right.dpconn.nii'])
+
+    # Step 4: save by hemisphere-wise
+    for i, nam in enumerate(hem_name):
+        nb.save(C[i], hcp_dir + f'/group_tessel-162_{nam}.pscalar.nii')
+    # ------ END ------ #
