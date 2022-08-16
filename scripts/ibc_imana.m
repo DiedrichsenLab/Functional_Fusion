@@ -61,17 +61,17 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 % subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-% subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
 end
 subj_id = 1:length(subj_n);
 
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
-% session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
-%     'self', 'clips4', 'lyon1', 'lyon2'};
+session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
+    'self', 'clips4', 'lyon1', 'lyon2'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -535,6 +535,78 @@ switch what
                 % current alignment by appending the prefix 'r' to the 
                 % current file. So if you continually update rmeanepi, 
                 % you'll end up with a file called r...rrrmeanepi.
+            end
+        end % s (sn)
+    case 'FUNC:coregreslice'
+        sn     = subj_id;   % list of subjects        
+        step   = 'manual';  % first 'manual' then 'auto'
+        prefix = 'r'; % to use the bias corrected version, set it to 'rb'
+
+        vararginoptions(varargin, {'sn', 'step', 'prefix'});
+        spm_jobman('initcfg')
+        for s = sn
+            % Get the directory of subjects anatomical and functional
+            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s})
+            subj_anat_dir = fullfile(deriv_subj_dir, anat_dir);
+            sbj_number = str2double((extractAfter(subj_str{s}, ...
+                'sub-')))
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
+                '%02d')]));
+            for smap = session_names
+                sesstag = sessnum{find(contains(subsess,smap))};
+                ses = sscanf(sesstag,'ses-%d');
+                subj_func_dir = fullfile(deriv_subj_dir, func_dir, ...
+                    ['ses-' num2str(ses, '%02d')]);
+            
+                % goes to subjects anatomical dir so that coreg tool ...
+                % starts from that directory (just for convenience)
+                cd(subj_anat_dir); 
+            
+                switch step
+                    case 'manual'
+                        coregtool;
+                        keyboard;
+                    case 'auto'
+                        % do nothing
+                end % switch step
+                
+                gunzip(sprintf(...
+                    '%s_space-native_desc-resampled_T1w.nii.gz', ...
+                    subj_str{s}));
+                
+                % Create copy of meanepi to be resliced
+                if strcmp(smap,'mtt1') || strcmp(smap,'mtt2')
+                    meanepi_file = fullfile(subj_func_dir, ...
+                        sprintf('%smean%s_ses-%02d_run-03_bold.nii', ...
+                        prefix, subj_str{s}, ses))
+                    resliced_meanepi = fullfile(subj_func_dir, ...
+                        sprintf(...
+                        'resliced_%smean%s_ses-%02d_run-03_bold.nii', ...
+                        prefix, subj_str{s}, ses))
+                else
+                    meanepi_file = fullfile(subj_func_dir, ...
+                        sprintf('%smean%s_ses-%02d_run-01_bold.nii', ...
+                        prefix, subj_str{s}, ses))
+                    resliced_meanepi = fullfile(subj_func_dir, ...
+                        sprintf(...
+                        'resliced_%smean%s_ses-%02d_run-01_bold.nii', ...
+                        prefix, subj_str{s}, ses))
+                end
+                copyfile(meanepi_file, resliced_meanepi)
+                            
+                J.ref = {fullfile(subj_anat_dir, sprintf(...
+                    '%s_space-native_desc-resampled_T1w.nii', ...
+                    subj_str{s}))};
+                J.source = {resliced_meanepi};
+                J.other             = {''};
+                J.eoptions.cost_fun = 'nmi';
+                J.eoptions.sep      = [4 2];
+                J.eoptions.tol      = [0.02 0.02 0.02 0.001 0.001 0.001 ...
+                    0.01 0.01 0.01 0.001 0.001 0.001];
+                J.eoptions.fwhm     = [7 7];
+                matlabbatch{1}.spm.spatial.coreg.estwrite=J;
+                spm_jobman('run',matlabbatch);
             end
         end % s (sn) 
     case 'FUNC:make_samealign'   % align all the functionals
