@@ -1311,7 +1311,7 @@ switch what
             job.subj.flowfield= {fullfile(subj_dir,sprintf('u_a_c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
             job.subj.resample = {source.name};
             job.subj.mask     = {fullfile(subj_dir, sprintf('c_%s_T1w_lpi_pcereb.nii', subj_str{s}))};
-            job.vox           = [2 2 2];
+            job.vox           = [1 1 1];
             suit_reslice_dartel(job);
             fprintf('- Resliced %s anatomical to SUIT\n', subj_str{s});
         end
