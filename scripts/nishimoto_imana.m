@@ -11,10 +11,10 @@ elseif isdir('/srv/diedrichsen/data')
 else
     fprintf('Workdir not found. Mount or connect to server and try again.');
 end
-% addpath(sprintf('%s/../matlab/spm12',workdir));
-% addpath(sprintf('%s/../matlab/spm12/toolbox/suit/',workdir));
-% addpath(sprintf('%s/../matlab/dataframe',workdir));
-% addpath(sprintf('%s/../matlab/imaging/tools/',workdir));
+addpath(sprintf('%s/../matlab/spm12',workdir));
+addpath(sprintf('%s/../matlab/spm12/toolbox/suit/',workdir));
+addpath(sprintf('%s/../matlab/dataframe',workdir));
+addpath(sprintf('%s/../matlab/imaging/tools/',workdir));
 
 %% ----- Initialize suit toolbox -----
 % check for SUIT installation
@@ -1273,29 +1273,45 @@ switch what
             spm_imcalc({cortexGrey,bufferVox}, cortexGreyC,'i1-i2');
             
         end % s (sn)
-    case 'SUIT:normalize_darte'   
+    case 'SUIT:normalise_dartel'     
+        % LAUNCH SPM FMRI BEFORE RUNNING!!!!!
+        s=varargin{1}; %subjNum
+        % example: 'bsp_imana('SUIT:normalise_dartel',1)'
+        
+        subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+        suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
+        mkdir(suit_subj_dir)
+        
+        cd(suit_subj_dir)
+        job.subjND.gray       = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
+        job.subjND.white      = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
+        job.subjND.isolation  = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_pcereb.nii', subj_str{s}))};
+        suit_normalize_dartel(job);
+        
     case 'SUIT:reslice'            %reslice cerebellum into suit space to check normalization
         % 'suit_normalise_dartel'.
         % example: nishimoto_bids_imana('SUIT:reslice','anatomical','pcereb')
         % make sure that you reslice into 2mm^3 resolution
+        
+
         vararginoptions(varargin, {'sn'});
-        type=varargin{1}; % 'betas' or 'contrast' or 'ResMS' or 'cerebellarGrey'
-        mask=varargin{2}; % 'cereb_prob_corr_grey' or 'cereb_prob_corr' or 'dentate_mask'
+        type=varargin{1}; % 'betas' or 'contrast' or 'ResMS' or 'cerebellarGrey' or 'anatomical'
+        mask=varargin{2}; % 'cereb_prob_corr_grey' or 'cereb_prob_corr' or 'dentate_mask' or 'pcereb'
         subjs=length(subj_str);
         for s=1:subjs
             switch type
                 case 'anatomical'
                     subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
                     % Get the name of the anatpmical image
-                    anat_name = sprintf('%s_T1w.nii', subj_str{s});
+                    anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s});
                     J.channel.vols     = {fullfile(subj_dir,sprintf('%s,1', anat_name))};
                     source=dir(fullfile(subj_dir,sprintf('%s', anat_name))); % images to be resliced
                     cd(subj_dir);
             end
-            job.subj.affineTr = {fullfile(subj_dir,sprintf('%c_s_T1w_seg8.mat', subj_str{s}))};
-            job.subj.flowfield= {fullfile(subj_dir,sprintf('y_%s_T1w.nii', subj_str{s}))};
+            job.subj.affineTr = {fullfile(subj_dir,sprintf('Affine_c_%s_T1w_lpi_seg1.mat', subj_str{s}))};
+            job.subj.flowfield= {fullfile(subj_dir,sprintf('u_a_c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
             job.subj.resample = {source.name};
-            job.subj.mask     = {fullfile(subj_dir,sprintf('c_%s_T1w_pcereb.nii', subj_str{s}))};
+            job.subj.mask     = {fullfile(subj_dir, sprintf('c_%s_T1w_lpi_pcereb.nii', subj_str{s}))};
             job.vox           = [2 2 2];
             suit_reslice_dartel(job);
             fprintf('- Resliced %s anatomical to SUIT\n', subj_str{s});
