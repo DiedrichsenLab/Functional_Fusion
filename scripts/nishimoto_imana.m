@@ -1284,7 +1284,7 @@ switch what
         
         cd(suit_subj_dir)
         job.subjND.gray       = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
-        job.subjND.white      = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
+        job.subjND.white      = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg2.nii', subj_str{s}))};
         job.subjND.isolation  = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_pcereb.nii', subj_str{s}))};
         suit_normalize_dartel(job);
         
