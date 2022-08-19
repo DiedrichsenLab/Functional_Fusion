@@ -1276,7 +1276,7 @@ switch what
     case 'SUIT:normalise_dartel'     
         % LAUNCH SPM FMRI BEFORE RUNNING!!!!!
         s=varargin{1}; %subjNum
-        % example: 'bsp_imana('SUIT:normalise_dartel',1)'
+        % example: 'nishimoto_imana('SUIT:normalise_dartel',1)'
         
         subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
         suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
