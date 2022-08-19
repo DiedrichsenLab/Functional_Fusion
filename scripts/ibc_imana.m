@@ -61,8 +61,8 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
 end
@@ -135,22 +135,29 @@ switch what
         % Example usage:nishimoto_imana('ANAT:reslice_lpi')
         sn = subj_id;
         
+        
         vararginoptions(varargin, {'sn'});
         for s = sn
             fprintf('- Reslicing %s anatomical to LPI\n', subj_str{s});
             
             % Get the directory of subjects anatomical
-            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s});
+            subj_anat_dir = fullfile(deriv_subj_dir, anat_dir);
             
-            % Get the name of the anatpmical image
-            anat_name = sprintf('%s_T1w', subj_str{s});
+            % Get the name of the anatomical image
+            anat_name = sprintf('%s_space-native_desc-resampled_T1w', ...
+                subj_str{s});
             
-            % Reslice anatomical image to set it within LPI co-ordinate frames
-            source  = fullfile(subj_dir, sprintf('%s.nii', anat_name));
-            dest    = fullfile(subj_dir, sprintf('%s_lpi.nii', anat_name));
-            if ~isfile(source) && isfile(sprintf('%s.gz', source))  % unzip file
-                gunzip(sprintf('%s.gz', source));
-            end
+            % Reslice anatomical image to set it 
+            % within LPI co-ordinate frames
+            source  = fullfile(...
+                subj_anat_dir, sprintf('%s.nii', anat_name));
+            dest    = fullfile(...
+                subj_anat_dir, sprintf('%s_lpi.nii', anat_name));
+%             if ~isfile(source) && isfile(sprintf('%s.gz', source))  % unzip file
+%                 gunzip(sprintf('%s.gz', source));
+%             end
             spmj_reslice_LPI(source,'name', dest);
             
             % In the resliced image, set translation to zero
