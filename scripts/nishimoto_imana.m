@@ -1290,11 +1290,10 @@ switch what
         
     case 'SUIT:reslice'            %reslice cerebellum into suit space to check normalization
         % 'suit_normalise_dartel'.
-        % example: nishimoto_bids_imana('SUIT:reslice','anatomical','pcereb')
+        % example: nishimoto_imana('SUIT:reslice','anatomical','pcereb')
         % make sure that you reslice into 2mm^3 resolution
         
 
-        vararginoptions(varargin, {'sn'});
         type=varargin{1}; % 'betas' or 'contrast' or 'ResMS' or 'cerebellarGrey' or 'anatomical'
         mask=varargin{2}; % 'cereb_prob_corr_grey' or 'cereb_prob_corr' or 'dentate_mask' or 'pcereb'
         subjs=length(subj_str);
