@@ -187,6 +187,12 @@ def source_funcdata(sub, sname, original_sourcepath, destination_sourcepath,
         elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
             epi_fname = sub + '_' + session + '_task-Self_dir-' + \
                 ph + '_run-%02d' % rn + '_' + data_type
+        elif tk in ['MathLanguage1', 'SpatialNavigation']:
+            epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
+                '_run-%02d' % rn + '_' + data_type
+        elif tk == 'MathLanguage2':
+            epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
+                '_run-%02d' % (rn - 4) + '_' + data_type
         else:
             epi_fname = sub + '_' + session + '_task-' + tk + \
                 '_dir-' + ph + '_' + data_type
@@ -389,10 +395,13 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 # subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
+# subjects_numbers = [12, 13, 14, 15]
+
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-#                  'clips4', 'lyon1', 'lyon2']
-session_names = ['mtt1', 'mtt2']
+#                  'clips4', 'lyon1', 'lyon2', 'mathlang',
+#                  'spatial-navigation']
+session_names = ['spatial-navigation']
 
 
 # ############################# PARAMETERS #############################
@@ -433,8 +442,8 @@ if __name__ == "__main__":
 
         for session_name in session_names:
             ## Import raw EPI ##
-            # source_funcdata(subject, session_name, drago_sourcedata,
-            #                 cbs_sourcedata, dfm, dfs)
+            source_funcdata(subject, session_name, drago_sourcedata,
+                            cbs_sourcedata, dfm, dfs)
 
             ## Import normalized-EPI ##
             # wepi(subject, session_name, drago_derivatives, cbs_derivatives,
@@ -452,5 +461,5 @@ if __name__ == "__main__":
             #                    cbs_derivatives, dfm, dfs, dfc)
 
             ## Generate tsv files with session info ##
-            # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
-            #                   dfs, dfc)
+            generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
+                              dfs, dfc)

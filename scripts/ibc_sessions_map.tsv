@@ -24,9 +24,15 @@ ses-21	relaxo		self	audio1	self	audio1	lyon1	lyon2	lyon2	lyon2	self	self	lyon2
 ses-22	lyon1		audio1	relaxo	audio1	audio2	lyon2	self	self	self	audio1	audio1	audio1
 ses-23	lyon2		audio2	audio2	audio2	self	self	audio1	audio1	audio1	audio2	audio2	audio2
 ses-24	self		stanford1	stanford1	stanford1	stanford1	audio1	audio2	audio2	audio2	stanford1	stanford1	stanford1
-ses-25			stanford2	stanford2	stanford2	stanford2	audio2	stanford1	stanford1	stanford1	stanford2	stanford2	
-ses-26			stanford3	stanford3	stanford3	stanford3	stanford1	stanford2	stanford2	stanford2	stanford3	stanford3	
-ses-27			lpp1	lpp1	lpp1	lpp1	stanford2	stanford3	stanford3	stanford3		lpp1	
-ses-28			lpp2	lpp2	lpp2	lpp2	stanford3	lpp1	lpp1	lpp1		lpp2	
-ses-29				biological-motion			lpp1		lpp2	lpp2		biological-motion	
-ses-30							lpp2		biological-motion	biological-motion			
+ses-25	spatial-navigation		stanford2	stanford2	stanford2	stanford2	audio2	stanford1	stanford1	stanford1	stanford2	stanford2	stanford2
+ses-26	mathlang		stanford3	stanford3	stanford3	stanford3	stanford1	stanford2	stanford2	stanford2	stanford3	stanford3	stanford3
+ses-27			lpp1	lpp1	lpp1	lpp1	stanford2	stanford3	stanford3	stanford3	lpp1	lpp1	lpp1
+ses-28			lpp2	lpp2	lpp2	lpp2	stanford3	lpp1	lpp1	lpp1	lpp2	lpp2	lpp2
+ses-29			biological-motion	biological-motion	biological-motion	biological-motion	lpp1	lpp2	lpp2	lpp2	biological-motion	biological-motion	biological-motion
+ses-30			mathlang	spatial-navigation	spatial-navigation	mathlang	lpp2	biological-motion	biological-motion	biological-motion	mathlang	mathlang	mathlang
+ses-31			spatial-navigation	bbt1	mathlang	spatial-navigation		spatial-navigation	mathlang	mathlang	spatial-navigation	bbt1	spatial-navigation
+ses-32				bbt2				mathlang	spatial-navigation	spatial-navigation	bbt1	bbt2	bbt1
+ses-33				bbt3							bbt2	bbt3	bbt2
+ses-34				camcan1							bbt3	spatial-navigation	bbt3
+ses-35				mathlang							camcan1		camcan1
+											camcan2		camcan2
