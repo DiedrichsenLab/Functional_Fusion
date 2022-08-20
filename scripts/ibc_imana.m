@@ -164,7 +164,7 @@ switch what
             % In the resliced image, set translation to zero
             V               = spm_vol(dest);
             dat             = spm_read_vols(V);
-            V.mat(1:3,4)    = [0 0 0];
+            % V.mat(1:3,4)    = [0 0 0];
             spm_write_vol(V,dat);
         end % sn (subjects)
     case 'ANAT:center_ac'    % recenter to AC (manually retrieve coordinates)
