@@ -74,7 +74,7 @@ def import_freesurfer(source_dir,dest_dir,old_id,new_id):
     dest.append(f'/{new_id}_space-32k_hemi-L_white.surf.gii')
     src.append(f'/{old_id}.R.pial.32k.surf.gii')
     dest.append(f'/{new_id}_space-32k_hemi-R_pial.surf.gii')
-    src.append(f'/{old_id}.R.pial.32k.surf.gii')
+    src.append(f'/{old_id}.R.white.32k.surf.gii')
     dest.append(f'/{new_id}_space-32k_hemi-R_white.surf.gii')
     src.append(f'/{old_id}.L.sulc.32k.shape.gii')
     dest.append(f'/{new_id}_space-32k_hemi-L_sulc.shape.gii')
