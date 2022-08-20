@@ -1,4 +1,4 @@
-function [ output_args ] = nishimoto_imana( what, varargin )
+function [ output_args ] = ibc_imana( what, varargin )
 
 % %========================================================================================================================
 % PATH DEFINITIONS
@@ -69,8 +69,9 @@ end
 subj_id = 1:length(subj_n);
 
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
-session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
-    'self', 'clips4', 'lyon1', 'lyon2'};
+% session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
+%     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
+session_names = {'mathlang', 'spatial-navigation'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
