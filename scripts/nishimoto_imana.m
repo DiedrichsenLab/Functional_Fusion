@@ -15,6 +15,7 @@ addpath(sprintf('%s/../matlab/spm12',workdir));
 addpath(sprintf('%s/../matlab/spm12/toolbox/suit/',workdir));
 addpath(sprintf('%s/../matlab/dataframe',workdir));
 addpath(sprintf('%s/../matlab/imaging/tools/',workdir));
+addpath(sprintf('%s/../matlab/imaging/coregtool/',workdir));
 
 %% ----- Initialize suit toolbox -----
 % check for SUIT installation
