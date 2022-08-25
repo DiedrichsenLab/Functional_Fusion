@@ -61,8 +61,8 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-% subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
 end
@@ -366,11 +366,12 @@ switch what
                 end
                 for r = 1:length(runs)
                     rname = sprintf('%s_ses-%02d_run-%02d_bold.nii.gz', ...
-                        subj_str{s}, ses, runs(r))
-                    gunzip(rname);
+                        subj_str{s}, ses, runs(r));
+                    gunzip(rname, '/localscratch');
                     for j = 1:trs(r)-numDummys
                         data{r}{j,1} = sprintf(...
-                            '%s_ses-%02d_run-%02d_bold.nii,%d', ...
+                            append('/localscratch/', ...
+                            '%s_ses-%02d_run-%02d_bold.nii,%d'), ...
                             subj_str{s},ses, runs(r), j);
                     end % j (TRs/images)
                 end % r (runs)
@@ -378,6 +379,10 @@ switch what
                 if strcmp(smap,'mtt1') || strcmp(smap,'mtt2')
                     data(1:2)=[];
                 end
+                % Print first and last input
+                data{1}{1,1}
+                data{length(runs)}{trs(r)-numDummys,1}
+                % Load batch
                 spmj_realign(data);
                 fprintf('- runs realigned for %s  ses %02d\n', ...
                     subj_str{s}, ses);
@@ -429,6 +434,8 @@ switch what
                     ['ses-' num2str(ses, '%02d')]) '/*.mat'], ...
                     fullfile(funcderiv_subjses_dir, ...
                     ['ses-' num2str(ses, '%02d')]))
+                % Delete *.nii files from /localscratch
+                delete('/localscratch/*.nii')
             end % smap (session_names)
         end % s (sn)
     case 'FUNC:meanepi_bcorrect' % bias correction for the mean image before coreg (optional)
