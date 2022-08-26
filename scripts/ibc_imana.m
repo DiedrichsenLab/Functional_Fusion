@@ -386,9 +386,14 @@ switch what
                 spmj_realign(data);
                 fprintf('- runs realigned for %s  ses %02d\n', ...
                     subj_str{s}, ses);
-                % move output files to derivatives folder
-                cd(fullfile(funcderiv_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]))
+                % Create if does not exist and move output files 
+                % to derivatives folder
+                sessderiv_dir = fullfile(funcderiv_subjses_dir, ...
+                    ['ses-' num2str(ses, '%02d')])
+                if not(isfolder(sessderiv_dir))
+                    mkdir(sessderiv_dir)
+                end
+                cd(sessderiv_dir)
                 if any(size(dir([fullfile(funcderiv_subjses_dir, ...
                         ['ses-' num2str(ses, '%02d')]) '/*.nii.gz']),1))
                     delete([fullfile(funcderiv_subjses_dir, ...
