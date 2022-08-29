@@ -63,15 +63,15 @@ wb_dir   = 'surfaceWB';
 % list of subjects
 % subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
 end
 subj_id = 1:length(subj_n);
 
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
-% session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
-%     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
-session_names = {'mathlang', 'spatial-navigation'};
+session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
+    'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -336,6 +336,8 @@ switch what
         % example usage: ibc_imana('FUNC:realign', 'sn', 1)
         % Updated upstream
         
+        spm_figure('GetWin','Graphics'); % create SPM .ps file at the end
+        
         sn   = subj_id; % list of subjects
         vararginoptions(varargin, {'sn', 'ses', 'runs'});
                 
@@ -382,65 +384,46 @@ switch what
                 % Print first and last input
                 data{1}{1,1}
                 data{length(runs)}{trs(r)-numDummys,1}
-                % Load batch
+                % Load batch and run spm
                 spmj_realign(data);
                 fprintf('- runs realigned for %s  ses %02d\n', ...
                     subj_str{s}, ses);
-                % Create if does not exist and move output files 
-                % to derivatives folder
+                % Create if does not exist the derivatives folder
                 sessderiv_dir = fullfile(funcderiv_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')])
+                    ['ses-' num2str(ses, '%02d')]);
                 if not(isfolder(sessderiv_dir))
-                    mkdir(sessderiv_dir)
+                    mkdir(sessderiv_dir);
+                % If derivatives folder already exists,
+                else
+                    % and it is not empty,
+                    if numel(sessderiv_dir) > 2                        
+                        % delete all its content
+                        content = dir(sessderiv_dir);
+                        for iContent = 3 : numel(content)
+                            if ~content(iContent).isdir
+                                % remove files of folder
+                                delete(sprintf('%s/%s', sessderiv_dir, ...
+                                    content(iContent).name));
+                            end
+                        end
+                    end
                 end
-                cd(sessderiv_dir)
-                if any(size(dir([fullfile(funcderiv_subjses_dir, ...
-                        ['ses-' num2str(ses, '%02d')]) '/*.nii.gz']),1))
-                    delete([fullfile(funcderiv_subjses_dir, ...
-                        ['ses-' num2str(ses, '%02d')]) '/*.nii.gz'])
-                end
-                if any(size(dir([fullfile(funcderiv_subjses_dir, ...
-                        ['ses-' num2str(ses, '%02d')]) '/*.nii']),1))
-                    delete([fullfile(funcderiv_subjses_dir, ...
-                        ['ses-' num2str(ses, '%02d')]) '/*.nii'])
-                end
-                if any(size(dir([fullfile(funcderiv_subjses_dir, ...
-                        ['ses-' num2str(ses, '%02d')]) '/*.mat']),1))
-                    delete([fullfile(funcderiv_subjses_dir, ...
-                        ['ses-' num2str(ses, '%02d')]) '/*.mat'])
-                end
-                if any(size(dir([fullfile(funcderiv_subjses_dir, ...
-                        ['ses-' num2str(ses, '%02d')]) '/*.txt']),1))
-                    delete([fullfile(funcderiv_subjses_dir, ...
-                        ['ses-' num2str(ses, '%02d')]) '/*.txt'])
-                end
-                if any(size(dir([fullfile(funcderiv_subjses_dir, ...
-                        ['ses-' num2str(ses, '%02d')]) '/*.ps']),1))
-                    delete([fullfile(funcderiv_subjses_dir, ...
-                        ['ses-' num2str(ses, '%02d')]) '/*.ps'])
-                end
+                % Move files from "/localscratch" to derivatives folder
+                movefile(['/localscratch/mean' subj_str{s} '_ses-' ...
+                    num2str(ses, '%02d') '_run-*_bold.nii'], sessderiv_dir)
+                movefile(['/localscratch/rp_' subj_str{s} '_ses-' ...
+                    num2str(ses, '%02d') '_run-*_bold.txt'], sessderiv_dir)
+                movefile(['/localscratch/r' subj_str{s} '_ses-' ...
+                    num2str(ses, '%02d') '_run-*_bold.nii'], sessderiv_dir)
+                movefile(['/localscratch/' subj_str{s} '_ses-' ...
+                    num2str(ses, '%02d') '_run-*_bold.mat'], sessderiv_dir)
                 movefile([fullfile(funcraw_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]) '/meansub*'], ...
-                    fullfile(funcderiv_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]))
-                movefile([fullfile(funcraw_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]) '/*.txt'], ...
-                    fullfile(funcderiv_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]))
-                movefile([fullfile(funcraw_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]) '/rsub*'], ...
-                    fullfile(funcderiv_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]))
-                movefile([fullfile(funcraw_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]) '/*.ps'], ...
-                    fullfile(funcderiv_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]))
-                movefile([fullfile(funcraw_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]) '/*.mat'], ...
-                    fullfile(funcderiv_subjses_dir, ...
-                    ['ses-' num2str(ses, '%02d')]))
-                % Delete *.nii files from /localscratch
-                delete('/localscratch/*.nii')
+                    ['ses-' num2str(ses, '%02d')]) '/spm_*.ps'], ...
+                    sessderiv_dir)
+                % Delete unziped raw files from localscratch
+                if any(size(dir('/localscratch/*.nii'), 1))
+                    delete('/localscratch/*.nii')
+                end
             end % smap (session_names)
         end % s (sn)
     case 'FUNC:meanepi_bcorrect' % bias correction for the mean image before coreg (optional)
