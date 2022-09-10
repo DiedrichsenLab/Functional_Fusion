@@ -36,19 +36,15 @@ base_dir = sprintf('%s/FunctionalFusion/ibc',workdir);
 
 %%% Freesurfer stuff
 path1 = getenv('PATH');
-path1 = [path1, ':/Applications/freesurfer/bin'];
+path1 = [path1, ':/srv/software/freesurfer/6.0.0/bin'];
 setenv('PATH', path1);
-path1 = [path1, ':/Applications/freesurfer/fsfast/bin'];
+path1 = [path1, ':/srv/software/freesurfer/6.0.0/fsfast/bin'];
 setenv('PATH', path1);
-path1 = [path1, ':/Applications/freesurfer/mni/bin'];
+path1 = [path1, ':/srv/software/freesurfer/6.0.0/mni/bin'];
 setenv('PATH', path1);
-setenv('FREESURFER_HOME','/Applications/freeSurfer');
-setenv(fullfile(base_dir, 'surfaceFreesurfer'))
+setenv('FREESURFER_HOME','/srv/software/freesurfer/6.0.0');
+setenv(fullfile(base_dir, 'surfaceFreesurfer'));
 setenv('SUBJECTS_DIR',fullfile(base_dir, 'surfaceFreesurfer'));
-% setenv('PERL5LIB','/Applications/freesurfer/mni/Library/Perl/Updates/5.10.0');
-% setenv('PERL5LIB', '/Applications/freesurfer/mni/System/Library/Perl/5.8.6');
-
-path1 = [path1 '/Applications/workbench/bin_macosx64'];
 setenv('PATH', path1);
 
 % defining the names of other directories
