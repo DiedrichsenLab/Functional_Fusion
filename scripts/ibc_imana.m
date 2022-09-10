@@ -12,10 +12,10 @@ else
     fprintf(...
         'Workdir not found. Mount or connect to server and try again.');
 end
-addpath(sprintf('%s/../matlab/spm12',workdir));
-addpath(sprintf('%s/../matlab/spm12/toolbox/suit/',workdir));
-addpath(sprintf('%s/../matlab/dataframe',workdir));
-addpath(sprintf('%s/../matlab/imaging/tools/',workdir));
+addpath(sprintf('%s/../matlab/spm12', workdir));
+addpath(sprintf('%s/../matlab/spm12/toolbox/suit/', workdir));
+addpath(sprintf('%s/../matlab/dataframe', workdir));
+addpath(sprintf('%s/../matlab/imaging/tools/', workdir));
 
 %% ----- Initialize suit toolbox -----
 % check for SUIT installation
@@ -32,7 +32,7 @@ suit_defaults;
 %========================================================================================================================
 global base_dir
 
-base_dir = sprintf('%s/FunctionalFusion/ibc',workdir);
+base_dir = sprintf('%s/FunctionalFusion/ibc', workdir);
 
 %%% Freesurfer stuff
 path1 = getenv('PATH');
@@ -958,7 +958,7 @@ switch what
     case 'SURF:reconall'       % Freesurfer reconall routine
         % Calls recon-all, which performs, all of the
         % FreeSurfer cortical reconstruction process
-        % Example usage: nishimoto_imana('SURF:reconall', 'sn', 1)
+        % Example usage: ibc_imana('SURF:reconall', 'sn', 1)
         
         sn   = subj_id; % subject list
         
@@ -966,12 +966,20 @@ switch what
         % set freesurfer directory
         subj_fs_dir = fullfile(base_dir, fs_dir);
         
+        % Parent dir of anatomical images
+
+        
         for s = sn
             fprintf('- recon-all %s\n', subj_str{s});
-            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
-            freesurfer_reconall(subj_fs_dir, subj_str{s}, ...
-                                fullfile(subj_dir,sprintf('%s_T1w_lpi.nii', subj_str{s})));
+            subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s}, anat_dir)
+            freesurfer_reconall(...
+                subj_fs_dir, subj_str{s}, ...
+                fullfile(subj_dir, sprintf(...
+                '%s_space-native_desc-resampled_T1w_lpi.nii', ...
+                subj_str{s})));
         end % s (sn)
+
     case 'SURF:xhemireg'       % Cross-register surfaces left / right hem
         % surface-based interhemispheric registration
         % example: nishimoto_imana('SURF:xhemireg', 'sn', 95)
