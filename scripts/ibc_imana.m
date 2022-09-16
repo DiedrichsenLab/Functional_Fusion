@@ -57,8 +57,8 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
@@ -982,19 +982,20 @@ switch what
 
     case 'SURF:xhemireg'       % Cross-register surfaces left / right hem
         % surface-based interhemispheric registration
-        % example: nishimoto_imana('SURF:xhemireg', 'sn', 95)
+        % example: ibc_imana('SURF:xhemireg', 'sn', [1, 2, 3, 4, 5])
         
         sn   = subj_id; % list of subjects
 
         vararginoptions(varargin, {'sn'})
         
         % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'FreeSurfer');
+        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
         
         for s = sn
             fprintf('- xhemiregl %s\n', subj_str{s});
             freesurfer_registerXhem(subj_str(s), fs_dir,'hemisphere', [1 2]); % For debug... [1 2] orig
         end % s (sn)
+        
     case 'SURF:map_ico'        % Align to the new atlas surface (map icosahedron)
         % Resampels a registered subject surface to a regular isocahedron
         % This allows things to happen in atlas space - each vertex number
