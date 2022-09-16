@@ -265,8 +265,7 @@ switch what
             fprintf('optiBET completed for %s \n',subj_str{s})
             fprintf('Check the output of optiBET using FSLeyes or some other visualization software.')
            
-        end
-    
+        end   
 
     case 'FUNC:rename'           % removing dummies and renaming 
         % "WARNING" NO NEED TO REMOVE DUMMIES (WE THINK SO),SO THE REMOVING
@@ -542,7 +541,7 @@ switch what
         
         % save as a tsv file 
         dsave(fullfile(base_dir, 'tasks_info.tsv'), info_struct);        
-    case 'GLM:design1_ses'      % make the design matrix for the glm
+    case 'GLM:design1_ses'  % make the design matrix for the glm
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
         % represents all the instances
@@ -664,7 +663,7 @@ switch what
             
             
         end % sn (subject)      
-    case 'GLM:design2_all'      % make the design matrix for the glm
+    case 'GLM:design2_all'  % make the design matrix for the glm
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
         % represents all the instances
@@ -1235,87 +1234,131 @@ switch what
             suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w.nii', subj_str{s}))}, 'keeptempfiles', 1);
 %             suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w.nii', subj_str{s}))}, 'keeptempfiles', 1);
         end % s (sn)
-    case 'SUIT:correct_cereb_mask' % Corrected cerebellum cortex mask
-        % uses the results from SUIT:isolate_segment to create corrected
-        % masks for the cerebellum and cortex. It removes buffer voxels
-        % from both masks and create cereb_prob_corr_grey.nii and
-        % cortical_mask_grey_corr.nii
-        % Example usage: nishimoto_bids_imana('SUIT:correct_cereb_mask', 'sn', 1)
-        
-        sn   = returnSubjs; % subject list        
-        vararginoptions(varargin, {'sn'});
-        
-        for s = sn 
-            
-            % Get the directory of subjects suit (where the result of segmentation is stored)
-
-            suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
-
-            % cortexGrey : cortex grey matter mask
-            cortexGrey = fullfile(suit_subj_dir, sprintf('c7%s_T1w.nii', subj_str{s}));
-            % cerebGrey  : cerebellar grey matter mask
-            cerebGrey  = fullfile(suit_subj_dir, sprintf('c1%s_T1w.nii', subj_str{s}));
-            % bufferVox  : buffer voxels
-            bufferVox = fullfile(suitDir, 'anatomicals', subj_str{s}, ses_str{ss}, 'buffer_voxels.nii');
-            
-            % isolate overlapping voxels
-            spm_imcalc({cortexGrey,cerebGrey}, bufferVox,'(i1.*i2)')
-            
-            % mask buffer
-            spm_imcalc({bufferVox},bufferVox,'i1>0')
-            
-            cerebGreyC  = fullfile(suitDir, 'anatomicals', subj_str{s}, ses_str{ss}, 'cereb_prob_corr_grey.nii');
-            cortexGreyC = fullfile(suitDir, 'anatomicals', subj_str{s}, sprintf('sess-%02d', ss), 'cortical_mask_grey_corr.nii');
-            
-            % remove buffer from the cerebellum
-            spm_imcalc({cerebGrey,bufferVox}, cerebGreyC,'i1-i2');
-            
-            % remove buffer from cortex
-            spm_imcalc({cortexGrey,bufferVox}, cortexGreyC,'i1-i2');
-            
-        end % s (sn)
-    case 'SUIT:normalise_dartel'     
+    case 'SUIT:normalise_dartel'   % SUIT normalization using dartel
         % LAUNCH SPM FMRI BEFORE RUNNING!!!!!
-        s=varargin{1}; %subjNum
-        % example: 'nishimoto_imana('SUIT:normalise_dartel',1)'
+        % example usage: nishimoto_imana('SUIT:normalise_dartel')
+        sn = subj_id; %subjNum
+        vararginoptions(varargin, 'sn');
         
-        subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
-        suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
-        mkdir(suit_subj_dir)
-        
-        cd(suit_subj_dir)
-        job.subjND.gray       = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
-        job.subjND.white      = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg2.nii', subj_str{s}))};
-        job.subjND.isolation  = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_pcereb.nii', subj_str{s}))};
-        suit_normalize_dartel(job);
-        
-    case 'SUIT:reslice'            %reslice cerebellum into suit space to check normalization
-        % 'suit_normalise_dartel'.
-        % example: nishimoto_imana('SUIT:reslice','anatomical','pcereb')
+        for s = sn
+            suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
+            mkdir(suit_subj_dir)
+            
+            cd(suit_subj_dir)
+            job.subjND.gray       = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
+            job.subjND.white      = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg2.nii', subj_str{s}))};
+            job.subjND.isolation  = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_pcereb_corr.nii', subj_str{s}))};
+            suit_normalize_dartel(job);
+        end % s (subjects)    
+    case 'SUIT:reslice'            % Reslice stuff into suit space 
+        % run the case with 'anatomical' to check the suit normalization
+        % Example usage: nishimoto_imana('SUIT:reslice','type','ResMS', 'mask', 'pcereb_corr')
         % make sure that you reslice into 2mm^3 resolution
         
-
-        type=varargin{1}; % 'betas' or 'contrast' or 'ResMS' or 'cerebellarGrey' or 'anatomical'
-        mask=varargin{2}; % 'cereb_prob_corr_grey' or 'cereb_prob_corr' or 'dentate_mask' or 'pcereb'
-        subjs=length(subj_str);
-        for s=1:subjs
+        sn   = subj_id;
+        type = 'anatomical';  % 'betas' or 'con' or 'ResMS' or 'cerebellarGrey' or 'anatomical'
+        mask = 'pcereb_corr'; % 'cereb_prob_corr_grey' or 'cereb_prob_corr' or 'dentate_mask' or 'pcereb'
+        glm  = 1;             % glm number. Used for reslicing betas and contrasts 
+        
+        vararginoptions(varargin, {'sn', 'type', 'mask', 'glm'})
+        
+        for s = sn
+            suit_dir = fullfile(base_dir, subj_str{s}, 'suit', 'anat');
             switch type
                 case 'anatomical'
-                    subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
+                    subj_dir = suit_dir;
                     % Get the name of the anatpmical image
-                    anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s});
-                    J.channel.vols     = {fullfile(subj_dir,sprintf('%s,1', anat_name))};
-                    source=dir(fullfile(subj_dir,sprintf('%s', anat_name))); % images to be resliced
-                    cd(subj_dir);
+                    files2map = sprintf('%s_T1w_lpi.nii', subj_str{s});
+                    
+                    job.subj.resample = {sprintf('%s,1', files2map)};                 
+                case 'con'
+                    subj_dir     = fullfile(base_dir, subj_str{s}, 'estimates', sprintf('glm%02d', glm), 'ses-01');
+                    out_dir      = fullfile(base_dir, subj_str{s}, 'suit',sprintf('glm%02d',glm));
+                    files2map    = dir(fullfile(subj_dir,sprintf('*con*'))); % find images to be resliced
+                    
+                    job.subj.resample     = {files2map.name};
+                case 'ResMS'
+                    subj_dir     = fullfile(base_dir, subj_str{s}, 'estimates', sprintf('glm%02d', glm), 'ses-01');
+                    out_dir      = fullfile(base_dir, subj_str{s}, 'suit',sprintf('glm%02d',glm));
+                    files2map    = dir(fullfile(subj_dir,sprintf('*ResMS*'))); % find images to be resliced
+                    
+                    job.subj.resample     = {files2map.name};
+                    
             end
-            job.subj.affineTr = {fullfile(subj_dir,sprintf('Affine_c_%s_T1w_lpi_seg1.mat', subj_str{s}))};
-            job.subj.flowfield= {fullfile(subj_dir,sprintf('u_a_c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
-            job.subj.resample = {source.name};
-            job.subj.mask     = {fullfile(subj_dir, sprintf('c_%s_T1w_lpi_pcereb.nii', subj_str{s}))};
-            job.vox           = [2 2 2];
+            
+            cd(subj_dir);
+            job.subj.affineTr  = {fullfile(suit_dir,sprintf('Affine_c_%s_T1w_lpi_seg1.mat', subj_str{s}))};
+            job.subj.flowfield = {fullfile(suit_dir,sprintf('u_a_c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
+            job.subj.mask      = {fullfile(suit_dir, sprintf('c_%s_T1w_lpi_%s.nii', subj_str{s}, mask))};
+            job.vox            = [2 2 2];
             suit_reslice_dartel(job);
-            fprintf('- Resliced %s anatomical to SUIT\n', subj_str{s});
+            
+            if ~strcmp(type,'anatomical')
+                source=fullfile(subj_dir, '*wd*');
+                dircheck(fullfile(out_dir));
+                movefile(source,out_dir);
+            end
+            fprintf('- Resliced %s %s to SUIT\n', subj_str{s}, type);
+        end % s (subject)
+    case 'SUIT:map2flat'           % Creates flatmaps
+        % this case also creates group average for each task
+        % Example usage: nishimoto_imana('SUIT:map2flat')
+        
+        sn   = subj_id;
+        glm  = 1;
+        type = 'con'; % type of the image to be mapped to flatmap
+        group = 1;  % if this flag is set to 1, it bypasses the step that creates gifti files for each subject
+        
+        vararginoptions(varargin, {'sn', 'glm', 'type', 'group'});
+        
+        for s = sn
+            suit_dir = fullfile(base_dir, subj_str{s}, 'suit', sprintf('glm%02d', glm));
+            % file containing the giftis for the current subject
+            filename{s} = fullfile(suit_dir, sprintf('%s.w%s.cerebellum.func.gii', subj_str{s}, type));
+            
+            switch type
+                case 'con'
+                    % get all the contrasts
+                    files2map = dir(fullfile(suit_dir, sprintf('wd%s*', type)));
+            end
+            
+            % map the files
+            %%% first get the names
+            for i= 1:length(files2map)
+                name{i} = fullfile(suit_dir, files2map(i).name);
+                column_names{i} = files2map(i).name(7:end-4);
+            end
+            
+            if group ~=1
+                maps = suit_map2surf(name, 'stats', 'nanmean' );
+                        
+                % map ResMS (will be used for univariate prewhitening)
+                mapResMS = suit_map2surf(fullfile(suit_dir, 'wdResMS.nii'), 'stats', 'nanmean');
+                
+                % do univariate prewhitening
+                data    = bsxfun(@rdivide, maps, mapResMS);
+                
+                % create one single gifti file containing all the contrasts
+                G = surf_makeFuncGifti(data,'anatomicalStruct', 'Cerebellum', 'columnNames', column_names);
+                
+                % save the single gifti file
+                %%% a cell array containing the filenames.
+                %%% will be used in creating group maps and summary
+                save(G, filename{s});
+                fprintf('- Done %s %s map2flat\n', subj_str{s}, type);                
+            end % if not group  
+        end % s (subject)
+        
+        % create group and group summary
+        if group == 1
+            suit_group_dir = fullfile(base_dir, 'suit', sprintf('glm%02d', glm), 'group');dircheck(suit_group_dir);
+            cd(suit_group_dir)
+            outfilenames    = fullfile(suit_group_dir, sprintf('w%ss.glm%02d.Cerebellum.func.gii', type, glm));
+            summaryname     = fullfile(suit_group_dir,sprintf('wgroup.%s.glm%02d.func.gii', type, glm));
+            surf_groupGiftis(filename, 'outfilenames', {outfilenames}, 'groupsummary', summaryname, 'replaceNaNs', 1);
         end
+        
+        
 end
 
 end
