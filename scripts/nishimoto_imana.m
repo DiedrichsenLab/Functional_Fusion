@@ -1203,8 +1203,7 @@ switch what
             
             save(GG, out_file);
         end % h (hemisphere)
-        
-        
+               
     case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
         % Example usage: nishimoto_bids_imana('SUIT:isolate_segment', 'sn', 1);
         
@@ -1302,6 +1301,10 @@ switch what
         end % s (subject)
     case 'SUIT:map2flat'           % Creates flatmaps
         % this case also creates group average for each task
+        % First RUN nishimoto_imana('SUIT:map2flat', 'group', 0) to get the
+        % gifti file for all the contrasts for each subject
+        % Then RUN nishimoto_imana('SUIT:map2flat', 'group', 1) to get the
+        % group summaries
         % Example usage: nishimoto_imana('SUIT:map2flat')
         
         sn    = subj_id;
