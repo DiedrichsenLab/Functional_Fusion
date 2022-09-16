@@ -1304,10 +1304,10 @@ switch what
         % this case also creates group average for each task
         % Example usage: nishimoto_imana('SUIT:map2flat')
         
-        sn   = subj_id;
-        glm  = 1;
-        type = 'con'; % type of the image to be mapped to flatmap
-        group = 1;  % if this flag is set to 1, it bypasses the step that creates gifti files for each subject
+        sn    = subj_id;
+        glm   = 1;
+        type  = 'con'; % type of the image to be mapped to flatmap
+        group = 1;     % if this flag is set to 1, it bypasses the step that creates gifti files for each subject
         
         vararginoptions(varargin, {'sn', 'glm', 'type', 'group'});
         
@@ -1323,12 +1323,14 @@ switch what
             end
             
             % map the files
-            %%% first get the names
+            %%% get file paths and names of contrasts
             for i= 1:length(files2map)
                 name{i} = fullfile(suit_dir, files2map(i).name);
                 column_names{i} = files2map(i).name(7:end-4);
-            end
+            end % i (contrast names)
             
+            % if the subj specific gifti files have not been created, then
+            % create them
             if group ~=1
                 maps = suit_map2surf(name, 'stats', 'nanmean' );
                         
