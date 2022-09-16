@@ -1353,9 +1353,8 @@ switch what
         if group == 1
             suit_group_dir = fullfile(base_dir, 'suit', sprintf('glm%02d', glm), 'group');dircheck(suit_group_dir);
             cd(suit_group_dir)
-            outfilenames    = fullfile(suit_group_dir, sprintf('w%ss.glm%02d.Cerebellum.func.gii', type, glm));
             summaryname     = fullfile(suit_group_dir,sprintf('wgroup.%s.glm%02d.func.gii', type, glm));
-            surf_groupGiftis(filename, 'outfilenames', {outfilenames}, 'groupsummary', summaryname, 'replaceNaNs', 1);
+            surf_groupGiftis(filename, 'groupsummary', summaryname, 'replaceNaNs', 1, 'outcolnames', subj_str);
         end
         
         
