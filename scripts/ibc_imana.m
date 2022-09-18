@@ -911,11 +911,13 @@ switch what
                     J.sess(run).scans = N; % scans in the current runs
                     
                     % get the path to the tsv file
-                    % tsv_path = fullfile(base_dir, subj_str{s}, func_dir);
-                    % get the tsvfile for the current run
-                    D = dload(fullfile(raw_sess_dir, ...
+                    tsv_file = fullfile(raw_sess_dir, ...
                         sprintf('%s_%s_run-%02d_events.tsv', ...
-                        subj_str{s}, string(ss), run)));
+                        subj_str{s}, string(ss), run))
+                    % get the tsvfile for the current run
+                    
+                    D = tdfread(tsv_file,'\t')
+                    %D = dload();
                                         
                     % loop over trials within the current run and build up
                     % the design matrix
