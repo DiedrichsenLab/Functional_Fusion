@@ -863,43 +863,59 @@ switch what
         
         
         % get the info file that specifies the order of the tasks
-        Dd = dload(fullfile(base_dir, 'tasks_info.tsv'));
+        % Dd = dload(fullfile(base_dir, 'tasks_info.tsv'));
         
         for s = sn
-            func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
+            funcraw_subj_dir = fullfile(base_dir, raw_dir, subj_str{s}, ...
+                func_dir);
+            funcderiv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s}, func_dir);
+            listing1 = dir(funcderiv_subj_dir);
+            sessions = {listing1.name};
+            sessions = sessions(startsWith(sessions, 'ses-'));
             % loop over runs
-%             for ss = [1, 2]
-                % create a directory to save the design
-                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
-                dircheck(subj_est_dir)
+            for ss = sessions
+                raw_sess_dir = fullfile(funcraw_subj_dir, string(ss));
+                deriv_sess_dir = fullfile(funcderiv_subj_dir, string(ss));
                 
                 T = []; % task/condition + session + run info
                 J = []; % structure with SPM fields to make the design
                 
-                J.dir            = {subj_est_dir};
+                % dir to save the design
+                J.dir            = {deriv_sess_dir};
                 J.timing.units   = 'secs';
                 J.timing.RT      = 2.0;
                 J.timing.fmri_t  = 16;
                 J.timing.fmri_t0 = 1;
                 
                 % get the list of runs for the current session
-                runs = run_list{ses};
+                listing2 = dir(deriv_sess_dir);
+                runs = {listing2.name};
+                runs = runs(startsWith(runs, 'rsub-'));
                 
                 % loop through runs within the current sessions
                 itaskUni = 0;
                 for run = 1:length(runs)
-                    
+                    fname = fullfile(deriv_sess_dir, ...
+                        sprintf('%s%s_%s_run-%02d_bold.nii', prefix, ...
+                        subj_str{s}, string(ss), run));
+                    V = niftiinfo(fname);
+                    numTRs = V.ImageSize(4);
 %                   % fill in nifti image names for the current run
                     N = cell(numTRs - numDummys, 1); % preallocating!
                     for i = 1:(numTRs-numDummys)
-                        N{i} = fullfile(func_subj_dir, sprintf('%s%s_ses-%02d_run-%02d.nii, %d', prefix, subj_str{s}, ses, run, i));
+                        N{i} = fullfile(deriv_sess_dir, ...
+                            sprintf('%s%s_%s_run-%02d_bold.nii, %d', ...
+                            prefix, subj_str{s}, string(ss), run, i));
                     end % i (image numbers)
                     J.sess(run).scans = N; % scans in the current runs
                     
                     % get the path to the tsv file
-                    tsv_path = fullfile(base_dir, subj_str{s}, func_dir);
+                    % tsv_path = fullfile(base_dir, subj_str{s}, func_dir);
                     % get the tsvfile for the current run
-                    D = dload(fullfile(tsv_path, sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ses, run)));
+                    D = dload(fullfile(raw_sess_dir, ...
+                        sprintf('%s_%s_run-%02d_events.tsv', ...
+                        subj_str{s}, string(ss), run)));
                                         
                     % loop over trials within the current run and build up
                     % the design matrix
@@ -966,7 +982,7 @@ switch what
                 
                 dsave(fullfile(J.dir{1},sprintf('%s_ses-%02d_reginfo.tsv', subj_str{s}, ses)), T);
                 fprintf('- estimates for glm_%d session %d has been saved for %s \n', glm, ses, subj_str{s});
-%             end % ss (session)          
+            end % ss (session)          
         end % sn (subject)
 
     case 'GLM:design2_all'  % make the design matrix for the glm
