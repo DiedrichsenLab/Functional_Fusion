@@ -996,27 +996,31 @@ switch what
             freesurfer_registerXhem(subj_str(s), fs_dir,'hemisphere', [1 2]); % For debug... [1 2] orig
         end % s (sn)
         
-    case 'SURF:map_ico'        % Align to the new atlas surface (map icosahedron)
-        % Resampels a registered subject surface to a regular isocahedron
+    case 'SURF:map_ico' % Align to the new atlas surface (map icosahedron)
+        % Resamples a registered subject surface to a regular isocahedron
         % This allows things to happen in atlas space - each vertex number
         % corresponds exactly to an anatomical location
-        % Makes a new folder, called ['x' subj] that contains the remapped subject
+        % Makes a new folder, called ['x' subj] that contains the 
+        % remapped subject
         % Uses function mri_surf2surf
         % mri_surf2surf: resamples one cortical surface onto another
-        % Example usage: nishimoto_imana('SURF:map_ico', 'sn', 95)
+        % Example usage: 
+        % ibc_imana('SURF:map_ico', 'sn', [1, 2, 3, 4, 5, 6])
         
         sn = subj_id; % list of subjects
         
         vararginoptions(varargin, {'sn'});
         
         % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'FreeSurfer');
+        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
         for s = sn
             fprintf('- map_ico %s\n', subj_str{s});
-            freesurfer_mapicosahedron_xhem(subj_str{s}, fs_dir ,'smoothing',1,'hemisphere',[1, 2]);
+            freesurfer_mapicosahedron_xhem(subj_str{s}, fs_dir, ...
+                'smoothing',1,'hemisphere',[1, 2]);
         end % s (sn)
-    case 'SURF:fs2wb'          % Resampling subject from freesurfer fsaverage to fs_LR
-        % Example usage: nishimoto_imana('SURF:fs2wb', 'sn', [1], 'res', 32)
+        
+    case 'SURF:fs2wb' % Resampling subject from freesurfer fsaverage to fs_LR
+        % Example usage: ibc_imana('SURF:fs2wb', 'sn', [1], 'res', 32)
         
         sn   = subj_id; % list of subjects
         res  = 32;          % resolution of the atlas. options are: 32, 164
@@ -1025,14 +1029,18 @@ switch what
         vararginoptions(varargin, {'sn', 'res', 'hemi'});
         
         % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'FreeSurfer');
+        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
+        % set output directory
+        wb_subj_dir  = fullfile(base_dir, wb_dir, 'data');
         
         for s = sn 
             fprintf('- fs2wb %s\n', subj_str{s});
-            wb_subj_dir  = fullfile(base_dir, subj_str{s}, wb_dir);
-            dircheck(wb_subj_dir)
-            surf_resliceFS2WB(subj_str{s}, fs_dir, wb_subj_dir, 'hemisphere', hemi, 'resolution', sprintf('%dk', res))
+            fs_subj_dir = fullfile(fs_dir, subj_str{s});
+            surf_resliceFS2WB(subj_str{s}, fs_dir, ...
+                wb_subj_dir, 'hemisphere', hemi, 'resolution', ...
+                sprintf('%dk', res))
         end % s (sn)
+
     case 'SURF:run_all'
         % Example usage: nishimoto_imana('SURF:run_all')
         nishimoto_imana('SURF:reconall')
