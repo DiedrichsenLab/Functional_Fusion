@@ -1339,6 +1339,8 @@ switch what
                         
                 % map ResMS (will be used for univariate prewhitening)
                 mapResMS = suit_map2surf(fullfile(suit_dir, 'wdResMS.nii'), 'stats', 'nanmean');
+                Gres = surf_makeFuncGifti(mapResMS,'anatomicalStruct', 'Cerebellum', 'columnNames', {'ResMS'});
+                save(Gres, fullfile(suit_dir, sprintf('%s.ResMS.cerebellum.func.gii', subj_str{s})));
                 
                 % do univariate prewhitening
                 data    = bsxfun(@rdivide, maps, mapResMS);
