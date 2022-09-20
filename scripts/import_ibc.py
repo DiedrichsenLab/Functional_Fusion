@@ -6,7 +6,7 @@ Script to transfer IBC data from Drago to CBS
 Author: Ana Luisa Pinho
 
 Created: April 2022
-Last update: August 2022
+Last update: September 2022
 """
 
 import os
@@ -363,28 +363,34 @@ def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
 def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
     session = df1[df1[sub].values == sname].index.values[0]
     ifolder = os.path.join(target_derivatives, sub, 'estimates', session)
+    subject_no = sub[4:]
+    sess_no = session[4:]
     if not os.path.exists(ifolder):
         os.makedirs(ifolder)
     else:
-        if not glob.glob(ifolder + '/*.tsv'):
+        if glob.glob(ifolder + '/*.tsv'):
             for ng in glob.glob(ifolder + '/*.tsv'):
                 os.remove(ng)
     run_numbers = df2[df2.session == sname].srun.values
     task_names = df2[df2.session == sname].task.values
-    sessinfo = np.empty((0, 4))
-    for rnum, tname in zip(run_numbers, task_names):
+    n_repetitions = df2[df2.session == sname].nrep.values
+    sessinfo = np.empty((0, 7))
+    for rnum, tname, n_rep in zip(run_numbers, task_names, n_repetitions):
         if sub == 'sub-11' and rnum == 6 and \
            tname == 'PreferencePaintings':
             tname = 'PreferenceFaces'
         condition_names = df3[df3.task == tname].condition.tolist()
         reg_numbers = df3[df3.task == tname].regressor.tolist()
-        rnum_rep = np.repeat(rnum, len(condition_names)).tolist()
+        sub_rep = np.repeat(subject_no, len(condition_names)).tolist()
+        sess_rep = np.repeat(subject_no, len(condition_names)).tolist()
+        rnum_rep = np.repeat(sess_no, len(condition_names)).tolist()
         tname_rep = np.repeat(tname, len(condition_names)).tolist()
-        rstack = np.vstack((rnum_rep, tname_rep, condition_names,
-                            reg_numbers)).T
+        nrep_rep = np.repeat(n_rep, len(condition_names)).tolist()
+        rstack = np.vstack((sub_rep, sess_rep, rnum_rep, tname_rep,
+                            condition_names, reg_numbers, nrep_rep)).T
         sessinfo = np.vstack((sessinfo, rstack))
-    dff = pd.DataFrame(sessinfo, columns = ['run','task_name','cond_name',
-                                            'reg_num'])
+    dff = pd.DataFrame(sessinfo, columns = ['sn', 'sess', 'run', 'task_name',
+                                            'cond_name', 'reg_num', 'n_rep'])
     dff_fname = sub + '_' + session + '_reginfo.tsv'
     dff_path = os.path.join(ifolder, dff_fname)
     dff.to_csv(dff_path, sep='\t', index=False)
@@ -392,16 +398,13 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 
 # ############################### INPUTS ###############################
 
-# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
-# subjects_numbers = [12, 13, 14, 15]
-
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 # session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
 #                  'clips4', 'lyon1', 'lyon2', 'mathlang',
 #                  'spatial-navigation']
-session_names = ['spatial-navigation']
 
 
 # ############################# PARAMETERS #############################
@@ -442,8 +445,8 @@ if __name__ == "__main__":
 
         for session_name in session_names:
             ## Import raw EPI ##
-            source_funcdata(subject, session_name, drago_sourcedata,
-                            cbs_sourcedata, dfm, dfs)
+            # source_funcdata(subject, session_name, drago_sourcedata,
+            #                 cbs_sourcedata, dfm, dfs)
 
             ## Import normalized-EPI ##
             # wepi(subject, session_name, drago_derivatives, cbs_derivatives,
@@ -453,8 +456,8 @@ if __name__ == "__main__":
             # compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
 
             ## Import paradigm descriptors ##
-            source_funcdata(subject, session_name, drago_sourcedata,
-                            cbs_sourcedata, dfm, dfs, data_type='events.tsv')
+            # source_funcdata(subject, session_name, drago_sourcedata,
+            #                 cbs_sourcedata, dfm, dfs, data_type='events.tsv')
 
             ## Import derivatives ##
             # transfer_estimates(subject, session_name, drago_derivatives,
