@@ -1,4 +1,4 @@
-session	srun	task	phase	tr
+session	srun	task	phase	nrep
 archi	1	ArchiStandard	pa	156
 archi	2	ArchiSpatial	pa	252
 archi	3	ArchiSocial	pa	262
