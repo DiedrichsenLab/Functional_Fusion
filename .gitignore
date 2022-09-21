@@ -112,6 +112,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# Packages in path
+SUITPy/
+surfAnalysisPy/
+
 # Spyder project settings
 .spyderproject
 .spyproject
