@@ -293,9 +293,11 @@ switch what
             % loop over sessions
             for ss = [1, 2]
                 % get the session name
-                ses_name = sess{ss};
+%                 ses_name = sess{ss};
                 % get the functional scans for the session
-                fun_scans = dir(sprintf('%s*-%s*bold.nii', subj_str{s}, ses_name));
+%                 fun_scans = dir(sprintf('%s*-%s*bold.nii', subj_str{s}, ses_name));
+                fun_scans = dir(sprintf('%s_ses-02_run*.nii', subj_str{s}));
+                
                 
                 % loop over functional scans and rename
                 for i = 1:length(fun_scans)
@@ -304,11 +306,11 @@ switch what
                     des_filename = sprintf('%s_ses-%02d_run-%02d.nii', subj_str{s}, ss, run_list{ss}(i));
                     movefile(src_filename,fullfile(func_subj_dir, des_filename))
                     
-%                     % change the names of the tsv files
-%                     %%% get the run id
-%                     tsv_source = sprintf('%s_task-%s_run-%02d_events.tsv', subj_str{s}, ses_name, i);
-%                     tsv_dest = sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ss, run_list{ss}(i));
-%                     movefile(fullfile(func_subj_dir, tsv_source), fullfile(func_subj_dir, tsv_dest))
+                    % change the names of the tsv files
+                    %%% get the run id
+                    tsv_source = sprintf('%s_task-%s_run-%02d_events.tsv', subj_str{s}, ses_name, i);
+                    tsv_dest = sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ss, run_list{ss}(i));
+                    movefile(fullfile(func_subj_dir, tsv_source), fullfile(func_subj_dir, tsv_dest))
                 end % i (runs within a scan)
             end % ss (session)
         end % sn (subjects)    
@@ -585,14 +587,14 @@ switch what
 %                   % fill in nifti image names for the current run
                     N = cell(numTRs - numDummys, 1); % preallocating!
                     for i = 1:(numTRs-numDummys)
-                        N{i} = fullfile(func_subj_dir, sprintf('%s%s_ses-%02d_run-%02d.nii, %d', prefix, subj_str{s}, ses, run, i));
+                        N{i} = fullfile(func_subj_dir, sprintf('%s%s_ses-%02d_run-%02d.nii, %d', prefix, subj_str{s}, ses, runs(run), i));
                     end % i (image numbers)
                     J.sess(run).scans = N; % scans in the current runs
                     
                     % get the path to the tsv file
                     tsv_path = fullfile(base_dir, subj_str{s}, func_dir);
                     % get the tsvfile for the current run
-                    D = dload(fullfile(tsv_path, sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ses, run)));
+                    D = dload(fullfile(tsv_path, sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ses, runs(run))));
                                         
                     % loop over trials within the current run and build up
                     % the design matrix
@@ -603,13 +605,13 @@ switch what
                         % this line is necessary as there are some
                         % conditions with more than 1 repetition
                         idx = strcmp(D.trial_type, Dd.task_name{ic});
-                        fprintf('* %d instances found for condition %s in run %02d\n', sum(idx), Dd.task_name{ic}, run)
+                        fprintf('* %d instances found for condition %s in run %02d\n', sum(idx), Dd.task_name{ic}, runs(run))
                         
                         %
                         % filling in "reginfo"
                         TT.sn        = s;
                         TT.sess      = ses;
-                        TT.run       = run;
+                        TT.run       = runs(run);
                         TT.task_name = Dd.task_name(ic);
                         TT.task      = ic;
                         TT.taskUni   = itaskUni;
@@ -655,7 +657,7 @@ switch what
                 J.cvi_mask         = {fullfile(func_subj_dir,'rmask_gray.nii')};
                 J.cvi              =  'fast';
                 
-                spm_rwls_run_fmri_spec(J);
+%                 spm_rwls_run_fmri_spec(J);
                 
                 dsave(fullfile(J.dir{1},sprintf('%s_ses-%02d_reginfo.tsv', subj_str{s}, ses)), T);
                 fprintf('- estimates for glm_%d session %d has been saved for %s \n', glm, ses, subj_str{s});
@@ -911,9 +913,9 @@ switch what
         %%% Calculating contrast images.
         % 'SPM_light' is created in this step (xVi is removed as it slows
         % down code for FAST GLM).
-        % Example1: nishimoto_imana('GLM:F_contrast', 'sn', 1, 'glm', 1, 'ses', 1)
+        % Example1: nishimoto_imana('GLM:F_contrast', 'sn', 1, 'glm', 1, 'ses', 2)
         
-        sn       = returnSubjs;   %% list of subjects
+        sn       = subj_id;   %% list of subjects
         ses      = 2;
         glm      = 1;             %% The glm number
         
@@ -927,17 +929,17 @@ switch what
             
             SPM  = rmfield(SPM,'xCon');
             cd(fullfile(glm_dir))
-            T    = load(fullfile(glm_dir, sprintf('%s_%s_reginfo.tsv', subj_str{s}, ses_str{ses})));
+            T    = dload(fullfile(glm_dir, sprintf('%s_%s_reginfo.tsv', subj_str{s}, ses_str{ses})));
             
             % F contrast
-            numConds = max(T.cond); 
+            numConds = max(T.task); 
             con = zeros(numConds,size(SPM.xX.X,2));
             for i=1:numConds
-                con(i,T.cond==i)=1-1/numConds;
-                con(i,T.cond>0 & T.cond~=i)=-1/numConds;
+                con(i,T.task==i)=1-1/numConds;
+                con(i,T.task>0 & T.task~=i)=-1/numConds;
             end
             
-            SPM.xCon(1) = spm_FcUtil('Set',name, 'F', 'c',con',SPM.xX.xKXs);
+            SPM.xCon(1) = spm_FcUtil('Set', 'Fcon', 'F', 'c',con',SPM.xX.xKXs);
             SPM = spm_contrasts(SPM,1:length(SPM.xCon));
             save('SPM.mat', 'SPM','-v7.3');
             SPM = rmfield(SPM,'xVi'); % 'xVi' take up a lot of space and slows down code!
@@ -1077,7 +1079,7 @@ switch what
         nishimoto_imana('SURF:fs2wb', 'sn', sn);
     case 'SURF:vol2surf'       % Mapping volumetric data to surface
         % first univariately whiten data and then map to surface
-        % Example usage: nishimoto_imana('SURF:vol2surf', 'sn', 1)
+        % Example usage: nishimoto_imana('SURF:vol2surf', 'sn', 1, 'group', 0)
         
         sn             = subj_id;        % subjects list
         ses            = 1;              % task number
@@ -1085,124 +1087,83 @@ switch what
         type           = 'con';          % type of data to be mapped. Options are: 'con', 'beta'
         baseline       = 'rest';         % contrast will be calculated against base (available options: 'rest')
         kernel         = 1;              % smoothing kernel 
+        group          = 1;
         
-        vararginoptions(varargin, {'sn', 'glm', 'ses', 'baseline', 'type', 'kernel'})
+        vararginoptions(varargin, {'sn', 'glm', 'ses', 'baseline', 'type', 'kernel', 'group'})
         
-        for s = sn
-
-            % get directory where subject surfaces are saved
-            surf_dir = fullfile(base_dir, wb_dir, 'data', subj_str{s});
-            dircheck(surf_dir)
-            
-            glm_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses));
-
-            % get the info tsv file
-            T = dload(fullfile(glm_dir, sprintf('%s_ses-%02d_reginfo.tsv', subj_str{s}, ses)));
-
-            switch type
-                case 'con'
-                    % get the info tsv file
-                    T = dload(fullfile(glm_dir, sprintf('%s_ses-%02d_reginfo.tsv', subj_str{s}, ses)));
-                    % get the unique task/condition names
-                    %%% task_names variable will be used to set the column
-                    %%% names in the gifti file
-                    %%% files2map is created using task_names and contains
-                    %%% the names of the files corresponding to tasks
-                    names = unique(T.task_name, 'stable');
-                    files2map = cellfun(@(name) sprintf('con_%s-%s.nii', name, baseline), names, 'UniformOutput', false);
-                case 'beta'
-                    files = dir(fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses), 'beta*.nii'));
-                    files2map = cat(1, {files(:).name});
-                    names = string(1:length(files2map));
-            end % switch type
-            
-            % loop over hemispheres
-            for h = 1:2 
+        % loop over hemispheres
+        for h = 1:2
+            for s = sn
                 
-                fprintf('- Transforming %s for %s hemi %s\n', type, subj_str{s}, hem{h});
+                % get directory where subject surfaces are saved
+                surf_dir = fullfile(base_dir, wb_dir, sprintf('glm%02d', glm), subj_str{s});
+                dircheck(surf_dir);
+                glm_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses));
+                
+                % file containing the giftis for the current subject
+                filename{s} = fullfile(surf_dir, sprintf('%s.w%s-%s.ses-%02d.%s.func.gii', subj_str{s}, type, baseline, ses, hem{h}));
                 
                 white   = fullfile(base_dir, wb_dir, 'data', subj_str{s}, sprintf('%s.%s.white.32k.surf.gii', subj_str{s}, hem{h}));
                 pial    = fullfile(base_dir, wb_dir, 'data', subj_str{s}, sprintf('%s.%s.pial.32k.surf.gii', subj_str{s}, hem{h}));
                 C1      = gifti(white);
-                C2      = gifti(pial);
+                C2      = gifti(pial);% map the files
                 
-                for f = 1:length(files2map)
+                switch type
+                    case 'con'
+                        % get all the contrasts
+                        files2map = dir(fullfile(glm_dir, sprintf('con_*-%s.nii', baseline)));
+                    case 'beta'
+                        files = dir(fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses), 'beta*.nii'));
+                        files2map = cat(1, {files(:).name});
+                        names = string(1:length(files2map));
+                end % switch type
+                %%% get file paths and names of contrasts
+                for i= 1:length(files2map)
+                    name{i} = fullfile(glm_dir, files2map(i).name);
+                    column_names{i} = files2map(i).name(5:end-4);
+                end % i (contrast names)
+                
+                
+                % % if the subj specific gifti files have not been created, then
+                % create them
+                if group ~=1
+                    fprintf('- Transforming %s for %s hemi %s\n', type, subj_str{s}, hem{h});
+                    maps = surf_vol2surf(C1.vertices, C2.vertices, name, 'column_names', column_names, ...
+                        'anatomicalStruct', hemName{h});
                     
-                    fprintf('%d.', f);
-                    % get the name of the task
-                    column_name{f}  = names{f};
+                    % map ResMS (will be used for univariate prewhitening)
+                    Gres = surf_vol2surf(C1.vertices, C2.vertices, {fullfile(glm_dir, 'ResMS.nii')}, ...
+                        'anatomicalStruct', hemName{h});
                     
-                    % get the image that is to be mapped
-                    images{1} = fullfile(glm_dir, files2map(f));
-                    G         = surf_vol2surf(C1.vertices, C2.vertices, images{1}, 'column_names', column_name, ...
-                                             'anatomicalStruct', hemName{h});
-                                            
-                    % get the ResMS image and transform to surface
-                    ResMsImage{1} = fullfile(glm_dir, 'ResMS.nii');
-                    G_ResMs       = surf_vol2surf(C1.vertices, C2.vertices, ResMsImage{1}, 'column_names', {'ResMS'}, ...
-                                                  'anatomicalStruct', hemName{h});
-                                              
-                    % univariate prewhitening
-                    surf_dat(:, f)   = G.cdata ./ sqrt(G_ResMs.cdata);
-                    surf_dat(:, length(files2map)+1) = G_ResMs.cdata;
-                    column_name{length(files2map)+1} = 'ResMS';
-                end % files2map
-                
-                fprintf('\n');
-                
-                % save the single giftli
-                out_dir = fullfile(base_dir, wb_dir, sprintf('glm%02d', glm), subj_str{s});
-                dircheck(out_dir)
-                out_file = fullfile(out_dir, sprintf('%s.w%s.%s.32k.func.gii', subj_str{s}, type, hem{h}));
-                
-                G_all    = surf_makeFuncGifti(surf_dat,'anatomicalStruct',hemName{h},'columnNames', column_name);
-                save(G_all, out_file);
-                
-                % smooth the single gifti
-                atlas_dir = fullfile(base_dir, 'fs_LR_32');
-                surf_file = fullfile(atlas_dir, sprintf('fs_LR.32k.%s.inflated.surf.gii',hem{h}));
-                surf_smooth(out_file,'surf',surf_file,'kernel',kernel); % smooth outfilenames - it will prefix an 's'
-            end % hemisphere
-        end % s (subjects)
-    case 'SURF:group'          % Calculate average across subjects  
-        % for each contrast calculates the group map and create a single
-        % gifti file
-        % Example usage: nishimoto_imana('SURF:group')
-        sn             = subj_id;        % subjects list
-        ses            = 1;              % task number
-        glm            = 1;              % glm number
-        type           = 'con';          % type of data to be mapped. Options are: 'con', 'beta'
-        smooth         = 's';            % use the smoothes files or no ('', pass on an empty string for non-smoothed)
-        baseline       = 'rest';         % contrast will be calculated against base (available options: 'rest')
-        
-        vararginoptions(varargin, {'sn', 'glm', 'ses', 'baseline', 'type', 'smooth'})
-        
-        for h = 1:2
-            for s = sn
-                
-                fprintf('- Getting %s hemi %s\n', subj_str{s}, hem{h});
-                glm_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses));
-                % get the info tsv file
-                T = dload(fullfile(glm_dir, sprintf('%s_ses-%02d_reginfo.tsv', subj_str{s}, ses)));
-                % get the names of the conditions
-                names = unique(T.task_name, 'stable');
-                
-                surf_dir = fullfile(base_dir, wb_dir, sprintf('glm%02d', glm));
-
-                % get the gifti file for each subject
-                G = gifti(fullfile(surf_dir, subj_str{s}, sprintf('%s%s.w%s.%s.32k.func.gii', smooth, subj_str{s}, type, hem{h})));
-                
-                subs_g(:, :, s) = G.cdata(:, 1:end-1);
+                    % do univariate prewhitening
+                    data    = bsxfun(@rdivide, maps.cdata, Gres.cdata);
+                    
+                    % create one single gifti file containing all the contrasts
+                    data(:, length(files2map)+1) = Gres.cdata;
+                    column_names{length(files2map)+1} = 'ResMS';
+                    G = surf_makeFuncGifti(data,'anatomicalStruct', hemName{h}, 'columnNames', column_names);
+                    
+                    % save the single gifti file
+                    %%% a cell array containing the filenames.
+                    %%% will be used in creating group maps and summary
+                    save(G, filename{s});
+                    fprintf('- Done %s %s map2surf\n', subj_str{s}, type);
+                    % smooth the single gifti
+                    atlas_dir = fullfile(base_dir, 'fs_LR_32');
+                    atlas_file = fullfile(atlas_dir, sprintf('fs_LR.32k.%s.inflated.surf.gii',hem{h}));
+                    surf_smooth(filename{s},'surf',atlas_file,'kernel',kernel); % smooth outfilenames - it will prefix an 's'
+                end % if not group
             end % s (subjects)
             
-            group_dat = nanmean(subs_g, 3);
-            GG = surf_makeFuncGifti(group_dat,'anatomicalStruct',hemName{h},'columnNames', names);
-            
-            dircheck(fullfile(surf_dir, 'group'));
-            out_file = fullfile(surf_dir, 'group', sprintf('group.w%s.%s.32k.func.gii', type, hem{h}));
-            
-            save(GG, out_file);
-        end % h (hemisphere)
+            % create group and group summary
+            if group == 1
+                wb_group_dir = fullfile(base_dir, wb_dir, sprintf('glm%02d', glm), 'group');dircheck(wb_group_dir);
+                cd(wb_group_dir)
+                summaryname     = fullfile(wb_group_dir,sprintf('wgroup.%s-%s.ses-%02d.glm%02d.%s.func.gii', type, baseline, ses, glm, hem{h}));
+                surf_groupGiftis(filename, 'groupsummary', summaryname, 'replaceNaNs', 1, 'outcolnames', subj_str, 'outfilenamePattern', ['%s.', hem{h}, '.func.gii']);
+            end % if group
+        end % hemisphere
+        
                
     case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
         % Example usage: nishimoto_bids_imana('SUIT:isolate_segment', 'sn', 1);
@@ -1310,9 +1271,10 @@ switch what
         sn    = subj_id;
         glm   = 1;
         type  = 'con'; % type of the image to be mapped to flatmap
+        baseline = 'rest';
         group = 1;     % if this flag is set to 1, it bypasses the step that creates gifti files for each subject
         
-        vararginoptions(varargin, {'sn', 'glm', 'type', 'group'});
+        vararginoptions(varargin, {'sn', 'glm', 'type', 'group', 'baseline'});
         
         for s = sn
             suit_dir = fullfile(base_dir, subj_str{s}, 'suit', sprintf('glm%02d', glm));
@@ -1322,7 +1284,7 @@ switch what
             switch type
                 case 'con'
                     % get all the contrasts
-                    files2map = dir(fullfile(suit_dir, sprintf('wd%s*', type)));
+                    files2map = dir(fullfile(suit_dir, sprintf('wd%s*%s', type, baseline)));
             end
             
             % map the files
@@ -1340,12 +1302,13 @@ switch what
                 % map ResMS (will be used for univariate prewhitening)
                 mapResMS = suit_map2surf(fullfile(suit_dir, 'wdResMS.nii'), 'stats', 'nanmean');
                 Gres = surf_makeFuncGifti(mapResMS,'anatomicalStruct', 'Cerebellum', 'columnNames', {'ResMS'});
-                save(Gres, fullfile(suit_dir, sprintf('%s.ResMS.cerebellum.func.gii', subj_str{s})));
                 
                 % do univariate prewhitening
                 data    = bsxfun(@rdivide, maps, mapResMS);
                 
                 % create one single gifti file containing all the contrasts
+                data(:, length(files2map)+1) = Gres.cdata;
+                column_names{length(files2map)+1} = 'ResMS';
                 G = surf_makeFuncGifti(data,'anatomicalStruct', 'Cerebellum', 'columnNames', column_names);
                 
                 % save the single gifti file
