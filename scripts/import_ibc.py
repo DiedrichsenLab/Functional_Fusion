@@ -382,8 +382,8 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
         condition_names = df3[df3.task == tname].condition.tolist()
         reg_numbers = df3[df3.task == tname].regressor.tolist()
         sub_rep = np.repeat(subject_no, len(condition_names)).tolist()
-        sess_rep = np.repeat(subject_no, len(condition_names)).tolist()
-        rnum_rep = np.repeat(sess_no, len(condition_names)).tolist()
+        sess_rep = np.repeat(sess_no, len(condition_names)).tolist()
+        rnum_rep = np.repeat(rnum, len(condition_names)).tolist()
         tname_rep = np.repeat(tname, len(condition_names)).tolist()
         nrep_rep = np.repeat(n_rep, len(condition_names)).tolist()
         rstack = np.vstack((sub_rep, sess_rep, rnum_rep, tname_rep,
@@ -398,13 +398,13 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 
 # ############################### INPUTS ###############################
 
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
-session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-# session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-#                  'clips4', 'lyon1', 'lyon2', 'mathlang',
-#                  'spatial-navigation']
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+                 'clips4', 'lyon1', 'lyon2', 'mathlang',
+                 'spatial-navigation']
 
 
 # ############################# PARAMETERS #############################
