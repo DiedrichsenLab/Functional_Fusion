@@ -64,21 +64,21 @@ def import_anat(source_dir,dest_dir,anat_name,participant_id):
         except:
             print('skipping ' + src[i])
 
-def import_freesurfer(source_dir,dest_dir,old_id,new_id):
+def import_freesurfer(source_dir,dest_dir,new_id):
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     src=[]
     dest =[]
-    src.append(f'/{old_id}.L.pial.32k.surf.gii')
+    src.append(f'/lh.pial.surf.gii')
     dest.append(f'/{new_id}_space-32k_hemi-L_pial.surf.gii')
-    src.append(f'/{old_id}.L.white.32k.surf.gii')
+    src.append(f'/lh.white.surf.gii')
     dest.append(f'/{new_id}_space-32k_hemi-L_white.surf.gii')
-    src.append(f'/{old_id}.R.pial.32k.surf.gii')
+    src.append(f'/rh.pial.surf.gii')
     dest.append(f'/{new_id}_space-32k_hemi-R_pial.surf.gii')
-    src.append(f'/{old_id}.R.pial.32k.surf.gii')
+    src.append(f'/rh.pial.surf.gii')
     dest.append(f'/{new_id}_space-32k_hemi-R_white.surf.gii')
-    src.append(f'/{old_id}.L.sulc.32k.shape.gii')
+    src.append(f'/lh.sulc.shape.gii')
     dest.append(f'/{new_id}_space-32k_hemi-L_sulc.shape.gii')
-    src.append(f'/{old_id}.R.sulc.32k.shape.gii')
+    src.append(f'/rh.sulc.shape.gii')
     dest.append(f'/{new_id}_space-32k_hemi-R_sulc.shape.gii')
     for i in range(len(src)):
         try:
@@ -171,11 +171,17 @@ if __name__ == '__main__':
         # anat_name = 'anatomical'
         # import_suit(source_dir,dest_dir,anat_name,participant_id)
 
-        # --- Importing ANAT ---
-        source_dir = '{}/anatomicals/S{}'.format(base_dir, participant_id)
+        # # --- Importing ANAT ---
+        # source_dir = '{}/anatomicals/S{}'.format(base_dir, participant_id)
+        # dest_dir = '{}/derivatives/sub-{}/anat'.format(dest_base_dir, participant_id)
+        # anat_name = 'anatomical'
+        # import_anat(source_dir,dest_dir,anat_name,participant_id)
+
+        # --- Importing Freesurfer ---
+        source_dir = '{}/surfaceFreesurfer/S{}/surf'.format(base_dir, participant_id)
         dest_dir = '{}/derivatives/sub-{}/anat'.format(dest_base_dir, participant_id)
-        anat_name = 'anatomical'
-        import_anat(source_dir,dest_dir,anat_name,participant_id)
+        new_id = 'sub-{}'.format(participant_id)
+        import_freesurfer(source_dir,dest_dir,new_id)
 
 
 
