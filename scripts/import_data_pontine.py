@@ -168,30 +168,33 @@ def import_spm_designmatrix(source_dir,dest_dir,sub_id,sess_id):
 
 
 if __name__ == '__main__':
-    base_dir = '/Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/'
+    src_base_dir = '/Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/'
     dest_base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Pontine7T/'
     for participant_id in ['01', '03', '04', '07', '95', '96', '97', '98']:
 
         # # --- Importing SUIT ---
-        # source_dir = '{}/suit/anatomicals/S{}'.format(base_dir, participant_id)
+        # source_dir = '{}/suit/anatomicals/S{}'.format(src_base_dir, participant_id)
         # dest_dir = '{}/derivatives/sub-{}/suit'.format(dest_base_dir, participant_id)
         # anat_name = 'anatomical'
         # import_suit(source_dir,dest_dir,anat_name,participant_id)
 
         # # --- Importing ANAT ---
-        # source_dir = '{}/anatomicals/S{}'.format(base_dir, participant_id)
+        # source_dir = '{}/anatomicals/S{}'.format(src_base_dir, participant_id)
         # dest_dir = '{}/derivatives/sub-{}/anat'.format(dest_base_dir, participant_id)
         # anat_name = 'anatomical'
         # import_anat(source_dir,dest_dir,anat_name,participant_id)
 
-        # --- Importing Freesurfer ---
-        source_dir = '{}/surfaceFreesurfer/S{}/surf'.format(base_dir, participant_id)
+        # # --- Importing Freesurfer ---
+        # source_dir = '{}/surfaceFreesurfer/S{}/surf'.format(src_base_dir, participant_id)
+        # dest_dir = '{}/derivatives/sub-{}/anat'.format(dest_base_dir, participant_id)
+        # new_id = 'sub-{}'.format(participant_id)
+        # import_freesurfer(source_dir,dest_dir,new_id)
+
+        # --- Importing Estimates ---
+        source_dir = '{}/surfaceFreesurfer/S{}/surf'.format(src_base_dir, participant_id)
         dest_dir = '{}/derivatives/sub-{}/anat'.format(dest_base_dir, participant_id)
         new_id = 'sub-{}'.format(participant_id)
         import_freesurfer(source_dir,dest_dir,new_id)
 
 
-
-
-# Missing:
-# skipping /maskbrainSUITGrey.nii
+# /Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/GLM_firstlevel_2/S01/beta_0048.nii
