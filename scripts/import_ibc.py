@@ -6,7 +6,7 @@ Script to transfer IBC data from Drago to CBS
 Author: Ana Luisa Pinho
 
 Created: April 2022
-Last update: June 2022
+Last update: September 2022
 """
 
 import os
@@ -164,9 +164,11 @@ def source_funcdata(sub, sname, original_sourcepath, destination_sourcepath,
         if tk == 'RSVPLanguage':
             epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
                 '_run-%02d' % (rn - 1) + '_' + data_type
+        elif tk == 'RestingState' and data_type == 'events.tsv':
+            continue
         elif tk in ['MTTWE', 'MTTNS']:
             epi_fname = sub + '_' + session + '_task-' + tk + \
-                '_dir-' + ph + '_run-%02d' % rn + '_' + data_type
+                '_dir-' + ph + '_run-%02d' % (rn - 2) + '_' + data_type
         elif sub == 'sub-11' and sname == 'preference' and rn == 6:
             tk = 'PreferenceFaces'
             epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
@@ -185,6 +187,12 @@ def source_funcdata(sub, sname, original_sourcepath, destination_sourcepath,
         elif tk in ['Self' + '%d' % s for s in np.arange(1, 5)]:
             epi_fname = sub + '_' + session + '_task-Self_dir-' + \
                 ph + '_run-%02d' % rn + '_' + data_type
+        elif tk in ['MathLanguage1', 'SpatialNavigation']:
+            epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
+                '_run-%02d' % rn + '_' + data_type
+        elif tk == 'MathLanguage2':
+            epi_fname = sub + '_' + session + '_task-' + tk + '_dir-' + ph + \
+                '_run-%02d' % (rn - 4) + '_' + data_type
         else:
             epi_fname = sub + '_' + session + '_task-' + tk + \
                 '_dir-' + ph + '_' + data_type
@@ -222,7 +230,7 @@ def wepi(sub, sname, source_derivatives, target_derivatives, df1, df2,
                 '_dir-' + ph + '_run-%02d' % (rn - 1) + '_bold.nii.gz'
         elif tk in ['MTTWE', 'MTTNS']:
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
-                '_dir-' + ph + '_run-%02d' % rn + '_bold.nii.gz'
+                '_dir-' + ph + '_run-%02d' % (rn - 2) + '_bold.nii.gz'
         elif sub == 'sub-11' and sname == 'preference' and rn == 6:
             tk = 'PreferenceFaces'
             wepi_fname = 'wrdc' + sub + '_' + session + '_task-' + tk + \
@@ -304,7 +312,7 @@ def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
         elif tk in ['MTTWE', 'MTTNS']:
             zfolder = os.path.join(
                 session_folder,
-                'res_stats_' + tk + '%d_' % rn + ph,
+                'res_stats_' + tk + '%d_' % (rn - 2) + ph,
                 'z_score_maps')
         elif sub == 'sub-11' and sname == 'preference' and rn == 6:
             tk = 'PreferenceFaces'
@@ -355,28 +363,34 @@ def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
 def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
     session = df1[df1[sub].values == sname].index.values[0]
     ifolder = os.path.join(target_derivatives, sub, 'estimates', session)
+    subject_no = sub[4:]
+    sess_no = session[4:]
     if not os.path.exists(ifolder):
         os.makedirs(ifolder)
     else:
-        if not glob.glob(ifolder + '/*.tsv'):
+        if glob.glob(ifolder + '/*.tsv'):
             for ng in glob.glob(ifolder + '/*.tsv'):
                 os.remove(ng)
     run_numbers = df2[df2.session == sname].srun.values
     task_names = df2[df2.session == sname].task.values
-    sessinfo = np.empty((0, 4))
-    for rnum, tname in zip(run_numbers, task_names):
+    n_repetitions = df2[df2.session == sname].nrep.values
+    sessinfo = np.empty((0, 7))
+    for rnum, tname, n_rep in zip(run_numbers, task_names, n_repetitions):
         if sub == 'sub-11' and rnum == 6 and \
            tname == 'PreferencePaintings':
             tname = 'PreferenceFaces'
         condition_names = df3[df3.task == tname].condition.tolist()
         reg_numbers = df3[df3.task == tname].regressor.tolist()
+        sub_rep = np.repeat(subject_no, len(condition_names)).tolist()
+        sess_rep = np.repeat(sess_no, len(condition_names)).tolist()
         rnum_rep = np.repeat(rnum, len(condition_names)).tolist()
         tname_rep = np.repeat(tname, len(condition_names)).tolist()
-        rstack = np.vstack((rnum_rep, tname_rep, condition_names,
-                            reg_numbers)).T
+        nrep_rep = np.repeat(n_rep, len(condition_names)).tolist()
+        rstack = np.vstack((sub_rep, sess_rep, rnum_rep, tname_rep,
+                            condition_names, reg_numbers, nrep_rep)).T
         sessinfo = np.vstack((sessinfo, rstack))
-    dff = pd.DataFrame(sessinfo, columns = ['run','task_name','cond_name',
-                                            'reg_num'])
+    dff = pd.DataFrame(sessinfo, columns = ['sn', 'sess', 'run', 'task_name',
+                                            'cond_name', 'reg_num', 'n_rep'])
     dff_fname = sub + '_' + session + '_reginfo.tsv'
     dff_path = os.path.join(ifolder, dff_fname)
     dff.to_csv(dff_path, sep='\t', index=False)
@@ -384,12 +398,13 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 
 # ############################### INPUTS ###############################
 
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
-session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-# session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-#                  'clips4', 'lyon1', 'lyon2']
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+                 'clips4', 'lyon1', 'lyon2', 'mathlang',
+                 'spatial-navigation']
 
 
 # ############################# PARAMETERS #############################
@@ -420,7 +435,7 @@ if __name__ == "__main__":
         # transfer_t1w(subject, drago_sourcedata, cbs_sourcedata)
 
         ## Import T1w resampled-only AND normalized ##
-        transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
+        # transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
 
         ## Import cmasks ##
         # transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
@@ -428,7 +443,7 @@ if __name__ == "__main__":
         ## Import Freesurfer meshes ##
         # transfer_meshes(subject, drago_derivatives, cbs_derivatives)
 
-        # for session_name in session_names:
+        for session_name in session_names:
             ## Import raw EPI ##
             # source_funcdata(subject, session_name, drago_sourcedata,
             #                 cbs_sourcedata, dfm, dfs)
@@ -449,5 +464,5 @@ if __name__ == "__main__":
             #                    cbs_derivatives, dfm, dfs, dfc)
 
             ## Generate tsv files with session info ##
-            # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
-            #                   dfs, dfc)
+            generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
+                              dfs, dfc)
