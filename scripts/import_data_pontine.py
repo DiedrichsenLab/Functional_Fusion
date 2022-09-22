@@ -1,3 +1,10 @@
+"""
+Script for importing the Pontine dataset to general format.
+
+Created Sep 2022
+Author: caro nettekoven
+"""
+
 import pandas as pd
 import shutil
 from pathlib import Path
