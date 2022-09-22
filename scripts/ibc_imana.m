@@ -65,9 +65,9 @@ for s=1:length(subj_n)
 end
 subj_id = 1:length(subj_n);
 
-% session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
-session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
-    'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
+session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
+% session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
+%     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -102,7 +102,7 @@ loc_AC = {
           };
 
 % sess = {'training', 'test'}; % training runs are considered to be ses-01 and testing runs are ses-02
-numTRs = sesstruct.tr;
+numTRs = sesstruct.nrep;
 % =========================================================================
 numDummys = 0; % we need to make sure that this is correct
 % based on comments here there should be 6 dummies: https://openneuro.org/datasets/ds002306/versions/1.1.0 
@@ -848,41 +848,57 @@ switch what
         % save as a tsv file 
         dsave(fullfile(base_dir, 'tasks_info.tsv'), info_struct);
     
-    case 'GLM:design1_ses'  % make the design matrix for the glm
+    case 'GLM:design'  % make the design matrix for the glm
         % models each condition as a separate regressors
         % For conditions with multiple repetitions, one regressor
         % represents all the instances
-        % nishimoto_imana('GLM:design1', 'sn', [6])
+        % ibc_imana('GLM:design', 'sn', [1])
         
         sn = subj_id;
+        ses = session_names; % which session?
         hrf_cutoff = Inf;
-        ses = 1;
         prefix = 'r'; % prefix of the preprocessed epi we want to use
-        glm = 1;
         vararginoptions(varargin, {'sn', 'hrf_cutoff', 'ses'});
         
         
         % get the info file that specifies the order of the tasks
         % Dd = dload(fullfile(base_dir, 'tasks_info.tsv'));
         
+        % loop over subjects
         for s = sn
             funcraw_subj_dir = fullfile(base_dir, raw_dir, subj_str{s}, ...
                 func_dir);
             funcderiv_subj_dir = fullfile(base_dir, derivatives_dir, ...
                 subj_str{s}, func_dir);
+            estderiv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s}, est_dir);
             listing1 = dir(funcderiv_subj_dir);
-            sessions = {listing1.name};
-            sessions = sessions(startsWith(sessions, 'ses-'));
-            % loop over runs
-            for ss = sessions
+            ses = {listing1.name};
+            ses = ses(startsWith(ses, 'ses-'));
+            
+            % loop over sessions
+            for ss = ses
                 raw_sess_dir = fullfile(funcraw_subj_dir, string(ss));
                 deriv_sess_dir = fullfile(funcderiv_subj_dir, string(ss));
+                est_sess_dir = fullfile(estderiv_subj_dir, string(ss));
                 
-                T = []; % task/condition + session + run info
+                % Delete any existing .nii and .nii.gz files from previous
+                % computations
+                if any(size(dir(fullfile(est_sess_dir, '*.nii.gz')), 1))
+                    delete(fullfile(est_sess_dir, '*.nii.gz'))
+                end
+                if any(size(dir(fullfile(est_sess_dir, '*.nii')), 1))
+                    delete(fullfile(est_sess_dir, '*.nii'))
+                end
+                % Delete any existing design-maatrix .mat file
+                if any(size(dir(fullfile(est_sess_dir, 'SPM.mat')), 1))
+                    delete(fullfile(est_sess_dir, 'SPM.mat'))
+                end
+                
                 J = []; % structure with SPM fields to make the design
-                
+
                 % dir to save the design
-                J.dir            = {deriv_sess_dir};
+                J.dir            = est_sess_dir;
                 J.timing.units   = 'secs';
                 J.timing.RT      = 2.0;
                 J.timing.fmri_t  = 16;
@@ -893,221 +909,71 @@ switch what
                 runs = {listing2.name};
                 runs = runs(startsWith(runs, 'rsub-'));
                 
-                % loop through runs within the current sessions
-                itaskUni = 0;
-                for run = 1:length(runs)
+                % loop over runs
+                for rn = 1:length(runs)
+                    run = str2num(runs{rn}(20:21));
                     fname = fullfile(deriv_sess_dir, ...
                         sprintf('%s%s_%s_run-%02d_bold.nii', prefix, ...
                         subj_str{s}, string(ss), run));
                     V = niftiinfo(fname);
                     numTRs = V.ImageSize(4);
-%                   % fill in nifti image names for the current run
+                    % fill in nifti image names for the current run
                     N = cell(numTRs - numDummys, 1); % preallocating!
                     for i = 1:(numTRs-numDummys)
                         N{i} = fullfile(deriv_sess_dir, ...
                             sprintf('%s%s_%s_run-%02d_bold.nii, %d', ...
                             prefix, subj_str{s}, string(ss), run, i));
                     end % i (image numbers)
-                    J.sess(run).scans = N; % scans in the current runs
+                    J.sess(rn).scans = N; % scans in the current runs
                     
                     % get the path to the tsv file
                     tsv_file = fullfile(raw_sess_dir, ...
                         sprintf('%s_%s_run-%02d_events.tsv', ...
-                        subj_str{s}, string(ss), run))
-                    % get the tsvfile for the current run
+                        subj_str{s}, string(ss), run));
+                    % get the tsvfile for the current run                
+                    D = tdfread(tsv_file,'\t');
                     
-                    D = tdfread(tsv_file,'\t')
-                    %D = dload();
-                                        
-                    % loop over trials within the current run and build up
-                    % the design matrix
-                    for ic = 1:length(Dd.task_name)
-                        itaskUni = itaskUni+1;
-                        % get the indices corresponding to the current
-                        % condition.
-                        % this line is necessary as there are some
-                        % conditions with more than 1 repetition
-                        idx = strcmp(D.trial_type, Dd.task_name{ic});
-                        fprintf('* %d instances found for condition %s in run %02d\n', sum(idx), Dd.task_name{ic}, run)
+                    % loop over conditions
+                    for ic = 1:length(D.trial_type)
                         
-                        %
-                        % filling in "reginfo"
-                        TT.sn        = s;
-                        TT.sess      = ses;
-                        TT.run       = run;
-                        TT.task_name = Dd.task_name(ic);
-                        TT.task      = ic;
-                        TT.taskUni   = itaskUni;
-                        TT.n_rep     = sum(idx);
-                        
+                        % get the indices of the current condition
+                        idx = strcmp(string(D.trial_type), D.trial_type(ic, :));
+                        fprintf('number of rep for %s is %d\n', D.trial_type(ic, :), sum(idx))
                         % filling in fields of J (SPM Job)
-                        J.sess(run).cond(ic).name = Dd.task_name{ic};
-                        J.sess(run).cond(ic).tmod = 0;
-                        J.sess(run).cond(ic).orth = 0;
-                        J.sess(run).cond(ic).pmod = struct('name', {}, 'param', {}, 'poly', {});
-                        
-                        % get onset and duration (should be in seconds)
-                        onset    = D.onset(idx) - (J.timing.RT*numDummys);
-                        fprintf("The onset is %f\n", onset)
-                        if onset < 0
-                            warning("negative onset found")
-                        end
-                        duration = D.duration(idx);
-                        fprintf("The duration is %f\n", duration);
-                        
-                        J.sess(run).cond(ic).onset    = onset;
-                        J.sess(run).cond(ic).duration = duration;
-                        
-                        % add the condition info to the reginfo structure
-                        T = addstruct(T, TT);
-                            
+                        J.sess(rn).cond.name = D.trial_type(ic, :); % condition name
+                        J.sess(rn).cond.tmod = 0; % default
+
+                        J.sess(rn).cond.orth = 0; % default
+                        J.sess(rn).cond.pmod = struct('name', {}, 'param', ...
+                            {}, 'poly', {}); % default                    
+
+                        J.sess(rn).cond.onset    = D.onset(idx);
+                        J.sess(rn).cond.duration = D.duration(idx);
                         
                     end % ic (conditions)
+                        
                     
-                    J.sess(run).multi     = {''};
-                    J.sess(run).regress   = struct('name', {}, 'val', {});
-                    J.sess(run).multi_reg = {''};
-                    J.sess(run).hpf       = hrf_cutoff; % set to 'inf' if using J.cvi = 'FAST'. SPM HPF not applied
-                end % run (runs of current session)
-                
-                J.fact             = struct('name', {}, 'levels', {});
-                J.bases.hrf.derivs = [0 0];
-                J.bases.hrf.params = [4.5 11];                                  % set to [] if running wls
-                J.volt             = 1;
-                J.global           = 'None';
-                J.mask             = {fullfile(func_subj_dir,'rmask_noskull.nii,1')};
-                J.mthresh          = 0.05;
-                J.cvi_mask         = {fullfile(func_subj_dir,'rmask_gray.nii')};
-                J.cvi              =  'fast';
-                
-                spm_rwls_run_fmri_spec(J);
-                
-                dsave(fullfile(J.dir{1},sprintf('%s_ses-%02d_reginfo.tsv', subj_str{s}, ses)), T);
-                fprintf('- estimates for glm_%d session %d has been saved for %s \n', glm, ses, subj_str{s});
-            end % ss (session)          
-        end % sn (subject)
+                    
+                    J.sess(rn).multi     = {''};
+                    J.sess(rn).regress   = struct('name', {}, 'val', {});
+                    J.sess(rn).multi_reg = {''};
+                    J.sess(rn).hpf       = hrf_cutoff; % set to 0'inf' if using J.cvi = 'FAST'. SPM HPF not applied
+                    J.fact             = struct('name', {}, 'levels', {});
+                    J.bases.hrf.derivs = [0 0];
+                    J.bases.hrf.params = [4.5 11]; % set to [] if running wls
+                    J.volt             = 1;
+                    J.global           = 'None';
+                    J.mask             = {char(fullfile(deriv_sess_dir, ...
+                        'rmask_noskull.nii'))};
+                    J.mthresh          = 0.05;
+                    J.cvi_mask         = {char(fullfile(deriv_sess_dir, ...
+                        'rmask_gray.nii'))};
+                    J.cvi              = 'fast';
 
-    case 'GLM:design2_all'  % make the design matrix for the glm
-        % models each condition as a separate regressors
-        % For conditions with multiple repetitions, one regressor
-        % represents all the instances
-        % nishimoto_imana('GLM:design1', 'sn', [6])
-        
-        sn = subj_id;
-        hrf_cutoff = Inf;
-        prefix = 'r'; % prefix of the preprocessed epi we want to use
-        glm = 1;
-        vararginoptions(varargin, {'sn', 'hrf_cutoff', 'ses'});
-        
-        
-        % get the info file that specifies the order of the tasks
-        Dd = dload(fullfile(base_dir, 'tasks_info.tsv'));
-        
-        for s = sn
-                func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
-                % loop over runs
-                % create a directory to save the design
-                subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), ses_str{ses});
-                dircheck(subj_est_dir)
-                
-                T = []; % task/condition + session + run info
-                J = []; % structure with SPM fields to make the design
-                
-                J.dir            = {subj_est_dir};
-                J.timing.units   = 'secs';
-                J.timing.RT      = 2.0;
-                J.timing.fmri_t  = 16;
-                J.timing.fmri_t0 = 1;
-                
-                % loop through runs within the current sessions
-                itaskUni = 0;
-                for ses = [1, 2]
-                    % get the list of runs for the current session
-                    runs = run_list{ses};
-                    for run = 1:length(runs)
-                        
-                        % fill in nifti image names for the current run
-                        N = cell(numTRs - numDummys, 1); % preallocating!
-                        for i = 1:(numTRs-numDummys)
-                            N{i} = fullfile(func_subj_dir, sprintf('%s%s_ses-%02d_run-%02d.nii, %d', prefix, subj_str{s}, ses, run, i));
-                        end % i (image numbers)
-                        J.sess(run).scans = N; % scans in the current runs
-                        
-                        % get the path to the tsv file
-                        tsv_path = fullfile(base_dir, subj_str{s}, func_dir);
-                        % get the tsvfile for the current run
-                        D = dload(fullfile(tsv_path, sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ses, run)));
-                        
-                        % loop over trials within the current run and build up
-                        % the design matrix
-                        for ic = 1:length(Dd.task_name)
-                            itaskUni = itaskUni+1;
-                            % get the indices corresponding to the current
-                            % condition.
-                            % this line is necessary as there are some
-                            % conditions with more than 1 repetition
-                            idx = strcmp(D.trial_type, Dd.task_name{ic});
-                            fprintf('* %d instances found for condition %s in run %02d\n', sum(idx), Dd.task_name{ic}, run)
-                            
-                            %
-                            % filling in "reginfo"
-                            TT.sn        = s;
-                            TT.sess      = ses;
-                            TT.run       = run;
-                            TT.task_name = Dd.task_name(ic);
-                            TT.task      = ic;
-                            TT.taskUni   = itaskUni;
-                            TT.n_rep     = sum(idx);
-                            
-                            % filling in fields of J (SPM Job)
-                            J.sess(run).cond(ic).name = Dd.task_name{ic};
-                            J.sess(run).cond(ic).tmod = 0;
-                            J.sess(run).cond(ic).orth = 0;
-                            J.sess(run).cond(ic).pmod = struct('name', {}, 'param', {}, 'poly', {});
-                            
-                            % get onset and duration (should be in seconds)
-                            onset    = D.onset(idx) - (J.timing.RT*numDummys);
-                            fprintf("The onset is %f\n", onset)
-                            if onset < 0
-                                warning("negative onset found")
-                            end
-                            duration = D.duration(idx);
-                            fprintf("The duration is %f\n", duration);
-                            
-                            J.sess(run).cond(ic).onset    = onset;
-                            J.sess(run).cond(ic).duration = duration;
-                            
-                            % add the condition info to the reginfo structure
-                            T = addstruct(T, TT);
-                            
-                            
-                        end % ic (conditions)
-                        
-                        J.sess(run).multi     = {''};
-                        J.sess(run).regress   = struct('name', {}, 'val', {});
-                        J.sess(run).multi_reg = {''};
-                        J.sess(run).hpf       = hrf_cutoff; % set to 'inf' if using J.cvi = 'FAST'. SPM HPF not applied
-                    end % run (runs of current session)
-                end % session
-                
-                
-                J.fact             = struct('name', {}, 'levels', {});
-                J.bases.hrf.derivs = [0 0];
-                J.bases.hrf.params = [4.5 11];                                  % set to [] if running wls
-                J.volt             = 1;
-                J.global           = 'None';
-                J.mask             = {fullfile(func_subj_dir,'rmask_noskull.nii,1')};
-                J.mthresh          = 0.05;
-                J.cvi_mask         = {fullfile(func_subj_dir,'rmask_gray.nii')};
-                J.cvi              =  'fast';
-                
-                spm_rwls_run_fmri_spec(J);
-                
-                dsave(fullfile(J.dir{1},sprintf('%s_ses-%02d_reginfo.tsv', subj_str{s}, ses)), T);
-                fprintf('- estimates for glm_%d session %d has been saved for %s \n', glm, ses, subj_str{s});
-%             end % ss (session)
-            
-            
+                    spm_rwls_run_fmri_spec(J);
+                    keyboard;
+                end % run (runs of current session)                
+            end % ss (session)          
         end % sn (subject)
 
     case 'GLM:check_design' % checking the design matrix
@@ -1150,22 +1016,26 @@ switch what
         end % s (sn)
 
     case 'GLM:estimate'     % estimate beta values
-        % Example usage: nishimoto_imana('GLM:estimate', 'glm', 1, 'ses', 1, 'sn', 6)
+        % Example usage: ibc_imana('GLM:estimate', 'sn', [1], 'ses', {'archi'})
         
         sn       = subj_id; % subject list
-        glm      = 1;       % glm number
-        ses      = 1;       % session number
-        
-        vararginoptions(varargin, {'sn', 'glm', 'ses'})
+        ses = session_names; 
+        vararginoptions(varargin, {'sn', 'ses'})
         
         for s = sn
-            fprintf('- Doing glm estimation for glm %02d %s\n', glm, subj_str{s});
-            subj_est_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses));         
+            estderiv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s}, est_dir)
+            listing = dir(estderiv_subj_dir);
+            ses = {listing.name};
+            ses = ses(startsWith(ses, 'ses-'));
             
-            load(fullfile(subj_est_dir,'SPM.mat'));
-            SPM.swd = subj_est_dir;
-            
-            spm_rwls_spm(SPM);
+            for ss = ses
+                est_sess_dir = fullfile(estderiv_subj_dir, string(ss));
+                load(fullfile(est_sess_dir, 'SPM.mat'));
+
+                SPM.swd = est_sess_dir;           
+                spm_rwls_spm(SPM);
+            end % ss (sessions)
         end % s (sn)
 
     case 'GLM:T_contrast'   % make T contrasts for each condition
@@ -1314,18 +1184,18 @@ switch what
         end % s (sn)
 
     case 'GLM:run'          % add glm routines you want to run as pipeline
-        % Example usage: nishimoto_imana('GLM:run', 'sn', [3, 4, 5, 6], 'glm', 1, 'ses', 1)
+        % Example usage: ibc_imana('GLM:run', 'sn', [3, 4, 5, 6], 'ses', {'archi'})
         
         sn  = subj_id; % subject id
-        ses = 1;       % which dataset? ses1 or ses2
-        glm = 1;       % number assigned to the glm
+        ses = session_names; % which session?
         
         vararginoptions(varargin, {'sn', 'ses', 'glm'});
         
-        nishimoto_imana('GLM:design1', 'sn', sn, 'ses', ses);
-        nishimoto_imana('GLM:estimate', 'sn', sn, 'glm', glm, 'ses', ses);
-%         nishimoto_imana('GLM:F_contrast', 'sn', sn, 'glm', glm, 'ses', ses)
-        nishimoto_imana('GLM:T_contrast', 'sn', sn, 'glm', glm, 'ses', ses, 'baseline', 'rest')
+        ibc_imana('GLM:design', 'sn', sn, 'ses', ses);
+        ibc_imana('GLM:estimate', 'sn', sn, 'ses', ses);
+        % ibc_imana('GLM:F_contrast', 'sn', sn, 'glm', glm, 'ses', ses)
+%         ibc_imana('GLM:T_contrast', 'sn', sn, 'glm', glm, 'ses', ses, ...
+%             'baseline', 'rest')
          
     case 'SURF:reconall'       % Freesurfer reconall routine
         % Calls recon-all, which performs, all of the
