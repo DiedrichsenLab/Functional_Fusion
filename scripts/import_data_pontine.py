@@ -191,10 +191,11 @@ if __name__ == '__main__':
         # import_freesurfer(source_dir,dest_dir,new_id)
 
         # --- Importing Estimates ---
-        source_dir = '{}/surfaceFreesurfer/S{}/surf'.format(src_base_dir, participant_id)
-        dest_dir = '{}/derivatives/sub-{}/anat'.format(dest_base_dir, participant_id)
-        new_id = 'sub-{}'.format(participant_id)
-        import_freesurfer(source_dir,dest_dir,new_id)
+        source_dir = '{}/Pontine7T/GLM_firstlevel_2/S{}/surf'.format(src_base_dir, participant_id)
+        dest_dir = '{}/derivatives/sub-{}/estimates/ses-01'.format(dest_base_dir, participant_id)
+        subj_id = 'sub-{}'.format(participant_id)
+        ses_id = 'ses-01'
+        import_spm_glm(source_dir,dest_dir,subj_id , ses_id)
 
 
 # /Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/GLM_firstlevel_2/S01/beta_0048.nii
