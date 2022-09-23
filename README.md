@@ -16,6 +16,9 @@ nibabel []
 
 	pip install numpy nilearn ...
 
+[nitools]
+    pip install neuroimagingtools
+
 Or you can install the package manually from the original binary source as above links.
 
 Structures of the project
@@ -49,7 +52,7 @@ The folder structure of derivatives
         │   README.md
         │
         └───group/
-        │				
+        │
         │       ...
         │
         └───sub-<label>/
@@ -67,28 +70,28 @@ The folder structure of derivatives
         │       │       sub-<id>_label-GMb_probseg.nii                # probabilistic segmentation (GM-rest)
         │       │       sub-<id>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
         │       │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask
-        |       | 		sub-<id>_space-SUIT_xfm.nii 				  #	coordinate transformation file into native        
+        |       | 		sub-<id>_space-SUIT_xfm.nii 				  #	coordinate transformation file into native
         │       └───func/
-          								sess-s1/ 
+          								sess-s1/
         |				| 					Minimally preprocessed fMRI data, ideally in the subjects original space
         │       │       		sub-<label>_ses-<label>_run-<label>_bold.nii[.gz]
-        |				| 			
+        |				|
         |				|						Information of different characteristics of runs (phase-encoding direction, etc)
-        |				|						should be stored in a separate json or tsv file.... 
+        |				|						should be stored in a separate json or tsv file....
         │       │
         │       └───estimates/
-          								sess-s1/ 
+          								sess-s1/
     			    │               beta_info.tsv: Information on regression estimate values structure
     			    									TSV-file with obligatory columns
     			    										run: run number (reflected in file name)
-    			    										reg_id: regressor id (reflected in file name) 
+    			    										reg_id: regressor id (reflected in file name)
     			    										reg_num: column number of regressor in design matrix
     			    								sub-<label>_ses-<label>_matrix.npy: Design matrix used for estimation
         │                     sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii
         │                     sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii
         │                     sub-<label>_ses-<label>_mask.nii
         │                     sub-<label>_ses-<label>_resms.nii
-        
+
 
 ### AtlasMap structure
 

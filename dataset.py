@@ -16,6 +16,7 @@ import matrix
 import atlas_map as am
 import scipy.linalg as sl
 import nibabel as nb
+import nitools as nt
 
 class DataSet:
     def __init__(self, base_dir):
@@ -89,23 +90,25 @@ class DataSetMDTB(DataSet):
                     atlas_maps,
                     ses_id,
                     type='CondSes'):
-        """ MDTB extraction of atlasmap locations 
-        from nii files - and filterting or averaring 
-        as specified. 
+        """ MDTB extraction of atlasmap locations
+        from nii files - and filterting or averaring
+        as specified.
 
         Args:
-            participant_id (str): ID of participant 
-            atlas_maps (list): List of atlasmaps 
-            ses_id (str): Name of session 
-            type (str): Type of extraction: 
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
                 'CondSes': Conditions with seperate estimates for first and second half of experient (Default)
-                'CondRun': Conditions with seperate estimates per run 
+                'CondRun': Conditions with seperate estimates per run
                     Defaults to 'CondSes'.
 
         Returns:
-            data_n: Univariately prewhitened data
-            data_info: Pandas data frame with information
-            names: Names for CIFTI-file per roww
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
         """
         dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
         fnames,info = self.get_data_fnames(participant_id,ses_id)
@@ -161,9 +164,9 @@ class DataSetMDTB(DataSet):
             data[i] = data[i] / np.sqrt(np.abs(resms))
             # Append the intercept regressors
             data[i] = np.concatenate([data[i],np.zeros((16,data[i].shape[1]))])
-            # Do the averaging / reweighting: 
+            # Do the averaging / reweighting:
             d = np.linalg.solve(Xn.T @ Xn, Xn.T @ X @ data[i])
-            # Put the data in the list 
+            # Put the data in the list
             data_n.append(d[reg_in,:])
         return data_n, data_info, names
 
@@ -190,8 +193,8 @@ class DataSetHcpResting(DataSet):
     def get_ts_volume(self,
                 participant_id,
                 atlas_map,
-                runs=[0,1,2,3]): 
-        """ Returns the time series data for an atlas map 
+                runs=[0,1,2,3]):
+        """ Returns the time series data for an atlas map
             sample from voxels
         Args:
             participant_id (_type_): _description_
@@ -217,7 +220,7 @@ class DataSetHcpResting(DataSet):
                     atlas_parcel,
                     runs=[0,1,2,3]):
         """Returns the information from the CIFTI file
-        in the 32K surface for left and right hemisphere. 
+        in the 32K surface for left and right hemisphere.
 
         Args:
             participant_id (_type_): _description_
@@ -234,10 +237,10 @@ class DataSetHcpResting(DataSet):
 
             # get the ts in surface for corticals
             ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
-            ts_parcel = [] 
+            ts_parcel = []
             for hem in range(2):
 
-                # get the average within parcels 
+                # get the average within parcels
                 ts_parcel.append(
                     atlas_parcels[hem].agg_data(ts_32k[hem])
                     )
@@ -247,13 +250,13 @@ class DataSetHcpResting(DataSet):
         return ts_cortex  # shape (n_tessl,P)
 
 
-    def get_cereb_connectivity(self, 
+    def get_cereb_connectivity(self,
                  participant_id,
                  cereb_atlas_map,
                  cortical_atlas_parcels,
                  runs=[0,1,2,3]):
         """
-        Uses the original CIFTI files to produce cerebellar connectivity 
+        Uses the original CIFTI files to produce cerebellar connectivity
         file
         """
         hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
@@ -272,10 +275,10 @@ class DataSetHcpResting(DataSet):
 
             # get the ts in surface for corticals
             ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
-            ts_parcel = [] 
+            ts_parcel = []
             for hem in range(2):
 
-                # get the average within parcels 
+                # get the average within parcels
                 ts_parcel.append(
                     cortical_atlas_parcels[hem].agg_data(ts_32k[hem])
                     )
@@ -283,11 +286,11 @@ class DataSetHcpResting(DataSet):
             # concatenate them into a single array for correlation calculation
             ts_cortex = np.concatenate(ts_parcel, axis = 1)
 
-            # Standardize the time series for easier calculation 
+            # Standardize the time series for easier calculation
             ts_cerebellum = util.zstandarize_ts(ts_cerebellum)
             ts_cortex = util.zstandarize_ts(ts_cortex)
 
-            # Correlation calculation 
+            # Correlation calculation
             if coef is None:
                 coef=np.empty((len(runs),ts_cortex.shape[1],
                                 ts_cerebellum.shape[1]))
