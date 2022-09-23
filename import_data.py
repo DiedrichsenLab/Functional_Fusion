@@ -141,11 +141,15 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
             shutil.copyfile(source_dir+src[i],dest_dir+dest[i])
         except:
             print('skipping ' + src[i])
+    
 
 def import_spm_designmatrix(source_dir,dest_dir,sub_id,sess_id):
-    """Imports the output of the SPM GLM with an SPM_info.mat
-    structure into BIDS deriviatie (Functional Fusion) framework.
-    It assumes that a single GLM corresponds to single session.
+    """Imports the SPM design matrix for optimal contrast recombination 
+    at a later stage. Because python gives some errors when trying to read
+    an SPM.mat structure, this requires the design matrix information to be extracted from the SPM.mat before, using the following matlab code (for every subject):
+    load('SPM.mat');
+    X = SPM.xX.xKXs.X
+    save design_matrix.mat X 
 
     See readme for output structure.
     Args:
