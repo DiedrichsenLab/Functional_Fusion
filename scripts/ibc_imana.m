@@ -57,17 +57,19 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 % subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1]
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
 end
 subj_id = 1:length(subj_n);
 
-session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
+% session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
+session_names = {'hcp1'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -897,12 +899,22 @@ switch what
                 
                 J = []; % structure with SPM fields to make the design
 
-                % dir to save the design
-                J.dir            = est_sess_dir;
                 J.timing.units   = 'secs';
                 J.timing.RT      = 2.0;
                 J.timing.fmri_t  = 16;
                 J.timing.fmri_t0 = 1;
+                
+                J.fact             = struct('name', {}, 'levels', {});
+                J.bases.hrf.derivs = [0 0];
+                J.bases.hrf.params = [4.5 11]; % set to [] if running wls
+                J.volt             = 1;
+                J.global           = 'None';
+                J.mask             = {char(fullfile(deriv_sess_dir, ...
+                    'rmask_noskull.nii'))};
+                J.mthresh          = 0.05;
+                J.cvi_mask         = {char(fullfile(deriv_sess_dir, ...
+                    'rmask_gray.nii'))};
+                J.cvi              = 'fast';
                 
                 % get the list of runs for the current session
                 listing2 = dir(deriv_sess_dir);
@@ -911,6 +923,19 @@ switch what
                 
                 % loop over runs
                 for rn = 1:length(runs)
+                    % dir to save the design
+                    run_folder = fullfile(est_sess_dir, ...
+                        sprintf('run-%02d', rn))
+                    if ~exist(run_folder, 'dir')
+                        mkdir run_folder
+                    else
+                        if any(size(dir(fullfile(run_folder, ...
+                                'SPM.mat')), 1))
+                            delete(fullfile(run_folder, 'SPM.mat'))
+                        end
+                    end
+                    J.dir = run_folder;
+                    % Load the scans
                     run = str2num(runs{rn}(20:21));
                     fname = fullfile(deriv_sess_dir, ...
                         sprintf('%s%s_%s_run-%02d_bold.nii', prefix, ...
@@ -932,46 +957,37 @@ switch what
                         subj_str{s}, string(ss), run));
                     % get the tsvfile for the current run                
                     D = tdfread(tsv_file,'\t');
+                    trial_names = cellstr(D.trial_type)
+                    trial_onsets = num2cell(D.onset)
+                    trial_durations = num2cell(D.duration)
                     
-                    % loop over conditions
-                    for ic = 1:length(D.trial_type)
-                        
-                        % get the indices of the current condition
-                        idx = strcmp(string(D.trial_type), D.trial_type(ic, :));
-                        fprintf('number of rep for %s is %d\n', D.trial_type(ic, :), sum(idx))
-                        % filling in fields of J (SPM Job)
-                        J.sess(rn).cond.name = D.trial_type(ic, :); % condition name
-                        J.sess(rn).cond.tmod = 0; % default
-
-                        J.sess(rn).cond.orth = 0; % default
-                        J.sess(rn).cond.pmod = struct('name', {}, 'param', ...
-                            {}, 'poly', {}); % default                    
-
-                        J.sess(rn).cond.onset    = D.onset(idx);
-                        J.sess(rn).cond.duration = D.duration(idx);
-                        
-                    end % ic (conditions)
-                        
-                    
-                    
-                    J.sess(rn).multi     = {''};
+                    % Prepare .mat file containing the paradigm descriptors                    
+                    names = unique(trial_names).';
+                    for u = 1:length(names)
+                        indexes = find(contains(trial_names, names{u}))
+                        for idx = 1:length(indexes)
+                            onsets{u}(idx) = trial_onsets{indexes(idx)}
+                            durations{u}(idx) = ...
+                                trial_durations{indexes(idx)}
+                        end
+                    end
+                    save(sprintf(...
+                        '/localscratch/%s_%s_run-%02d_events.mat', ...
+                        subj_str{s}, string(ss), run), ...
+                        'names', 'onsets', 'durations')
+                                          
+                    J.sess(rn).cond = struct('name', {}, 'onset', {}, ...
+                        'duration', {}, 'tmod', {}, 'pmod', {}, ...
+                        'orth', {});
+                    J.sess.multi = {sprintf(...
+                        '/localscratch/%s_%s_run-%02d_events.mat', ...
+                        subj_str{s}, string(ss), run)};
                     J.sess(rn).regress   = struct('name', {}, 'val', {});
                     J.sess(rn).multi_reg = {''};
-                    J.sess(rn).hpf       = hrf_cutoff; % set to 0'inf' if using J.cvi = 'FAST'. SPM HPF not applied
-                    J.fact             = struct('name', {}, 'levels', {});
-                    J.bases.hrf.derivs = [0 0];
-                    J.bases.hrf.params = [4.5 11]; % set to [] if running wls
-                    J.volt             = 1;
-                    J.global           = 'None';
-                    J.mask             = {char(fullfile(deriv_sess_dir, ...
-                        'rmask_noskull.nii'))};
-                    J.mthresh          = 0.05;
-                    J.cvi_mask         = {char(fullfile(deriv_sess_dir, ...
-                        'rmask_gray.nii'))};
-                    J.cvi              = 'fast';
+                    J.sess(rn).hpf       = hrf_cutoff; % set to 0'inf' if using J.cvi = 'FAST'. SPM HPF not applied                  
 
                     spm_rwls_run_fmri_spec(J);
-                    keyboard;
+
                 end % run (runs of current session)                
             end % ss (session)          
         end % sn (subject)
