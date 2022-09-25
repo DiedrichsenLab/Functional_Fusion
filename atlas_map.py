@@ -284,6 +284,7 @@ class AtlasMap():
         """
         self.P = atlas.P       #  Number of brain locations
         self.name = atlas.name
+        self.atlas = atlas
         self.participant_id = participant_id
         self.dataset = dataset # Reference to corresponding data set
 
@@ -326,8 +327,12 @@ class AtlasMapDeform(AtlasMap):
 
     def build(self,smooth = None):
         """
-        Using the dataset, build creates a list of voxel indices of
-        For each of the locations, it
+        Using the dataset, builds a list of voxel indices of
+        For each of the locations. It creates:
+        vox_list: List of voxels to sample for each atlas location
+        vox_weight: Weight of each of these voxels to determine the atlas location
+        Arg:
+            smooth (double): SD of smoothing kernel (mm) or None for nearest neighbor
         """
         # Caluculate locations of atlas in individual (deformed) coordinates
         atlas_ind = suit.reslice.sample_image(self.deform_img,
@@ -365,7 +370,10 @@ class AtlasMapDeform(AtlasMap):
             self.vox_weight=np.zeros((N,c.max()+1))
             self.vox_list[a,c]=linindx[b]
             self.vox_weight[a,c]=W[a,b]
-            self.vox_weight = self.vox_weight / self.vox_weight.sum(axis=1, keepdims=True)
+            # Avoid divide by zero error:
+            mw = self.vox_weight.sum(axis=1, keepdims=True)
+            mw[mw==0]=np.nan
+            self.vox_weight = self.vox_weight / mw
         pass
 
 class AtlasMapSurf(AtlasMap):
@@ -388,8 +396,13 @@ class AtlasMapSurf(AtlasMap):
 
     def build(self,smooth = None, depths=[0,0.2,0.4,0.6,0.8,1.0]):
         """
-        Using the dataset, build creates a list of voxel indices of
+        Using the dataset, builds a list of voxel indices of
         each of the nodes
+        vox_list: List of voxels to sample for each atlas location
+        vox_weight: Weight of each of these voxels to determine the atlas location
+        Arg:
+            depths (iterable): List of depth between pial (1) and white (0) surface that
+            will be sampled
         """
         n_points = len(depths)
         c1 = self.white_surf.darrays[0].data[self.vertex,:].T
@@ -417,8 +430,10 @@ def get_data3D(fnames,atlas_maps):
     to extract the required raw data before processing it further
 
     Args:
-        fnames (list): list of file names to be sampled
-        atlas_maps (list): list of built atlas-map objects
+        fnames (list): list of N file names to be sampled
+        atlas_maps (list): list of K built atlas-map objects
+    returns:
+        data (list): List of NxP_k 2-d array data matrices (np)
     """
 
     n_atlas = len(atlas_maps)

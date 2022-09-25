@@ -33,10 +33,10 @@ def get_mdtb_suit(ses_id='ses-s1',type='CondSes'):
         atlas_map = am.AtlasMapDeform(mdtb_dataset, suit_atlas, s,deform, mask)
         atlas_map.build(smooth=2.0)
         print(f'Extract {s}')
-        data,info,names = mdtb_dataset.get_data(s,[atlas_map],
+        data,info = mdtb_dataset.get_data(s,[atlas_map],
                                                 ses_id=ses_id,
                                                 type=type)
-        C=am.data_to_cifti(data,[atlas_map],names)
+        C=am.data_to_cifti(data,[atlas_map],info.names)
         dest_dir = mdtb_dataset.data_dir.format(s)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir + f'/{s}_space-SUIT3_{ses_id}_{type}.dscalar.nii')
@@ -95,10 +95,10 @@ def get_mdtb_fs32k(ses_id='ses-s1',type='CondSes'):
 
 def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
     # Make the atlas object
-    surf_parcel =[] 
+    surf_parcel =[]
     hem_name = ['cortex_left','cortex_right']
-    # Get the parcelation 
-    for i,h in enumerate(['L','R']): 
+    # Get the parcelation
+    for i,h in enumerate(['L','R']):
         dir = atlas_dir + '/tpl-fs32k'
         gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
         surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i],gifti))
@@ -113,7 +113,7 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
         s_dir = mdtb_dataset.data_dir.format(s)
         C = nb.load(s_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
         bmf = C.header.get_axis(1)
-        bmp = [] 
+        bmp = []
         R = []
         for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
             D = np.asanyarray(C.dataobj[:,slc])
@@ -129,8 +129,8 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
 
 
 if __name__ == "__main__":
-    parcel_mdtb_fs32k()
-    # get_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
+    # parcel_mdtb_fs32k()
+    get_mdtb_suit(ses_id='ses-s1',type='CondSes')
     pass
 
 

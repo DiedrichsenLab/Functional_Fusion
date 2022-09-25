@@ -18,6 +18,56 @@ import scipy.linalg as sl
 import nibabel as nb
 import nitools as nt
 
+
+def prewhiten_data(data):
+    """ prewhitens a list of data matrices.
+    It assumes that the last row of each data matrix is the ResMS-value
+    Returns a list of data matrices that is one shorter
+
+    Args:
+        data (list of ndarrays): List of data arrays
+    """
+    # Get the resms and prewhiten the data
+    data_n = []
+    for i in range(len(data)):
+        # Prewhiten the data univariately
+        resms = data[i][-1,:]
+        data_n.append(data[i][0:-1,:])
+        data_n[i] = data_n[i] / np.sqrt(np.abs(resms))
+    return data_n
+
+def optimal_contrast(data,C,X,reg_in):
+    """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
+
+    Args:
+        data (list of ndarrays): List of N x P_i arrays of data
+        C (ndarray): N x Q array indicating contrasts
+        X (ndarray): Optimal design matrix - Defaults to None.
+        reg_in (ndarray): Contrast of interest: Logical vector indicating which rows of C we will put in the matrix
+    """
+    # Check the sizes
+    N, Q = C.shape
+    T, Np = X.shape
+    # infer number of regressors of no interest that are not in the data structure
+    num_nointerest = Np - N
+    # Add to the contrast matrix
+    C = sl.block_diag(C,np.eye(num_nointerest))
+    # Make new design matrix
+    Xn = X @ C
+    # Loop over the data:
+    data_new = []
+    for i in range(len(data)):
+        # Append the regressors of no interest regressors
+        data[i] = np.concatenate([data[i],
+                    np.zeros((num_nointerest,data[i].shape[1]))])
+        # Do the averaging / reweighting:
+        d = np.linalg.solve(Xn.T @ Xn, Xn.T @ X @ data[i])
+        # Put the data in the list
+        data_new.append(d[reg_in,:])
+    return data_new
+
+
+
 class DataSet:
     def __init__(self, base_dir):
         """DataSet class:
@@ -56,7 +106,7 @@ class DataSet:
             participant_id (str): Subject
             session_id (str): Session ID. Defaults to None.
         Returns:
-            fnames (list): List of fnames, last one is the resMS image 
+            fnames (list): List of fnames, last one is the resMS image
             T (pd.DataFrame): Info structure for regressors (reginfo)
         """
         dir = self.estimates_dir.format(participant_id) + f'/{session_id}'
@@ -65,52 +115,6 @@ class DataSet:
         fnames.append(f'{dir}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
-    def prewhiten_data(data):
-        """ prewhitens a list of data matrices. 
-        It assumes that the last row of each data matrix is the ResMS-value
-        Returns a list of data matrices that is one shorter 
-
-        Args:
-            data (list of ndarrays): List of data arrays 
-        """
-        # Get the resms and prewhiten the data
-        data_n = []
-        for i in range(len(data)):
-            # Prewhiten the data univariately
-            resms = data[i][-1,:]
-            data_n.append(data[i][0:-1,:])
-            data_n[i] = data_n[i] / np.sqrt(np.abs(resms))
-        return data_n 
-
-    def optimal_contrast(data,C,X,reg_in):
-        """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix 
-
-        Args:
-            data (list of ndarrays): List of N x P_i arrays of data 
-            C (ndarray): Q x N array indicating contrasts
-            X (ndarray): Optimal design matrix - Defaults to None.
-            reg_in (ndarray): Logical vector indicating which rows of C we will put in the matrix
-        """
-        # Check the sizes 
-        Q, N = C.shape
-        T, Qp = X.shape
-        # infer number of regressors of no interest that are not in the data structure 
-        num_nointerest = Qp - Q
-        # Add to the contrast matrix
-        C = sl.block_diag(C,np.eye(num_nointerest))
-        # Make new design matrix 
-        Xn = X @ C
-        # Loop over the data: 
-        data_new = [] 
-        for i in len(data): 
-            # Append the regressors of no interest regressors
-            data[i] = np.concatenate([data[i],
-                      np.zeros((num_nointerest,data[i].shape[1]))])
-            # Do the averaging / reweighting:
-            d = np.linalg.solve(Xn.T @ Xn, Xn.T @ X @ data[i])
-            # Put the data in the list
-            data_new.append(d[reg_in,:])
-        return data_new 
 
     def get_data(self, participant_id, atlas_maps):
         """the main function to output the processed data
@@ -157,49 +161,88 @@ class DataSetMDTB(DataSet):
         """
         dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
         fnames,info = self.get_data_fnames(participant_id,ses_id)
-        data = am.get_data3D(fnames,atlas_maps)
+        # data = am.get_data3D(fnames,atlas_maps)
+        data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
 
-
-        # Depending on the type, make a new contrast 
+        # Depending on the type, make a new contrast
         info['half']=2-(info.run<9)
+        n_cond = np.max(info.cond_num)
         if type == 'CondSes':
-            n_cond = np.max(info.cond_num)
+
+            # Make new data frame for the information of the new regressors
+            ii = ((info.run == 1) | (info.run == 9)) & (info.cond_num>0)
+            data_info = info[ii].copy().reset_index()
+            data_info['names']=[f'{d.cond_name}-sess{d.half}' for i,d in data_info.iterrows()]
+
+            # Contrast for the regressors of interest
             reg = (info.half-1)*n_cond + info.cond_num
             reg[info.instruction==1] = 0
-            # Contrast for the regressors of interst
             C = matrix.indicator(reg,positive=True) # Drop the instructions
+
+            # Now subtract the mean across all conditions in each half
+            for h in [1,2]:
+                baseline = np.array((info.half==h) & (info.instruction==0),dtype=np.double).reshape(-1,1)
+                C[:,data_info.half==h]-= baseline/n_cond
+            # Average across 8 runs
+            C=C/8
+
             # contrast for all instructions
             CI = matrix.indicator(info.half*info.instruction,positive=True)
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond*2,dtype=int)
             # Subset of info sutructire
-            ii = ((info.run == 1) | (info.run == 9)) & (info.cond_num>0)
-            data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.cond_name}-sess{d.half}' for i,d in data_info.iterrows()]
+
         elif type == 'CondRun':
-            n_cond = np.max(info.cond_num)
+
+            # Subset of info sutructure
+            ii = (info.cond_num>0)
+            data_info = info[ii].copy().reset_index()
+            data_info['names']=[f'{d.cond_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
+
             reg = (info.run-1)*n_cond + info.cond_num
             reg[info.instruction==1] = 0
             # Contrast for the regressors of interst
             C = matrix.indicator(reg,positive=True) # Drop the instructions
+            # Do the baseline subtraction
+            for r in range(16):
+                baseline = np.array((info.run==r) & (info.instruction==0),dtype=np.double).reshape(-1,1)
+                C[:,data_info.run==r]-= baseline/n_cond
+
             # contrast for all instructions
             CI = matrix.indicator(info.run*info.instruction,positive=True)
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond*16,dtype=int)
-            # Subset of info sutructire
-            ii = (info.cond_num>0)
-            data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.cond_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
         elif type == 'CondAll':
-            pass
-        pass
 
-        # Prewhiten the data 
-        data_n = self.prewhiten_data(data)
-        
-        # Load the designmatrix and perform optimal contrast 
+            # Make new data frame for the information of the new regressors
+            ii = (info.run == 1)  & (info.cond_num>0)
+            data_info = info[ii].copy().reset_index()
+            data_info['names']=[f'{d.cond_name}' for i,d in data_info.iterrows()]
+
+            # Contrast for the regressors of interest
+            reg = info.cond_num
+            reg[info.instruction==1] = 0
+            C = matrix.indicator(reg,positive=True) # Drop the instructions
+
+            # Now subtract the mean across all conditions in each half
+            baseline = np.array((info.instruction==0),dtype=np.double).reshape(-1,1)
+            C-= baseline/n_cond
+            # Average across 8 runs
+            C=C/16
+
+            # contrast for all instructions
+            CI = matrix.indicator(info.instruction,positive=True)
+            C = np.c_[C,CI]
+            reg_in = np.arange(n_cond,dtype=int)
+            # Subset of info sutructire
+
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Load the designmatrix and perform optimal contrast
         X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
-        data_new = self.optimal_contrast(data_n,C,X)
+        data_new = optimal_contrast(data_n,C,X,reg_in)
 
         return data_new, data_info
 
