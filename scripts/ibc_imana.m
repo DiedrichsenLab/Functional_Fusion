@@ -59,7 +59,7 @@ wb_dir   = 'surfaceWB';
 % list of subjects
 % subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 % subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_n  = [1]
+subj_n  = [1];
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
@@ -922,12 +922,14 @@ switch what
                 runs = runs(startsWith(runs, 'rsub-'));
                 
                 % loop over runs
-                for rn = 1:length(runs)
+                % for rn = 1:length(runs)
+                for rn = 2
                     % dir to save the design
                     run_folder = fullfile(est_sess_dir, ...
-                        sprintf('run-%02d', rn))
-                    if ~exist(run_folder, 'dir')
-                        mkdir run_folder
+                        sprintf('run-%02d', rn));
+                    if ~exist('run_folder', 'dir')
+                        cd(est_sess_dir)
+                        %mkdir([est_sess_dir sprintf('run-%02d', rn)])
                     else
                         if any(size(dir(fullfile(run_folder, ...
                                 'SPM.mat')), 1))
@@ -957,18 +959,18 @@ switch what
                         subj_str{s}, string(ss), run));
                     % get the tsvfile for the current run                
                     D = tdfread(tsv_file,'\t');
-                    trial_names = cellstr(D.trial_type)
-                    trial_onsets = num2cell(D.onset)
-                    trial_durations = num2cell(D.duration)
+                    trial_names = cellstr(D.trial_type);
+                    trial_onsets = num2cell(D.onset);
+                    trial_durations = num2cell(D.duration);
                     
                     % Prepare .mat file containing the paradigm descriptors                    
                     names = unique(trial_names).';
                     for u = 1:length(names)
-                        indexes = find(contains(trial_names, names{u}))
+                        indexes = find(contains(trial_names, names{u}));
                         for idx = 1:length(indexes)
-                            onsets{u}(idx) = trial_onsets{indexes(idx)}
+                            onsets{u}(idx) = trial_onsets{indexes(idx)};
                             durations{u}(idx) = ...
-                                trial_durations{indexes(idx)}
+                                trial_durations{indexes(idx)};
                         end
                     end
                     save(sprintf(...
@@ -987,6 +989,11 @@ switch what
                     J.sess(rn).hpf       = hrf_cutoff; % set to 0'inf' if using J.cvi = 'FAST'. SPM HPF not applied                  
 
                     spm_rwls_run_fmri_spec(J);
+                    
+                    % Remove *events.mat file from /localscratch
+                    if any(size(dir('/localscratch/*_events.mat'), 1))
+                        delete('/localscratch/*_events.mat')
+                    end
 
                 end % run (runs of current session)                
             end % ss (session)          
