@@ -161,8 +161,8 @@ class DataSetMDTB(DataSet):
         """
         dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
         fnames,info = self.get_data_fnames(participant_id,ses_id)
-        # data = am.get_data3D(fnames,atlas_maps)
-        data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
+        data = am.get_data3D(fnames,atlas_maps)
+        # For debugging: data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
 
         # Depending on the type, make a new contrast
         info['half']=2-(info.run<9)
