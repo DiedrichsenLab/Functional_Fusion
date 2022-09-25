@@ -878,11 +878,18 @@ switch what
             ses = {listing1.name};
             ses = ses(startsWith(ses, 'ses-'));
             
+            sbj_number = str2double((extractAfter(subj_str{s},'sub-')));
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
+                '%02d')]));
+            
             % loop over sessions
-            for ss = ses
-                raw_sess_dir = fullfile(funcraw_subj_dir, string(ss));
-                deriv_sess_dir = fullfile(funcderiv_subj_dir, string(ss));
-                est_sess_dir = fullfile(estderiv_subj_dir, string(ss));
+            for smap = session_names
+                sesstag = sessnum{find(contains(subsess,smap))};
+                ses = sscanf(sesstag,'ses-%d');
+                
+                raw_sess_dir = fullfile(funcraw_subj_dir, sesstag);
+                deriv_sess_dir = fullfile(funcderiv_subj_dir, sesstag);
+                est_sess_dir = fullfile(estderiv_subj_dir, sesstag);
                 
                 % Delete any existing .nii and .nii.gz files from previous
                 % computations
@@ -922,26 +929,28 @@ switch what
                 runs = runs(startsWith(runs, 'rsub-'));
                 
                 % loop over runs
-                % for rn = 1:length(runs)
-                for rn = 2
+                for rn = 1:length(runs)
+                % for rn = 2
                     % dir to save the design
-                    run_folder = fullfile(est_sess_dir, ...
-                        sprintf('run-%02d', rn));
-                    if ~exist('run_folder', 'dir')
-                        cd(est_sess_dir)
-                        %mkdir([est_sess_dir sprintf('run-%02d', rn)])
+                    if ~exist(fullfile(est_sess_dir, ...
+                            sprintf('run-%02d', rn)), 'dir')
+                        mkdir(fullfile(est_sess_dir, ...
+                            sprintf('run-%02d', rn)))
                     else
-                        if any(size(dir(fullfile(run_folder, ...
-                                'SPM.mat')), 1))
-                            delete(fullfile(run_folder, 'SPM.mat'))
+                        if any(size(dir(fullfile(est_sess_dir, ...
+                                sprintf('run-%02d', rn), 'SPM.mat')), 1))
+                            delete(fullfile(est_sess_dir, ...
+                                sprintf('run-%02d', rn), 'SPM.mat'))
                         end
                     end
-                    J.dir = run_folder;
+                    J.dir = {fullfile(est_sess_dir, ...
+                        sprintf('run-%02d', rn))};
+                    
                     % Load the scans
                     run = str2num(runs{rn}(20:21));
                     fname = fullfile(deriv_sess_dir, ...
                         sprintf('%s%s_%s_run-%02d_bold.nii', prefix, ...
-                        subj_str{s}, string(ss), run));
+                        subj_str{s}, sesstag, run));
                     V = niftiinfo(fname);
                     numTRs = V.ImageSize(4);
                     % fill in nifti image names for the current run
@@ -949,20 +958,23 @@ switch what
                     for i = 1:(numTRs-numDummys)
                         N{i} = fullfile(deriv_sess_dir, ...
                             sprintf('%s%s_%s_run-%02d_bold.nii, %d', ...
-                            prefix, subj_str{s}, string(ss), run, i));
+                            prefix, subj_str{s}, sesstag, run, i));
                     end % i (image numbers)
-                    J.sess(rn).scans = N; % scans in the current runs
+                    J.sess.scans = N; % scans in the current runs
+                    
+                    J.sess.cond = struct('name', {}, 'onset', {}, ...
+                        'duration', {}, 'tmod', {}, 'pmod', {}, ...
+                        'orth', {});
                     
                     % get the path to the tsv file
                     tsv_file = fullfile(raw_sess_dir, ...
                         sprintf('%s_%s_run-%02d_events.tsv', ...
-                        subj_str{s}, string(ss), run));
+                        subj_str{s}, sesstag, run));
                     % get the tsvfile for the current run                
                     D = tdfread(tsv_file,'\t');
                     trial_names = cellstr(D.trial_type);
                     trial_onsets = num2cell(D.onset);
-                    trial_durations = num2cell(D.duration);
-                    
+                    trial_durations = num2cell(D.duration);                   
                     % Prepare .mat file containing the paradigm descriptors                    
                     names = unique(trial_names).';
                     for u = 1:length(names)
@@ -975,18 +987,15 @@ switch what
                     end
                     save(sprintf(...
                         '/localscratch/%s_%s_run-%02d_events.mat', ...
-                        subj_str{s}, string(ss), run), ...
-                        'names', 'onsets', 'durations')
-                                          
-                    J.sess(rn).cond = struct('name', {}, 'onset', {}, ...
-                        'duration', {}, 'tmod', {}, 'pmod', {}, ...
-                        'orth', {});
+                        subj_str{s}, sesstag, run), ...
+                        'names', 'onsets', 'durations');                                          
                     J.sess.multi = {sprintf(...
                         '/localscratch/%s_%s_run-%02d_events.mat', ...
-                        subj_str{s}, string(ss), run)};
-                    J.sess(rn).regress   = struct('name', {}, 'val', {});
-                    J.sess(rn).multi_reg = {''};
-                    J.sess(rn).hpf       = hrf_cutoff; % set to 0'inf' if using J.cvi = 'FAST'. SPM HPF not applied                  
+                        subj_str{s}, sesstag, run)};
+                    
+                    J.sess.regress   = struct('name', {}, 'val', {});
+                    J.sess.multi_reg = {''};
+                    J.sess.hpf       = hrf_cutoff; % set to 0'inf' if using J.cvi = 'FAST'. SPM HPF not applied                  
 
                     spm_rwls_run_fmri_spec(J);
                     
