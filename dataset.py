@@ -190,7 +190,6 @@ class DataSetMDTB(DataSet):
             CI = matrix.indicator(info.half*info.instruction,positive=True)
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond*2,dtype=int)
-            # Subset of info sutructire
 
         elif type == 'CondRun':
 
@@ -234,7 +233,6 @@ class DataSetMDTB(DataSet):
             CI = matrix.indicator(info.instruction,positive=True)
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond,dtype=int)
-            # Subset of info sutructire
 
 
         # Prewhiten the data
