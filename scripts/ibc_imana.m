@@ -57,19 +57,17 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 % subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_n  = [1];
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
 end
 subj_id = 1:length(subj_n);
 
-% session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
+session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
-session_names = {'hcp1'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -874,18 +872,14 @@ switch what
                 subj_str{s}, func_dir);
             estderiv_subj_dir = fullfile(base_dir, derivatives_dir, ...
                 subj_str{s}, est_dir);
-            listing1 = dir(funcderiv_subj_dir);
-            ses = {listing1.name};
-            ses = ses(startsWith(ses, 'ses-'));
             
             sbj_number = str2double((extractAfter(subj_str{s},'sub-')));
             subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
                 '%02d')]));
             
             % loop over sessions
-            for smap = session_names
+            for smap = ses
                 sesstag = sessnum{find(contains(subsess,smap))};
-                ses = sscanf(sesstag,'ses-%d');
                 
                 raw_sess_dir = fullfile(funcraw_subj_dir, sesstag);
                 deriv_sess_dir = fullfile(funcderiv_subj_dir, sesstag);
@@ -930,7 +924,7 @@ switch what
                 
                 % loop over runs
                 for rn = 1:length(runs)
-                % for rn = 2
+                % for rn = 3
                     % dir to save the design
                     if ~exist(fullfile(est_sess_dir, ...
                             sprintf('run-%02d', rn)), 'dir')
@@ -970,14 +964,24 @@ switch what
                     tsv_file = fullfile(raw_sess_dir, ...
                         sprintf('%s_%s_run-%02d_events.tsv', ...
                         subj_str{s}, sesstag, run));
-                    % get the tsvfile for the current run                
+                    % get the tsvfile for the current run
+                    D = struct([]); 
                     D = tdfread(tsv_file,'\t');
+                    
+                    trial_names = {};
+                    trial_onsets = {};
+                    trial_durations = {};
                     trial_names = cellstr(D.trial_type);
                     trial_onsets = num2cell(D.onset);
-                    trial_durations = num2cell(D.duration);                   
-                    % Prepare .mat file containing the paradigm descriptors                    
+                    trial_durations = num2cell(D.duration);
+                    
+                    % Prepare .mat file containing the paradigm descriptors
+                    names = {};
+                    onsets = {};
+                    durations = {};
                     names = unique(trial_names).';
                     for u = 1:length(names)
+                        indexes = [];
                         indexes = find(contains(trial_names, names{u}));
                         for idx = 1:length(indexes)
                             onsets{u}(idx) = trial_onsets{indexes(idx)};
