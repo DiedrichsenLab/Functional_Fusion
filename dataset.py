@@ -58,10 +58,10 @@ def optimal_contrast(data,C,X,reg_in):
     data_new = []
     for i in range(len(data)):
         # Append the regressors of no interest regressors
-        data[i] = np.concatenate([data[i],
+        dat = np.concatenate([data[i],
                     np.zeros((num_nointerest,data[i].shape[1]))])
         # Do the averaging / reweighting:
-        d = np.linalg.solve(Xn.T @ Xn, Xn.T @ X @ data[i])
+        d = np.linalg.solve(Xn.T @ Xn, Xn.T @ X @ dat)
         # Put the data in the list
         data_new.append(d[reg_in,:])
     return data_new
