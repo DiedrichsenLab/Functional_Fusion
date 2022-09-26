@@ -51,9 +51,9 @@ def optimal_contrast(data,C,X,reg_in):
     # infer number of regressors of no interest that are not in the data structure
     num_nointerest = Np - N
     # Add to the contrast matrix
-    C = sl.block_diag(C,np.eye(num_nointerest))
+    Cn = sl.block_diag(C,np.eye(num_nointerest))
     # Make new design matrix
-    Xn = X @ C
+    Xn = X @ Cn
     # Loop over the data:
     data_new = []
     for i in range(len(data)):
