@@ -26,7 +26,7 @@ def get_mdtb_suit(ses_id='ses-s1',type='CondSes'):
 
     # create and calculate the atlas map for each participant
     T = mdtb_dataset.get_participants()
-    for s in T.participant_id:
+    for s in T.participant_id[0:1]:
         print(f'Atlasmap {s}')
         deform = mdtb_dataset.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
         mask = mdtb_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
@@ -130,10 +130,10 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
 
 if __name__ == "__main__":
     # parcel_mdtb_fs32k()
-    get_mdtb_suit(ses_id='ses-s1',type='CondSes')
-    get_mdtb_suit(ses_id='ses-s2',type='CondSes')
-    get_mdtb_fs32k(ses_id='ses-s1',type='CondSes')
-    get_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
+    get_mdtb_suit(ses_id='ses-s1',type='CondRun')
+    # get_mdtb_suit(ses_id='ses-s2',type='CondSes')
+    # get_mdtb_fs32k(ses_id='ses-s1',type='CondSes')
+    # get_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
     pass
 
 

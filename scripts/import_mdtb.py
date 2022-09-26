@@ -44,7 +44,7 @@ def fix_sc2_reginfo():
 if __name__ == "__main__":
     # fix_sc2_reginfo()
     T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
-    for s in T.participant_id:
+    for s in T.participant_id[0:1]:
         old_id = s.replace('sub-','s',1)
         # dir1 = orig_dir + f'/sc1/suit/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/suit'

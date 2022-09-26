@@ -204,8 +204,8 @@ class DataSetMDTB(DataSet):
             C = matrix.indicator(reg,positive=True) # Drop the instructions
             # Do the baseline subtraction
             for r in range(16):
-                baseline = np.array((info.run==r) & (info.instruction==0),dtype=np.double).reshape(-1,1)
-                C[:,data_info.run==r]-= baseline/n_cond
+                baseline = np.array((info.run==r+1) & (info.instruction==0),dtype=np.double).reshape(-1,1)
+                C[:,data_info.run==r+1]-= baseline/n_cond
 
             # contrast for all instructions
             CI = matrix.indicator(info.run*info.instruction,positive=True)
@@ -239,7 +239,7 @@ class DataSetMDTB(DataSet):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
-        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
+        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix_unf.npy')
         data_new = optimal_contrast(data_n,C,X,reg_in)
 
         return data_new, data_info
