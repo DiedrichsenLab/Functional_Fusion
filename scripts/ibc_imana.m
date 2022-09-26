@@ -915,7 +915,7 @@ switch what
                 J.mthresh          = 0.05;
                 J.cvi_mask         = {char(fullfile(deriv_sess_dir, ...
                     'rmask_gray.nii'))};
-                J.cvi              = 'fast';
+                J.cvi              = 'wls';
                 
                 % get the list of runs for the current session
                 listing2 = dir(deriv_sess_dir);
@@ -1530,6 +1530,8 @@ switch what
         summaryname     = fullfile(suit_group_dir,sprintf('wgroup.%s.glm%02d.func.gii', type, glm));
         surf_groupGiftis(filename, 'groupsummary', summaryname, 'replaceNaNs', 1, 'outcolnames', subj_str);
     end
+
+end
 
 end
 
