@@ -4,6 +4,9 @@ import shutil
 from pathlib import Path
 import mat73
 import numpy as np
+import sys
+sys.path.append(
+    '/Users/callithrix/Documents/Projects/Functional_Fusion/code/shared/Functional_Fusion/')  # can be removed before push, but currently that is the best way to import atlas_map for me
 import atlas_map as am
 from dataset import DataSetMDTB
 import nibabel as nb
@@ -13,6 +16,8 @@ import SUITPy as suit
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
+if not Path(base_dir).exists():
+    print('diedrichsen data server not mounted')
 
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
