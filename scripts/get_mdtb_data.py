@@ -132,6 +132,8 @@ if __name__ == "__main__":
     # parcel_mdtb_fs32k()
     get_mdtb_suit(ses_id='ses-s1',type='CondSes')
     get_mdtb_suit(ses_id='ses-s2',type='CondSes')
+    get_mdtb_suit(ses_id='ses-s1',type='CondAll')
+    get_mdtb_suit(ses_id='ses-s2',type='CondAll')
     get_mdtb_fs32k(ses_id='ses-s1',type='CondSes')
     get_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
     pass
