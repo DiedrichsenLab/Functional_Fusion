@@ -166,16 +166,16 @@ class DataSetMDTB(DataSet):
 
         # Depending on the type, make a new contrast
         info['half']=2-(info.run<9)
-        n_cond = np.max(info.cond_num)
+        n_cond = np.max(info.reg_num)
         if type == 'CondSes':
 
             # Make new data frame for the information of the new regressors
-            ii = ((info.run == 1) | (info.run == 9)) & (info.cond_num>0)
+            ii = ((info.run == 1) | (info.run == 9)) & (info.reg_num>0)
             data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.cond_name}-sess{d.half}' for i,d in data_info.iterrows()]
+            data_info['names']=[f'{d.task_name}-sess{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
-            reg = (info.half-1)*n_cond + info.cond_num
+            reg = (info.half-1)*n_cond + info.reg_num
             reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
@@ -195,11 +195,11 @@ class DataSetMDTB(DataSet):
         elif type == 'CondRun':
 
             # Subset of info sutructure
-            ii = (info.cond_num>0)
+            ii = (info.reg_num>0)
             data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.cond_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
+            data_info['names']=[f'{d.task_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
 
-            reg = (info.run-1)*n_cond + info.cond_num
+            reg = (info.run-1)*n_cond + info.reg_num
             reg[info.instruction==1] = 0
             # Contrast for the regressors of interst
             C = matrix.indicator(reg,positive=True) # Drop the instructions
@@ -215,12 +215,12 @@ class DataSetMDTB(DataSet):
         elif type == 'CondAll':
 
             # Make new data frame for the information of the new regressors
-            ii = (info.run == 1)  & (info.cond_num>0)
+            ii = (info.run == 1)  & (info.reg_num>0)
             data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.cond_name}' for i,d in data_info.iterrows()]
+            data_info['names']=[f'{d.task_name}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
-            reg = info.cond_num
+            reg = info.reg_num
             reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
@@ -375,3 +375,123 @@ class DataSetHcpResting(DataSet):
 
         return coef  # shape (n_tessl,P)
 
+
+class DataSetPontine(DataSet):
+    def __init__(self, dir):
+        super().__init__(dir)
+
+    def get_data(self, participant_id,
+                 atlas_maps,
+                 ses_id,
+                 type='CondSes'):
+        """ Pontine extraction of atlasmap locations
+        from nii files - and filterting or averaring
+        as specified.
+
+        Args:
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
+                'CondSes': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
+                    Defaults to 'CondSes'.
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+        fnames, info = self.get_data_fnames(participant_id, ses_id)
+        data = am.get_data3D(fnames, atlas_maps)
+        # For debugging: data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
+
+        # Depending on the type, make a new contrast
+        info['half'] = 2 - (info.run < 9)
+        n_cond = len(info.reg_num)
+        if type == 'CondSes':
+
+            # Make new data frame for the information of the new regressors
+            ii = ((info.run == 1) | (info.run == 9)) & (info.reg_num > 0)
+            data_info = info[ii].copy().reset_index()
+            data_info['names'] = [
+                f'{d.task_name}-sess{d.half}' for i, d in data_info.iterrows()]
+
+            # Contrast for the regressors of interest
+            reg = (info.half - 1) * n_cond + info.reg_num
+            reg[info.instruction == 1] = 0
+            C = matrix.indicator(reg, positive=True)  # Drop the instructions
+
+            # Now subtract the mean across all conditions in each half
+            for h in [1, 2]:
+                baseline = np.array((info.half == h) & (
+                    info.instruction == 0), dtype=np.double).reshape(-1, 1)
+                C[:, data_info.half == h] -= baseline / n_cond
+            # Average across 8 runs
+            C = C / 8
+
+            # contrast for all instructions
+            CI = matrix.indicator(info.half * info.instruction, positive=True)
+            C = np.c_[C, CI]
+            reg_in = np.arange(n_cond * 2, dtype=int)
+            # Subset of info sutructire
+
+        elif type == 'CondRun':
+
+            # Subset of info sutructure
+            ii = (info.reg_num > 0)
+            data_info = info[ii].copy().reset_index()
+            data_info['names'] = [
+                f'{d.task_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
+
+            reg = (info.run - 1) * n_cond + info.reg_num
+            reg[info.instruction == 1] = 0
+            # Contrast for the regressors of interst
+            C = matrix.indicator(reg, positive=True)  # Drop the instructions
+            # Do the baseline subtraction
+            for r in range(16):
+                baseline = np.array((info.run == r) & (
+                    info.instruction == 0), dtype=np.double).reshape(-1, 1)
+                C[:, data_info.run == r] -= baseline / n_cond
+
+            # contrast for all instructions
+            CI = matrix.indicator(info.run * info.instruction, positive=True)
+            C = np.c_[C, CI]
+            reg_in = np.arange(n_cond * 16, dtype=int)
+        elif type == 'CondAll':
+
+            # Make new data frame for the information of the new regressors
+            ii = (info.run == 1) & (info.reg_num > 0)
+            data_info = info[ii].copy().reset_index()
+            data_info['names'] = [
+                f'{d.task_name}' for i, d in data_info.iterrows()]
+
+            # Contrast for the regressors of interest
+            reg = info.reg_num
+            reg[info.instruction == 1] = 0
+            C = matrix.indicator(reg, positive=True)  # Drop the instructions
+
+            # Now subtract the mean across all conditions in each half
+            baseline = np.array((info.instruction == 0),
+                                dtype=np.double).reshape(-1, 1)
+            C -= baseline / n_cond
+            # Average across 8 runs
+            C = C / 16
+
+            # contrast for all instructions
+            CI = matrix.indicator(info.instruction, positive=True)
+            C = np.c_[C, CI]
+            reg_in = np.arange(n_cond, dtype=int)
+            # Subset of info sutructire
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Load the designmatrix and perform optimal contrast
+        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+        data_new = optimal_contrast(data_n, C, X, reg_in)
+
+        return data_new, data_info
