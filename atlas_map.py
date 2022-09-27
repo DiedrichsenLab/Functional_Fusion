@@ -71,7 +71,8 @@ class AtlasVolumetric(Atlas):
             bm (cifti2.BrainModelAxis)
         """
         bm = nb.cifti2.BrainModelAxis.from_mask(self.mask_img.get_data(),
-                                            name=self.name)
+                                            name=self.name,
+                                            affine = self.mask_img.affine)
         return bm
 
     def data_to_nifti(self,data):
