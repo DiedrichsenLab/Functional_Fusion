@@ -17,9 +17,16 @@ if not Path(base_dir).exists():
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
-def get_mdtb_suit(ses_id='ses-s1',type='CondSes'):
+def get_mdtb_suit(ses_id='ses-s1',type='CondSes',atlas='SUIT3'):
     # Make the atlas object
-    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    if (atlas=='SUIT3'):
+        mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    if (atlas=='SUIT2'):
+        mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
+    if (atlas=='SUIT3'):
+        mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    if (atlas=='SUIT3'):
+        mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
     # initialize the data set object
     mdtb_dataset = DataSetMDTB(data_dir)
@@ -47,14 +54,25 @@ def show_mdtb_suit(subj,sess,cond):
     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
     mdtb_dataset = DataSetMDTB(data_dir)
     T = mdtb_dataset.get_participants()
-    s = T.participant_id[subj]
     ses = f'ses-s{sess}'
-    C = nb.load(mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_CondSes.dscalar.nii')
-    D = pd.read_csv(mdtb_dataset.data_dir.format(s) + f'/{s}_{ses}_info-CondSes.tsv',sep='\t')
-    X = C.get_fdata()
-    Nifti = suit_atlas.data_to_nifti(X)
+
+    if subj=='all':
+        for i,s in enumerate(T.participant_id):
+            C = nb.load(mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_CondAll.dscalar.nii')
+            if i==0:
+                X = np.zeros((C.shape[0],C.shape[1],T.shape[0]))
+            X[:,:,i] = C.get_fdata()
+        X = X.mean(axis=2)
+        D = pd.read_csv(mdtb_dataset.data_dir.format(s) + f'/{s}_{ses}_info-CondAll.tsv',sep='\t')
+        
+    else:
+        s = T.participant_id[subj]
+        C = nb.load(mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_CondAll.dscalar.nii')
+        D = pd.read_csv(mdtb_dataset.data_dir.format(s) + f'/{s}_{ses}_info-CondAll.tsv',sep='\t')
+        X = C.get_fdata()
+    Nifti = suit_atlas.data_to_nifti(X[cond,:])
     surf_data = suit.flatmap.vol_to_surf(Nifti)
-    fig = suit.flatmap.plot(surf_data[:,cond],render='plotly')
+    fig = suit.flatmap.plot(surf_data,render='plotly',cscale=[-0.3,0.3])
     fig.show()
     print(f'Showing {D.cond_name[cond]}')
     pass
@@ -130,12 +148,13 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
 
 if __name__ == "__main__":
     # parcel_mdtb_fs32k()
-    get_mdtb_suit(ses_id='ses-s1',type='CondSes')
-    get_mdtb_suit(ses_id='ses-s2',type='CondSes')
-    get_mdtb_suit(ses_id='ses-s1',type='CondAll')
-    get_mdtb_suit(ses_id='ses-s2',type='CondAll')
-    get_mdtb_fs32k(ses_id='ses-s1',type='CondSes')
-    get_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
+    # get_mdtb_suit(ses_id='ses-s1',type='CondSes')
+    # get_mdtb_suit(ses_id='ses-s2',type='CondSes')
+    # get_mdtb_suit(ses_id='ses-s1',type='CondAll')
+    # get_mdtb_suit(ses_id='ses-s2',type='CondAll')
+    # get_mdtb_fs32k(ses_id='ses-s1',type='CondSes')
+    # get_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
+    show_mdtb_suit('all',1,0)
     pass
 
 
