@@ -411,7 +411,7 @@ class DataSetPontine(DataSet):
 
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 9)
-        n_cond = len(info.reg_num)
+        n_cond = np.max(info.reg_num)
         if type == 'CondSes':
 
             # Make new data frame for the information of the new regressors
