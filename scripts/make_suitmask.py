@@ -1,7 +1,8 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
 import numpy as np 
 import nibabel as nb
-from atlas_map import AtlasVolumetric, AtlasMapDeform, get_data
+from nibabel.processing import resample_from_to, resample_to_output
+from atlas_map import AtlasVolumetric, AtlasMapDeform
 from dataset import DataSetMDTB
 import SUITPy as suit
 
@@ -21,14 +22,26 @@ def reslice_SUIT():
     pass 
 
 
-def downsample_mask():
+def downsample_mask(res=2):
     '''
-        
+        Downsamples a graymatter mask to a lower functional resolution 
     '''
+    adir = atlas_dir +'/tpl-MNI152NLIn2000cSymC'
+    img_name = adir + '/tpl-MNI152NLin2009cSymC_label-GMc_probseg.nii'
+    out_name = adir + f'/tpl-MNISymC_res-{res:d}_uncorr.nii'
+    in_img = nb.load(img_name)
+    #     out_img = nb.processing.resample_from_to(in_img,)
+    temp_img = resample_to_output(in_img,voxel_sizes=[res,res,res])
+    X=temp_img.get_data()
+    X = (X+np.flip(X,axis=0))/2
+    X=np.array(X>0.2,dtype=np.uint8)
+    out_img = nb.Nifti1Image(X,temp_img.affine)
+    nb.save(out_img,out_name);
+    pass 
 
 if __name__ == "__main__":
-    reslice_SUIT()
-
+    # reslice_SUIT()
+    downsample_mask(2)
 
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
     # for s in T.participant_id:
