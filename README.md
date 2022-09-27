@@ -69,7 +69,7 @@ The folder structure of derivatives
         │       │       sub-<id>_label-WMc_probseg.nii                # probabilistic segmentation (WM-cereb)
         │       │       sub-<id>_label-GMb_probseg.nii                # probabilistic segmentation (GM-rest)
         │       │       sub-<id>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
-        │       │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask
+        │       │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask in func space
         |       | 		sub-<id>_space-SUIT_xfm.nii 				  #	coordinate transformation file into native
         │       └───func/
           								sess-s1/
