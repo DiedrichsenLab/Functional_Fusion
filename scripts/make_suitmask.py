@@ -20,6 +20,12 @@ def reslice_SUIT():
     nb.save(b,atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmas_uncorr.nii')
     pass 
 
+
+def downsample_mask():
+    '''
+        
+    '''
+
 if __name__ == "__main__":
     reslice_SUIT()
 
