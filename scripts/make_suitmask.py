@@ -27,21 +27,21 @@ def downsample_mask(res=2):
         Downsamples a graymatter mask to a lower functional resolution 
     '''
     adir = atlas_dir +'/tpl-MNI152NLIn2000cSymC'
-    img_name = adir + '/tpl-MNI152NLin2009cSymC_label-GMc_probseg.nii'
-    out_name = adir + f'/tpl-MNISymC_res-{res:d}_uncorr.nii'
+    img_name = adir + '/tpl-MNISymC_res-1.nii'
+    out_name = adir + f'/tpl-MNISymC_res-{res:d}.nii'
     in_img = nb.load(img_name)
     #     out_img = nb.processing.resample_from_to(in_img,)
     temp_img = resample_to_output(in_img,voxel_sizes=[res,res,res])
-    X=temp_img.get_data()
+    X=temp_img.get_fdata()
     X = (X+np.flip(X,axis=0))/2
-    X=np.array(X>0.2,dtype=np.uint8)
+    X=np.array(X>0.1,dtype=np.uint8)
     out_img = nb.Nifti1Image(X,temp_img.affine)
     nb.save(out_img,out_name);
-    pass 
 
 if __name__ == "__main__":
     # reslice_SUIT()
     downsample_mask(2)
+    downsample_mask(3)
 
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
     # for s in T.participant_id:
