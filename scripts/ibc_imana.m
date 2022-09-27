@@ -1060,17 +1060,30 @@ switch what
         
         for s = sn
             estderiv_subj_dir = fullfile(base_dir, derivatives_dir, ...
-                subj_str{s}, est_dir)
-            listing = dir(estderiv_subj_dir);
-            ses = {listing.name};
-            ses = ses(startsWith(ses, 'ses-'));
+                subj_str{s}, est_dir);
             
-            for ss = ses
-                est_sess_dir = fullfile(estderiv_subj_dir, string(ss));
-                load(fullfile(est_sess_dir, 'SPM.mat'));
+            sbj_number = str2double((extractAfter(subj_str{s},'sub-')));
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
+                '%02d')]));
+            
+            % loop over sessions
+            for smap = ses
+                sesstag = sessnum{find(contains(subsess,smap))};
+                est_sess_dir = fullfile(estderiv_subj_dir, sesstag)
+                
+                % get the list of runs for the current session
+                listing = dir(est_sess_dir);
+                listitems = {listing.name};
+                runtags = listitems(startsWith(listitems, 'run-'));
+                
+                for rn = 1:length(runtags)
+                    estimates_dir = fullfile(est_sess_dir, ...
+                        char(runtags(rn)))
+                    load(fullfile(estimates_dir, 'SPM.mat'));
 
-                SPM.swd = est_sess_dir;           
-                spm_rwls_spm(SPM);
+                    SPM.swd = estimates_dir;           
+                    spm_rwls_spm(SPM);
+                end % rn (runtags)
             end % ss (sessions)
         end % s (sn)
 
