@@ -241,7 +241,7 @@ class DataSetMDTB(DataSet):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
-        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix_unf.npy')
+        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
         
         return data_new, data_info

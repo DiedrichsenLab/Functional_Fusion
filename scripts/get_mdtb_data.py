@@ -84,10 +84,10 @@ def get_mdtb_fs32k(ses_id='ses-s1',type='CondSes'):
                             s,white,pial, mask))
             atlas_maps[i].build()
         print(f'Extract {s}')
-        data,info,names = mdtb_dataset.get_data(s,atlas_maps,
+        data,info = mdtb_dataset.get_data(s,atlas_maps,
                                                 ses_id=ses_id,
                                                 type=type)
-        C=am.data_to_cifti(data,atlas_maps,names)
+        C=am.data_to_cifti(data,atlas_maps,info.names)
         dest_dir = mdtb_dataset.data_dir.format(s)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
