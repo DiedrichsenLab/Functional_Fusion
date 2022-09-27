@@ -1358,23 +1358,22 @@ switch what
             % Get the name of the anatpmical image
             anat_name = sprintf(...
                 '%s_space-native_desc-resampled_T1w_lpi.nii', subj_str{s});
-            % Full path of T1w_lpi image
-            anat_path = fullfile(anat_subj_dir, anat_name)
             % Define suit folder
             suit_subj_dir = fullfile(deriv_subj_dir, 'suit');
+            suit_anat = fullfile(suit_subj_dir, 'anat')
             % Create suit folder if it does not exist
-            if ~exist(suit_subj_dir, 'dir')
-                mkdir (suit_subj_dir)
+            if ~exist(suit_anat, 'dir')
+                mkdir (suit_anat)
             end  
             
-%             source = fullfile(anat_subj_dir, anat_name);
-%             dest   = fullfile(suit_subj_dir, sprintf('%s_T1w.nii',subj_str{s}));
-%             
-%             copyfile(source,dest);
+            % Copy T1w_lpi file to suit-anat folder
+            source = fullfile(anat_subj_dir, anat_name);
+            dest   = fullfile(suit_anat, anat_name);           
+            copyfile(source, dest);
             
             % go to subject directory for suit and isolate segment
             % cd(fullfile(suit_subj_dir));
-            suit_isolate_seg({anat_path}, 'keeptempfiles', 1);
+            suit_isolate_seg({dest}, 'keeptempfiles', 1);
 %             suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w.nii', subj_str{s}))}, 'keeptempfiles', 1);
         end % s (sn)
 
