@@ -57,17 +57,17 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-% subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
 end
 subj_id = 1:length(subj_n);
 
-session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
-% session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
-%     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
+% session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
+session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
+    'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -1347,25 +1347,34 @@ switch what
         vararginoptions(varargin, {'sn'});
         
         for s = sn
-            fprintf('- Isolate and segment the cerebellum for %s\n', subj_str{s})
+            fprintf('- Isolate and segment the cerebellum for %s\n', ...
+                subj_str{s})
             spm_jobman('initcfg')
             
             % Get the directory of subjects anatomical
-            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s})
+            anat_subj_dir = fullfile(deriv_subj_dir, anat_dir);
             % Get the name of the anatpmical image
-            anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s});
-
-            suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
-            dircheck(suit_subj_dir);
+            anat_name = sprintf(...
+                '%s_space-native_desc-resampled_T1w_lpi.nii', subj_str{s});
+            % Full path of T1w_lpi image
+            anat_path = fullfile(anat_subj_dir, anat_name)
+            % Define suit folder
+            suit_subj_dir = fullfile(deriv_subj_dir, 'suit');
+            % Create suit folder if it does not exist
+            if ~exist(suit_subj_dir, 'dir')
+                mkdir (suit_subj_dir)
+            end  
             
-            source = fullfile(subj_dir, anat_name);
-            dest   = fullfile(suit_subj_dir, sprintf('%s_T1w.nii',subj_str{s}));
-            
-            copyfile(source,dest);
+%             source = fullfile(anat_subj_dir, anat_name);
+%             dest   = fullfile(suit_subj_dir, sprintf('%s_T1w.nii',subj_str{s}));
+%             
+%             copyfile(source,dest);
             
             % go to subject directory for suit and isolate segment
-            cd(fullfile(suit_subj_dir));
-            suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w.nii', subj_str{s}))}, 'keeptempfiles', 1);
+            % cd(fullfile(suit_subj_dir));
+            suit_isolate_seg({anat_path}, 'keeptempfiles', 1);
 %             suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w.nii', subj_str{s}))}, 'keeptempfiles', 1);
         end % s (sn)
 
@@ -1382,8 +1391,9 @@ switch what
         for s = sn 
             
             % Get the directory of subjects suit (where the result of segmentation is stored)
-
-            suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
+            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s})
+            suit_subj_dir = fullfile(deriv_subj_dir, 'suit');          
 
             % cortexGrey : cortex grey matter mask
             cortexGrey = fullfile(suit_subj_dir, sprintf('c7%s_T1w.nii', subj_str{s}));
