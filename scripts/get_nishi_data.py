@@ -14,10 +14,10 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 
-data_dir = base_dir + '/nishi'
+data_dir = base_dir + '/Nishimoto_103Task'
 atlas_dir = base_dir + '/Atlases'
 
-def get_nishi_suit(ses_id='ses-s1',type='CondSes'):
+def get_nishi_suit(ses_id='ses-01',type='CondSes'):
     # Make the atlas object
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
@@ -59,7 +59,7 @@ def show_nishi_suit(subj,sess,cond):
     print(f'Showing {D.cond_name[cond]}')
     pass
 
-def get_nishi_fs32k(ses_id='ses-s1',type='CondSes'):
+def get_nishi_fs32k(ses_id='ses-01',type='CondSes'):
     # Make the atlas object
     atlas =[]
     bm_name = ['cortex_left','cortex_right']
@@ -93,7 +93,7 @@ def get_nishi_fs32k(ses_id='ses-s1',type='CondSes'):
         nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
         pass
 
-def parcel_nishi_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
+def parcel_nishi_fs32k(res=162,ses_id='ses-01',type='CondSes'):
     # Make the atlas object
     surf_parcel =[]
     hem_name = ['cortex_left','cortex_right']
@@ -130,15 +130,10 @@ def parcel_nishi_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
 
 if __name__ == "__main__":
     # parcel_nishi_fs32k()
-    get_nishi_suit(ses_id='ses-s1',type='CondSes')
-    get_nishi_suit(ses_id='ses-s2',type='CondSes')
-    get_nishi_suit(ses_id='ses-s1',type='CondAll')
-    get_nishi_suit(ses_id='ses-s2',type='CondAll')
-    get_nishi_fs32k(ses_id='ses-s1',type='CondSes')
-    get_nishi_fs32k(ses_id='ses-s2',type='CondSes')
+    get_nishi_suit(ses_id='ses-01',type='CondSes')
+    get_nishi_suit(ses_id='ses-02',type='CondSes')
+    get_nishi_suit(ses_id='ses-01',type='CondAll')
+    get_nishi_suit(ses_id='ses-02',type='CondAll')
+    get_nishi_fs32k(ses_id='ses-01',type='CondSes')
+    get_nishi_fs32k(ses_id='ses-02',type='CondSes')
     pass
-
-
-    # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
-    # for s in T.participant_id:
-    #     pass
