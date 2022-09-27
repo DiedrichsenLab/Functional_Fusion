@@ -30,7 +30,7 @@ def import_suit(source_dir,dest_dir,anat_name,participant_id):
     dest.append(f'/sub-{participant_id}_label-GMc_probseg.nii')
     src.append(f'/c2{anat_name}.nii')
     dest.append(f'/sub-{participant_id}_label-WMc_probseg.nii')
-    src.append(f'/maskbrainSUITGrey.nii')
+    src.append(f'/../../glm2/S{participant_id}/maskbrainSUITGrey.nii')
     dest.append(f'/sub-{participant_id}_desc-cereb_mask.nii')
     src.append(f'/u_a_c_{anat_name}_seg1.nii')
     dest.append(f'/sub-{participant_id}_space-SUIT_xfm.nii')
@@ -93,7 +93,7 @@ def import_freesurfer(source_dir,dest_dir,new_id):
         except:
             print('skipping ' + src[i])
 
-def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
+def import_spm_glm(source_dir,dest_dir,sub_id,sess_id):
     """Imports the output of the SPM GLM with an SPM_info.mat
     structure into BIDS deriviatie (Functional Fusion) framework.
     It assumes that a single GLM corresponds to single session.
@@ -109,31 +109,26 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
     src=[]
     dest =[]
     # Generate new dictionary from SPM info
-    D = mat73.loadmat(source_dir+'/SPM_info.mat')
-    T={}
-    for i in info_dict.items():
-        series=D[i[0]]
-        if type(series[0]) is list:
-            series=[series[i][0] for i in range(len(series))]
-        T[i[1]]=series
+    
+    # Copy reginfo.tsv file to destination
+    # reginfo.tsv file has already been created by case "GLM:glm2" in bsp_imana.m
+    try:
+        shutil.copyfile(
+    source_dir + f'/{sub_id}_{sess_id}_reginfo.tsv',
+                  dest_dir + f'/{sub_id}_{sess_id}_reginfo.tsv')
+    except:
+        print('skipping ' + f'/{sub_id}_{sess_id}_reginfo.tsv')
+    
 
-    N = len(T[i[1]])
-    if 'reg_id' not in T.keys():
-        n = sum(T['run']==1)
-        T['reg_num'] = np.arange(N)
-        T['reg_id'] = T['reg_num'] % n
-
-    # Ensure that run number is an integer value
-    T['run'] = [int(j) for j in T['run']]
-    D = pd.DataFrame(T)
-    D.to_csv(dest_dir + f'/{sub_id}_{sess_id}_reginfo.tsv',sep='\t')
+    D = pd.read_csv(dest_dir + f'/{sub_id}_{sess_id}_reginfo.tsv', sep='\t')
 
     # Prepare beta files for transfer
-    src=[]
-    dest =[]
-    for i in range(N):
+    src = []
+    dest = []
+    for i in range(len(D.index)):
         src.append(f'/beta_{i+1:04d}.nii')
-        dest.append(f'/{sub_id}_{sess_id}_run-{D.run[i]:02}_reg-{D.reg_id[i]:02d}_beta.nii')
+        dest.append(
+            f'/{sub_id}_{sess_id}_run-{D.run[i]:02}_reg-{D.reg_id[i]:02d}_beta.nii')
     # Mask
     src.append(f'/mask.nii')
     dest.append(f'/{sub_id}_{sess_id}_mask.nii')
@@ -191,11 +186,11 @@ if __name__ == '__main__':
         # import_freesurfer(source_dir,dest_dir,new_id)
 
         # --- Importing Estimates ---
-        source_dir = '{}/Pontine7T/GLM_firstlevel_2/S{}/surf'.format(src_base_dir, participant_id)
+        source_dir = '{}/GLM_firstlevel_2/S{}/'.format(src_base_dir, participant_id)
         dest_dir = '{}/derivatives/sub-{}/estimates/ses-01'.format(dest_base_dir, participant_id)
         subj_id = 'sub-{}'.format(participant_id)
         ses_id = 'ses-01'
-        import_spm_glm(source_dir,dest_dir,subj_id , ses_id)
+        import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
 
 
 # /Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/GLM_firstlevel_2/S01/beta_0048.nii
