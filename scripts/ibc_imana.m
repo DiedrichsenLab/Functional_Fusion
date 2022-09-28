@@ -57,8 +57,8 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
@@ -1339,8 +1339,9 @@ switch what
         nishimoto_imana('SURF:map_ico')
         nishimoto_imana('SURF:fs2wb')        
         
-    case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
-        % Example usage: nishimoto_bids_imana('SUIT:isolate_segment', 'sn', 1);
+    case 'SUIT:isolate_segment'  
+        % Segment cerebellum into grey and white matter
+        % Example usage: ibc_imana('SUIT:isolate_segment', 'sn', 1);
         
         sn = subj_id;
         
@@ -1353,14 +1354,14 @@ switch what
             
             % Get the directory of subjects anatomical
             deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
-                subj_str{s})
+                subj_str{s});
             anat_subj_dir = fullfile(deriv_subj_dir, anat_dir);
             % Get the name of the anatpmical image
             anat_name = sprintf(...
                 '%s_space-native_desc-resampled_T1w_lpi.nii', subj_str{s});
             % Define suit folder
             suit_subj_dir = fullfile(deriv_subj_dir, 'suit');
-            suit_anat = fullfile(suit_subj_dir, 'anat')
+            suit_anat = fullfile(suit_subj_dir, 'anat');
             % Create suit folder if it does not exist
             if ~exist(suit_anat, 'dir')
                 mkdir (suit_anat)
@@ -1372,9 +1373,7 @@ switch what
             copyfile(source, dest);
             
             % go to subject directory for suit and isolate segment
-            % cd(fullfile(suit_subj_dir));
             suit_isolate_seg({dest}, 'keeptempfiles', 1);
-%             suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w.nii', subj_str{s}))}, 'keeptempfiles', 1);
         end % s (sn)
 
     case 'SUIT:correct_cereb_mask' % Corrected cerebellum cortex mask
