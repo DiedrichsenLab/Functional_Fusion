@@ -166,16 +166,16 @@ class DataSetMDTB(DataSet):
 
         # Depending on the type, make a new contrast
         info['half']=2-(info.run<9)
-        n_cond = np.max(info.reg_num)
+        n_cond = np.max(info.cond_num)
         if type == 'CondSes':
 
             # Make new data frame for the information of the new regressors
-            ii = ((info.run == 1) | (info.run == 9)) & (info.reg_num>0)
+            ii = ((info.run == 1) | (info.run == 9)) & (info.cond_num>0)
             data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.task_name}-sess{d.half}' for i,d in data_info.iterrows()]
+            data_info['names']=[f'{d.cond_name}-sess{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
-            reg = (info.half-1)*n_cond + info.reg_num
+            reg = (info.half-1)*n_cond + info.cond_num
             reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
@@ -195,11 +195,11 @@ class DataSetMDTB(DataSet):
         elif type == 'CondRun':
 
             # Subset of info sutructure
-            ii = (info.reg_num>0)
+            ii = (info.cond_num>0)
             data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.task_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
+            data_info['names']=[f'{d.cond_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
 
-            reg = (info.run-1)*n_cond + info.reg_num
+            reg = (info.run-1)*n_cond + info.cond_num
             reg[info.instruction==1] = 0
             # Contrast for the regressors of interst
             C = matrix.indicator(reg,positive=True) # Drop the instructions
@@ -215,12 +215,12 @@ class DataSetMDTB(DataSet):
         elif type == 'CondAll':
 
             # Make new data frame for the information of the new regressors
-            ii = (info.run == 1)  & (info.reg_num>0)
+            ii = (info.run == 1)  & (info.cond_num>0)
             data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.task_name}' for i,d in data_info.iterrows()]
+            data_info['names']=[f'{d.cond_name}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
-            reg = info.reg_num
+            reg = info.cond_num
             reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
@@ -411,17 +411,17 @@ class DataSetPontine(DataSet):
 
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 9)
-        n_cond = np.max(info.reg_num)
+        n_cond = np.max(info.reg_id)
         if type == 'CondSes':
 
             # Make new data frame for the information of the new regressors
-            ii = ((info.run == 1) | (info.run == 9)) & (info.reg_num > 0)
+            ii = ((info.run == 1) | (info.run == 9)) & (info.reg_id > 0)
             data_info = info[ii].copy().reset_index()
             data_info['names'] = [
                 f'{d.task_name}-sess{d.half}' for i, d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
-            reg = (info.half - 1) * n_cond + info.reg_num
+            reg = (info.half - 1) * n_cond + info.reg_id
             reg[info.instruction == 1] = 0
             C = matrix.indicator(reg, positive=True)  # Drop the instructions
 
@@ -442,12 +442,12 @@ class DataSetPontine(DataSet):
         elif type == 'CondRun':
 
             # Subset of info sutructure
-            ii = (info.reg_num > 0)
+            ii = (info.reg_id > 0)
             data_info = info[ii].copy().reset_index()
             data_info['names'] = [
                 f'{d.task_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
 
-            reg = (info.run - 1) * n_cond + info.reg_num
+            reg = (info.run - 1) * n_cond + info.reg_id
             reg[info.instruction == 1] = 0
             # Contrast for the regressors of interst
             C = matrix.indicator(reg, positive=True)  # Drop the instructions
@@ -464,13 +464,13 @@ class DataSetPontine(DataSet):
         elif type == 'CondAll':
 
             # Make new data frame for the information of the new regressors
-            ii = (info.run == 1) & (info.reg_num > 0)
+            ii = (info.run == 1) & (info.reg_id > 0)
             data_info = info[ii].copy().reset_index()
             data_info['names'] = [
                 f'{d.task_name}' for i, d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
-            reg = info.reg_num
+            reg = info.reg_id
             reg[info.instruction == 1] = 0
             C = matrix.indicator(reg, positive=True)  # Drop the instructions
 
