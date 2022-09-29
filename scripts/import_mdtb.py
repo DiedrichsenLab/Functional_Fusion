@@ -44,7 +44,7 @@ def fix_sc2_reginfo():
 if __name__ == "__main__":
     # fix_sc2_reginfo()
     T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
-    for s in T.participant_id:
+    for s in T.participant_id[0:1]:
         old_id = s.replace('sub-','s',1)
         # dir1 = orig_dir + f'/sc1/suit/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/suit'
@@ -52,16 +52,17 @@ if __name__ == "__main__":
         # dir1 = orig_dir + f'/sc1/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/anat'
         # id.import_anat(dir1,dir2,'anatomical',s)
-        dir1 = orig_dir + f'/sc1/surfaceWB/{old_id}'
-        dir2 = target_dir + f'/derivatives/{s}/anat'
-        id.import_freesurfer(dir1,dir2,old_id,s)
-        print(s)
+        # dir1 = orig_dir + f'/sc1/surfaceWB/{old_id}'
+        # dir2 = target_dir + f'/derivatives/{s}/anat'
+        # id.import_freesurfer(dir1,dir2,old_id,s)
+        # print(s)
         # info_dict={'run':'run',
         #           'inst':'instruction',
         #           'TN':'task_name',
         #           'CN':'cond_name',
         #           'task':'task_num',
         #           'cond':'cond_num'}
-        # dir1 = orig_dir + f'/sc2/GLM_firstlevel_7/{old_id}'
-        # dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s2'
+        dir1 = orig_dir + f'/sc1/GLM_firstlevel_7/{old_id}'
+        dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s1'
         # id.import_spm_glm(dir1,dir2,s,'ses-s2',info_dict)
+        id.import_spm_designmatrix(dir1,dir2,s,'ses-s1')

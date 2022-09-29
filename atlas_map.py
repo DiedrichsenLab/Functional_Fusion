@@ -11,10 +11,10 @@ from numpy.linalg import inv
 import nibabel as nb
 import os
 
-import util
 import matrix
 import SUITPy as suit
 import surfAnalysisPy as surf
+import nitools as nt
 
 
 class Atlas():
@@ -47,7 +47,7 @@ class AtlasVolumetric(Atlas):
         Xmask = (Xmask>0)
         i,j,k = np.where(Xmask>0)
         self.vox = np.vstack((i,j,k))
-        self.world = util.affine_transform_mat(self.vox,self.mask_img.affine)
+        self.world = nt.affine_transform_mat(self.vox,self.mask_img.affine)
         self.P = self.world.shape[1]
 
     def map_data(self,data):
@@ -71,7 +71,8 @@ class AtlasVolumetric(Atlas):
             bm (cifti2.BrainModelAxis)
         """
         bm = nb.cifti2.BrainModelAxis.from_mask(self.mask_img.get_data(),
-                                            name=self.name)
+                                            name=self.name,
+                                            affine = self.mask_img.affine)
         return bm
 
     def data_to_nifti(self,data):
@@ -142,42 +143,42 @@ class AtlasVolumeParcel(Atlas):
         """AtlasSurfaceParcel class constructor
 
         Args:
-            name (str): 
+            name (str):
                 Name of the brain structure (cortex_left, cortex_right, cerebellum)
-            mask_gii (str): 
-                gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space 
+            mask_gii (str):
+                gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space
         """
         self.name = name
         self.label_img = nb.load(label_img)
 
-        if mask_img is not None: 
+        if mask_img is not None:
             self.mask_img = nb.load(mask_img)
         else:
             self.mask_img = self.label_img
-        
+
         Xmask = self.mask_img.get_data()
         i,j,k = np.where(Xmask>0)
         self.vox = np.vstack((i,j,k))
-        self.world = util.affine_transform_mat(self.vox,self.mask_img.affine)
+        self.world = nt.affine_transform_mat(self.vox,self.mask_img.affine)
         self.label_vec = suit.reslice.sample_image(self.label_img,
                     self.world[0],
                     self.world[1],
                     self.world[2],
                     0)
-        # Find the number of parcels with label > 0 
+        # Find the number of parcels with label > 0
         self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
 
     def agg_data(self,data,func=np.nanmean):
-        """Aggregate data into the parcels - 
-        Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1.... 
+        """Aggregate data into the parcels -
+        Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1....
 
         Args:
-            data (nparray): 
-                NxP array of data   
-            func (function): 
-                Aggregation function - needs to take data,axis=1 as input arguments 
-        Returns: 
-            Aggregated data: 
+            data (nparray):
+                NxP array of data
+            func (function):
+                Aggregation function - needs to take data,axis=1 as input arguments
+        Returns:
+            Aggregated data:
         """
 
         # get the aggregrated data - assumes consequtive labels [1...P]
@@ -214,10 +215,10 @@ class AtlasSurfaceParcel(Atlas):
         """AtlasSurfaceParcel class constructor
 
         Args:
-            name (str): 
+            name (str):
                 Name of the brain structure (cortex_left, cortex_right, cerebellum)
-            mask_gii (str): 
-                gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space 
+            mask_gii (str):
+                gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space
         """
         self.name = name
         self.label_gii = nb.load(label_gii)
@@ -230,20 +231,20 @@ class AtlasSurfaceParcel(Atlas):
             self.mask_gii = nb.load(mask_gii)
             Xmask = self.mask_gii.agg_data()
             self.label_vec = self.label_vec[Xmask==0]=0
-        # Find the number of parcels with label > 0 
+        # Find the number of parcels with label > 0
         self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
 
     def agg_data(self,data,func=np.nanmean):
-        """Aggregate data into the parcels - 
-        Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1.... 
+        """Aggregate data into the parcels -
+        Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1....
 
         Args:
-            data (nparray): 
-                NxP array of data   
-            func (function): 
-                Aggregation function - needs to take data,axis=1 as input arguments 
-        Returns: 
-            Aggregated data: 
+            data (nparray):
+                NxP array of data
+            func (function):
+                Aggregation function - needs to take data,axis=1 as input arguments
+        Returns:
+            Aggregated data:
         """
 
         # get the aggregrated data - assumes consequtive labels [1..P]
@@ -284,6 +285,7 @@ class AtlasMap():
         """
         self.P = atlas.P       #  Number of brain locations
         self.name = atlas.name
+        self.atlas = atlas
         self.participant_id = participant_id
         self.dataset = dataset # Reference to corresponding data set
 
@@ -316,28 +318,41 @@ class AtlasMapDeform(AtlasMap):
         Args:
             dataset_id (str): name of
             participant_id (str): Participant name
-            deform_img (str): Name for deformation map image
+            deform_img (str/list): Name of deformation map image(s) 
             mask_img (str): Name of masking image that defines the functional data space.
         """
         super().__init__(dataset,atlas,participant_id)
         self.world = atlas.world
-        self.deform_img = nb.load(deform_img)
+        if type(deform_img) is not list:
+            deform_img = [deform_img]
+        self.deform_img = []
+        for di in deform_img:
+            self.deform_img.append(nb.load(di))
         self.mask_img = nb.load(mask_img)
 
     def build(self,smooth = None):
         """
-        Using the dataset, build creates a list of voxel indices of
-        For each of the locations, it
+        Using the dataset, builds a list of voxel indices of
+        For each of the locations. It creates:
+        vox_list: List of voxels to sample for each atlas location
+        vox_weight: Weight of each of these voxels to determine the atlas location
+        Arg:
+            smooth (double): SD of smoothing kernel (mm) or None for nearest neighbor
         """
         # Caluculate locations of atlas in individual (deformed) coordinates
-        atlas_ind = suit.reslice.sample_image(self.deform_img,
-                    self.world[0],
-                    self.world[1],
-                    self.world[2],1).squeeze().T
+        # Apply possible multiple deformation maps sequentially
+        xyz = self.world.copy()
+        for i,di in enumerate(self.deform_img):
+            xyz = suit.reslice.sample_image(di,
+                    xyz[0],
+                    xyz[1],
+                    xyz[2],1).squeeze().T
+            pass
+        atlas_ind = xyz 
         N = atlas_ind.shape[1] # Number of locations in atlas
 
         if smooth is None: # Use nearest neighbor interpolation
-            linindx,good = util.coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
+            linindx,good = nt.coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
             self.vox_list = linindx.reshape(-1,1)
             self.vox_weight = np.ones((linindx.shape[0],1))
             self.vox_weight[np.logical_not(good)]=np.nan
@@ -345,11 +360,11 @@ class AtlasMapDeform(AtlasMap):
             # Get world coordinates and linear coordinates for all available voxels
             M = self.mask_img.get_fdata()
             i,j,k=np.where(M>0)
-            world_vox = util.affine_transform_mat(np.vstack((i,j,k)),self.mask_img.affine) # available voxels in world coordiantes
+            world_vox = nt.affine_transform_mat(np.vstack((i,j,k)),self.mask_img.affine) # available voxels in world coordiantes
             linindx = np.ravel_multi_index((i,j,k),M.shape,mode='clip')
 
             # Distances between atlas coordinates and voxel coordinates
-            D = util.sq_eucl_distances(atlas_ind,world_vox)
+            D = nt.euclidean_dist_sq(atlas_ind,world_vox)
             # Find voxels with substantial power under gaussian kernel
             W = np.exp(-0.5 * D/(smooth**2))
             W[W<0.2]=0
@@ -365,7 +380,10 @@ class AtlasMapDeform(AtlasMap):
             self.vox_weight=np.zeros((N,c.max()+1))
             self.vox_list[a,c]=linindx[b]
             self.vox_weight[a,c]=W[a,b]
-            self.vox_weight = self.vox_weight / self.vox_weight.sum(axis=1, keepdims=True)
+            # Avoid divide by zero error:
+            mw = self.vox_weight.sum(axis=1, keepdims=True)
+            mw[mw==0]=np.nan
+            self.vox_weight = self.vox_weight / mw
         pass
 
 class AtlasMapSurf(AtlasMap):
@@ -388,8 +406,13 @@ class AtlasMapSurf(AtlasMap):
 
     def build(self,smooth = None, depths=[0,0.2,0.4,0.6,0.8,1.0]):
         """
-        Using the dataset, build creates a list of voxel indices of
+        Using the dataset, builds a list of voxel indices of
         each of the nodes
+        vox_list: List of voxels to sample for each atlas location
+        vox_weight: Weight of each of these voxels to determine the atlas location
+        Arg:
+            depths (iterable): List of depth between pial (1) and white (0) surface that
+            will be sampled
         """
         n_points = len(depths)
         c1 = self.white_surf.darrays[0].data[self.vertex,:].T
@@ -403,7 +426,7 @@ class AtlasMapSurf(AtlasMap):
         for i in range(n_points):
             indices[i,:,:] = (1-depths[i])*c1+depths[i]*c2
 
-        self.vox_list,good = util.coords_to_linvidxs(indices,self.mask_img,mask=True)
+        self.vox_list,good = nt.coords_to_linvidxs(indices,self.mask_img,mask=True)
         all = good.sum(axis=0)
         print(f'{self.name} has {np.sum(all==0)} vertices without data')
         all[all==0]=1
@@ -417,8 +440,10 @@ def get_data3D(fnames,atlas_maps):
     to extract the required raw data before processing it further
 
     Args:
-        fnames (list): list of file names to be sampled
-        atlas_maps (list): list of built atlas-map objects
+        fnames (list): list of N file names to be sampled
+        atlas_maps (list): list of K built atlas-map objects
+    returns:
+        data (list): List of NxP_k 2-d array data matrices (np)
     """
 
     n_atlas = len(atlas_maps)
