@@ -111,7 +111,7 @@ def parcel_pontine_fs32k(res=162,ses_id='ses-01',type='CondSes'):
 
     # create and calculate the atlas map for each participant
     T = pontine_dataset.get_participants()
-    for s in T.participant_id[0:2]:
+    for s in T.participant_id:
         print(f'Average {s}')
         s_dir = pontine_dataset.data_dir.format(s)
         C = nb.load(s_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
@@ -133,8 +133,8 @@ def parcel_pontine_fs32k(res=162,ses_id='ses-01',type='CondSes'):
 
 if __name__ == "__main__":
     # get_pontine_fs32k(ses_id='ses-01', type='CondSes')
-    # parcel_pontine_fs32k()
-    get_pontine_suit(ses_id='ses-01',type='CondSes')
+    parcel_pontine_fs32k()
+    # get_pontine_suit(ses_id='ses-01',type='CondSes')
     pass
 
 
