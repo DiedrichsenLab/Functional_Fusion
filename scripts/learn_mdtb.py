@@ -72,16 +72,22 @@ def get_mdtb_cortex(hem='L'):
 
     return pt.stack(data)
 
-def get_hcp_cortex(index=range(0, 20)):
-    root_dir = 'Y:/data/HCP_UR100_rfMRI'
+def get_hcp_cortex(hcp_dir='Y:/data/HCP_UR100_rfMRI', index=range(0, 20)):
     T = hcp_dataset.get_participants()
     data = []
     for s in T.participant_id[index]:
-        file_path = os.path.join(root_dir, s + "/MNINonLinear/Results/rfMRI_REST1_LR")
+        file_path = os.path.join(hcp_dir, s + "/MNINonLinear/Results/rfMRI_REST1_LR")
         file = os.path.join(file_path, "rfMRI_REST1_LR_Atlas_hp2000_clean.dtseries.nii")
         ts_cifti = nb.load(file)
 
 def get_mdtb_data(ses_id='ses-s1', type='CondSes'):
+    """Get the MDTB cerebellum data by given conditions
+    Args:
+        ses_id: the index of session
+        type: sessions oriented or runs oriented
+    Returns:
+        Data tensor, shape (num_subj, num_tasks, num_voxels)
+    """
     T = mdtb_dataset.get_participants()
     
     # Assemble the data 
@@ -108,6 +114,15 @@ def get_mdtb_data(ses_id='ses-s1', type='CondSes'):
     return Data, Xcond, D
 
 def get_hcp_data(res=162, index=range(0, 100), runs=[0,1,2,3], refix=False):
+    """Get the HCP resting cerebellum data by given conditions
+    Args:
+        res: the resolutions of cortex tessellation
+        index: the index of subjects
+        runs: the index of runs
+        refix: get the re-fix data or not, default - not re-FIX
+    Returns:
+        Data tensor, shape (num_subj, num_cortex_tess, num_voxels)
+    """
     # Make the atlas object
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
@@ -238,18 +253,52 @@ def _make_maps(data, sub=None, stats='mode', save=None, fname=None):
         nb.save(Nifti, fname)
 
 
-def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
+def _plot_mdtb_data(sub=0):
+    """Plot the MDTB data in 3d volume by randomly select 3 tasks
+    Args:
+        sub: the index of subject
+    Returns:
+        the data scatter plot in 3d
+    """
+    Data, Xdesign, D = get_mdtb_data(ses_id)
+    Y = Data[sub]
+
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'surface'}]],
+                        subplot_titles=["GME", "wVMF"])
+
+    # fig.add_trace(go.Scatter3d(x=Y1[0, 0, :], y=Y1[0, 1, :], z=Y1[0, 2, :],
+    #                            mode='markers', marker=dict(size=3, opacity=0.7, color=U[0])), row=1, col=1)
+    fig.add_trace(go.Scatter3d(x=Y2[0, 0, :], y=Y2[0, 1, :], z=Y2[0, 2, :],
+                               mode='markers', marker=dict(size=3, opacity=0.7, color=U[0])), row=1,
+                  col=1)
+    # fig.add_trace(go.Scatter3d(x=Y3[0, 0, :], y=Y3[0, 1, :], z=Y3[0, 2, :],
+    #                            mode='markers', marker=dict(size=3, opacity=0.7, color=U[0])), row=1, col=3)
+    fig.add_trace(go.Scatter3d(x=Y4[0, 0, :], y=Y4[0, 1, :], z=Y4[0, 2, :],
+                               mode='markers', marker=dict(size=3, opacity=0.7, color=U[0])), row=1,
+                  col=2)
+
+    fig.update_layout(title_text='Visualization of data generation')
+    fig.show()
+
+
+def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False, sub_id=None):
     """Learn a single data set 
     """
     # Data_HCP = get_hcp_data(ses_id=['ses-01','ses-02'], range=np.arange(2), save=True)
-    Data_HCP = get_hcp_data_from_csv(ses_id=['ses-01','ses-02'], range=np.arange(2))
-    Data,Xdesign = get_mdtb_data(ses_id)
+    # Data_HCP = get_hcp_data_from_csv(ses_id=['ses-01','ses-02'], range=np.arange(2))
+    Data, Xdesign, D = get_mdtb_data(ses_id)
     P = Data.shape[2]
     K = 10 
 
+    if sub_id is not None:
+        Data = Data[[sub_id]]
+
     # Make arrangement model and initialize the prior from the MDTB map
-    prior_w = 7.0 # Weight of prior
-    mdtb_parcel,mdtb_colors = get_mdtb_parcel()
+    prior_w = 3.0 # Weight of prior
+    mdtb_parcel,mdtb_colors = get_mdtb_parcel(do_plot=False)
     logpi = ar.expand_mn(mdtb_parcel.reshape(1,P)-1,K)
     logpi = logpi.squeeze()*prior_w
     # Set parcel 0 to unassigned 
@@ -268,28 +317,35 @@ def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
     M = fm.FullModel(ar_model, em_model)
 
     # Step 5: Estimate the parameter thetas to fit the new model using EM
-    M, ll, theta, U_hat = M.fit_em(Y=Data, iter=max_iter, tol=0.00001, fit_arrangement=True)
+    M, ll, theta, U_hat = M.fit_em(Y=Data, iter=max_iter, tol=0.00001, fit_arrangement=fit_arr)
 
     # plot emission log-likelihood
     plt.plot(ll, color='b')
     plt.show()
 
+    max_lengh = M.emission.W[~M.emission.W.isnan()].max()
+    lengths = pt.arange(0, 21, 1)
+    kappas = []
+    for i in range(len(lengths)-1):
+        this = M.emission.Mstep_test(U_hat, signal_range=[lengths[i], lengths[i+1]])
+        kappas.append(this)
+
     # PLOT 1 - group logpi
-    _plot_maps(pt.argmax(M.arrange.logpi, dim=0)+1, save="group_logpi.pdf")
+    # _plot_maps(pt.argmax(M.arrange.logpi, dim=0)+1, save="group_logpi.pdf")
 
-    # Make inference on first half of the data - now Data shape (n_sub, 29, P)
-    M.emission.X = pt.tensor(Xdesign[0:29,:])
-    U_hat_em = M.emission.Estep(Y=Data[:,0:29,:])
-    U_hat_complete, _ = M.Estep(Y=Data[:,0:29,:])
+    # # Make inference on first half of the data - now Data shape (n_sub, 29, P)
+    # M.emission.X = pt.tensor(Xdesign[0:29,:])
+    # U_hat_em = M.emission.Estep(Y=Data[:,0:29,:])
+    # U_hat_complete, _ = M.Estep(Y=Data[:,0:29,:])
+    #
+    # for s in [8,9,10,11]:
+    #     # PLOT 2 - top row: the indiviudal Uhat without group logpi
+    #     _plot_maps(pt.argmax(U_hat_em, dim=1)+1, sub=s)
+    #
+    #     # PLOT 3 - bottom row: the indiviudal Uhat + group logpi
+    #     _plot_maps(pt.argmax(U_hat_complete, dim=1)+1, sub=s)
 
-    for s in [8,9,10,11]:
-        # PLOT 2 - top row: the indiviudal Uhat without group logpi
-        _plot_maps(pt.argmax(U_hat_em, dim=1)+1, sub=s)
-
-        # PLOT 3 - bottom row: the indiviudal Uhat + group logpi
-        _plot_maps(pt.argmax(U_hat_complete, dim=1)+1, sub=s)
-
-    pass
+    return kappas
 
 def learn_runs(K=10, e='VMF', max_iter=100, runs=np.arange(1, 17), sub=None, do_plot=True):
     """Run this function to replicate the figure 5 in the nips paper
@@ -459,8 +515,8 @@ def learn_runs(K=10, e='VMF', max_iter=100, runs=np.arange(1, 17), sub=None, do_
 
     return T, group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
 
-def learn_hcp_mdtb(K=10, max_iter=100, runs=np.arange(1, 17), sub=None, do_plot=True):
-    """Run this function to replicate the figure 5 in the nips paper
+def learn_cerebellum_atlas(data, K=10, max_iter=100, runs=np.arange(1, 17), sub=None, do_plot=True):
+    """Script to learn cerebellar atales by fusing the given datasets
     Args:
         K: the number of parcels
         max_iter: maximum iterations for EM learning
@@ -602,10 +658,10 @@ def learn_mdtb_hcp(K=10, max_iter=100, sub_train=None, sub_test=None, do_plot=Tr
         uhat_complete_all: The expecation obtained by data+prior
     """
     resolution = [7, 50, 100, 200, 400, 600, 800, 1000]
-    Data = get_mdtb_cortex(hem='L')
-    # Data_2, Xdesign_2, D2 = get_mdtb_data(ses_id='ses-s2')
-    # Xdesign = pt.tensor(block_diag(Xdesign_1, Xdesign_2))
-    # Data = np.concatenate((Data_1, Data_2), axis=1)
+    Data_1, Xdesign_1, D1 = get_mdtb_data(ses_id='ses-s1')
+    Data_2, Xdesign_2, D2 = get_mdtb_data(ses_id='ses-s2')
+    Xdesign = pt.tensor(block_diag(Xdesign_1, Xdesign_2))
+    Data = np.concatenate((Data_1, Data_2), axis=1)
 
     Data_hcp = get_hcp_data(res=162, index=sub_train, runs=[0,1,2,3]) #TODO
     # Make arrangement model and initialize the prior from the MDTB map
@@ -726,7 +782,15 @@ if __name__ == "__main__":
     #
     #     df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1)), dim=0)
     #     df1 = pd.DataFrame(df1).to_csv(f'coserrs_{i}.csv')
-    gbase, lb = learn_mdtb_hcp(K=7, sub_train=range(0,20))
+
+    kappas = []
+    for i in range(24):
+        this_kappa = learn_single(sub_id=i)
+        kappas.append(pt.tensor(this_kappa))
+    plt.plot(pt.stack(kappas).T)
+    plt.show()
+
+    gbase, lb = learn_mdtb_hcp(K=7, sub_train=range(0,1))
     # gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_runs(K=10,
     #                                                                       runs=np.arange(1, 17))
     df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1), pt.stack(cos_em), pt.stack(cos_complete)), dim=0)
