@@ -138,9 +138,8 @@ switch what
             fprintf('- Reslicing %s anatomical to LPI\n', subj_str{s});
             
             % Get the directory of subjects anatomical
-            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
-                subj_str{s});
-            subj_anat_dir = fullfile(deriv_subj_dir, anat_dir);
+            raw_subj_dir = fullfile(base_dir, raw_dir, subj_str{s});
+            subj_anat_dir = fullfile(raw_subj_dir, anat_dir);
             
             % Get the name of the anatomical image
             anat_name = sprintf('%s_space-native_desc-resampled_T1w', ...
@@ -148,20 +147,26 @@ switch what
             
             % Reslice anatomical image to set it 
             % within LPI co-ordinate frames
-            source  = fullfile(...
-                subj_anat_dir, sprintf('%s.nii', anat_name));
+            gz_source  = fullfile(...
+                subj_anat_dir, sprintf('%s.nii.gz', anat_name));
+            % gunzip source file in localscratch
+            gunzip(gz_source, '/localscratch');
+            gunz_source = fullfile(...
+                '/localscratch', sprintf('%s.nii', anat_name));
             dest    = fullfile(...
-                subj_anat_dir, sprintf('%s_lpi.nii', anat_name));
-%             if ~isfile(source) && isfile(sprintf('%s.gz', source))  % unzip file
-%                 gunzip(sprintf('%s.gz', source));
-%             end
-            spmj_reslice_LPI(source,'name', dest);
+                subj_anat_dir, sprintf('%s_T1w.nii', subj_str{s}));
+            spmj_reslice_LPI(gunz_source, 'name', dest);
             
             % In the resliced image, set translation to zero
             V               = spm_vol(dest);
             dat             = spm_read_vols(V);
-            % V.mat(1:3,4)    = [0 0 0];
+            % V.mat(1:3,4)    = [0 0 0];                     
             spm_write_vol(V,dat);
+            
+            % Delete unziped raw files from localscratch
+            if any(size(dir('/localscratch/*.nii'), 1))
+                delete('/localscratch/*.nii')
+            end
         end % sn (subjects)
 
     case 'ANAT:center_ac'    % recenter to AC (manually retrieve coordinates)
