@@ -17,7 +17,9 @@ import atlas_map as am
 import scipy.linalg as sl
 import nibabel as nb
 import nitools as nt
-
+from pathlib import Path
+from numpy import eye
+from numpy.linalg import pinv,solve
 
 def prewhiten_data(data):
     """ prewhitens a list of data matrices.
@@ -36,7 +38,7 @@ def prewhiten_data(data):
         data_n[i] = data_n[i] / np.sqrt(np.abs(resms))
     return data_n
 
-def optimal_contrast(data,C,X,reg_in):
+def optimal_contrast(data,C,X,reg_in=None,baseline=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
 
     Args:
@@ -44,6 +46,7 @@ def optimal_contrast(data,C,X,reg_in):
         C (ndarray): N x Q array indicating contrasts
         X (ndarray): Optimal design matrix - Defaults to None.
         reg_in (ndarray): Contrast of interest: Logical vector indicating which rows of C we will put in the matrix
+        baseline (ndarray): Fixed effects contrast removed after estimation 
     """
     # Check the sizes
     N, Q = C.shape
@@ -51,19 +54,27 @@ def optimal_contrast(data,C,X,reg_in):
     # infer number of regressors of no interest that are not in the data structure
     num_nointerest = Np - N
     # Add to the contrast matrix
-    C = sl.block_diag(C,np.eye(num_nointerest))
+    Cn = sl.block_diag(C,np.eye(num_nointerest))
     # Make new design matrix
-    Xn = X @ C
+    Xn = X @ Cn
     # Loop over the data:
     data_new = []
     for i in range(len(data)):
         # Append the regressors of no interest regressors
-        data[i] = np.concatenate([data[i],
+        dat = np.concatenate([data[i],
                     np.zeros((num_nointerest,data[i].shape[1]))])
         # Do the averaging / reweighting:
-        d = np.linalg.solve(Xn.T @ Xn, Xn.T @ X @ data[i])
-        # Put the data in the list
-        data_new.append(d[reg_in,:])
+        d = solve(Xn.T @ Xn, Xn.T @ X @ dat)
+        # Subset to the contrast of interest 
+        if reg_in is not None: 
+            d=d[reg_in,:]
+        # Now subtract baseline
+        if baseline is not None: 
+            Q = d.shape[0]
+            R = eye(Q)-baseline @ pinv(baseline)
+            d = R @ d 
+        # Put the data in a list:
+        data_new.append(d)
     return data_new
 
 
@@ -87,6 +98,8 @@ class DataSet:
         self.func_dir = base_dir + '/derivatives/{0}/func'
         self.suit_dir = base_dir + '/derivatives/{0}/suit'
         self.data_dir = base_dir + '/derivatives/{0}/data'
+        # assume that the common atlas directory is on the level before
+        self.atlas_dir = os.path.join(os.path.dirname(base_dir),'Atlases')
 
     def get_participants(self):
         """ returns a data frame with all participants
@@ -129,6 +142,85 @@ class DataSet:
                 A data frame with information about the N numbers provide
         """
         pass
+
+    def get_all_suit(self,ses_id='ses-s1',type='CondSes',atlas='SUIT3'):
+        """Extracts data in SUIT space from a standard experiment structure
+        across all subjects. Saves the results as CIFTI files in the data directory.
+        Args:
+            ses_id (str, optional): Session. Defaults to 'ses-s1'.
+            type (str, optional): Type - defined in ger_data. Defaults to 'CondSes'.
+            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+        """
+        # Make the atlas object
+        if (atlas=='SUIT3'):
+            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+        if (atlas=='SUIT2'):
+            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
+        if (atlas=='MNISymC3'):
+            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
+        if (atlas=='MNISymC2'):
+            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
+        suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
+
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        for s in T.participant_id:
+            print(f'Atlasmap {s}')
+            deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
+            if atlas[0:7]=='MNISymC':
+                xfm_name = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
+                deform = [xfm_name,deform]
+            mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
+            atlas_map = am.AtlasMapDeform(self, suit_atlas, s,deform, mask)
+            atlas_map.build(smooth=2.0)
+            print(f'Extract {s}')
+            data,info = self.get_data(s,[atlas_map],
+                                                    ses_id=ses_id,
+                                                    type=type)
+            C=am.data_to_cifti(data,[atlas_map],info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
+
+    def get_all_fs32k(self,ses_id='ses-s1',type='CondSes'):
+        """Extracts data in fs32K space from a standard experiment structure
+        across all subjects. Saves the results as CIFTI files in the data directory.
+
+        Args:
+            ses_id (str, optional): _description_. Defaults to 'ses-s1'.
+            type (str, optional): _description_. Defaults to 'CondSes'.
+        """
+        # Make the atlas object
+        atlas =[]
+        bm_name = ['cortex_left','cortex_right']
+        for i,hem in enumerate(['L','R']):
+            mask = self.atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
+            atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
+
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        for s in T.participant_id:
+            atlas_maps = []
+            data = []
+            for i,hem in enumerate(['L','R']):
+                adir = self.anatomical_dir.format(s)
+                edir = self.estimates_dir.format(s)
+                pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
+                white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
+                mask = edir + f'/ses-s1/{s}_ses-s1_mask.nii'
+                atlas_maps.append(am.AtlasMapSurf(self, atlas[i],
+                            s,white,pial, mask))
+                atlas_maps[i].build()
+            print(f'Extract {s}')
+            data,info = self.get_data(s,atlas_maps,
+                                                ses_id=ses_id,
+                                                type=type)
+            C=am.data_to_cifti(data,atlas_maps,info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
+            pass
 
 class DataSetMDTB(DataSet):
     def __init__(self, dir):
@@ -179,18 +271,13 @@ class DataSetMDTB(DataSet):
             reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
-            # Now subtract the mean across all conditions in each half
-            for h in [1,2]:
-                baseline = np.array((info.half==h) & (info.instruction==0),dtype=np.double).reshape(-1,1)
-                C[:,data_info.half==h]-= baseline/n_cond
-            # Average across 8 runs
-            C=C/8
-
             # contrast for all instructions
             CI = matrix.indicator(info.half*info.instruction,positive=True)
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond*2,dtype=int)
-            # Subset of info sutructire
+
+            # Baseline substraction 
+            B = matrix.indicator(data_info.half,positive=True)
 
         elif type == 'CondRun':
 
@@ -203,15 +290,15 @@ class DataSetMDTB(DataSet):
             reg[info.instruction==1] = 0
             # Contrast for the regressors of interst
             C = matrix.indicator(reg,positive=True) # Drop the instructions
-            # Do the baseline subtraction
-            for r in range(16):
-                baseline = np.array((info.run==r) & (info.instruction==0),dtype=np.double).reshape(-1,1)
-                C[:,data_info.run==r]-= baseline/n_cond
+
 
             # contrast for all instructions
             CI = matrix.indicator(info.run*info.instruction,positive=True)
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond*16,dtype=int)
+
+            # Baseline substraction 
+            B = matrix.indicator(data_info.run,positive=True)
         elif type == 'CondAll':
 
             # Make new data frame for the information of the new regressors
@@ -220,30 +307,25 @@ class DataSetMDTB(DataSet):
             data_info['names']=[f'{d.cond_name}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
-            reg = info.cond_num
+            reg = info.cond_num.copy()
             reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
-
-            # Now subtract the mean across all conditions in each half
-            baseline = np.array((info.instruction==0),dtype=np.double).reshape(-1,1)
-            C-= baseline/n_cond
-            # Average across 8 runs
-            C=C/16
 
             # contrast for all instructions
             CI = matrix.indicator(info.instruction,positive=True)
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond,dtype=int)
-            # Subset of info sutructire
 
+            # Baseline substraction 
+            B = matrix.indicator(data_info.run,positive=True)
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
         X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
-        data_new = optimal_contrast(data_n,C,X,reg_in)
-
+        data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
+        
         return data_new, data_info
 
 class DataSetHcpResting(DataSet):

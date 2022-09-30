@@ -71,7 +71,8 @@ class AtlasVolumetric(Atlas):
             bm (cifti2.BrainModelAxis)
         """
         bm = nb.cifti2.BrainModelAxis.from_mask(self.mask_img.get_data(),
-                                            name=self.name)
+                                            name=self.name,
+                                            affine = self.mask_img.affine)
         return bm
 
     def data_to_nifti(self,data):
@@ -317,12 +318,16 @@ class AtlasMapDeform(AtlasMap):
         Args:
             dataset_id (str): name of
             participant_id (str): Participant name
-            deform_img (str): Name for deformation map image
+            deform_img (str/list): Name of deformation map image(s) 
             mask_img (str): Name of masking image that defines the functional data space.
         """
         super().__init__(dataset,atlas,participant_id)
         self.world = atlas.world
-        self.deform_img = nb.load(deform_img)
+        if type(deform_img) is not list:
+            deform_img = [deform_img]
+        self.deform_img = []
+        for di in deform_img:
+            self.deform_img.append(nb.load(di))
         self.mask_img = nb.load(mask_img)
 
     def build(self,smooth = None):
@@ -335,10 +340,15 @@ class AtlasMapDeform(AtlasMap):
             smooth (double): SD of smoothing kernel (mm) or None for nearest neighbor
         """
         # Caluculate locations of atlas in individual (deformed) coordinates
-        atlas_ind = suit.reslice.sample_image(self.deform_img,
-                    self.world[0],
-                    self.world[1],
-                    self.world[2],1).squeeze().T
+        # Apply possible multiple deformation maps sequentially
+        xyz = self.world.copy()
+        for i,di in enumerate(self.deform_img):
+            xyz = suit.reslice.sample_image(di,
+                    xyz[0],
+                    xyz[1],
+                    xyz[2],1).squeeze().T
+            pass
+        atlas_ind = xyz 
         N = atlas_ind.shape[1] # Number of locations in atlas
 
         if smooth is None: # Use nearest neighbor interpolation
