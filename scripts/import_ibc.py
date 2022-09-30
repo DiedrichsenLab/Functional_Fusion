@@ -70,70 +70,6 @@ def transfer_t1w_derivatives(sub, source_derivatives, target_derivatives):
     os.rename(t1, new_t1)
 
 
-def transfer_cmasks(sub, source_derivatives, target_derivatives):
-    target_anatpath = os.path.join(target_derivatives, sub, 'anat')
-    if not os.path.exists(target_anatpath):
-        os.makedirs(target_anatpath)
-    else:
-        for ng in glob.glob(target_anatpath + '/sub-*_mask-*_T1w.nii.gz'):
-            os.remove(ng)
-    source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat')
-    source_c1 = os.path.join(source_anatsess,
-                             'mwc1' + sub + '_ses-00_T1w.nii.gz')
-    source_c2 = os.path.join(source_anatsess,
-                             'mwc2' + sub + '_ses-00_T1w.nii.gz')
-    for cfile in [source_c1, source_c2]:
-        with subprocess.Popen(["scp", '-o BatchMode=yes', cfile,
-                               target_anatpath]) as c:
-            c.wait()
-        if cfile == source_c1:
-            cmask = os.path.join(target_anatpath,
-                                 'mwc1' + sub + '_ses-00_T1w.nii.gz')
-            new_cmask = os.path.join(target_anatpath,
-                                     sub + '_mask-c1_T1w.nii.gz')
-        else:
-            assert cfile == source_c2
-            cmask = os.path.join(target_anatpath,
-                                 'mwc2' + sub + '_ses-00_T1w.nii.gz')
-            new_cmask = os.path.join(target_anatpath,
-                                     sub + '_mask-c2_T1w.nii.gz')
-        print(cmask)
-        print(new_cmask)
-        os.rename(cmask, new_cmask)
-
-
-def transfer_meshes(sub, source_derivatives, target_derivatives):
-    source_meshfolder = os.path.join(source_derivatives, sub, 'ses-00/anat',
-                                     sub, 'surf/')
-    target_meshfolder = os.path.join(target_derivatives, sub, 'anat/')
-    if not os.path.exists(target_meshfolder):
-        os.makedirs(target_meshfolder)
-    else:
-        for ng in glob.glob(target_meshfolder + '/*.surf'):
-            os.remove(ng)
-    hemispheres = ['lh', 'rh']
-    meshes = ['orig', 'pial', 'sulc', 'white']
-    for hemi in hemispheres:
-        for mesh in meshes:
-            source_meshfile = os.path.join(
-                source_meshfolder, hemi + '.' + mesh)
-            with subprocess.Popen(["scp", '-o BatchMode=yes', source_meshfile,
-                                   target_meshfolder]) as m:
-                m.wait()
-            target_meshfile = os.path.join(
-                target_meshfolder, hemi + '.' + mesh)
-            if hemi == 'lh':
-                new_target_meshfile = os.path.join(
-                    target_meshfolder, sub + '_hemi-L_' + mesh + '.surf')
-            else:
-                assert hemi == 'rh'
-                new_target_meshfile = os.path.join(
-                    target_meshfolder, sub + '_hemi-R_' + mesh + '.surf')
-            print(target_meshfile)
-            print(new_target_meshfile)
-            os.rename(target_meshfile, new_target_meshfile)
-
-
 def source_funcdata(sub, sname, original_sourcepath, destination_sourcepath,
                     df1, df2, data_type='bold.nii.gz'):
     """
@@ -427,12 +363,6 @@ if __name__ == "__main__":
 
         ## Import T1w-resampled in the native space ##
         transfer_t1w_derivatives(subject, drago_derivatives, cbs_sourcedata)
-
-        ## Import cmasks ##
-        # transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
-
-        ## Import Freesurfer meshes ##
-        # transfer_meshes(subject, drago_derivatives, cbs_derivatives)
 
         # for session_name in session_names:
             ## Import raw EPI ##
