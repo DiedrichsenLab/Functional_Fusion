@@ -52,31 +52,22 @@ def transfer_t1w_derivatives(sub, source_derivatives, target_derivatives):
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
     else:
-        for ng in glob.glob(target_anatpath + '/sub-*_space-*_T1w.nii.gz'):
+        for ng in glob.glob(target_anatpath + \
+                            '/sub-*_space-native_desc-resampled_T1w.nii*'):
             os.remove(ng)
     source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat/')
     source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
-    w_source_anatfile = os.path.join(source_anatsess,
-                                     'w' + sub + '_ses-00_T1w.nii.gz')
 
-    for afile in [source_anatfile, w_source_anatfile]:
-        with subprocess.Popen(["scp", '-o BatchMode=yes', afile,
-                               target_anatpath]) as a:
-            a.wait()
-        if afile == source_anatfile:
-            t1 = os.path.join(target_anatpath, sub + '_ses-00_T1w.nii.gz')
-            new_t1 = os.path.join(
-                target_anatpath,
-                sub + '_space-native_desc-resampled_T1w.nii.gz')
-        else:
-            assert afile == w_source_anatfile
-            t1 = os.path.join(
-                target_anatpath, 'w' + sub + '_ses-00_T1w.nii.gz')
-            new_t1 = os.path.join(target_anatpath,
-                                  sub + '_space-MNI_T1w.nii.gz')
-        print(t1)
-        print(new_t1)
-        os.rename(t1, new_t1)
+    with subprocess.Popen(["scp", '-o BatchMode=yes', source_anatfile,
+                           target_anatpath]) as a:
+        a.wait()
+    t1 = os.path.join(target_anatpath, sub + '_ses-00_T1w.nii.gz')
+    new_t1 = os.path.join(
+        target_anatpath,
+        sub + '_space-native_desc-resampled_T1w.nii.gz')
+    print(t1)
+    print(new_t1)
+    os.rename(t1, new_t1)
 
 
 def transfer_cmasks(sub, source_derivatives, target_derivatives):
@@ -398,8 +389,8 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 
 # ############################### INPUTS ###############################
 
-# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
@@ -432,10 +423,10 @@ subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 if __name__ == "__main__":
     for subject in subjects_list:
         ## Import T1w raw ##
-        # transfer_t1w(subject, drago_sourcedata, cbs_sourcedata)
+        transfer_t1w(subject, drago_sourcedata, cbs_sourcedata)
 
-        ## Import T1w resampled-only AND normalized ##
-        # transfer_t1w_derivatives(subject, drago_derivatives, cbs_derivatives)
+        ## Import T1w-resampled in the native space ##
+        transfer_t1w_derivatives(subject, drago_derivatives, cbs_sourcedata)
 
         ## Import cmasks ##
         # transfer_cmasks(subject, drago_derivatives, cbs_derivatives)
@@ -443,7 +434,7 @@ if __name__ == "__main__":
         ## Import Freesurfer meshes ##
         # transfer_meshes(subject, drago_derivatives, cbs_derivatives)
 
-        for session_name in session_names:
+        # for session_name in session_names:
             ## Import raw EPI ##
             # source_funcdata(subject, session_name, drago_sourcedata,
             #                 cbs_sourcedata, dfm, dfs)
@@ -464,5 +455,5 @@ if __name__ == "__main__":
             #                    cbs_derivatives, dfm, dfs, dfc)
 
             ## Generate tsv files with session info ##
-            generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
-                              dfs, dfc)
+            # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
+            #                   dfs, dfc)
