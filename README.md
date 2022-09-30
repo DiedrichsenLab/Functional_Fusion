@@ -1,11 +1,9 @@
-Functional_Fusion
-====
+# Functional_Fusion
 Diedrichsen Lab, Western University
 
 This repository is the structure and preprocessing code for the multi-data set project in the Diedrichsenlab.
 
-Installation and dependencies
-------
+## Installation and dependencies
 This project depends on several third party libraries, including:
 
 [numpy](https://numpy.org/) (version>=1.22.2)
@@ -21,8 +19,15 @@ nibabel []
 
 Or you can install the package manually from the original binary source as above links.
 
-Structures of the project
-------
+Once you clone the functional fusion repository, you need to add it to your PYTHONPATH, so you can import the functionality. Add these lines to your .bash_profile, .bash_rc .zsh_profile file... 
+
+```
+PYTHONPATH=/Users/.../parentdir:${PYTHONPATH}
+export PYTHONPATH
+```
+
+
+## Structures of the project
 ### Overall structure
 ![ScreenShot](docs/data_flow.png)
 
@@ -69,7 +74,7 @@ The folder structure of derivatives
         │       │       sub-<id>_label-WMc_probseg.nii                # probabilistic segmentation (WM-cereb)
         │       │       sub-<id>_label-GMb_probseg.nii                # probabilistic segmentation (GM-rest)
         │       │       sub-<id>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
-        │       │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask in func space
+        │       │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask in functional space
         |       | 		sub-<id>_space-SUIT_xfm.nii 				  #	coordinate transformation file into native
         │       └───func/
           								sess-s1/
@@ -96,3 +101,22 @@ The folder structure of derivatives
 ### AtlasMap structure
 
 Need to be discussed later.
+
+
+## Import data to the Functional Fusion framework
+### Import Anatomical and MNI normalization parameters from SPM (Segement)
+If you run the SPM Segmentation algorithm in a source directory, the anatomical, segmentations, and normalization parameters to MNI152Nonlin can be imported by: 
+```
+    import import_data as id
+    source_dir = <Directory where you ran segementation (outside functional fusion) >
+    dest_dir = '<base_dir/derivates/sub-xx/anat'
+    anat_name = '<something>.nii' 
+    id.import_anat(source_dir,dest_dir,anat_name,'sub-xx') 
+```
+### Import Cortical surfaces from Freesurfer reconstruction 
+### Import SUIT normalization
+Run SUIT isolation, and normalization outside of the Funtional Fusion framework. Additionally, you need to save the non-linear transformation between SUIT and individual subject space as a deformation file. 
+
+```
+    suit_save_darteldef(<c_anat_name>,'wdir',workingdirectory)
+```

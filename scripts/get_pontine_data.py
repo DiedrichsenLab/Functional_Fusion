@@ -5,8 +5,9 @@ from pathlib import Path
 import mat73
 import numpy as np
 import sys
-sys.path.append(
-    '/Users/callithrix/Documents/Projects/Functional_Fusion/code/shared/Functional_Fusion/') # can be removed before push, but currently that is the best way to import atlas_map for me
+# Discuss: This is causing trouble in compatibility 
+# sys.path.append(
+#     '/Users/callithrix/Documents/Projects/Functional_Fusion/code/shared/Functional_Fusion/') # can be removed before push, but currently that is the best way to import atlas_map for me
 import atlas_map as am
 from dataset import DataSetPontine
 import nibabel as nb
@@ -19,31 +20,6 @@ if not Path(base_dir).exists():
 
 data_dir = base_dir + '/Pontine7T'
 atlas_dir = base_dir + '/Atlases'
-
-def get_pontine_suit(ses_id='ses-01',type='CondSes'):
-    # Make the atlas object
-    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
-    # initialize the data set object
-    pontine_dataset = DataSetPontine(data_dir)
-
-    # create and calculate the atlas map for each participant
-    T = pontine_dataset.get_participants()
-    for s in T.participant_id:
-        print(f'Atlasmap {s}')
-        deform = pontine_dataset.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
-        mask = pontine_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-        atlas_map = am.AtlasMapDeform(pontine_dataset, suit_atlas, s,deform, mask)
-        atlas_map.build(smooth=2.0)
-        print(f'Extract {s}')
-        data,info = pontine_dataset.get_data(s,[atlas_map],
-                                                ses_id=ses_id,
-                                                type=type)
-        C=am.data_to_cifti(data,[atlas_map],info.names)
-        dest_dir = pontine_dataset.data_dir.format(s)
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        nb.save(C, dest_dir + f'/{s}_space-SUIT3_{ses_id}_{type}.dscalar.nii')
-        info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
 
 def show_pontine_suit(subj,sess,cond):
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
@@ -62,82 +38,6 @@ def show_pontine_suit(subj,sess,cond):
     print(f'Showing {D.cond_name[cond]}')
     pass
 
-def get_pontine_fs32k(ses_id='ses-01',type='CondSes'):
-    # Make the atlas object
-    atlas =[]
-    bm_name = ['cortex_left','cortex_right']
-    for i,hem in enumerate(['L','R']):
-        mask = atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
-        atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
-    # initialize the data set object
-    pontine_dataset = DataSetPontine(data_dir)
-
-    # create and calculate the atlas map for each participant
-    T = pontine_dataset.get_participants()
-    for s in T.participant_id:
-        atlas_maps = []
-        data = []
-        for i,hem in enumerate(['L','R']):
-            adir = pontine_dataset.anatomical_dir.format(s)
-            edir = pontine_dataset.estimates_dir.format(s)
-            pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
-            white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
-            mask = edir + f'/ses-01/{s}_ses-01_mask.nii'
-            atlas_maps.append(am.AtlasMapSurf(pontine_dataset, atlas[i],
-                            s,white,pial, mask))
-            atlas_maps[i].build()
-        print(f'Extract {s}')
-        data,info = pontine_dataset.get_data(s,atlas_maps,
-                                                ses_id=ses_id,
-                                                type=type)
-        C = am.data_to_cifti(data, atlas_maps, info.names)
-        dest_dir = pontine_dataset.data_dir.format(s)
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
-        pass
-
-def parcel_pontine_fs32k(res=162,ses_id='ses-01',type='CondSes'):
-    # Make the atlas object
-    surf_parcel =[]
-    hem_name = ['cortex_left','cortex_right']
-    # Get the parcelation
-    for i,h in enumerate(['L','R']):
-        dir = atlas_dir + '/tpl-fs32k'
-        gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
-        surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i],gifti))
-
-    # initialize the data set object
-    pontine_dataset = DataSetPontine(data_dir)
-
-    # create and calculate the atlas map for each participant
-    T = pontine_dataset.get_participants()
-    for s in T.participant_id:
-        print(f'Average {s}')
-        s_dir = pontine_dataset.data_dir.format(s)
-        C = nb.load(s_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
-        bmf = C.header.get_axis(1)
-        bmp = []
-        R = []
-        for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
-            D = np.asanyarray(C.dataobj[:,slc])
-            X = np.zeros((D.shape[0],surf_parcel[0].label_vec.shape[0]))
-            X[:,bm.vertex]=D
-            R.append(surf_parcel[idx].agg_data(X))
-            bmp.append(surf_parcel[idx].get_parcel_axis())
-        header = nb.Cifti2Header.from_axes((C.header.get_axis(0),bmp[0]+bmp[1]))
-        cifti_img = nb.Cifti2Image(dataobj=np.c_[R[0],R[1]],header=header)
-        nb.save(cifti_img,s_dir + f'/{s}_space-fs32k_{ses_id}_{type}_Iso-{res}.pscalar.nii')
-        pass
-
-
-
 if __name__ == "__main__":
-    # get_pontine_fs32k(ses_id='ses-01', type='CondSes')
-    parcel_pontine_fs32k()
-    # get_pontine_suit(ses_id='ses-01',type='CondSes')
-    pass
-
-
-    # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
-    # for s in T.participant_id:
-    #     pass
+    p7_dataset = DataSetPontine(data_dir)
+    p7_dataset.get_all_suit('ses-01','TaskSes','SUIT3')
