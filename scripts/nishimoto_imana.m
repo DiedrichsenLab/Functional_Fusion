@@ -17,6 +17,13 @@ addpath(sprintf('%s/../matlab/dataframe',workdir));
 addpath(sprintf('%s/../matlab/imaging/tools/',workdir));
 addpath(sprintf('%s/../matlab/imaging/coregtool/',workdir));
 
+% Some suit functions are not released yet, hence clone the SUIT develop
+% branch. Run:
+% git clone https://github.com/jdiedrichsen/suit.git;
+% git checkout Develop
+addpath('~/Matlab/suit')
+
+
 %% ----- Initialize suit toolbox -----
 % check for SUIT installation
 if isempty(which('suit_isolate_seg')) % this function is only visible while SPM is actually "running" (not just on the path). This needs to happen for SUIT to run.
@@ -32,7 +39,7 @@ suit_defaults;
 %========================================================================================================================
 global base_dir
 
-base_dir = sprintf('%s/FunctionalFusion/Nishimoto_103Task/',workdir);
+base_dir = sprintf('%s/FunctionalFusion/Nishimoto_103Task/raw/',workdir);
 % base_dir = '/Users/ladan/Documents/DATA/nishimoto';
 
 %%% Freesurfer stuff
@@ -1210,6 +1217,21 @@ switch what
             job.subjND.isolation  = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_pcereb_corr.nii', subj_str{s}))};
             suit_normalize_dartel(job);
         end % s (subjects)    
+
+    case 'SUIT:save_dartel_def'    
+        % Saves the dartel flow field as a deformation file. 
+        % example usage: nishimoto_imana('SUIT:save_dartel_def')
+        sn = subj_id; %subjNum
+        vararginoptions(varargin, 'sn');
+
+        for s = sn
+            suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit', 'anat');
+
+            cd(suit_subj_dir);
+            anat_name = sprintf('%s_T1w_lpi', subj_str{s});
+            suit_save_darteldef(anat_name);
+        end % s (subjects)
+
     case 'SUIT:reslice'            % Reslice stuff into suit space 
         % run the case with 'anatomical' to check the suit normalization
         % Example usage: nishimoto_imana('SUIT:reslice','type','ResMS', 'mask', 'pcereb_corr')
