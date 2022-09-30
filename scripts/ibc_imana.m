@@ -129,7 +129,7 @@ numDummys = 0; % we need to make sure that this is correct
 
 switch what
     case 'ANAT:reslice_lpi'  % reslice anatomical to LPI
-        % Example usage:nishimoto_imana('ANAT:reslice_lpi')
+        % Example usage:ibc_imana('ANAT:reslice_lpi')
         sn = subj_id;
         
         
@@ -210,26 +210,11 @@ switch what
         for s = sn
             fprintf('- Anatomical segmentation for %s\n', subj_str{s});
             % Get the directory of subjects anatomical
-            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
-                subj_str{s});
-            subj_anat_dir = fullfile(deriv_subj_dir, anat_dir);
-            
-            % Delete old files
-            cd(subj_anat_dir)
-            if any(size(dir([subj_anat_dir '/*.surf']), 1))
-                delete([subj_anat_dir '/*.surf'])
-            end
-            if any(size(dir([subj_anat_dir '/' subj_str{s} '_mask-*']), 1))
-                delete([subj_anat_dir '/' subj_str{s} '_mask-*'])
-            end
-            if any(size(dir(...
-                    [subj_anat_dir '/' subj_str{s} '_space-MNI-*']), 1))
-                delete([subj_anat_dir '/' subj_str{s} '_space-MNI-*'])
-            end
+            raw_subj_dir = fullfile(base_dir, raw_dir, subj_str{s});
+            subj_anat_dir = fullfile(raw_subj_dir, anat_dir);
             
             % Get the name of the anatomical image
-            anat_name = sprintf(...
-                '%s_space-native_desc-resampled_T1w.nii', subj_str{s}); 
+            anat_name = sprintf('%s_T1w.nii', subj_str{s});
             J.channel.vols     = {fullfile(subj_anat_dir, ...
                 sprintf('%s,1', anat_name))};
             J.channel.biasreg  = 0.001;
