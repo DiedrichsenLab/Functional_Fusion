@@ -4,10 +4,6 @@ import shutil
 from pathlib import Path
 import mat73
 import numpy as np
-import sys
-# Discuss: This is causing trouble in compatibility 
-# sys.path.append(
-#     '/Users/callithrix/Documents/Projects/Functional_Fusion/code/shared/Functional_Fusion/') # can be removed before push, but currently that is the best way to import atlas_map for me
 import atlas_map as am
 from dataset import DataSetPontine
 import nibabel as nb
