@@ -1423,6 +1423,13 @@ switch what
             job.subjND.isolation  = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_pcereb_corr.nii', subj_str{s}))};
             suit_normalize_dartel(job);
         end % s (subjects)
+    case 'SUIT:save_dartel_def'    
+        % Saves the dartel flow field as a deformation file. 
+        for sn = [1:length(subj_name)]
+            cd(fullfile(baseDir,suitDir,'anatomicals',subj_name{sn}));
+            anat_name = 'anatomical';
+            suit_save_darteldef(anat_name);
+        end; 
 
     case 'SUIT:reslice'            % Reslice stuff into suit space 
         % run the case with 'anatomical' to check the suit normalization
