@@ -32,7 +32,7 @@ suit_defaults;
 %========================================================================================================================
 global base_dir
 
-base_dir = sprintf('%s/FunctionalFusion/ibc', workdir);
+base_dir = sprintf('%s/ibc', workdir);
 
 %%% Freesurfer stuff
 path1 = getenv('PATH');
@@ -65,9 +65,9 @@ for s=1:length(subj_n)
 end
 subj_id = 1:length(subj_n);
 
-% session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
-session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
-    'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
+session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
+% session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
+%     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -86,19 +86,19 @@ sessrun = sesstruct.srun;
 
 % AC coordinates
 loc_AC = {
-          [-113, -142, -80],...       %sub-01
-          [-121, -148, -82],...       %sub-02
-          [-117, -152, -76],...       %sub-04
-          [-118, -161, -77],...       %sub-05
-          [-116, -158, -77],...       %sub-06
-          [-102, -134, -145],...      %sub-07
-          [-127, -158, -80],...       %sub-08
-          [-121, -155, -79],...       %sub-09
-          [-114, -158, -79],...       %sub-11
-          [-113, -155, -82],...       %sub-12
-          [-128, -142, -76],...       %sub-13
-          [-118, -154, -79],...       %sub-14
-          [-110, -146, -76],...       %sub-15 % has to be redone once Ana transfers the correct file
+          [3.4 35.4 -9.5],...       %sub-01
+          [3.3 29.0 6.5],...        %sub-02
+          [-3.2 22.2 9.9],...       %sub-04
+          [-1.6 25.7 13.6],...      %sub-05
+          [-2.3 27.7 15.2],...      %sub-06
+          [-0.5 28.8 10.7],...      %sub-07
+          [0.5 18.7 8.7],...        %sub-08
+          [-0.8 21.0 14.5],...      %sub-09
+          [0.5 35.3 26.1],...       %sub-11
+          [2.1 38.5 12.6],...       %sub-12
+          [-2.1 32.0 2.4],...       %sub-13
+          [1.3 40.2 15.7],...       %sub-14
+          [-5.1 38.0 -0.7],...      %sub-15
           };
 
 % sess = {'training', 'test'}; % training runs are considered to be ses-01 and testing runs are ses-02
@@ -169,8 +169,8 @@ switch what
             end
         end % sn (subjects)
 
-    case 'ANAT:center_ac'    % recenter to AC (manually retrieve coordinates)
-        % Example usage: nishimoto_imana('ANAT:center_ac')
+    case 'ANAT:center_ac' % recenter to AC (manually retrieve coordinates)
+        % Example usage: ibc_imana('ANAT:center_ac')
         % run spm display to get the AC coordinates
         fprintf('MANUALLY RETRIEVE AC COORDINATES')
         sn = subj_id;
@@ -181,17 +181,18 @@ switch what
             fprintf('- Centre AC for %s\n', subj_str{s});
             
             % Get the directory of subjects anatomical
-            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            raw_subj_dir = fullfile(base_dir, raw_dir, subj_str{s});
+            subj_anat_dir = fullfile(raw_subj_dir, anat_dir);
             
             % Get the name of the anatomical image
-            anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s});
+            anat_name = sprintf('%s_T1w.nii', subj_str{s});
             
-            img             = fullfile(subj_dir, anat_name);
+            img             = fullfile(subj_anat_dir, anat_name);
             V               = spm_vol(img);
             dat             = spm_read_vols(V);
-            %%oldOrig         = V.mat(1:3,4);
-            %%V.mat(1:3,4)    = oldOrig-loc_AC{sn(s)};
-            V.mat(1:3,4)    = loc_AC{s};
+            oldOrig         = V.mat(1:3,4);
+            V.mat(1:3,4)    = oldOrig-loc_AC{s}.';
+            % V.mat(1:3,4)    = loc_AC{s}.';
             spm_write_vol(V,dat);
         end % s (subjects)
 
@@ -202,9 +203,9 @@ switch what
         % Example usage: ibc_imana('ANAT:segment')
         % check results when done
         sn = subj_id;
-        
+
         vararginoptions(varargin, {'sn'});
-        
+
         SPMhome = fileparts(which('spm.m'));
         J       = []; % spm jobman
         for s = sn
@@ -212,7 +213,7 @@ switch what
             % Get the directory of subjects anatomical
             raw_subj_dir = fullfile(base_dir, raw_dir, subj_str{s});
             subj_anat_dir = fullfile(raw_subj_dir, anat_dir);
-            
+
             % Get the name of the anatomical image
             anat_name = sprintf('%s_T1w.nii', subj_str{s});
             J.channel.vols     = {fullfile(subj_anat_dir, ...
@@ -244,7 +245,7 @@ switch what
             J.tissue(6).ngaus  = 2;
             J.tissue(6).native = [0 0];
             J.tissue(6).warped = [0 0];
-            
+
             J.warp.mrf     = 1;
             J.warp.cleanup = 1;
             J.warp.reg     = [0 0.001 0.5 0.05 0.2];
@@ -275,51 +276,6 @@ switch what
             P{1}    = dest;
             spmj_bias_correct(P);
         end % s (sn)
-        
-    case 'FUNC:rename'           % removing dummies and renaming 
-        % "WARNING" NO NEED TO REMOVE DUMMIES (WE THINK SO),SO THE REMOVING
-        % PART IS COMMENTED OUT AND THIS CASE WILL ONLY BE USED FOR
-        % RENAMING THE FILES.
-        % Files are renamed based on an excel file which you can find in
-        % the repository(MultTask_RunOrderInfo.xlsx)
-        % removes dummies from the beginning of the functional images and
-        % save the new images with new names so that we don't lose the
-        % original images. For code efficiency, it will also rename the tsv
-        % files. Runs done on the same day are considered as one session. 
-        % this case calls FUNC:get_in_info to get the run information and
-        % assign runs to sessions
-        % Example usage: nishimoto_imana('FUNC:rename', 'sn', 2)
-        sn = subj_id;
-        
-        vararginoptions(varargin, 'sn')
-        
-        for s = sn
-            % go to subject's directory
-            func_subj_dir = fullfile(base_dir, subj_str{s}, func_dir);
-            cd(func_subj_dir)
-            % unzip the files
-            gunzip('*.gz');
-            % loop over sessions
-            for ss = [1, 2]
-                % get the session name
-                ses_name = sess{ss};
-                % get the functional scans for the session
-                fun_scans = dir(sprintf('%s*-%s*bold.nii', subj_str{s}, ses_name));
-                
-                % loop over functional scans and rename
-                for i = 1:length(fun_scans)
-                    fprintf('- Doing %s %s run %02d\n', subj_str{s}, ses_name, i);
-                    src_filename = fun_scans(i).name;
-                    des_filename = sprintf('%s_ses-%02d_run-%02d.nii', subj_str{s}, ss, run_list{ss}(i));
-                    movefile(src_filename,fullfile(func_subj_dir, des_filename))
-                    
-                    % change the names of the tsv files
-                    tsv_source = sprintf('%s_task-%s_run-%02d_events.tsv', subj_str{s}, ses_name, i);
-                    tsv_dest = sprintf('%s_ses-%02d_run-%02d_events.tsv', subj_str{s}, ss, i);
-                    movefile(fullfile(func_subj_dir, tsv_source), fullfile(func_subj_dir, tsv_dest))
-                end % i (runs within a scan)
-            end % ss (session)
-        end % sn (subjects)
 
     case 'FUNC:realign'          % realign functional images
         % SPM realigns all volumes to the first volume of first run
