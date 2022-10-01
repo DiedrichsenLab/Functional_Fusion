@@ -17,12 +17,6 @@ addpath(sprintf('%s/../matlab/dataframe',workdir));
 addpath(sprintf('%s/../matlab/imaging/tools/',workdir));
 addpath(sprintf('%s/../matlab/imaging/coregtool/',workdir));
 
-% Some suit functions are not released yet, hence clone the SUIT develop
-% branch. Run:
-% git clone https://github.com/jdiedrichsen/suit.git;
-% git checkout Develop
-addpath('~/Matlab/suit')
-
 
 %% ----- Initialize suit toolbox -----
 % check for SUIT installation
@@ -1228,7 +1222,7 @@ switch what
             suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit', 'anat');
 
             cd(suit_subj_dir);
-            anat_name = sprintf('%s_T1w_lpi', subj_str{s});
+            anat_name = sprintf('c_%s_T1w_lpi_seg1.nii', subj_str{s});
             suit_save_darteldef(anat_name);
         end % s (subjects)
 

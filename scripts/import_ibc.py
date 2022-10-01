@@ -25,38 +25,16 @@ from nilearn.image import load_img, mean_img
 # ############################# FUNCTIONS ##############################
 
 
-def transfer_t1w(sub, source_raw, target_raw):
-    target_anatpath = os.path.join(target_raw, sub, 'anat')
-    if not os.path.exists(target_anatpath):
-        os.makedirs(target_anatpath)
-    else:
-        for ng in glob.glob(target_anatpath + '/*_T1w.nii.gz'):
-            os.remove(ng)
-    source_anatsess = os.path.join(source_raw, sub, 'ses-00/anat/')
-    source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
-
-    with subprocess.Popen(["scp", '-o BatchMode=yes', source_anatfile,
-                           target_anatpath]) as a:
-        a.wait()
-
-    t1 = os.path.join(target_anatpath, sub + '_ses-00_T1w.nii.gz')
-    new_t1 = os.path.join(target_anatpath, sub + '_space-native_T1w.nii.gz')
-
-    print(t1)
-    print(new_t1)
-    os.rename(t1, new_t1)
-
-
-def transfer_t1w_derivatives(sub, source_derivatives, target_derivatives):
+def transfer_t1w(sub, source_derivatives, target_derivatives):
     target_anatpath = os.path.join(target_derivatives, sub, 'anat')
     if not os.path.exists(target_anatpath):
         os.makedirs(target_anatpath)
     else:
-        for ng in glob.glob(target_anatpath + \
-                            '/sub-*_space-native_desc-resampled_T1w.nii*'):
+        for ng in glob.glob(target_anatpath + '/sub-*_T1w.nii*'):
             os.remove(ng)
     source_anatsess = os.path.join(source_derivatives, sub, 'ses-00/anat/')
     source_anatfile = os.path.join(source_anatsess, sub + '_ses-00_T1w.nii.gz')
+    print(source_anatfile)
 
     with subprocess.Popen(["scp", '-o BatchMode=yes', source_anatfile,
                            target_anatpath]) as a:
@@ -341,7 +319,7 @@ drago_sourcedata = os.path.join(drago, 'sourcedata')
 drago_derivatives = os.path.join(drago, 'derivatives')
 
 home = str(Path.home())
-cbs = os.path.join(home, 'diedrichsen_data/data/FunctionalFusion/ibc')
+cbs = os.path.join(home, 'diedrichsen_data/data/ibc')
 cbs_sourcedata = os.path.join(cbs, 'raw')
 cbs_derivatives = os.path.join(cbs, 'derivatives')
 
@@ -358,11 +336,8 @@ subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 
 if __name__ == "__main__":
     for subject in subjects_list:
-        ## Import T1w raw ##
-        transfer_t1w(subject, drago_sourcedata, cbs_sourcedata)
-
-        ## Import T1w-resampled in the native space ##
-        transfer_t1w_derivatives(subject, drago_derivatives, cbs_sourcedata)
+        ## Import T1w in the native space ##
+        transfer_t1w(subject, drago_derivatives, cbs_sourcedata)
 
         # for session_name in session_names:
             ## Import raw EPI ##
