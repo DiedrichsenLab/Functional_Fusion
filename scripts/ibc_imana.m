@@ -1299,23 +1299,21 @@ switch what
             spm_jobman('initcfg')
             
             % Get the directory of subjects anatomical
-            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
-                subj_str{s});
-            anat_subj_dir = fullfile(deriv_subj_dir, anat_dir);
-            % Get the name of the anatpmical image
-            anat_name = sprintf(...
-                '%s_space-native_desc-resampled_T1w_lpi.nii', subj_str{s});
+            raw_subj_dir = fullfile(base_dir, raw_dir, subj_str{s});
+            anat_subj_dir = fullfile(raw_subj_dir, anat_dir);
+
+            % Get the name of the anatomical image
+            anat_name = sprintf('%s_T1w.nii', subj_str{s});
             % Define suit folder
-            suit_subj_dir = fullfile(deriv_subj_dir, 'suit');
-            suit_anat = fullfile(suit_subj_dir, 'anat');
+            suit_dir = fullfile(raw_subj_dir, 'suit');
             % Create suit folder if it does not exist
-            if ~exist(suit_anat, 'dir')
-                mkdir (suit_anat)
-            end  
+            if ~exist(suit_dir, 'dir')
+                mkdir (suit_dir)
+            end
             
             % Copy T1w_lpi file to suit-anat folder
             source = fullfile(anat_subj_dir, anat_name);
-            dest   = fullfile(suit_anat, anat_name);           
+            dest   = fullfile(suit_dir, anat_name);           
             copyfile(source, dest);
             
             % go to subject directory for suit and isolate segment
