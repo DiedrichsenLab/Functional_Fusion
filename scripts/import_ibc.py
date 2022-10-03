@@ -6,7 +6,7 @@ Script to transfer IBC data from Drago to CBS
 Author: Ana Luisa Pinho
 
 Created: April 2022
-Last update: September 2022
+Last update: October 2022
 """
 
 import os
@@ -301,10 +301,19 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
     dff.to_csv(dff_path, sep='\t', index=False)
 
 
+def rename_sessions(sub, sname, folder_path, df1):
+    session = df1[df1[sub].values == sname].index.values[0]
+    old_folder = os.path.join(folder_path, sub, 'func', session)
+    new_folder = os.path.join(folder_path, sub, 'func', sname)
+    print(old_folder)
+    print(new_folder)
+    os.rename(old_folder, new_folder)
+
+
 # ############################### INPUTS ###############################
 
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
@@ -337,9 +346,9 @@ subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 if __name__ == "__main__":
     for subject in subjects_list:
         ## Import T1w in the native space ##
-        transfer_t1w(subject, drago_derivatives, cbs_sourcedata)
+        # transfer_t1w(subject, drago_derivatives, cbs_sourcedata)
 
-        # for session_name in session_names:
+        for session_name in session_names:
             ## Import raw EPI ##
             # source_funcdata(subject, session_name, drago_sourcedata,
             #                 cbs_sourcedata, dfm, dfs)
@@ -362,3 +371,5 @@ if __name__ == "__main__":
             ## Generate tsv files with session info ##
             # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
             #                   dfs, dfc)
+
+            rename_sessions(subject, session_name, cbs_sourcedata, dfm)
