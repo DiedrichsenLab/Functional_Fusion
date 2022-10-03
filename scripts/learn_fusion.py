@@ -38,6 +38,6 @@ if __name__ == "__main__":
     pt7_dataset = DataSetHcpResting(base_dir + '/pontine7T')
     nishi_dataset = DataSetHcpResting(base_dir + '/Nishimoto')
 
-    X,D = mdtb_dataset.get_data('SUIT3','ses-s1','CondSes',subj=[0,1,2,3])
-    correlation_within_subj(X,D.half,D.cond_n)
+    X,D = mdtb_dataset.get_data('SUIT3','ses-s1','CondSes',subj=np.arange(7))
+    r = reliability_within_subj(X,D.half,D.cond_name)
     pass

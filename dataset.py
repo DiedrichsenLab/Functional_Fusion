@@ -77,16 +77,18 @@ def optimal_contrast(data,C,X,reg_in=None,baseline=None):
         data_new.append(d)
     return data_new
 
-def correlation_within_subj(X,part_vec,cond_vec):
+def reliability_within_subj(X,part_vec,cond_vec):
     partitions = np.unique(part_vec)
     n_part = partitions.shape[0]
     n_subj = X.shape[0]
-    r = np.zeros(n_subj,n_part)
+    r = np.zeros((n_subj,n_part))
+    Z = matrix.indicator(cond_vec)
     for s in np.arange(n_subj):
         for pn,part in enumerate(partitions):
-            X1=X[s,part_vec==part,:]
-            Z = matrix.indicator(cond_vec[part_vec!=part])
-            X2 = pinv(Z) @ Z[s,part_vec!=part,:]
+            i1 = part_vec==part
+            X1= pinv(Z[i1,:].T) @ X[s,i1,:]
+            i2 = part_vec!=part
+            X2 = pinv(Z[i2,:].T) @ X[s,i2,:]
             r[s,pn] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
     return r
 

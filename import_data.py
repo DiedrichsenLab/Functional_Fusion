@@ -65,6 +65,13 @@ def import_anat(source_dir,dest_dir,anat_name,participant_id):
             print('skipping ' + src[i])
 
 def import_freesurfer(source_dir,dest_dir,old_id,new_id):
+    """Imports the output of a freesurfer reconstruction (and subsequent workbench import). 
+    Args:
+        source_dir (str): Directory of the SPM GLM
+        dest_dir (str): Destination directory for that subject / session
+        old_id (str): Old subject name 
+        new_id (str): New name for the subject
+    """
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     src=[]
     dest =[]
