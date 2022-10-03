@@ -46,7 +46,7 @@ def optimal_contrast(data,C,X,reg_in=None,baseline=None):
         C (ndarray): N x Q array indicating contrasts
         X (ndarray): Optimal design matrix - Defaults to None.
         reg_in (ndarray): Contrast of interest: Logical vector indicating which rows of C we will put in the matrix
-        baseline (ndarray): Fixed effects contrast removed after estimation 
+        baseline (ndarray): Fixed effects contrast removed after estimation
     """
     # Check the sizes
     N, Q = C.shape
@@ -65,18 +65,17 @@ def optimal_contrast(data,C,X,reg_in=None,baseline=None):
                     np.zeros((num_nointerest,data[i].shape[1]))])
         # Do the averaging / reweighting:
         d = solve(Xn.T @ Xn, Xn.T @ X @ dat)
-        # Subset to the contrast of interest 
-        if reg_in is not None: 
+        # Subset to the contrast of interest
+        if reg_in is not None:
             d=d[reg_in,:]
         # Now subtract baseline
-        if baseline is not None: 
+        if baseline is not None:
             Q = d.shape[0]
             R = eye(Q)-baseline @ pinv(baseline)
-            d = R @ d 
+            d = R @ d
         # Put the data in a list:
         data_new.append(d)
     return data_new
-
 
 
 class DataSet:
@@ -129,8 +128,8 @@ class DataSet:
         return fnames, T
 
 
-    def get_data(self, participant_id, atlas_maps):
-        """the main function to output the processed data
+    def extract_data(self, participant_id, atlas_maps):
+        """Extracts the processed data in a specific altas space
         Args:
             participant_id: standard participant_id
             atlas_maps: List of atlasmaps to find the voxels
@@ -143,7 +142,7 @@ class DataSet:
         """
         pass
 
-    def get_all_suit(self,ses_id='ses-s1',type='CondSes',atlas='SUIT3'):
+    def extract_all_suit(self,ses_id='ses-s1',type='CondSes',atlas='SUIT3'):
         """Extracts data in SUIT space from a standard experiment structure
         across all subjects. Saves the results as CIFTI files in the data directory.
         Args:
@@ -183,7 +182,7 @@ class DataSet:
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
 
-    def get_all_fs32k(self,ses_id='ses-s1',type='CondSes'):
+    def extract_all_fs32k(self,ses_id='ses-s1',type='CondSes'):
         """Extracts data in fs32K space from a standard experiment structure
         across all subjects. Saves the results as CIFTI files in the data directory.
 
@@ -222,12 +221,38 @@ class DataSet:
             nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
             pass
 
+    def get_data(self,space='SUIT3',ses_id='ses-s1',type='CondSes'):
+        """Loads all the CIFTI files in the data directory of a certain space / type
+        and returns they content as a Numpy array
+
+        Args:
+            space (str): Atlas space (Defaults to 'SUIT3').
+            ses_id (str): Session ID (Defaults to 'ses-s1').
+            type (str): Type of data (Defaults to 'CondSes').
+
+        Returns:
+            _type_: _description_
+        """
+        T = self.get_participants()
+        # Assemble the data
+        Data = None
+        for i,s in enumerate (T.participant_id):
+            # Get an check the information
+            D = pd.read_csv(self.data_dir.format(s) + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
+            # Load the data
+            C = nb.load(self.data_dir.format(s) + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
+            if Data is None:
+                Data = np.zeros((len(T.participant_id),C.shape[0],C.shape[1]))
+            Data[i,:,:] = C.get_fdata()
+        return Data, D
+
+
 class DataSetMDTB(DataSet):
     def __init__(self, dir):
         super().__init__(dir)
 
 
-    def get_data(self,participant_id,
+    def extract_data(self,participant_id,
                     atlas_maps,
                     ses_id,
                     type='CondSes'):
@@ -276,7 +301,7 @@ class DataSetMDTB(DataSet):
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond*2,dtype=int)
 
-            # Baseline substraction 
+            # Baseline substraction
             B = matrix.indicator(data_info.half,positive=True)
 
         elif type == 'CondRun':
@@ -296,7 +321,7 @@ class DataSetMDTB(DataSet):
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond*16,dtype=int)
 
-            # Baseline substraction 
+            # Baseline substraction
             B = matrix.indicator(data_info.run,positive=True)
         elif type == 'CondAll':
 
@@ -315,7 +340,7 @@ class DataSetMDTB(DataSet):
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond,dtype=int)
 
-            # Baseline substraction 
+            # Baseline substraction
             B = matrix.indicator(data_info.run,positive=True)
 
         # Prewhiten the data
@@ -324,14 +349,13 @@ class DataSetMDTB(DataSet):
         # Load the designmatrix and perform optimal contrast
         X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
-        
+
         return data_new, data_info
 
 class DataSetHcpResting(DataSet):
     def __init__(self, dir):
         super(DataSetHcpResting, self).__init__(base_dir=dir)
         # self.func_dir = self.base_dir + '/{0}/estimates'
-        self.all_sub = self.get_participants()
         self.derivative_dir = self.base_dir + '/derivatives'
 
     def get_data_fnames(self, participant_id):
@@ -347,7 +371,7 @@ class DataSetHcpResting(DataSet):
             fnames.append(f'{dir}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
         return fnames
 
-    def get_ts_volume(self,
+    def extract_ts_volume(self,
                 participant_id,
                 atlas_map,
                 runs=[0,1,2,3]):
@@ -372,7 +396,7 @@ class DataSetHcpResting(DataSet):
 
         return ts_volume
 
-    def get_ts_surface(self,
+    def extract_ts_surface(self,
                     participant_id,
                     atlas_parcel,
                     runs=[0,1,2,3]):
@@ -460,7 +484,7 @@ class DataSetPontine(DataSet):
     def __init__(self, dir):
         super().__init__(dir)
 
-    def get_data(self, participant_id,
+    def extract_data(self, participant_id,
                  atlas_maps,
                  ses_id,
                  type='CondSes'):
@@ -510,7 +534,7 @@ class DataSetPontine(DataSet):
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond*2,dtype=int)
 
-            # Baseline substraction 
+            # Baseline substraction
             B = matrix.indicator(data_info.half,positive=True)
 
         elif type == 'TaskRun':
@@ -533,7 +557,7 @@ class DataSetPontine(DataSet):
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond*16,dtype=int)
 
-            # Baseline substraction 
+            # Baseline substraction
             B = matrix.indicator(data_info.run,positive=True)
 
         elif type == 'TaskAll':
@@ -554,7 +578,7 @@ class DataSetPontine(DataSet):
             C = np.c_[C,CI]
             reg_in = np.arange(n_cond,dtype=int)
 
-            # Baseline substraction 
+            # Baseline substraction
             B = matrix.indicator(data_info.run,positive=True)
 
 
@@ -573,7 +597,7 @@ class DataSetNishi(DataSet):
         super().__init__(dir)
 
 
-    def get_data(self,participant_id,
+    def extract_data(self,participant_id,
                     atlas_maps,
                     ses_id,
                     type='CondSes'):
@@ -608,7 +632,7 @@ class DataSetNishi(DataSet):
         if type == 'CondSes':
 
             # Make new data frame for the information of the new regressors
-            ii = ((info.run == 1) | (info.run == max(info.run)+1)) 
+            ii = ((info.run == 1) | (info.run == max(info.run)+1))
             data_info = info[ii].copy().reset_index()
             data_info['names']=[f'{d.task_name}-sess{d.half}' for i,d in data_info.iterrows()]
 
@@ -622,7 +646,7 @@ class DataSetNishi(DataSet):
             # C = np.c_[C,CI]
             reg_in = np.arange(n_cond*2,dtype=int)
 
-            # Baseline substraction 
+            # Baseline substraction
             B = matrix.indicator(data_info.half,positive=True)
 
         elif type == 'CondRun':
@@ -643,7 +667,7 @@ class DataSetNishi(DataSet):
             # C = np.c_[C,CI]
             reg_in = np.arange(n_cond*max(info.run),dtype=int)
 
-            # Baseline substraction 
+            # Baseline substraction
             B = matrix.indicator(data_info.run,positive=True)
         elif type == 'CondAll':
 
@@ -662,7 +686,7 @@ class DataSetNishi(DataSet):
             # C = np.c_[C,CI]
             reg_in = np.arange(n_cond,dtype=int)
 
-            # Baseline substraction 
+            # Baseline substraction
             B = matrix.indicator(data_info.run,positive=True)
 
         # Prewhiten the data
@@ -670,5 +694,5 @@ class DataSetNishi(DataSet):
 
         X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix_unf.npy')
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
-        
+
         return data_new, data_info
