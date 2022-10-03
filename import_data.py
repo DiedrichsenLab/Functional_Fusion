@@ -36,7 +36,7 @@ def import_suit(source_dir, dest_dir, anat_name, participant_id):
             print('skipping ' + src[i])
 
 
-def import_anat(source_dir, dest_dir,anat_name, participant_id):
+def import_anat(source_dir, dest_dir, anat_name, participant_id):
     """
     Imports a anatomy folder into a BIDS/derivtive structure
 
