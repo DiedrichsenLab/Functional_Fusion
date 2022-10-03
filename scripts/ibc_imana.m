@@ -1363,19 +1363,22 @@ switch what
 
     case 'SUIT:normalise_dartel'   % SUIT normalization using dartel
         % LAUNCH SPM FMRI BEFORE RUNNING!!!!!
-        % example usage: nishimoto_imana('SUIT:normalise_dartel')
+        % example usage: ibc_imana('SUIT:normalise_dartel')
         sn = subj_id; %subjNum
         vararginoptions(varargin, 'sn');
         
         for s = sn
-            suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
-            mkdir(suit_subj_dir)
-            
-            cd(suit_subj_dir)
-            job.subjND.gray       = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
-            job.subjND.white      = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg2.nii', subj_str{s}))};
-            job.subjND.isolation  = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_pcereb_corr.nii', subj_str{s}))};
+            suit_subj_dir = fullfile(base_dir, raw_dir, subj_str{s}, ...
+                'suit');
+
+            job.subjND.gray       = {fullfile(suit_subj_dir, ...
+                sprintf('c_%s_T1w_seg1.nii', subj_str{s}))};
+            job.subjND.white      = {fullfile(suit_subj_dir, ...
+                sprintf('c_%s_T1w_seg2.nii', subj_str{s}))};
+            job.subjND.isolation  = {fullfile(suit_subj_dir, ...
+                sprintf('c_%s_T1w_pcereb_corr.nii', subj_str{s}))};
             suit_normalize_dartel(job);
+
         end % s (subjects)
     case 'SUIT:save_dartel_def'    
         % Saves the dartel flow field as a deformation file. 
