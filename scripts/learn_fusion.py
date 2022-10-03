@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 import atlas_map as am
-from dataset import DataSetMDTB, DataSetHcpResting
+from dataset import *
 from scipy.linalg import block_diag
 import nibabel as nb
 import SUITPy as suit
@@ -38,5 +38,6 @@ if __name__ == "__main__":
     pt7_dataset = DataSetHcpResting(base_dir + '/pontine7T')
     nishi_dataset = DataSetHcpResting(base_dir + '/Nishimoto')
 
-    X,D = mdtb_dataset.get_data('SUIT3','ses-s1','CondSes')
+    X,D = mdtb_dataset.get_data('SUIT3','ses-s1','CondSes',subj=[0,1,2,3])
+    correlation_within_subj(X,D.half,D.cond_n)
     pass

@@ -18,7 +18,7 @@ import scipy.linalg as sl
 import nibabel as nb
 import nitools as nt
 from pathlib import Path
-from numpy import eye
+from numpy import eye,zeros,ones,empty,sum,nansum, sqrt
 from numpy.linalg import pinv,solve
 
 def prewhiten_data(data):
@@ -76,6 +76,19 @@ def optimal_contrast(data,C,X,reg_in=None,baseline=None):
         # Put the data in a list:
         data_new.append(d)
     return data_new
+
+def correlation_within_subj(X,part_vec,cond_vec):
+    partitions = np.unique(part_vec)
+    n_part = partitions.shape[0]
+    n_subj = X.shape[0]
+    r = np.zeros(n_subj,n_part)
+    for s in np.arange(n_subj):
+        for pn,part in enumerate(partitions):
+            X1=X[s,part_vec==part,:]
+            Z = matrix.indicator(cond_vec[part_vec!=part])
+            X2 = pinv(Z) @ Z[s,part_vec!=part,:]
+            r[s,pn] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
+    return r
 
 
 class DataSet:
@@ -221,7 +234,7 @@ class DataSet:
             nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
             pass
 
-    def get_data(self,space='SUIT3',ses_id='ses-s1',type='CondSes'):
+    def get_data(self,space='SUIT3',ses_id='ses-s1',type='CondSes',subj=None):
         """Loads all the CIFTI files in the data directory of a certain space / type
         and returns they content as a Numpy array
 
@@ -229,20 +242,23 @@ class DataSet:
             space (str): Atlas space (Defaults to 'SUIT3').
             ses_id (str): Session ID (Defaults to 'ses-s1').
             type (str): Type of data (Defaults to 'CondSes').
-
+            subj (ndarray): Subject numbers to get - by default all
         Returns:
-            _type_: _description_
+            Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
+            D: Data frame with common descriptor
         """
         T = self.get_participants()
         # Assemble the data
         Data = None
-        for i,s in enumerate (T.participant_id):
+        if subj is None:
+            subj = np.arange(T.shape[0])
+        for i,s in enumerate (T.participant_id[subj]):
             # Get an check the information
             D = pd.read_csv(self.data_dir.format(s) + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
             # Load the data
             C = nb.load(self.data_dir.format(s) + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
             if Data is None:
-                Data = np.zeros((len(T.participant_id),C.shape[0],C.shape[1]))
+                Data = np.zeros((len(subj),C.shape[0],C.shape[1]))
             Data[i,:,:] = C.get_fdata()
         return Data, D
 
