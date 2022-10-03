@@ -173,7 +173,7 @@ class DataSet:
             atlas_map = am.AtlasMapDeform(self, suit_atlas, s,deform, mask)
             atlas_map.build(smooth=2.0)
             print(f'Extract {s}')
-            data,info = self.get_data(s,[atlas_map],
+            data,info = self.extract_data(s,[atlas_map],
                                                     ses_id=ses_id,
                                                     type=type)
             C=am.data_to_cifti(data,[atlas_map],info.names)
@@ -207,12 +207,12 @@ class DataSet:
                 edir = self.estimates_dir.format(s)
                 pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
                 white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
-                mask = edir + f'/ses-s1/{s}_ses-s1_mask.nii'
+                mask = edir + f'/{ses_id}/{s}_{ses_id}_mask.nii'
                 atlas_maps.append(am.AtlasMapSurf(self, atlas[i],
                             s,white,pial, mask))
                 atlas_maps[i].build()
             print(f'Extract {s}')
-            data,info = self.get_data(s,atlas_maps,
+            data,info = self.extract_data(s,atlas_maps,
                                                 ses_id=ses_id,
                                                 type=type)
             C=am.data_to_cifti(data,atlas_maps,info.names)
@@ -591,7 +591,6 @@ class DataSetPontine(DataSet):
 
         return data_new, data_info
 
-
 class DataSetNishi(DataSet):
     def __init__(self, dir):
         super().__init__(dir)
@@ -601,10 +600,9 @@ class DataSetNishi(DataSet):
                     atlas_maps,
                     ses_id,
                     type='CondSes'):
-        """ MDTB extraction of atlasmap locations
+        """ Nishimoto extraction of atlasmap locations
         from nii files - and filterting or averaring
         as specified.
-
         Args:
             participant_id (str): ID of participant
             atlas_maps (list): List of atlasmaps
@@ -613,7 +611,6 @@ class DataSetNishi(DataSet):
                 'CondSes': Conditions with seperate estimates for first and second half of experient (Default)
                 'CondRun': Conditions with seperate estimates per run
                     Defaults to 'CondSes'.
-
         Returns:
             Y (list of np.ndarray):
                 A list (len = numatlas) with N x P_i numpy array of prewhitened data
@@ -627,26 +624,25 @@ class DataSetNishi(DataSet):
         # For debugging: data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
 
         # Depending on the type, make a new contrast
-        info['half']=2-(info.run< (max(info.run)+1))
+        info['half']=2-(info.run< (len(np.unique(info.run))/2+1))
         n_cond = np.max(info.reg_id)
         if type == 'CondSes':
-
-            # Make new data frame for the information of the new regressors
-            ii = ((info.run == 1) | (info.run == max(info.run)+1))
+            # Make new data frame for the information of the new regressors            
+            ii = ((info.run == min(info.run)) | (info.run == len(np.unique(info.run))/2+1)) 
             data_info = info[ii].copy().reset_index()
             data_info['names']=[f'{d.task_name}-sess{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
             reg = (info.half-1)*n_cond + info.reg_id
-            reg[info.instruction==1] = 0
+            # reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
             # contrast for all instructions
-            # CI = matrix.indicator(info.half*info.instruction,positive=True)
+            # CI = matrix.indicator(info.half,positive=True)
             # C = np.c_[C,CI]
             reg_in = np.arange(n_cond*2,dtype=int)
 
-            # Baseline substraction
+            # Baseline substraction 
             B = matrix.indicator(data_info.half,positive=True)
 
         elif type == 'CondRun':
@@ -665,34 +661,35 @@ class DataSetNishi(DataSet):
             # contrast for all instructions
             # CI = matrix.indicator(info.run*info.instruction,positive=True)
             # C = np.c_[C,CI]
-            reg_in = np.arange(n_cond*max(info.run),dtype=int)
+            reg_in = np.arange(n_cond*len(np.unique(info.run)),dtype=int)
 
-            # Baseline substraction
+            # Baseline substraction 
             B = matrix.indicator(data_info.run,positive=True)
         elif type == 'CondAll':
 
             # Make new data frame for the information of the new regressors
-            ii = (info.run == 1)
+            ii = (info.run == min(info.run))
             data_info = info[ii].copy().reset_index()
             data_info['names']=[f'{d.task_name}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
             reg = info.creg_id
-            reg[info.instruction==1] = 0
+            # reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
             # contrast for all instructions
             # CI = matrix.indicator(info.instruction,positive=True)
             # C = np.c_[C,CI]
-            reg_in = np.arange(n_cond,dtype=int)
+            # reg_in = np.arange(n_cond-1,dtype=int)
 
-            # Baseline substraction
+            # Baseline substraction 
             B = matrix.indicator(data_info.run,positive=True)
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
 
-        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix_unf.npy')
+        # Load the designmatrix and perform optimal contrast
+        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
-
+        
         return data_new, data_info
