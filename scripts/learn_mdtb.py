@@ -18,7 +18,6 @@ import Functional_Fusion.matrix as matrix
 import matplotlib.pyplot as plt
 import seaborn as sb
 import sys
-from get_hcp_data import get_hcp_data
 import scipy.io as spio
 import os
 
@@ -253,32 +252,27 @@ def _make_maps(data, sub=None, stats='mode', save=None, fname=None):
         nb.save(Nifti, fname)
 
 
-def _plot_mdtb_data(sub=0):
+def _plot_mdtb_data(sub=0, ses_id='ses-s1', type='CondSes'):
     """Plot the MDTB data in 3d volume by randomly select 3 tasks
     Args:
         sub: the index of subject
     Returns:
         the data scatter plot in 3d
     """
-    Data, Xdesign, D = get_mdtb_data(ses_id)
+    Data, Xdesign, D = get_mdtb_data(ses_id=ses_id, type=type)
     Y = Data[sub]
 
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'surface'}]],
-                        subplot_titles=["GME", "wVMF"])
+    fig = make_subplots(rows=1, cols=1, specs=[[{'type': 'surface'}]],
+                        subplot_titles=["data"])
 
-    # fig.add_trace(go.Scatter3d(x=Y1[0, 0, :], y=Y1[0, 1, :], z=Y1[0, 2, :],
-    #                            mode='markers', marker=dict(size=3, opacity=0.7, color=U[0])), row=1, col=1)
-    fig.add_trace(go.Scatter3d(x=Y2[0, 0, :], y=Y2[0, 1, :], z=Y2[0, 2, :],
-                               mode='markers', marker=dict(size=3, opacity=0.7, color=U[0])), row=1,
-                  col=1)
-    # fig.add_trace(go.Scatter3d(x=Y3[0, 0, :], y=Y3[0, 1, :], z=Y3[0, 2, :],
-    #                            mode='markers', marker=dict(size=3, opacity=0.7, color=U[0])), row=1, col=3)
-    fig.add_trace(go.Scatter3d(x=Y4[0, 0, :], y=Y4[0, 1, :], z=Y4[0, 2, :],
-                               mode='markers', marker=dict(size=3, opacity=0.7, color=U[0])), row=1,
-                  col=2)
+    number_of_rows = Y.shape[0]
+    random_indices = np.random.choice(number_of_rows, size=3, replace=False)
+    random_rows = Y[random_indices, :]
+    fig.add_trace(go.Scatter3d(x=random_rows[0, :], y=random_rows[1, :], z=random_rows[2, :],
+                               mode='markers', marker=dict(size=3, opacity=0.7)), row=1, col=1)
 
     fig.update_layout(title_text='Visualization of data generation')
     fig.show()
@@ -320,11 +314,11 @@ def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False, sub_id=None):
     M, ll, theta, U_hat = M.fit_em(Y=Data, iter=max_iter, tol=0.00001, fit_arrangement=fit_arr)
 
     # plot emission log-likelihood
-    plt.plot(ll, color='b')
-    plt.show()
+    # plt.plot(ll, color='b')
+    # plt.show()
 
     max_lengh = M.emission.W[~M.emission.W.isnan()].max()
-    lengths = pt.arange(0, 21, 1)
+    lengths = pt.arange(0.2, 4, 0.1)
     kappas = []
     for i in range(len(lengths)-1):
         this = M.emission.Mstep_test(U_hat, signal_range=[lengths[i], lengths[i+1]])
@@ -783,11 +777,16 @@ if __name__ == "__main__":
     #     df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1)), dim=0)
     #     df1 = pd.DataFrame(df1).to_csv(f'coserrs_{i}.csv')
 
+    # _plot_mdtb_data()
     kappas = []
+    plt.figure()
     for i in range(24):
         this_kappa = learn_single(sub_id=i)
         kappas.append(pt.tensor(this_kappa))
-    plt.plot(pt.stack(kappas).T)
+        plt.subplot(4, 6, i+1)
+        plt.plot(np.arange(0.2,4,0.1)[:-1]+0.05, pt.stack(this_kappa))
+
+    # plt.ylim(0, 2500)
     plt.show()
 
     gbase, lb = learn_mdtb_hcp(K=7, sub_train=range(0,1))
