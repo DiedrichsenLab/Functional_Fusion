@@ -26,18 +26,18 @@ if __name__ == '__main__':
     for pt in T.participant_id:
 
         # # --- Importing SUIT ---
-        # source_dir = '{}/suit/anatomicals/S{}'.format(src_base_dir, participant_id)
-        # dest_dir = '{}/derivatives/sub-{}/suit'.format(dest_base_dir, participant_id)
-        # anat_name = 'anatomical'
-        # import_suit(source_dir,dest_dir,anat_name,'sub-' + participant_id)
-        # pass
-
-        # # --- Importing ANAT ---
         source_dir = '{}/raw/{}/anat/'.format(src_base_dir, pt)
         dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, pt)
         anat_name = f'{pt}_T1w'
-        import_anat(source_dir, dest_dir, anat_name, pt)
+        import_suit(source_dir, dest_dir, anat_name, 'sub-' + pt)
         pass
+
+        # # --- Importing ANAT ---
+        # source_dir = '{}/raw/{}/anat/'.format(src_base_dir, pt)
+        # dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, pt)
+        # anat_name = f'{pt}_T1w'
+        # import_anat(source_dir, dest_dir, anat_name, pt)
+        # pass
 
         # # --- Importing Freesurfer ---
         # source_dir = '{}/surfaceFreesurfer/S{}/surf'.format(src_base_dir, participant_id)
