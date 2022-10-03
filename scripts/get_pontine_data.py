@@ -4,6 +4,10 @@ import shutil
 from pathlib import Path
 import mat73
 import numpy as np
+import sys
+# Discuss: This is causing trouble in compatibility
+# sys.path.append(
+#     '/Users/callithrix/Documents/Projects/Functional_Fusion/code/shared/Functional_Fusion/') # can be removed before push, but currently that is the best way to import atlas_map for me
 import atlas_map as am
 from dataset import DataSetPontine
 import nibabel as nb
@@ -36,4 +40,4 @@ def show_pontine_suit(subj,sess,cond):
 
 if __name__ == "__main__":
     p7_dataset = DataSetPontine(data_dir)
-    p7_dataset.get_all_suit('ses-01','TaskSes','SUIT3')
+    p7_dataset.extract_all_suit('ses-01','TaskSes','SUIT3')

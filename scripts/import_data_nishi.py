@@ -170,14 +170,22 @@ if __name__ == "__main__":
     base_dest_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Nishimoto_103Task/derivatives/'
     
     subj_list = []
-    for i in range(2, 7):
+    for i in range(1, 7):
         subj_list.append(f"sub-{i:02d}")
 
 
     for sub in subj_list:
         for ss in [1, 2]:
             
-            source_dir = os.path.join(base_source_dir, sub, 'estimates', 'glm01', f'ses-{ss:02d}')
-            dest_dir = os.path.join(base_dest_dir,  sub, 'estimates', f"ses-{ss:02d}")
+            # # --- Import GLM data ---
+            # source_dir = os.path.join(base_source_dir, sub, 'estimates', 'glm01', f'ses-{ss:02d}')
+            # dest_dir = os.path.join(base_dest_dir,  sub, 'estimates', f"ses-{ss:02d}")
             # import_spm_glm(source_dir,dest_dir,sub , f"ses-{ss:02d}")
-            import_spm_designmatrix(source_dir,dest_dir,sub,f'ses-{ss:02d}')
+            # # import_spm_designmatrix(source_dir,dest_dir,sub,f'ses-{ss:02d}')
+
+            # --- Import suit data ---
+            source_dir = os.path.join(
+                base_source_dir, sub, 'suit', 'anat')
+            dest_dir = os.path.join(
+                base_dest_dir, sub, 'suit')
+            import_suit(source_dir, dest_dir, f'{sub}_T1w_lpi', sub)
