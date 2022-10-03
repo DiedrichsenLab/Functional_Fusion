@@ -241,7 +241,7 @@ class DataSetMDTB(DataSet):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
-        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix_unf.npy')
+        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
         
         return data_new, data_info
@@ -410,22 +410,21 @@ class DataSetNishi(DataSet):
         # For debugging: data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
 
         # Depending on the type, make a new contrast
-        info['half']=2-(info.run< (max(info.run)+1))
+        info['half']=2-(info.run< (len(np.unique(info.run))/2+1))
         n_cond = np.max(info.reg_id)
         if type == 'CondSes':
-
-            # Make new data frame for the information of the new regressors
-            ii = ((info.run == 1) | (info.run == max(info.run)+1)) 
+            # Make new data frame for the information of the new regressors            
+            ii = ((info.run == min(info.run)) | (info.run == len(np.unique(info.run))/2+1)) 
             data_info = info[ii].copy().reset_index()
             data_info['names']=[f'{d.task_name}-sess{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
             reg = (info.half-1)*n_cond + info.reg_id
-            reg[info.instruction==1] = 0
+            # reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
             # contrast for all instructions
-            # CI = matrix.indicator(info.half*info.instruction,positive=True)
+            # CI = matrix.indicator(info.half,positive=True)
             # C = np.c_[C,CI]
             reg_in = np.arange(n_cond*2,dtype=int)
 
@@ -448,26 +447,26 @@ class DataSetNishi(DataSet):
             # contrast for all instructions
             # CI = matrix.indicator(info.run*info.instruction,positive=True)
             # C = np.c_[C,CI]
-            reg_in = np.arange(n_cond*max(info.run),dtype=int)
+            reg_in = np.arange(n_cond*len(np.unique(info.run)),dtype=int)
 
             # Baseline substraction 
             B = matrix.indicator(data_info.run,positive=True)
         elif type == 'CondAll':
 
             # Make new data frame for the information of the new regressors
-            ii = (info.run == 1)
+            ii = (info.run == min(info.run))
             data_info = info[ii].copy().reset_index()
             data_info['names']=[f'{d.task_name}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
             reg = info.creg_id
-            reg[info.instruction==1] = 0
+            # reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
             # contrast for all instructions
             # CI = matrix.indicator(info.instruction,positive=True)
             # C = np.c_[C,CI]
-            reg_in = np.arange(n_cond,dtype=int)
+            # reg_in = np.arange(n_cond-1,dtype=int)
 
             # Baseline substraction 
             B = matrix.indicator(data_info.run,positive=True)
@@ -476,7 +475,7 @@ class DataSetNishi(DataSet):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
-        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix_unf.npy')
+        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
         
         return data_new, data_info
