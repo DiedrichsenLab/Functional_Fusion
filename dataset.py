@@ -7,16 +7,16 @@ The class for converting and mapping raw data from multi-dataset
 to a standard data structure that can be used in Diedrichsen lab
 
 """
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import os
-import util
-import matrix
-import atlas_map as am
+import Functional_Fusion.util as util
+import Functional_Fusion.matrix as matrix
+import Functional_Fusion.atlas_map as am
 import scipy.linalg as sl
 import nibabel as nb
 import nitools as nt
-from pathlib import Path
 from numpy import eye,zeros,ones,empty,nansum, sqrt
 from numpy.linalg import pinv,solve
 
@@ -698,9 +698,6 @@ class DataSetNishi(DataSet):
             # reg[info.instruction==1] = 0
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
-            # contrast for all instructions
-            # CI = matrix.indicator(info.half,positive=True)
-            # C = np.c_[C,CI]
             reg_in = np.arange(n_cond*2,dtype=int)
 
             # Baseline substraction 
@@ -718,10 +715,6 @@ class DataSetNishi(DataSet):
             # Contrast for the regressors of interst
             C = matrix.indicator(reg,positive=True) # Drop the instructions
 
-
-            # contrast for all instructions
-            # CI = matrix.indicator(info.run*info.instruction,positive=True)
-            # C = np.c_[C,CI]
             reg_in = np.arange(n_cond*len(np.unique(info.run)),dtype=int)
 
             # Baseline substraction 

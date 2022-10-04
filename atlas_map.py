@@ -11,7 +11,7 @@ from numpy.linalg import inv
 import nibabel as nb
 import os
 
-import matrix
+import Functional_Fusion.matrix as matrix
 import SUITPy as suit
 import surfAnalysisPy as surf
 import nitools as nt
