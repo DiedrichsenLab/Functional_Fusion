@@ -1,7 +1,7 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
 from time import gmtime
-import pandas as pd
 from pathlib import Path
+import pandas as pd
 import numpy as np
 import atlas_map as am
 from dataset import *
@@ -38,6 +38,6 @@ if __name__ == "__main__":
     pt7_dataset = DataSetHcpResting(base_dir + '/pontine7T')
     nishi_dataset = DataSetHcpResting(base_dir + '/Nishimoto')
 
-    X,D = mdtb_dataset.get_data('SUIT3','ses-s1','CondSes',subj=np.arange(7))
-    r = reliability_within_subj(X,D.half,D.cond_name)
-    pass
+    X,D = mdtb_dataset.get_data('SUIT3','ses-s1','CondSes')
+    r1 = reliability_within_subj(X,part_vec=D.half,cond_vec=D.cond_name)
+    r2 = reliability_between_subj(X,cond_vec=D.cond_name)
