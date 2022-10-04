@@ -34,11 +34,16 @@ if __name__ == "__main__":
     # suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
 
     mdtb_dataset = DataSetMDTB(base_dir + '/MDTB')
-    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
     pt7_dataset = DataSetPontine(base_dir + '/pontine7T')
-    nishi_dataset = DataSetHcpResting(base_dir + '/Nishimoto')
     nn_dataset = DataSetNishi(base_dir + '/Nishimoto_103Task')
-    fiel = ['run','task_name','reg_id','half']
+    
+    fiel = ['task_name','reg_id','half']
+    data_mdtb1,info_mdtb1 = mdtb_dataset.get_data('SUIT3','ses-s1','CondSes')
+    data_mdtb2,info_mdtb2 = mdtb_dataset.get_data('SUIT3','ses-s2','CondSes')
+    
+    data_pt,info_pt = pt7_dataset.get_data('SUIT3','ses-01','TaskSes')
+    
+    fiel = ['task_name','reg_id','half']
     data_nn1,info_nn1 = nn_dataset.get_data('SUIT3','ses-01',
                                             'CondSes',fields=fiel)
     data_nn2,info_nn2 = nn_dataset.get_data('SUIT3','ses-02',

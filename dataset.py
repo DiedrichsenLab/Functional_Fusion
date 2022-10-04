@@ -706,7 +706,7 @@ class DataSetNishi(DataSet):
             # Make new data frame for the information of the new regressors            
             ii = ((info.run == min(info.run)) | (info.run == len(np.unique(info.run))/2+1)) 
             data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.task_name}-sess{d.half}' for i,d in data_info.iterrows()]
+            data_info['names']=[f'{d.task_name.strip()}-sess{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
             reg = (info.half-1)*n_cond + info.reg_id
@@ -722,7 +722,7 @@ class DataSetNishi(DataSet):
             # Subset of info sutructure
             # ii = (info.cond_num>0)
             data_info = info.copy().reset_index()
-            data_info['names']=[f'{d.task_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
+            data_info['names']=[f'{d.task_name.strip()}-run{d.run:02d}' for i,d in data_info.iterrows()]
 
             reg = (info.run-1)*n_cond + info.reg_id
             # reg[info.instruction==1] = 0
@@ -738,7 +738,7 @@ class DataSetNishi(DataSet):
             # Make new data frame for the information of the new regressors
             ii = (info.run == min(info.run))
             data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.task_name}' for i,d in data_info.iterrows()]
+            data_info['names']=[f'{d.task_name.strip()}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
             reg = info.creg_id
