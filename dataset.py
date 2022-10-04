@@ -279,33 +279,48 @@ class DataSet:
             nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
             pass
 
-    def get_data(self,space='SUIT3',ses_id='ses-s1',type='CondSes',subj=None):
-        """Loads all the CIFTI files in the data directory of a certain space / type
-        and returns they content as a Numpy array
+    def get_data(self,space='SUIT3',ses_id='ses-s1',
+                      type='CondSes',subj=None,fields=None):
+        """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
             space (str): Atlas space (Defaults to 'SUIT3').
             ses_id (str): Session ID (Defaults to 'ses-s1').
             type (str): Type of data (Defaults to 'CondSes').
             subj (ndarray): Subject numbers to get - by default all
+            fields (list): Column names of info stucture that are returned 
+                these are also be tested to be equivalent across subjects  
         Returns:
             Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
-            D: Data frame with common descriptor
+            info (DataFramw): Data frame with common descriptor
         """
         T = self.get_participants()
         # Assemble the data
         Data = None
+        # Deal with subset of subject option 
         if subj is None:
             subj = np.arange(T.shape[0])
+        # Loop over the different subjects 
         for i,s in enumerate (T.participant_id[subj]):
             # Get an check the information
-            D = pd.read_csv(self.data_dir.format(s) + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
+            info_raw = pd.read_csv(self.data_dir.format(s) 
+                                   + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
+            if fields is not None:
+                if i==0:
+                    info = info_raw[fields]
+                else:
+                    if not info.equals(info_raw[fields]):
+                        raise(NameError('Info structure different for subject' + f'{s}. All info structures need to match' 
+                        + 'on the fields'))
+            else:
+                info=info_raw
+
             # Load the data
             C = nb.load(self.data_dir.format(s) + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
             if Data is None:
                 Data = np.zeros((len(subj),C.shape[0],C.shape[1]))
             Data[i,:,:] = C.get_fdata()
-        return Data, D
+        return Data, info
 
 
 class DataSetMDTB(DataSet):
@@ -695,8 +710,7 @@ class DataSetNishi(DataSet):
 
             # Contrast for the regressors of interest
             reg = (info.half-1)*n_cond + info.reg_id
-            # reg[info.instruction==1] = 0
-            C = matrix.indicator(reg,positive=True) # Drop the instructions
+            C = matrix.indicator(reg,positive=True) 
 
             reg_in = np.arange(n_cond*2,dtype=int)
 

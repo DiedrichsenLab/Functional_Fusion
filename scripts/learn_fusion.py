@@ -30,15 +30,17 @@ if sys.platform == "win32":
 
 
 if __name__ == "__main__":
-    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
+    # mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    # suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
 
     mdtb_dataset = DataSetMDTB(base_dir + '/MDTB')
     hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
-    pt7_dataset = DataSetHcpResting(base_dir + '/pontine7T')
+    pt7_dataset = DataSetPontine(base_dir + '/pontine7T')
     nishi_dataset = DataSetHcpResting(base_dir + '/Nishimoto')
-
-    X,D = mdtb_dataset.get_data('SUIT3','ses-s1','CondSes')
-    r1 = reliability_within_subj(X,part_vec=D.half,cond_vec=D.cond_name)
-    r2 = reliability_between_subj(X,cond_vec=D.cond_name)
+    nn_dataset = DataSetNishi(base_dir + '/Nishimoto_103Task')
+    fiel = ['run','task_name','reg_id','half']
+    data_nn1,info_nn1 = nn_dataset.get_data('SUIT3','ses-01',
+                                            'CondSes',fields=fiel)
+    data_nn2,info_nn2 = nn_dataset.get_data('SUIT3','ses-02',
+                                            'CondSes',fields=fiel)
     pass
