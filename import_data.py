@@ -13,7 +13,7 @@ def import_suit(source_dir, dest_dir, anat_name, participant_id):
     Args:
         source_dir (str): source directory
         dest_dir (str): destination directory
-        anat_name (str): Name of the anatomical main file (submitted to )
+        anat_name (str): Name of the anatomical main file (submitted to)
         participant_id (str): ID of participant
     """
 
@@ -69,13 +69,16 @@ def import_anat(source_dir, dest_dir, anat_name, participant_id):
             print('skipping ' + src[i])
 
 def import_freesurfer(source_dir,dest_dir,old_id,new_id):
-    """Imports the output of a freesurfer reconstruction (and subsequent workbench import).
+    """
+    Imports the output of a freesurfer reconstruction (and subsequent
+    workbench import).
     Args:
         source_dir (str): Directory of the SPM GLM
         dest_dir (str): Destination directory for that subject / session
         old_id (str): Old subject name
         new_id (str): New name for the subject
     """
+
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     src = []
     dest = []
@@ -110,8 +113,8 @@ def import_spm_glm(source_dir, dest_dir, sub_id, sess_id, info_dict):
         dest_dir (_type_): Destination directory for that
                            subject / session
         new_id (_type_): New name for the subject
-        info_dict (_type_): Dictonary with the old field names and the
-			              new field names for the information
+        info_dict (_type_): Dictionary with the old field names and the
+			                new field names for the information
     """
 
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
@@ -166,7 +169,7 @@ def import_spm_designmatrix(source_dir, dest_dir, sub_id, sess_id):
     read an SPM.mat structure, this requires the design matrix
     information to be extracted from the SPM.mat before, using the
     following matlab code (for every subject):
-	"""
+ 
     load('SPM.mat');
     X = SPM.xX.xKXs.X
     save design_matrix.mat X
@@ -174,7 +177,8 @@ def import_spm_designmatrix(source_dir, dest_dir, sub_id, sess_id):
     See readme for output structure.
     Args:
         source_dir (_type_): Directory of the SPM GLM
-        dest_dir (_type_): Destination directory for that subject / session
+        dest_dir (_type_): Destination directory for that
+                           subject / session
         sub_id (_type_): New name for the subject
         sess_id (_type_): ID of the session to import
     """
