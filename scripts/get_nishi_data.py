@@ -25,13 +25,13 @@ def extract_nishi_fs32k(ses_id='ses-01',type='CondSes'):
     nishi_dataset = DataSetNishi(data_dir)
     nishi_dataset.extract_all_fs32k(ses_id,type)
 
-def show_nishi_suit(subj,sess,cond):
+def show_nishi_suit(subj,ses,cond):
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
     nishi_dataset = DataSetNishi(data_dir)
     T = nishi_dataset.get_participants()
     s = T.participant_id[subj]
-    ses = f'ses-s{sess}'
+    ses = f'ses-{ses:02d}'
     C = nb.load(nishi_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_CondSes.dscalar.nii')
     D = pd.read_csv(nishi_dataset.data_dir.format(s) + f'/{s}_{ses}_info-CondSes.tsv',sep='\t')
     X = C.get_fdata()
@@ -39,7 +39,7 @@ def show_nishi_suit(subj,sess,cond):
     surf_data = suit.flatmap.vol_to_surf(Nifti)
     fig = suit.flatmap.plot(surf_data[:,cond],render='plotly')
     fig.show()
-    print(f'Showing {D.cond_name[cond]}')
+    print(f'Showing {D.task_name[cond]}')
     pass
 
 def parcel_nishi_fs32k(res=162,ses_id='ses-01',type='CondSes'):
@@ -78,11 +78,8 @@ def parcel_nishi_fs32k(res=162,ses_id='ses-01',type='CondSes'):
 
 
 if __name__ == "__main__":
-    # parcel_nishi_fs32k()
     extract_nishi_suit(ses_id='ses-01',type='CondSes')
-    extract_nishi_suit(ses_id='ses-02',type='CondSes')
-    extract_nishi_suit(ses_id='ses-01',type='CondAll')
-    extract_nishi_suit(ses_id='ses-02',type='CondAll')
-    extract_nishi_fs32k(ses_id='ses-01',type='CondSes')
-    extract_nishi_fs32k(ses_id='ses-02',type='CondSes')
+    # extract_nishi_suit(ses_id='ses-02',type='CondSes')
+    # extract_nishi_fs32k(ses_id='ses-01',type='CondSes')
+    # extract_nishi_fs32k(ses_id='ses-02',type='CondSes')
     pass
