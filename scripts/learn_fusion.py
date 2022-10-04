@@ -41,3 +41,4 @@ if __name__ == "__main__":
     X,D = mdtb_dataset.get_data('SUIT3','ses-s1','CondSes')
     r1 = reliability_within_subj(X,part_vec=D.half,cond_vec=D.cond_name)
     r2 = reliability_between_subj(X,cond_vec=D.cond_name)
+    pass
