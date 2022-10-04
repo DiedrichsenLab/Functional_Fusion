@@ -1,5 +1,5 @@
-import pandas as pd
 import shutil
+import pandas as pd
 from pathlib import Path
 import mat73
 import numpy as np
@@ -23,7 +23,7 @@ def import_suit(source_dir,dest_dir,anat_name,participant_id):
     dest.append(f'/{participant_id}_label-GMc_probseg.nii')
     src.append(f'/c2{anat_name}.nii')
     dest.append(f'/{participant_id}_label-WMc_probseg.nii')
-    src.append(f'/maskbrainSUITGrey.nii')
+    src.append('/maskbrainSUITGrey.nii')
     dest.append(f'/{participant_id}_desc-cereb_mask.nii')
     src.append(f'/y_{anat_name}_suitdef.nii')
     dest.append(f'/{participant_id}_space-SUIT_xfm.nii')
@@ -65,11 +65,11 @@ def import_anat(source_dir,dest_dir,anat_name,participant_id):
             print('skipping ' + src[i])
 
 def import_freesurfer(source_dir,dest_dir,old_id,new_id):
-    """Imports the output of a freesurfer reconstruction (and subsequent workbench import). 
+    """Imports the output of a freesurfer reconstruction (and subsequent workbench import).
     Args:
         source_dir (str): Directory of the SPM GLM
         dest_dir (str): Destination directory for that subject / session
-        old_id (str): Old subject name 
+        old_id (str): Old subject name
         new_id (str): New name for the subject
     """
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
@@ -103,7 +103,8 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
         source_dir (_type_): Directory of the SPM GLM
         dest_dir (_type_): Destination directory for that subject / session
         new_id (_type_): New name for the subject
-        info_dict (_type_): Dictonary with the old field names and the new field names for the information
+        info_dict (_type_): Dictonary with the old field names and the
+            new field names for the information
     """
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     src=[]
@@ -113,7 +114,7 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
     T={}
     for i in info_dict.items():
         series=D[i[0]]
-        if type(series[0]) is list:
+        if isinstance(series[0],list):
             series=[series[i][0] for i in range(len(series))]
         T[i[1]]=series
 
@@ -135,11 +136,11 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
         src.append(f'/beta_{i+1:04d}.nii')
         dest.append(f'/{sub_id}_{sess_id}_run-{D.run[i]:02}_reg-{D.reg_id[i]:02d}_beta.nii')
     # Mask
-    src.append(f'/mask.nii')
+    src.append('/mask.nii')
     dest.append(f'/{sub_id}_{sess_id}_mask.nii')
 
     # ResMS
-    src.append(f'/resms.nii')
+    src.append('/resms.nii')
     dest.append(f'/{sub_id}_{sess_id}_resms.nii')
 
     # Copy those files over
@@ -148,15 +149,17 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id,info_dict):
             shutil.copyfile(source_dir+src[i],dest_dir+dest[i])
         except:
             print('skipping ' + src[i])
-    
+
 
 def import_spm_designmatrix(source_dir,dest_dir,sub_id,sess_id):
-    """Imports the SPM design matrix for optimal contrast recombination 
+    """Imports the SPM design matrix for optimal contrast recombination
     at a later stage. Because python gives some errors when trying to read
-    an SPM.mat structure, this requires the design matrix information to be extracted from the SPM.mat before, using the following matlab code (for every subject):
+    an SPM.mat structure, this requires the design matrix information to be
+    extracted from the SPM.mat before, using the following matlab code
+    (for every subject):
     load('SPM.mat');
     X = SPM.xX.xKXs.X
-    save design_matrix.mat X 
+    save design_matrix.mat X
 
     See readme for output structure.
     Args:
