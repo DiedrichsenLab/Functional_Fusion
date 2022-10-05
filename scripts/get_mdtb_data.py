@@ -19,11 +19,11 @@ if not Path(base_dir).exists():
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
-def extract_mdtb_suit(ses_id='ses-s1',type='CondSes',atlas='SUIT3'):
+def extract_mdtb_suit(ses_id='ses-s1',type='condHalf',atlas='SUIT3'):
     mdtb_dataset = DataSetMDTB(data_dir)
     mdtb_dataset.extract_all_suit(ses_id,type,atlas)
 
-def extract_mdtb_fs32k(ses_id='ses-s1',type='CondSes'):
+def extract_mdtb_fs32k(ses_id='ses-s1',type='condHalf'):
     mdtb_dataset = DataSetMDTB(data_dir)
     mdtb_dataset.extract_all_fs32k(ses_id,type)
 
@@ -56,7 +56,7 @@ def show_mdtb_suit(subj,sess,cond):
     pass
 
 
-def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
+def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
     # Make the atlas object
     surf_parcel =[]
     hem_name = ['cortex_left','cortex_right']
@@ -93,12 +93,12 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
 
 if __name__ == "__main__":
     # parcel_mdtb_fs32k()
-    # extract_mdtb_suit(ses_id='ses-s1',type='CondSes',atlas='MNISymC2')
-    # extract_mdtb_suit(ses_id='ses-s2',type='CondSes')
+    # extract_mdtb_suit(ses_id='ses-s1',type='condHalf',atlas='MNISymC2')
+    # extract_mdtb_suit(ses_id='ses-s2',type='condHalf')
     # extract_mdtb_suit(ses_id='ses-s1',type='CondAll')
     # extract_mdtb_suit(ses_id='ses-s2',type='CondAll')
     extract_mdtb_fs32k(ses_id='ses-s1',type='CondAll')
-    # extract_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
+    # extract_mdtb_fs32k(ses_id='ses-s2',type='condHalf')
     # show_mdtb_suit('all',1,0)
     pass
 

@@ -200,12 +200,12 @@ class DataSet:
         """
         return None,None
 
-    def extract_all_suit(self,ses_id='ses-s1',type='CondSes',atlas='SUIT3'):
+    def extract_all_suit(self,ses_id='ses-s1',type='CondHalf',atlas='SUIT3'):
         """Extracts data in SUIT space from a standard experiment structure
         across all subjects. Saves the results as CIFTI files in the data directory.
         Args:
             ses_id (str, optional): Session. Defaults to 'ses-s1'.
-            type (str, optional): Type - defined in ger_data. Defaults to 'CondSes'.
+            type (str, optional): Type - defined in ger_data. Defaults to 'condHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
         # Make the atlas object
@@ -238,15 +238,15 @@ class DataSet:
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-            info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
+            info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
 
-    def extract_all_fs32k(self,ses_id='ses-s1',type='CondSes'):
+    def extract_all_fs32k(self,ses_id='ses-s1',type='condHalf'):
         """Extracts data in fs32K space from a standard experiment structure
         across all subjects. Saves the results as CIFTI files in the data directory.
 
         Args:
             ses_id (str, optional): _description_. Defaults to 'ses-s1'.
-            type (str, optional): _description_. Defaults to 'CondSes'.
+            type (str, optional): _description_. Defaults to 'condHalf'.
         """
         # Make the atlas object
         atlas =[]
@@ -280,13 +280,13 @@ class DataSet:
             pass
 
     def get_data(self,space='SUIT3',ses_id='ses-s1',
-                      type='CondSes',subj=None,fields=None):
+                      type='condHalf',subj=None,fields=None):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
             space (str): Atlas space (Defaults to 'SUIT3').
             ses_id (str): Session ID (Defaults to 'ses-s1').
-            type (str): Type of data (Defaults to 'CondSes').
+            type (str): Type of data (Defaults to 'condHalf').
             subj (ndarray): Subject numbers to get - by default all
             fields (list): Column names of info stucture that are returned 
                 these are also be tested to be equivalent across subjects  
@@ -331,7 +331,7 @@ class DataSetMDTB(DataSet):
     def extract_data(self,participant_id,
                      atlas_maps,
                      ses_id,
-                     type='CondSes'):
+                     type='condHalf'):
         """ MDTB extraction of atlasmap locations
         from nii files - and filterting or averaring
         as specified.
@@ -341,9 +341,9 @@ class DataSetMDTB(DataSet):
             atlas_maps (list): List of atlasmaps
             ses_id (str): Name of session
             type (str): Type of extraction:
-                'CondSes': Conditions with seperate estimates for first and second half of experient (Default)
+                'condHalf': Conditions with seperate estimates for first and second half of experient (Default)
                 'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'CondSes'.
+                    Defaults to 'condHalf'.
 
         Returns:
             Y (list of np.ndarray):
@@ -360,7 +360,7 @@ class DataSetMDTB(DataSet):
         # Depending on the type, make a new contrast
         info['half']=2-(info.run<9)
         n_cond = np.max(info.cond_num)
-        if type == 'CondSes':
+        if type == 'condHalf':
 
             # Make new data frame for the information of the new regressors
             ii = ((info.run == 1) | (info.run == 9)) & (info.cond_num>0)
@@ -563,7 +563,7 @@ class DataSetPontine(DataSet):
     def extract_data(self, participant_id,
                  atlas_maps,
                  ses_id,
-                 type='CondSes'):
+                 type='condHalf'):
         """ Pontine extraction of atlasmap locations
         from nii files - and filterting or averaring
         as specified.
@@ -573,9 +573,9 @@ class DataSetPontine(DataSet):
             atlas_maps (list): List of atlasmaps
             ses_id (str): Name of session
             type (str): Type of extraction:
-                'CondSes': Conditions with seperate estimates for first and second half of experient (Default)
+                'condHalf': Conditions with seperate estimates for first and second half of experient (Default)
                 'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'CondSes'.
+                    Defaults to 'condHalf'.
 
         Returns:
             Y (list of np.ndarray):
@@ -592,7 +592,7 @@ class DataSetPontine(DataSet):
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 9)
         n_cond = np.max(info.reg_id)
-        if type == 'TaskSes':
+        if type == 'taskHalf':
 
             # Make new data frame for the information of the new regressors
             ii = ((info.run == 1) | (info.run == 9)) & (info.reg_id > 0)
@@ -675,7 +675,7 @@ class DataSetNishi(DataSet):
     def extract_data(self,participant_id,
                     atlas_maps,
                     ses_id,
-                    type='CondSes'):
+                    type='condHalf'):
         """ Nishimoto extraction of atlasmap locations
         from nii files - and filterting or averaring
         as specified.
@@ -684,9 +684,9 @@ class DataSetNishi(DataSet):
             atlas_maps (list): List of atlasmaps
             ses_id (str): Name of session
             type (str): Type of extraction:
-                'CondSes': Conditions with seperate estimates for first and second half of experient (Default)
+                'condHalf': Conditions with seperate estimates for first and second half of experient (Default)
                 'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'CondSes'.
+                    Defaults to 'condHalf'.
         Returns:
             Y (list of np.ndarray):
                 A list (len = numatlas) with N x P_i numpy array of prewhitened data
@@ -702,7 +702,7 @@ class DataSetNishi(DataSet):
         # Depending on the type, make a new contrast
         info['half']=2-(info.run< (len(np.unique(info.run))/2+1))
         n_cond = np.max(info.reg_id)
-        if type == 'CondSes':
+        if type == 'condHalf':
             # Make new data frame for the information of the new regressors            
             ii = ((info.run == min(info.run)) | (info.run == len(np.unique(info.run))/2+1)) 
             data_info = info[ii].copy().reset_index()
