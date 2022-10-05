@@ -102,23 +102,38 @@ def fit_niter(data,design,K,n_iter):
             V[s][i,:,:]=M.emissions[s].V[:,indx]
     return Prop, V
 
+def plot_parcel_flat(data,suit_atlas,grid):
+    color_file = base_dir + '/Atlases/tpl-SUIT/atl-MDTB10.lut'
+    color_info = pd.read_csv(color_file, sep=' ', header=None)
+    MDTBcolors = np.zeros((11, 3))
+    MDTBcolors[1:11, :] = color_info.iloc[:, 1:4].to_numpy()
+    Nifti = suit_atlas.data_to_nifti(data)
+    surf_data = suit.flatmap.vol_to_surf(Nifti, stats='mode')
+
+    plt.figure
+    for i in range(surf_data.shape[1]):
+        plt.subplot(grid[0],grid[1],i+1)
+        suit.flatmap.plot(surf_data[:,i], render='matplotlib',cmap=MDTBcolors, new_figure=False)
+
 
 if __name__ == "__main__":
-    # mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    # suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
+    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
     data_mdtb, info_mdtb, mdtb_dataset = get_all_mdtb(atlas='SUIT3')
     # data_pt, info_pt, pt7_dataset = get_all_pontine(atlas='SUIT3')
     # data_nn, info_nn, nn_dataset = get_all_nishi(atlas='SUIT3')
     # design matrix for emission model 
     X_mdtb = matrix.indicator(info_mdtb.cond_num_uni)
     n_vox = data_mdtb.shape[2]
-    n_iter = 3
+    n_iter = 4
     data = [data_mdtb]
     design = [X_mdtb]
     n_sets = len(data)
     K=10  # Number of parcels 
 
     Prop, V = fit_niter(data,design,K,n_iter)
-    
+    parcel = pt.argmax(Prop,dim=1)
+    plot_parcel_flat(parcel,suit_atlas,(1,4))
+
 
     pass
