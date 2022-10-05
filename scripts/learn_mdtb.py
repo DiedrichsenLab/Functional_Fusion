@@ -138,7 +138,6 @@ def get_mdtb_parcel(do_plot=True):
     Then displays it as check
     """
     parcel = nb.load(atlas_dir + '/tpl-SUIT/atl-MDTB10_space-SUIT_dseg.nii')
-    T = mdtb_dataset.get_participants()
     data = suit.reslice.sample_image(parcel,
             suit_atlas.world[0],
             suit_atlas.world[1],
