@@ -1192,7 +1192,7 @@ switch what
 %         ibc_imana('GLM:T_contrast', 'sn', sn, 'glm', glm, 'ses', ses, ...
 %             'baseline', 'rest')
          
-    case 'SURF:reconall'       % Freesurfer reconall routine
+    case 'SURF:reconall' % Freesurfer reconall routine
         % Calls recon-all, which performs, all of the
         % FreeSurfer cortical reconstruction process
         % Example usage: ibc_imana('SURF:reconall', 'sn', 1)
@@ -1203,18 +1203,12 @@ switch what
         % set freesurfer directory
         subj_fs_dir = fullfile(base_dir, fs_dir);
         
-        % Parent dir of anatomical images
-
-        
+        % Parent dir of anatomical imagesibc      
         for s = sn
             fprintf('- recon-all %s\n', subj_str{s});
-            subj_dir = fullfile(base_dir, derivatives_dir, ...
-                subj_str{s}, anat_dir)
-            freesurfer_reconall(...
-                subj_fs_dir, subj_str{s}, ...
-                fullfile(subj_dir, sprintf(...
-                '%s_space-native_desc-resampled_T1w_lpi.nii', ...
-                subj_str{s})));
+            subj_dir = fullfile(base_dir, raw_dir, subj_str{s}, anat_dir)
+            freesurfer_reconall(subj_fs_dir, subj_str{s}, ...
+                fullfile(subj_dir, sprintf('%s_T1w.nii', subj_str{s})));
         end % s (sn)
 
     case 'SURF:xhemireg'       % Cross-register surfaces left / right hem
@@ -1381,12 +1375,15 @@ switch what
 
         end % s (subjects)
     case 'SUIT:save_dartel_def'    
-        % Saves the dartel flow field as a deformation file. 
-        for sn = [1:length(subj_name)]
-            cd(fullfile(baseDir,suitDir,'anatomicals',subj_name{sn}));
-            anat_name = 'anatomical';
+        % Saves the dartel flow field as a deformation file.
+        sn = subj_id; %subjNum
+        vararginoptions(varargin, 'sn');
+        
+        for s = sn
+            anat_name = fullfile(base_dir, raw_dir, subj_str{s}, ...
+                'suit', 'anatomical');
             suit_save_darteldef(anat_name);
-        end; 
+        end
 
     case 'SUIT:reslice'            % Reslice stuff into suit space 
         % run the case with 'anatomical' to check the suit normalization
