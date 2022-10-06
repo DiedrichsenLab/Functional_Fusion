@@ -11,7 +11,7 @@ from numpy.linalg import inv
 import nibabel as nb
 import os
 
-import matrix
+import Functional_Fusion.matrix as matrix
 import SUITPy as suit
 import surfAnalysisPy as surf
 import nitools as nt
@@ -543,3 +543,4 @@ def data_to_cifti(data,atlas_maps,names=None):
     header = nb.Cifti2Header.from_axes((row_axis,bm))
     cifti_img = nb.Cifti2Image(dataobj=D,header=header)
     return cifti_img
+
