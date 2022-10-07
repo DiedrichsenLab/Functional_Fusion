@@ -26,18 +26,18 @@ if __name__ == '__main__':
     for pt in T.participant_id:
 
         # # --- Importing SUIT ---
-        source_dir = '{}/raw/{}/anat/'.format(src_base_dir, pt)
-        dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, pt)
+        source_dir = '{}/raw/{}/suit'.format(src_base_dir, pt)
+        dest_dir = '{}/derivatives/{}/suit'.format(dest_base_dir, pt)
         anat_name = f'{pt}_T1w'
-        import_suit(source_dir, dest_dir, anat_name, 'sub-' + pt)
+        import_suit(source_dir, dest_dir, anat_name, pt)
         pass
 
         # # --- Importing ANAT ---
-        # source_dir = '{}/raw/{}/anat/'.format(src_base_dir, pt)
-        # dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, pt)
-        # anat_name = f'{pt}_T1w'
-        # import_anat(source_dir, dest_dir, anat_name, pt)
-        # pass
+        source_dir = '{}/raw/{}/anat'.format(src_base_dir, pt)
+        dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, pt)
+        anat_name = f'{pt}_T1w'
+        import_anat(source_dir, dest_dir, anat_name, pt)
+        pass
 
         # # --- Importing Freesurfer ---
         # source_dir = '{}/surfaceFreesurfer/S{}/surf'.format(src_base_dir, participant_id)
@@ -51,6 +51,3 @@ if __name__ == '__main__':
         #subj_id = 'sub-{}'.format(participant_id)
         #ses_id = 'ses-01'
         #import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
-
-
-# /Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/GLM_firstlevel_2/S01/beta_0048.nii

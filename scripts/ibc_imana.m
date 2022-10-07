@@ -4,18 +4,18 @@ function [ output_args ] = ibc_imana( what, varargin )
 % PATH DEFINITIONS
 
 % Add dependencies to path
-if isdir('/Volumes/diedrichsen_data$/data')
-    workdir='/Volumes/diedrichsen_data$/data';
-elseif isdir('/srv/diedrichsen/data')
+if isdir('/srv/diedrichsen/data')
     workdir='/srv/diedrichsen/data';
+    addpath(sprintf('%s/../matlab/spm12', workdir));
+    addpath(sprintf('%s/../matlab/spm12/toolbox/suit/', workdir));
+    addpath(sprintf('%s/../matlab/dataframe', workdir));
+    addpath(sprintf('%s/../matlab/imaging/tools/', workdir));
+elseif isdir('/home/analu/diedrichsen_data/data')
+    workdir='/home/analu/diedrichsen_data/data';
 else
     fprintf(...
         'Workdir not found. Mount or connect to server and try again.');
 end
-addpath(sprintf('%s/../matlab/spm12', workdir));
-addpath(sprintf('%s/../matlab/spm12/toolbox/suit/', workdir));
-addpath(sprintf('%s/../matlab/dataframe', workdir));
-addpath(sprintf('%s/../matlab/imaging/tools/', workdir));
 
 %% ----- Initialize suit toolbox -----
 % check for SUIT installation
@@ -1314,47 +1314,6 @@ switch what
             suit_isolate_seg({dest}, 'keeptempfiles', 1);
         end % s (sn)
 
-    case 'SUIT:correct_cereb_mask' % Corrected cerebellum cortex mask
-        % uses the results from SUIT:isolate_segment to create corrected
-        % masks for the cerebellum and cortex. It removes buffer voxels
-        % from both masks and create cereb_prob_corr_grey.nii and
-        % cortical_mask_grey_corr.nii
-        % Example usage: nishimoto_bids_imana('SUIT:correct_cereb_mask', 'sn', 1)
-        
-        sn   = returnSubjs; % subject list        
-        vararginoptions(varargin, {'sn'});
-        
-        for s = sn 
-            
-            % Get the directory of subjects suit (where the result of segmentation is stored)
-            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
-                subj_str{s})
-            suit_subj_dir = fullfile(deriv_subj_dir, 'suit');          
-
-            % cortexGrey : cortex grey matter mask
-            cortexGrey = fullfile(suit_subj_dir, sprintf('c7%s_T1w.nii', subj_str{s}));
-            % cerebGrey  : cerebellar grey matter mask
-            cerebGrey  = fullfile(suit_subj_dir, sprintf('c1%s_T1w.nii', subj_str{s}));
-            % bufferVox  : buffer voxels
-            bufferVox = fullfile(suitDir, 'anatomicals', subj_name, sprintf('sess-%02d', ss), 'buffer_voxels.nii');
-            
-            % isolate overlapping voxels
-            spm_imcalc({cortexGrey,cerebGrey}, bufferVox,'(i1.*i2)')
-            
-            % mask buffer
-            spm_imcalc({bufferVox},bufferVox,'i1>0')
-            
-            cerebGreyC  = fullfile(suitDir, 'anatomicals', subj_name, sprintf('sess-%02d', ss), 'cereb_prob_corr_grey.nii');
-            cortexGreyC = fullfile(suitDir, 'anatomicals', subj_name, sprintf('sess-%02d', ss), 'cortical_mask_grey_corr.nii');
-            
-            % remove buffer from the cerebellum
-            spm_imcalc({cerebGrey,bufferVox}, cerebGreyC,'i1-i2');
-            
-            % remove buffer from cortex
-            spm_imcalc({cortexGrey,bufferVox}, cortexGreyC,'i1-i2');
-            
-        end % s (sn)
-
     case 'SUIT:normalise_dartel'   % SUIT normalization using dartel
         % LAUNCH SPM FMRI BEFORE RUNNING!!!!!
         % example usage: ibc_imana('SUIT:normalise_dartel')
@@ -1374,15 +1333,37 @@ switch what
             suit_normalize_dartel(job);
 
         end % s (subjects)
+
     case 'SUIT:save_dartel_def'    
         % Saves the dartel flow field as a deformation file.
         sn = subj_id; %subjNum
         vararginoptions(varargin, 'sn');
         
         for s = sn
-            anat_name = fullfile(base_dir, raw_dir, subj_str{s}, ...
-                'suit', 'anatomical');
+            suit_subj_dir = fullfile(base_dir, raw_dir, subj_str{s}, ...
+                'suit');
+            cd(suit_subj_dir);
+            anat_name = sprintf('%s_T1w', subj_str{s});
             suit_save_darteldef(anat_name);
+        end
+
+    case 'SUIT:cerebellum_graymask'    
+        % Conjunction of the pcereb_corr  and the cerebellar gray matter 
+        % mask (in functional space) thresholded to 0.2
+
+        sn = subj_id; %subjNum
+        vararginoptions(varargin, 'sn');
+        
+        for s = sn
+            suit_subj_dir = fullfile(base_dir, raw_dir, subj_str{s}, ...
+                'suit');
+            masks = {};
+            masks{1} = fullfile(suit_subj_dir, ...
+                sprintf('c_%s_T1w_pcereb_corr.nii', subj_str{s}));
+            masks{2} = fullfile(suit_subj_dir, ...
+                sprintf('c_%s_T1w_seg1.nii', subj_str{s}));
+            final_mask = fullfile(suit_subj_dir, 'maskbrainSUITGrey.nii');
+            spm_imcalc(masks, final_mask, 'i1>0 & i2>0.2');
         end
 
     case 'SUIT:reslice'            % Reslice stuff into suit space 
@@ -1438,12 +1419,7 @@ switch what
         
     case 'SUIT:map2flat'           % Creates flatmaps
     % this case also creates group average for each task
-    % First RUN nishimoto_imana('SUIT:map2flat', 'group', 0) to get the
-    % gifti file for all the contrasts for each subject
-    % Then RUN nishimoto_imana('SUIT:map2flat', 'group', 1) to get the
-    % group summaries
-    % Example usage: nishimoto_imana('SUIT:map2flat')
-
+    % First RUN nishimoto_iman
     sn    = subj_id;
     glm   = 1;
     type  = 'con'; % type of the image to be mapped to flatmap
