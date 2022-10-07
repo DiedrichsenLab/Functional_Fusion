@@ -116,6 +116,9 @@ def plot_parcel_flat(data,suit_atlas,grid):
         suit.flatmap.plot(surf_data[:,i], render='matplotlib',cmap=MDTBcolors, new_figure=False)
 
 
+
+
+
 if __name__ == "__main__":
     mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
@@ -132,6 +135,10 @@ if __name__ == "__main__":
     K=10  # Number of parcels 
 
     Prop, V = fit_niter(data,design,K,n_iter)
+    r1 = ev.calc_consistency(Prop,dim_rem=0)
+    r2 = ev.calc_consistency(V[0],dim_rem=2)
+
+
     parcel = pt.argmax(Prop,dim=1)
     plot_parcel_flat(parcel,suit_atlas,(1,4))
 
