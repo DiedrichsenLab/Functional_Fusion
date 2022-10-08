@@ -17,6 +17,7 @@ import numpy as np
 import scipy.io as sio
 from import_data import *
 
+
 if __name__ == '__main__':
     base_dir = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
     src_base_dir = os.path.join(base_dir, 'ibc')
@@ -40,10 +41,10 @@ if __name__ == '__main__':
         pass
 
         # # --- Importing Freesurfer ---
-        # source_dir = '{}/surfaceFreesurfer/S{}/surf'.format(src_base_dir, participant_id)
-        # dest_dir = '{}/derivatives/sub-{}/anat'.format(dest_base_dir, participant_id)
-        # new_id = 'sub-{}'.format(participant_id)
-        # import_freesurfer(source_dir,dest_dir,new_id)
+        source_dir = '{}/surfaceWB/data/{}'.format(src_base_dir, pt)
+        dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, pt)
+        sub_id = '{}'.format(pt)
+        import_freesurfer(source_dir, dest_dir, sub_id, sub_id)
 
         # --- Importing Estimates ---
         #source_dir = '{}/GLM_firstlevel_2/S{}/'.format(src_base_dir, #participant_id)
