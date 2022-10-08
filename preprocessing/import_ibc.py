@@ -312,13 +312,13 @@ def rename_sessions(sub, sname, folder_path, df1):
 
 # ############################### INPUTS ###############################
 
-# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-                 'clips4', 'lyon1', 'lyon2', 'mathlang',
-                 'spatial-navigation']
+session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+# session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+#                  'clips4', 'lyon1', 'lyon2', 'mathlang',
+#                  'spatial-navigation']
 
 
 # ############################# PARAMETERS #############################
@@ -372,4 +372,4 @@ if __name__ == "__main__":
             # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
             #                   dfs, dfc)
 
-            rename_sessions(subject, session_name, cbs_sourcedata, dfm)
+            rename_sessions(subject, session_name, cbs_derivatives, dfm)
