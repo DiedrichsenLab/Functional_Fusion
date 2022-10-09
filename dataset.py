@@ -108,7 +108,7 @@ def reliability_within_subj(X,part_vec,cond_vec):
 
 def reliability_between_subj(X,cond_vec=None):
     """ Calculates the between-subject reliability of a data set
-    If cond_vec is given, the data is averaged across multiple measurements
+    If cond_vec is given, the data is averaged across multiple measurem
     first.
 
     Args:
