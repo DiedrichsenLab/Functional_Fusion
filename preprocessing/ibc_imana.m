@@ -65,9 +65,10 @@ for s=1:length(subj_n)
 end
 subj_id = 1:length(subj_n);
 
-session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
+% session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
+session_names = {'archi'}
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -79,6 +80,7 @@ sessnum = cellstr(sessmap.session);
 sesstruct = tdfread('ibc_sessions_structure.tsv','\t');
 sessid = cellstr(sesstruct.session);
 sessrun = sesstruct.srun;
+task_name = cellstr(sesstruct.task);
 
 % list of runs within each session
 %%% run_list{1} for session 1 and run_list{2} for session 2
@@ -761,7 +763,7 @@ switch what
 %         nishimoto_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', sn);
 %         nishimoto_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', sn);            
         
-    case 'GLM:task_info'    % creates a text file and assign numbers to the tasks/conditions
+    case 'GLM:task_info' % creates a text file and assign numbers to the tasks/conditions
         % Example usage: nishimoto_imana('GLM:task_info')
         
         info_dir = fullfile(base_dir, 'sub-02', func_dir);
@@ -772,7 +774,8 @@ switch what
         
         for r = run_list{1}
             % load the tsv file
-            tsv_file = fullfile(info_dir, sprintf('sub-02_ses-01_run-%02d_events.tsv', r));
+            tsv_file = fullfile(info_dir, ...
+                sprintf('sub-02_ses-01_run-%02d_events.tsv', r));
             T = dload(tsv_file);
 
             % get task names:
@@ -819,17 +822,21 @@ switch what
             estderiv_subj_dir = fullfile(base_dir, derivatives_dir, ...
                 subj_str{s}, est_dir);
             
-            sbj_number = str2double((extractAfter(subj_str{s},'sub-')));
-            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
-                '%02d')]));
+%             sbj_number = str2double((extractAfter(subj_str{s},'sub-')));
+%             subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
+%                 '%02d')]));
             
             % loop over sessions
             for smap = ses
-                sesstag = sessnum{find(contains(subsess,smap))};
+                % sesstag = sessnum{find(contains(subsess,smap))};
+                smapstr = replace(smap{1}, '-', '');
                 
-                raw_sess_dir = fullfile(funcraw_subj_dir, sesstag);
-                deriv_sess_dir = fullfile(funcderiv_subj_dir, sesstag);
-                est_sess_dir = fullfile(estderiv_subj_dir, sesstag);
+                raw_sess_dir = fullfile(funcraw_subj_dir, ...
+                    ['ses-' smapstr]);
+                deriv_sess_dir = fullfile(funcderiv_subj_dir, ...
+                    ['ses-' smapstr]);
+                est_sess_dir = fullfile(estderiv_subj_dir, ...
+                    ['ses-' smapstr]);
                 
                 % Delete any existing .nii and .nii.gz files from previous
                 % computations
@@ -870,8 +877,6 @@ switch what
                 
                 % loop over runs
                 for rn = 1:length(runs)
-                % for rn = 3
-                    % dir to save the design
                     if ~exist(fullfile(est_sess_dir, ...
                             sprintf('run-%02d', rn)), 'dir')
                         mkdir(fullfile(est_sess_dir, ...
@@ -887,18 +892,19 @@ switch what
                         sprintf('run-%02d', rn))};
                     
                     % Load the scans
-                    run = str2num(runs{rn}(20:21));
+                    run = str2num(extractBefore(extractAfter(runs{rn}, ...
+                        'run-'), [3]));
                     fname = fullfile(deriv_sess_dir, ...
-                        sprintf('%s%s_%s_run-%02d_bold.nii', prefix, ...
-                        subj_str{s}, sesstag, run));
+                        sprintf('%s%s_ses-%s_run-%02d_bold.nii', ...
+                        prefix, subj_str{s}, smapstr, run));
                     V = niftiinfo(fname);
                     numTRs = V.ImageSize(4);
                     % fill in nifti image names for the current run
                     N = cell(numTRs - numDummys, 1); % preallocating!
                     for i = 1:(numTRs-numDummys)
-                        N{i} = fullfile(deriv_sess_dir, ...
-                            sprintf('%s%s_%s_run-%02d_bold.nii, %d', ...
-                            prefix, subj_str{s}, sesstag, run, i));
+                        N{i} = fullfile(deriv_sess_dir, sprintf(...
+                            '%s%s_ses-%s_run-%02d_bold.nii, %d', ...
+                            prefix, subj_str{s}, smapstr, run, i));
                     end % i (image numbers)
                     J.sess.scans = N; % scans in the current runs
                     
@@ -907,9 +913,9 @@ switch what
                         'orth', {});
                     
                     % get the path to the tsv file
-                    tsv_file = fullfile(raw_sess_dir, ...
-                        sprintf('%s_%s_run-%02d_events.tsv', ...
-                        subj_str{s}, sesstag, run));
+                    tsv_file = fullfile(raw_sess_dir, sprintf(...
+                        '%s_ses-%s_run-%02d_events.tsv', ...
+                        subj_str{s}, smapstr, run));
                     % get the tsvfile for the current run
                     D = struct([]); 
                     D = tdfread(tsv_file,'\t');
@@ -920,6 +926,16 @@ switch what
                     trial_names = cellstr(D.trial_type);
                     trial_onsets = num2cell(D.onset);
                     trial_durations = num2cell(D.duration);
+                    
+                    % Get the task id
+                    tasks = task_name(find(contains(sessid, smap)));
+                    task = replace(tasks{rn}, ' ', '');
+                    if strcmp(task, 'ArchiSocial')
+                        idxs = find(~contains(trial_names, 'pourquoi'));
+                        trial_names = trial_names(idxs);
+                        trial_onsets = trial_onsets(idxs);
+                        trial_durations = trial_durations(idxs);
+                    end
                     
                     % Prepare .mat file containing the paradigm descriptors
                     names = {};
@@ -935,13 +951,17 @@ switch what
                                 trial_durations{indexes(idx)};
                         end
                     end
+                    
+                    if strcmp(task, 'ArchiEmotional')
+                        disp('ArchiEmotional')
+                    end
                     save(sprintf(...
-                        '/localscratch/%s_%s_run-%02d_events.mat', ...
-                        subj_str{s}, sesstag, run), ...
+                        '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
+                        subj_str{s}, smapstr, run), ...
                         'names', 'onsets', 'durations');                                          
                     J.sess.multi = {sprintf(...
-                        '/localscratch/%s_%s_run-%02d_events.mat', ...
-                        subj_str{s}, sesstag, run)};
+                        '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
+                        subj_str{s}, smapstr, run)};
                     
                     J.sess.regress   = struct('name', {}, 'val', {});
                     J.sess.multi_reg = {''};
@@ -1014,8 +1034,10 @@ switch what
             
             % loop over sessions
             for smap = ses
-                sesstag = sessnum{find(contains(subsess,smap))};
-                est_sess_dir = fullfile(estderiv_subj_dir, sesstag)
+                % sesstag = sessnum{find(contains(subsess, smap))};
+                smapstr = replace(smap{1}, '-', '');
+                est_sess_dir = fullfile(estderiv_subj_dir, ...
+                    ['ses-' smapstr]);
                 
                 % get the list of runs for the current session
                 listing = dir(est_sess_dir);
@@ -1024,7 +1046,7 @@ switch what
                 
                 for rn = 1:length(runtags)
                     estimates_dir = fullfile(est_sess_dir, ...
-                        char(runtags(rn)))
+                        char(runtags(rn)));
                     load(fullfile(estimates_dir, 'SPM.mat'));
 
                     SPM.swd = estimates_dir;           
