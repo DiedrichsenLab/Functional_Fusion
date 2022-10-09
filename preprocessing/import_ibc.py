@@ -267,7 +267,9 @@ def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
 
 def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
     session = df1[df1[sub].values == sname].index.values[0]
-    ifolder = os.path.join(target_derivatives, sub, 'estimates', session)
+    new_sname = sname.replace('-', '')
+    ifolder = os.path.join(target_derivatives, sub, 'estimates',
+                           'ses-' + new_sname)
     subject_no = sub[4:]
     sess_no = session[4:]
     if not os.path.exists(ifolder):
@@ -296,7 +298,7 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
         sessinfo = np.vstack((sessinfo, rstack))
     dff = pd.DataFrame(sessinfo, columns = ['sn', 'sess', 'run', 'task_name',
                                             'cond_name', 'reg_num', 'n_rep'])
-    dff_fname = sub + '_' + session + '_reginfo.tsv'
+    dff_fname = sub + '_ses-' + new_sname + '_reginfo.tsv'
     dff_path = os.path.join(ifolder, dff_fname)
     dff.to_csv(dff_path, sep='\t', index=False)
 
@@ -380,15 +382,15 @@ if __name__ == "__main__":
             #                    cbs_derivatives, dfm, dfs, dfc)
 
             ## Generate tsv files with session info ##
-            # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
-            #                   dfs, dfc)
+            generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
+                              dfs, dfc)
 
             # rename_sessions(subject, session_name, cbs_sourcedata, dfm)
             # rename_sessions(subject, session_name, cbs_derivatives, dfm)
 
-            rename_files(subject, session_name, cbs_sourcedata, dfm, 'tsv')
-            rename_files(subject, session_name, cbs_sourcedata, dfm, 'nii.gz')
+            # rename_files(subject, session_name, cbs_sourcedata, dfm, 'tsv')
+            # rename_files(subject, session_name, cbs_sourcedata, dfm, 'nii.gz')
 
-            rename_files(subject, session_name, cbs_derivatives, dfm, 'txt')
-            rename_files(subject, session_name, cbs_derivatives, dfm, 'nii')
-            rename_files(subject, session_name, cbs_derivatives, dfm, 'mat')
+            # rename_files(subject, session_name, cbs_derivatives, dfm, 'txt')
+            # rename_files(subject, session_name, cbs_derivatives, dfm, 'nii')
+            # rename_files(subject, session_name, cbs_derivatives, dfm, 'mat')
