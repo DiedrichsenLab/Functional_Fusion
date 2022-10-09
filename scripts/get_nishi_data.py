@@ -17,83 +17,32 @@ if not Path(base_dir).exists():
 data_dir = base_dir + '/Nishimoto_103Task'
 atlas_dir = base_dir + '/Atlases'
 
-def get_nishi_suit(ses_id='ses-01',type='CondSes'):
-    # Make the atlas object
-    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
-    # initialize the data set object
+def extract_nishi_suit(ses_id='ses-01',type='condHalf', atlas= 'SUIT3'):
     nishi_dataset = DataSetNishi(data_dir)
+    nishi_dataset.extract_all_suit(ses_id,type,atlas)
+    
+def extract_nishi_fs32k(ses_id='ses-01',type='condHalf'):
+    nishi_dataset = DataSetNishi(data_dir)
+    nishi_dataset.extract_all_fs32k(ses_id,type)
 
-    # create and calculate the atlas map for each participant
-    T = nishi_dataset.get_participants()
-    for s in T.participant_id:
-        print(f'Atlasmap {s}')
-        deform = nishi_dataset.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
-        mask = nishi_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-        atlas_map = am.AtlasMapDeform(nishi_dataset, suit_atlas, s,deform, mask)
-        atlas_map.build(smooth=2.0)
-        print(f'Extract {s}')
-        data,info = nishi_dataset.get_data(s,[atlas_map],
-                                                ses_id=ses_id,
-                                                type=type)
-        C=am.data_to_cifti(data,[atlas_map],info.names)
-        dest_dir = nishi_dataset.data_dir.format(s)
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        nb.save(C, dest_dir + f'/{s}_space-SUIT3_{ses_id}_{type}.dscalar.nii')
-        info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
-
-def show_nishi_suit(subj,sess,cond):
+def show_nishi_suit(subj,ses,cond):
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
     nishi_dataset = DataSetNishi(data_dir)
     T = nishi_dataset.get_participants()
     s = T.participant_id[subj]
-    ses = f'ses-s{sess}'
-    C = nb.load(nishi_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_CondSes.dscalar.nii')
-    D = pd.read_csv(nishi_dataset.data_dir.format(s) + f'/{s}_{ses}_info-CondSes.tsv',sep='\t')
+    ses = f'ses-{ses:02d}'
+    C = nb.load(nishi_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_condHalf.dscalar.nii')
+    D = pd.read_csv(nishi_dataset.data_dir.format(s) + f'/{s}_{ses}_info-condHalf.tsv',sep='\t')
     X = C.get_fdata()
     Nifti = suit_atlas.data_to_nifti(X)
     surf_data = suit.flatmap.vol_to_surf(Nifti)
     fig = suit.flatmap.plot(surf_data[:,cond],render='plotly')
     fig.show()
-    print(f'Showing {D.cond_name[cond]}')
+    print(f'Showing {D.task_name[cond]}')
     pass
 
-def get_nishi_fs32k(ses_id='ses-01',type='CondSes'):
-    # Make the atlas object
-    atlas =[]
-    bm_name = ['cortex_left','cortex_right']
-    for i,hem in enumerate(['L','R']):
-        mask = atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
-        atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
-    # initialize the data set object
-    nishi_dataset = DataSetNishi(data_dir)
-
-    # create and calculate the atlas map for each participant
-    T = nishi_dataset.get_participants()
-    for s in T.participant_id:
-        atlas_maps = []
-        data = []
-        for i,hem in enumerate(['L','R']):
-            adir = nishi_dataset.anatomical_dir.format(s)
-            edir = nishi_dataset.estimates_dir.format(s)
-            pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
-            white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
-            mask = edir + f'/ses-s1/{s}_ses-s1_mask.nii'
-            atlas_maps.append(am.AtlasMapSurf(nishi_dataset, atlas[i],
-                            s,white,pial, mask))
-            atlas_maps[i].build()
-        print(f'Extract {s}')
-        data,info,names = nishi_dataset.get_data(s,atlas_maps,
-                                                ses_id=ses_id,
-                                                type=type)
-        C=am.data_to_cifti(data,atlas_maps,names)
-        dest_dir = nishi_dataset.data_dir.format(s)
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
-        pass
-
-def parcel_nishi_fs32k(res=162,ses_id='ses-01',type='CondSes'):
+def parcel_nishi_fs32k(res=162,ses_id='ses-01',type='condHalf'):
     # Make the atlas object
     surf_parcel =[]
     hem_name = ['cortex_left','cortex_right']
@@ -108,7 +57,7 @@ def parcel_nishi_fs32k(res=162,ses_id='ses-01',type='CondSes'):
 
     # create and calculate the atlas map for each participant
     T = nishi_dataset.get_participants()
-    for s in T.participant_id[0:2]:
+    for s in T.participant_id:
         print(f'Average {s}')
         s_dir = nishi_dataset.data_dir.format(s)
         C = nb.load(s_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
@@ -129,11 +78,14 @@ def parcel_nishi_fs32k(res=162,ses_id='ses-01',type='CondSes'):
 
 
 if __name__ == "__main__":
-    # parcel_nishi_fs32k()
-    get_nishi_suit(ses_id='ses-01',type='CondSes')
-    get_nishi_suit(ses_id='ses-02',type='CondSes')
-    get_nishi_suit(ses_id='ses-01',type='CondAll')
-    get_nishi_suit(ses_id='ses-02',type='CondAll')
-    get_nishi_fs32k(ses_id='ses-01',type='CondSes')
-    get_nishi_fs32k(ses_id='ses-02',type='CondSes')
+    # parcel_nishi_fs32k(res=162,ses_id='ses-01',type='condHalf')
+    # parcel_nishi_fs32k(res=362,ses_id='ses-01',type='condHalf')
+    # parcel_nishi_fs32k(res=642,ses_id='ses-01',type='condHalf')
+    # parcel_nishi_fs32k(res=162,ses_id='ses-02',type='condHalf')
+    # parcel_nishi_fs32k(res=362,ses_id='ses-02',type='condHalf')
+    # parcel_nishi_fs32k(res=642,ses_id='ses-02',type='condHalf')
+    extract_nishi_suit(ses_id='ses-01',type='condHalf')
+    extract_nishi_suit(ses_id='ses-02',type='condHalf')
+    extract_nishi_fs32k(ses_id='ses-01',type='condHalf')
+    extract_nishi_fs32k(ses_id='ses-02',type='condHalf')
     pass

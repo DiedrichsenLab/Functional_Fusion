@@ -4,9 +4,6 @@ import shutil
 from pathlib import Path
 import mat73
 import numpy as np
-import sys
-sys.path.append(
-    '/Users/callithrix/Documents/Projects/Functional_Fusion/code/shared/Functional_Fusion/')  # can be removed before push, but currently that is the best way to import atlas_map for me
 import atlas_map as am
 from dataset import DataSetMDTB
 import nibabel as nb
@@ -22,13 +19,13 @@ if not Path(base_dir).exists():
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
-def get_mdtb_suit(ses_id='ses-s1',type='CondSes',atlas='SUIT3'):
+def extract_mdtb_suit(ses_id='ses-s1',type='condHalf',atlas='SUIT3'):
     mdtb_dataset = DataSetMDTB(data_dir)
-    mdtb_dataset.get_all_suit(ses_id,type,atlas)
+    mdtb_dataset.extract_all_suit(ses_id,type,atlas)
 
-def get_mdtb_fs32k(ses_id='ses-s1',type='CondSes'):
+def extract_mdtb_fs32k(ses_id='ses-s1',type='condHalf'):
     mdtb_dataset = DataSetMDTB(data_dir)
-    mdtb_dataset.get_all_fs32k(ses_id,type)
+    mdtb_dataset.extract_all_fs32k(ses_id,type)
 
 def show_mdtb_suit(subj,sess,cond):
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
@@ -45,7 +42,7 @@ def show_mdtb_suit(subj,sess,cond):
             X[:,:,i] = C.get_fdata()
         X = X.mean(axis=2)
         D = pd.read_csv(mdtb_dataset.data_dir.format(s) + f'/{s}_{ses}_info-CondAll.tsv',sep='\t')
-        
+
     else:
         s = T.participant_id[subj]
         C = nb.load(mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_CondAll.dscalar.nii')
@@ -59,7 +56,7 @@ def show_mdtb_suit(subj,sess,cond):
     pass
 
 
-def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
+def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
     # Make the atlas object
     surf_parcel =[]
     hem_name = ['cortex_left','cortex_right']
@@ -96,12 +93,12 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='CondSes'):
 
 if __name__ == "__main__":
     # parcel_mdtb_fs32k()
-    # get_mdtb_suit(ses_id='ses-s1',type='CondSes',atlas='MNISymC2')
-    # get_mdtb_suit(ses_id='ses-s2',type='CondSes')
-    # get_mdtb_suit(ses_id='ses-s1',type='CondAll')
-    # get_mdtb_suit(ses_id='ses-s2',type='CondAll')
-    get_mdtb_fs32k(ses_id='ses-s1',type='CondAll')
-    # get_mdtb_fs32k(ses_id='ses-s2',type='CondSes')
+    # extract_mdtb_suit(ses_id='ses-s1',type='condHalf',atlas='MNISymC2')
+    # extract_mdtb_suit(ses_id='ses-s2',type='condHalf')
+    # extract_mdtb_suit(ses_id='ses-s1',type='CondAll')
+    # extract_mdtb_suit(ses_id='ses-s2',type='CondAll')
+    extract_mdtb_fs32k(ses_id='ses-s1',type='CondAll')
+    # extract_mdtb_fs32k(ses_id='ses-s2',type='condHalf')
     # show_mdtb_suit('all',1,0)
     pass
 

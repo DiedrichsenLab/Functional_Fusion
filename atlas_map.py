@@ -11,18 +11,18 @@ from numpy.linalg import inv
 import nibabel as nb
 import os
 
-import matrix
+import Functional_Fusion.matrix as matrix
 import SUITPy as suit
 import surfAnalysisPy as surf
 import nitools as nt
 
 
 class Atlas():
+    """The Atlas class implements the general atlas functions
+    for mapping from the P brain locations back to nii or gifti files
+    Each Atlas is associated with a set of atlas maps
+    """
     def __init__(self):
-        """The Atlas class implements the general atlas functions
-        for mapping from the P brain locations back to nii or gifti files
-        Each Atlas is associated with a set of atlas maps
-        """
         self.name = 'other'
         self.P = np.nan # Number of locations in this atlas
 
@@ -31,9 +31,10 @@ class Atlas():
         Args:
             data (numpy.ndarray): P or N x P array
         """
-        pass
 
 class AtlasVolumetric(Atlas):
+    """ Volumetric atlas with specific 3d-locations
+    """
     def __init__(self,name,mask_img):
         """Atlas Volumetric class constructor
 
@@ -100,6 +101,8 @@ class AtlasVolumetric(Atlas):
         return img
 
 class AtlasSurface(Atlas):
+    """Surface-based altas space
+    """
     def __init__(self,name,mask_gii):
         """Atlas Surface class constructor
 
@@ -139,6 +142,8 @@ class AtlasSurface(Atlas):
         return bm
 
 class AtlasVolumeParcel(Atlas):
+    """ Volume-based atlas that is based on
+    """
     def __init__(self,name,label_img,mask_img=None):
         """AtlasSurfaceParcel class constructor
 
@@ -318,7 +323,7 @@ class AtlasMapDeform(AtlasMap):
         Args:
             dataset_id (str): name of
             participant_id (str): Participant name
-            deform_img (str/list): Name of deformation map image(s) 
+            deform_img (str/list): Name of deformation map image(s)
             mask_img (str): Name of masking image that defines the functional data space.
         """
         super().__init__(dataset,atlas,participant_id)
@@ -348,7 +353,7 @@ class AtlasMapDeform(AtlasMap):
                     xyz[1],
                     xyz[2],1).squeeze().T
             pass
-        atlas_ind = xyz 
+        atlas_ind = xyz
         N = atlas_ind.shape[1] # Number of locations in atlas
 
         if smooth is None: # Use nearest neighbor interpolation
@@ -538,3 +543,4 @@ def data_to_cifti(data,atlas_maps,names=None):
     header = nb.Cifti2Header.from_axes((row_axis,bm))
     cifti_img = nb.Cifti2Image(dataobj=D,header=header)
     return cifti_img
+

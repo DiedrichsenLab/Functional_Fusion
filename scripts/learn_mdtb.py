@@ -31,14 +31,14 @@ hcp_dir = base_dir + '/HCP'
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
-# Globals are ugly, but somewhat usegul here 
+# Globals are ugly, but somewhat usegul here
 mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
 suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
 
 mdtb_dataset = DataSetMDTB(data_dir)
 hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
 
-def show_mdtb_suit(subj,sess,cond): 
+def show_mdtb_suit(subj,sess,cond):
     T = mdtb_dataset.get_participants()
     s = T.participant_id[subj]
     ses = f'ses-s{sess}'
@@ -50,33 +50,7 @@ def show_mdtb_suit(subj,sess,cond):
     fig = suit.flatmap.plot(surf_data[:,cond],render='plotly')
     fig.show()
     print(f'Showing {D.cond_name[cond]}')
-    pass 
-
-def get_mdtb_data(ses_id='ses-s1', type='CondSes'):
-    T = mdtb_dataset.get_participants()
-    
-    # Assemble the data 
-    Data = None 
-    for i,s in enumerate (T.participant_id): 
-
-        C = nb.load(mdtb_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses_id}_{type}.dscalar.nii')
-        if Data is None:
-            Data = np.zeros((len(T.participant_id),C.shape[0],C.shape[1]))
-        Data[i,:,:] = C.get_fdata()
-
-    # Get design matrix 
-    D = pd.read_csv(mdtb_dataset.data_dir.format(s) + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
-    Xcond = matrix.indicator(D.cond_num)
-
-    # center the data for each voxel for each half of the experiment 
-    if type=='CondSes':
-        Xmean = matrix.indicator(D.half)
-        Data -= (Xmean @ np.linalg.pinv(Xmean) @ Data)
-    elif type=='CondRun':
-        Xmean = matrix.indicator(D.run)
-        Data -= (Xmean @ np.linalg.pinv(Xmean) @ Data)
-
-    return Data, Xcond, D
+    pass
 
 def get_hcp_data(tessel=162, ses_id=['ses-01'], range=None, save=False):
     """Get the HCP resting-state connnectivity profile
@@ -161,23 +135,22 @@ def get_hcp_data_from_csv(tessel=162, ses_id=['ses-01'], range=None):
 
 def get_mdtb_parcel(do_plot=True):
     """Samples the existing MDTB10 parcellation
-    Then displays it as check 
+    Then displays it as check
     """
     parcel = nb.load(atlas_dir + '/tpl-SUIT/atl-MDTB10_space-SUIT_dseg.nii')
-    T = mdtb_dataset.get_participants()
     data = suit.reslice.sample_image(parcel,
             suit_atlas.world[0],
             suit_atlas.world[1],
             suit_atlas.world[2],0)
-    
-    # Read the MDTB colors: Add additional row for parcel 0 
+
+    # Read the MDTB colors: Add additional row for parcel 0
     color_file = atlas_dir + '/tpl-SUIT/atl-MDTB10.lut'
     color_info = pd.read_csv(color_file, sep = ' ',header=None)
     MDTBcolors = np.zeros((11,3))
     MDTBcolors[1:11,:]  = color_info.iloc[:,1:4].to_numpy()
-    
-    # Map Plot if requested (for a check) 
-    if do_plot: 
+
+    # Map Plot if requested (for a check)
+    if do_plot:
         Nifti = suit_atlas.data_to_nifti(data)
         surf_data = suit.flatmap.vol_to_surf(Nifti,stats='mode')
         fig = suit.flatmap.plot(surf_data,render='plotly',overlay_type='label',cmap= MDTBcolors)
@@ -232,20 +205,20 @@ def _make_maps(data, sub=None, stats='mode', save=None, fname=None):
 
 
 def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
-    """Learn a single data set 
+    """Learn a single data set
     """
     # Data_HCP = get_hcp_data(ses_id=['ses-01','ses-02'], range=np.arange(2), save=True)
     Data_HCP = get_hcp_data_from_csv(ses_id=['ses-01','ses-02'], range=np.arange(2))
     Data,Xdesign = get_mdtb_data(ses_id)
     P = Data.shape[2]
-    K = 10 
+    K = 10
 
     # Make arrangement model and initialize the prior from the MDTB map
     prior_w = 7.0 # Weight of prior
     mdtb_parcel,mdtb_colors = get_mdtb_parcel()
     logpi = ar.expand_mn(mdtb_parcel.reshape(1,P)-1,K)
     logpi = logpi.squeeze()*prior_w
-    # Set parcel 0 to unassigned 
+    # Set parcel 0 to unassigned
     logpi[:,mdtb_parcel==0]=0
 
     # Making emission model for fitting, the input N here
@@ -286,8 +259,8 @@ def learn_single(ses_id='ses-s1', max_iter=100, fit_arr=False):
 
 def learn_runs(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
                runs=np.arange(1, 17), sub=None, do_plot=True):
-    Data_1, Xdesign_1, D1 = get_mdtb_data(ses_id='ses-s1', type='CondRun')
-    Data_2, Xdesign_2, D2 = get_mdtb_data(ses_id='ses-s2', type='CondRun')
+    Data_1, Xdesign_1, D1 = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun')
+    Data_2, Xdesign_2, D2 = mdtb_dataset.get_data(ses_id='ses-s2', type='CondRun')
     Xdesign = pt.tensor(block_diag(Xdesign_1, Xdesign_2))
     Data = np.concatenate((Data_1, Data_2), axis=1)
     D1['sess'] = 1  # Add a column of sess = 1
@@ -439,7 +412,7 @@ def learn_runs(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     return T, group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
 
 
-def figure_indiv_group(): 
+def figure_indiv_group():
     D = pd.read_csv('scripts/indiv_group_err.csv')
     nf = D['noise_floor'].mean()
     gm = D['group map'].mean()
@@ -459,7 +432,7 @@ def figure_indiv_group():
     plt.axhline(gm,color='b',ls=':')
     plt.ylim([0.21,0.3])
     fig.savefig('indiv_group_err.pdf',format='pdf')
-    pass 
+    pass
 
 if __name__ == "__main__":
     # Data_HCP = get_hcp_data(ses_id=['ses-01', 'ses-02'], range=np.arange(77, 100), save=True)
