@@ -304,21 +304,32 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
 def rename_sessions(sub, sname, folder_path, df1):
     session = df1[df1[sub].values == sname].index.values[0]
     old_folder = os.path.join(folder_path, sub, 'func', session)
-    new_folder = os.path.join(folder_path, sub, 'func', sname)
+    new_sname = sname.replace('-', '')
+    new_folder = os.path.join(folder_path, sub, 'func', 'ses-' + new_sname)
     print(old_folder)
     print(new_folder)
     os.rename(old_folder, new_folder)
 
 
+def rename_files(sub, sname, folder_path, df1, ext):
+    session = df1[df1[sub].values == sname].index.values[0]
+    new_sname = sname.replace('-', '')
+    folder = os.path.join(folder_path, sub, 'func', 'ses-' + new_sname)
+    for ng in glob.glob(folder + '/*.' + ext):
+        old_file = ng
+        new_file = ng.replace('ses-' + sname, 'ses-' + new_sname)
+        os.rename(old_file, new_file)
+
+
 # ############################### INPUTS ###############################
 
-# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-                 'clips4', 'lyon1', 'lyon2', 'mathlang',
-                 'spatial-navigation']
+session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+# session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+#                  'clips4', 'lyon1', 'lyon2', 'mathlang',
+#                  'spatial-navigation']
 
 
 # ############################# PARAMETERS #############################
@@ -372,4 +383,12 @@ if __name__ == "__main__":
             # generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
             #                   dfs, dfc)
 
-            rename_sessions(subject, session_name, cbs_sourcedata, dfm)
+            # rename_sessions(subject, session_name, cbs_sourcedata, dfm)
+            # rename_sessions(subject, session_name, cbs_derivatives, dfm)
+
+            rename_files(subject, session_name, cbs_sourcedata, dfm, 'tsv')
+            rename_files(subject, session_name, cbs_sourcedata, dfm, 'nii.gz')
+
+            rename_files(subject, session_name, cbs_derivatives, dfm, 'txt')
+            rename_files(subject, session_name, cbs_derivatives, dfm, 'nii')
+            rename_files(subject, session_name, cbs_derivatives, dfm, 'mat')

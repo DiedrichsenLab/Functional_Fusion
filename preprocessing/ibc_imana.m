@@ -412,18 +412,21 @@ switch what
         spm_jobman('initcfg')
         for s = sn
             % Get the directory of subjects anatomical and functional
-            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
-                subj_str{s})
-            subj_anat_dir = fullfile(deriv_subj_dir, anat_dir);
-            sbj_number = str2double((extractAfter(subj_str{s}, ...
-                'sub-')))
+            raw_subj_dir = fullfile(base_dir, raw_dir, subj_str{s});
+            subj_anat_dir = fullfile(raw_subj_dir, anat_dir);
+            derivatives_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s});
+            sbj_number = str2double((extractAfter(subj_str{s}, 'sub-')));
             subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
                 '%02d')]));
             for smap = session_names
                 sesstag = sessnum{find(contains(subsess,smap))};
                 ses = sscanf(sesstag,'ses-%d');
-                subj_func_dir = fullfile(deriv_subj_dir, func_dir, ...
-                    ['ses-' num2str(ses, '%02d')]);
+%                 subj_func_dir = fullfile(derivatives_subj_dir, ...
+%                     func_dir, ['ses-' num2str(ses, '%02d')]);
+                smapstr = replace(smap{1}, '-', '')
+                subj_func_dir = fullfile(derivatives_subj_dir, ...
+                    func_dir, ['ses-' smapstr]);
             
                 % goes to subjects anatomical dir so that coreg tool ...
                 % starts from that directory (just for convenience)
@@ -436,25 +439,20 @@ switch what
                     case 'auto'
                         % do nothing
                 end % switch step
-                
-                gunzip(sprintf(...
-                    '%s_space-native_desc-resampled_T1w.nii.gz', ...
-                    subj_str{s}));
                             
                 % (2) Automatically co-register functional and ...
                 % anatomical images
-                J.ref = {fullfile(subj_anat_dir, sprintf(...
-                    '%s_space-native_desc-resampled_T1w.nii', ...
+                J.ref = {fullfile(subj_anat_dir, sprintf('%s_T1w.nii', ...
                     subj_str{s}))}; % just one anatomical or more than one?
  
                 if strcmp(smap,'mtt1') || strcmp(smap,'mtt2')
                     J.source = {fullfile(subj_func_dir, ...
-                        sprintf('%smean%s_ses-%02d_run-03_bold.nii', ...
-                        prefix, subj_str{s}, ses))};
+                        sprintf('%smean%s_ses-%s_run-03_bold.nii', ...
+                        prefix, subj_str{s}, smapstr))};
                 else
                     J.source = {fullfile(subj_func_dir, ...
-                        sprintf('%smean%s_ses-%02d_run-01_bold.nii', ...
-                        prefix, subj_str{s}, ses))};
+                        sprintf('%smean%s_ses-%s_run-01_bold.nii', ...
+                        prefix, subj_str{s}, smapstr))};
                 end
             
                 J.other             = {''};
@@ -464,7 +462,7 @@ switch what
                     0.01 0.01 0.01 0.001 0.001 0.001];
                 J.eoptions.fwhm     = [7 7];
                 matlabbatch{1}.spm.spatial.coreg.estimate=J;
-                spm_jobman('run',matlabbatch);
+                spm_jobman('run', matlabbatch);
             
                 % (3) Manually check again
 %               coregtool;
@@ -561,12 +559,13 @@ switch what
             end
         end % s (sn)
 
-    case 'FUNC:make_samealign'   % align all the functionals
+    case 'FUNC:make_samealign' % align all the functionals
         % Aligns all functional images to rmean functional image
-        % Example usage: ibc_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [1])
+        % Example usage: 
+        % ibc_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [1])
         
-        sn     = subj_id;     % subject list
-        prefix = 'r';         % prefix for the meanepi: r or rbb if bias corrected
+        sn     = subj_id;  % subject list
+        prefix = 'r'; % prefix for the meanepi: r or rbb if bias corrected
         
         vararginoptions(varargin, {'sn', 'prefix'});
                 
@@ -582,9 +581,10 @@ switch what
             for smap = session_names
                 sesstag = sessnum{find(contains(subsess,smap))};
                 ses = sscanf(sesstag,'ses-%d');
+                smapstr = replace(smap{1}, '-', '');
                 % cd to the folder with realigned-to-sess1 functional data
-                cd(fullfile(subj_func_dir, sesstag))
-                indexes = find(contains(sessid,smap))';
+                cd(fullfile(subj_func_dir, ['ses-' smapstr]))
+                indexes = find(contains(sessid, smap))';
                 runs = double.empty;
                 trs = double.empty;
                 % get the list of runs for the session
@@ -599,14 +599,14 @@ switch what
                 %%% run from first session hence, the ref is always 
                 %%% rmean<subj>_ses-01_run-01
                 if strcmp(smap,'mtt1') || strcmp(smap,'mtt2')
-                    P{1} = fullfile(subj_func_dir, sesstag, sprintf(...
-                        '%smean%s_ses-%02d_run-03_bold.nii', ...
-                        prefix, subj_str{s}, ses));
+                    P{1} = fullfile(subj_func_dir, ['ses-' smapstr], ...
+                        sprintf('%smean%s_ses-%s_run-03_bold.nii', ...
+                        prefix, subj_str{s}, smapstr));
                     runs(1:2)=[]
                 else
-                    P{1} = fullfile(subj_func_dir, sesstag, sprintf(...
-                        '%smean%s_ses-%02d_run-01_bold.nii', ...
-                        prefix, subj_str{s}, ses));
+                    P{1} = fullfile(subj_func_dir, ['ses-' smapstr], ...
+                        sprintf('%smean%s_ses-%s_run-01_bold.nii', ...
+                        prefix, subj_str{s}, smapstr));
                 end
                 % Select images to be realigned
                 Q = {};
@@ -617,17 +617,17 @@ switch what
 %                         Q{end+1} = fullfile(subj_func_dir, ...
 %                             sprintf('%s%s_ses-%02d_run-%02d.nii,%d', ...
 %                             prefix, subj_str{s}, ses, r, i)); 
-                        Q{end+1} = fullfile(subj_func_dir, sesstag, ...
-                            sprintf(...
-                            'r%s_ses-%02d_run-%02d_bold.nii,%d', ...
-                            subj_str{s}, ses, r, i));
+                        Q{end+1} = fullfile(subj_func_dir, ...
+                            ['ses-' smapstr], sprintf(...
+                            'r%s_ses-%s_run-%02d_bold.nii,%d', ...
+                            subj_str{s}, smapstr, r, i));
                     end
                 end % r(runs)                
                 spmj_makesamealign_nifti(char(P),char(Q));
             end % ss (sess)
         end % s (sn)
 
-    case 'FUNC:make_maskImage'   % make mask images (noskull and grey_only)
+    case 'FUNC:make_maskImage' % make mask images (noskull and grey_only)
         % Make maskImage in functional space
         % Example usage: 
         % ibc_imana('FUNC:make_maskImage', 'prefix', 'r', 'sn', 1)
@@ -640,9 +640,10 @@ switch what
         
         for s = sn
             % Get the directory of subjects anatomical and functional
+            raw_subj_dir = fullfile(base_dir, raw_dir, subj_str{s})
             deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
                 subj_str{s})
-            subj_anat_dir = fullfile(deriv_subj_dir, anat_dir);
+            subj_anat_dir = fullfile(raw_subj_dir, anat_dir);
             subj_func_dir = fullfile(deriv_subj_dir, func_dir);
             
             sbj_number = str2double((extractAfter(subj_str{s}, ...
@@ -653,43 +654,42 @@ switch what
             for smap = session_names
                 sesstag = sessnum{find(contains(subsess,smap))};
                 ses = sscanf(sesstag,'ses-%d');
+                smapstr = replace(smap{1}, '-', '');
 
                 fprintf('- make mask for %s\n', subj_str{s});
-                cd(fullfile(subj_func_dir, sesstag));
+                cd(fullfile(subj_func_dir, ['ses-' smapstr]));
 
                 % Delete old masks
-                if any(size(dir([fullfile(...
-                        subj_func_dir, sesstag) '/*Eyes.nii']),1))
-                    delete([fullfile(subj_func_dir, sesstag) '/*Eyes.nii'])
+                if any(size(dir([fullfile(subj_func_dir, ...
+                        ['ses-' smapstr]) '/*Eyes.nii']),1))
+                    delete([fullfile(subj_func_dir, ...
+                        ['ses-' smapstr]) '/*Eyes.nii'])
                 end
                 
                 if strcmp(smap,'mtt1') || strcmp(smap,'mtt2')
-                    meanepi = fullfile(subj_func_dir, sesstag, ...
-                        sprintf('%smean%s_ses-%02d_run-03_bold.nii', ...
-                        prefix, subj_str{s}, ses))
+                    meanepi = fullfile(subj_func_dir, ['ses-' smapstr], ...
+                        sprintf('%smean%s_ses-%s_run-03_bold.nii', ...
+                        prefix, subj_str{s}, smapstr))
                 else
-                    meanepi = fullfile(subj_func_dir, sesstag, ...
-                        sprintf('%smean%s_ses-%02d_run-01_bold.nii', ...
-                        prefix, subj_str{s}, ses))
+                    meanepi = fullfile(subj_func_dir, ['ses-' smapstr], ...
+                        sprintf('%smean%s_ses-%s_run-01_bold.nii', ...
+                        prefix, subj_str{s}, smapstr))
                 end
-            
+
                 nam{1}  = meanepi;
                 nam{2}  = fullfile(subj_anat_dir, ...
-                    sprintf('c1%s_space-native_desc-resampled_T1w.nii', ...
-                    subj_str{s}));
+                    sprintf('c1%s_T1w.nii', subj_str{s}));
                 nam{3}  = fullfile(subj_anat_dir, ...
-                    sprintf('c2%s_space-native_desc-resampled_T1w.nii', ...
-                    subj_str{s}));
+                    sprintf('c2%s_T1w.nii', subj_str{s}));
                 nam{4}  = fullfile(subj_anat_dir, ...
-                    sprintf('c3%s_space-native_desc-resampled_T1w.nii', ...
-                    subj_str{s}));
-                spm_imcalc(nam, 'rmask_noskull.nii', 'i1>0 & (i2+i3+i4)>0.1')
+                    sprintf('c3%s_T1w.nii', subj_str{s}));
+                spm_imcalc(nam, 'rmask_noskull.nii', ...
+                    'i1>0 & (i2+i3+i4)>0.1')
             
                 nam     = {};
                 nam{1}  = meanepi;
                 nam{2}  = fullfile(subj_anat_dir, ...
-                    sprintf('c1%s_space-native_desc-resampled_T1w.nii', ...
-                    subj_str{s}));
+                    sprintf('c1%s_T1w.nii', subj_str{s}));
                 spm_imcalc(nam, 'rmask_gray.nii', 'i1>0 & i2>0.1')
             
 %               nam     = {};

@@ -108,7 +108,7 @@ def reliability_within_subj(X,part_vec,cond_vec):
 
 def reliability_between_subj(X,cond_vec=None):
     """ Calculates the between-subject reliability of a data set
-    If cond_vec is given, the data is averaged across multiple measurements
+    If cond_vec is given, the data is averaged across multiple measurem
     first.
 
     Args:
@@ -205,7 +205,7 @@ class DataSet:
         across all subjects. Saves the results as CIFTI files in the data directory.
         Args:
             ses_id (str, optional): Session. Defaults to 'ses-s1'.
-            type (str, optional): Type - defined in ger_data. Defaults to 'condHalf'.
+            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
         # Make the atlas object
@@ -240,13 +240,13 @@ class DataSet:
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
 
-    def extract_all_fs32k(self,ses_id='ses-s1',type='condHalf'):
+    def extract_all_fs32k(self,ses_id='ses-s1',type='CondHalf'):
         """Extracts data in fs32K space from a standard experiment structure
         across all subjects. Saves the results as CIFTI files in the data directory.
 
         Args:
             ses_id (str, optional): _description_. Defaults to 'ses-s1'.
-            type (str, optional): _description_. Defaults to 'condHalf'.
+            type (str, optional): _description_. Defaults to 'CondHalf'.
         """
         # Make the atlas object
         atlas =[]
@@ -280,13 +280,13 @@ class DataSet:
             pass
 
     def get_data(self,space='SUIT3',ses_id='ses-s1',
-                      type='condHalf',subj=None,fields=None):
+                      type='CondHalf',subj=None,fields=None):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
             space (str): Atlas space (Defaults to 'SUIT3').
             ses_id (str): Session ID (Defaults to 'ses-s1').
-            type (str): Type of data (Defaults to 'condHalf').
+            type (str): Type of data (Defaults to 'CondHalf').
             subj (ndarray): Subject numbers to get - by default all
             fields (list): Column names of info stucture that are returned 
                 these are also be tested to be equivalent across subjects  
@@ -331,7 +331,7 @@ class DataSetMDTB(DataSet):
     def extract_data(self,participant_id,
                      atlas_maps,
                      ses_id,
-                     type='condHalf'):
+                     type='CondHalf'):
         """ MDTB extraction of atlasmap locations
         from nii files - and filterting or averaring
         as specified.
@@ -341,9 +341,9 @@ class DataSetMDTB(DataSet):
             atlas_maps (list): List of atlasmaps
             ses_id (str): Name of session
             type (str): Type of extraction:
-                'condHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
                 'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'condHalf'.
+                    Defaults to 'CondHalf'.
 
         Returns:
             Y (list of np.ndarray):
@@ -360,12 +360,12 @@ class DataSetMDTB(DataSet):
         # Depending on the type, make a new contrast
         info['half']=2-(info.run<9)
         n_cond = np.max(info.cond_num)
-        if type == 'condHalf':
+        if type == 'CondHalf':
 
             # Make new data frame for the information of the new regressors
             ii = ((info.run == 1) | (info.run == 9)) & (info.cond_num>0)
-            data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.cond_name.strip()}-sess{d.half}' for i,d in data_info.iterrows()]
+            data_info = info[ii].copy().reset_index(drop=True)
+            data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
             reg = (info.half-1)*n_cond + info.cond_num
@@ -384,7 +384,7 @@ class DataSetMDTB(DataSet):
 
             # Subset of info sutructure
             ii = (info.cond_num>0)
-            data_info = info[ii].copy().reset_index()
+            data_info = info[ii].copy().reset_index(drop=True)
             data_info['names']=[f'{d.cond_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
 
             reg = (info.run-1)*n_cond + info.cond_num
@@ -403,7 +403,7 @@ class DataSetMDTB(DataSet):
 
             # Make new data frame for the information of the new regressors
             ii = (info.run == 1)  & (info.cond_num>0)
-            data_info = info[ii].copy().reset_index()
+            data_info = info[ii].copy().reset_index(drop=True)
             data_info['names']=[f'{d.cond_name}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
@@ -563,7 +563,7 @@ class DataSetPontine(DataSet):
     def extract_data(self, participant_id,
                  atlas_maps,
                  ses_id,
-                 type='condHalf'):
+                 type='TaskHalf'):
         """ Pontine extraction of atlasmap locations
         from nii files - and filterting or averaring
         as specified.
@@ -573,9 +573,9 @@ class DataSetPontine(DataSet):
             atlas_maps (list): List of atlasmaps
             ses_id (str): Name of session
             type (str): Type of extraction:
-                'condHalf': Conditions with seperate estimates for first and second half of experient (Default)
-                'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'condHalf'.
+                'TaskHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'TaskRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
 
         Returns:
             Y (list of np.ndarray):
@@ -592,13 +592,13 @@ class DataSetPontine(DataSet):
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 9)
         n_cond = np.max(info.reg_id)
-        if type == 'taskHalf':
+        if type == 'TaskHalf':
 
             # Make new data frame for the information of the new regressors
             ii = ((info.run == 1) | (info.run == 9)) & (info.reg_id > 0)
-            data_info = info[ii].copy().reset_index()
+            data_info = info[ii].copy().reset_index(drop=True)
             data_info['names'] = [
-                f'{d.task_name.strip()}-sess{d.half}' for i, d in data_info.iterrows()]
+                f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
             reg = (info.half - 1) * n_cond + info.reg_id
@@ -617,7 +617,7 @@ class DataSetPontine(DataSet):
 
             # Subset of info sutructure
             ii = (info.reg_id > 0)
-            data_info = info[ii].copy().reset_index()
+            data_info = info[ii].copy().reset_index(drop=True)
             data_info['names'] = [
                 f'{d.task_name.strip()}-run{d.run:02d}' for i, d in data_info.iterrows()]
 
@@ -640,7 +640,7 @@ class DataSetPontine(DataSet):
 
             # Make new data frame for the information of the new regressors
             ii = (info.run == 1) & (info.reg_id > 0)
-            data_info = info[ii].copy().reset_index()
+            data_info = info[ii].copy().reset_index(drop=True)
             data_info['names'] = [
                 f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
 
@@ -675,7 +675,7 @@ class DataSetNishi(DataSet):
     def extract_data(self,participant_id,
                     atlas_maps,
                     ses_id,
-                    type='condHalf'):
+                    type='CondHalf'):
         """ Nishimoto extraction of atlasmap locations
         from nii files - and filterting or averaring
         as specified.
@@ -684,9 +684,9 @@ class DataSetNishi(DataSet):
             atlas_maps (list): List of atlasmaps
             ses_id (str): Name of session
             type (str): Type of extraction:
-                'condHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
                 'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'condHalf'.
+                    Defaults to 'CondHalf'.
         Returns:
             Y (list of np.ndarray):
                 A list (len = numatlas) with N x P_i numpy array of prewhitened data
@@ -702,11 +702,12 @@ class DataSetNishi(DataSet):
         # Depending on the type, make a new contrast
         info['half']=2-(info.run< (len(np.unique(info.run))/2+1))
         n_cond = np.max(info.reg_id)
-        if type == 'condHalf':
+
+        if type == 'CondHalf':
             # Make new data frame for the information of the new regressors            
-            ii = ((info.run == min(info.run)) | (info.run == len(np.unique(info.run))/2+1)) 
-            data_info = info[ii].copy().reset_index()
-            data_info['names']=[f'{d.task_name.strip()}-sess{d.half}' for i,d in data_info.iterrows()]
+            info_gb = info.groupby(['sn','sess','half','reg_id','task_name'])
+            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
+            data_info['names']=[f'{d.task_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
             reg = (info.half-1)*n_cond + info.reg_id
@@ -721,7 +722,7 @@ class DataSetNishi(DataSet):
 
             # Subset of info sutructure
             # ii = (info.cond_num>0)
-            data_info = info.copy().reset_index()
+            data_info = info.copy().reset_index(drop=True)
             data_info['names']=[f'{d.task_name.strip()}-run{d.run:02d}' for i,d in data_info.iterrows()]
 
             reg = (info.run-1)*n_cond + info.reg_id
@@ -736,8 +737,8 @@ class DataSetNishi(DataSet):
         elif type == 'CondAll':
 
             # Make new data frame for the information of the new regressors
-            ii = (info.run == min(info.run))
-            data_info = info[ii].copy().reset_index()
+            info_gb = info.groupby(['sn','sess','reg_id','task_name'])
+            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
             data_info['names']=[f'{d.task_name.strip()}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
