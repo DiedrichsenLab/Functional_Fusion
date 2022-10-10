@@ -33,7 +33,7 @@ def get_all_any(dataset,atlas='SUIT3',sess=all,type='CondHalf'):
     if dataset == 'MDTB':
         data,info,dataset = get_all_mdtb(atlas,sess,type)
     if dataset == 'pontine7T':
-        data,info,dataset = get_all_mdtb(atlas,sess,type) 
+        data,info,dataset = get_all_mdtb(atlas,sess,type)
     if dataset == 'nishimotor':
         data,info,dataset = get_all_mdtb(atlas,sess,type)
     return data,info,dataset
@@ -46,7 +46,7 @@ def get_all_mdtb(atlas='SUIT3',sess='all',type='CondHalf'):
     if sess=='all':
         sess=['ses-s1','ses-s2']
 
-    for s in sess: 
+    for s in sess:
         dat,info = mdtb_dataset.get_data(atlas,s,type,fields=fiel)
         data_mdtb.append(dat)
         info['sess']=[s]*info.shape[0]
@@ -70,7 +70,7 @@ def get_all_nishi(atlas='SUIT3',sess='all',type='CondHalf'):
     if sess=='all':
         sess=['ses-01','ses-02']
 
-    for s in sess: 
+    for s in sess:
         dat,info = nn_dataset.get_data(atlas,s,type,fields=fiel)
         data_nn.append(dat)
         info['sess']=[s]*info.shape[0]
@@ -95,19 +95,19 @@ def plot_parcel_flat(data,suit_atlas,grid):
 
 
 def fit_fusion(data,design,K=10,intialization='random'):
-    
+
     P = data[0].shape[2]
     ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
                                          remove_redundancy=False)
     pt.normal(0.0,1.0,ar_model.logpi.shape,out=ar_model.logpi)
 
-    # Initialize emission models 
+    # Initialize emission models
     em_models=[]
     for i,ds in enumerate(data):
         em_model = em.MixVMF(K=K, N=40, P=P, X=design[i], uniform_kappa=True)
         em_model.initialize(ds)
         em_models.append(em_model)
- 
+
     # Use random prior
     M = fm.FullMultiModel(ar_model, em_models)
 
@@ -116,37 +116,37 @@ def fit_fusion(data,design,K=10,intialization='random'):
     return M,ll,theta,U_hat
 
 def align_fits(models,inplace=True):
-    """Aligns the prior probabilities and emission models 
+    """Aligns the prior probabilities and emission models
     across different model fits, returns parameters in aligned form
-    if Inplace==True, it also aignes the model parameters in the models themselves.   
+    if Inplace==True, it also aignes the model parameters in the models themselves.
 
     Args:
         models (list): List of full models
         inplace (bool): If true (default), it al
-    Returns: 
+    Returns:
         Prop: Prior Probabilites as 3d-arrays (aligned)
         V: List of Mean vectors as 3d-arrays (aligned)
     """
     n_iter = len(models)
     K = models[0].arrange.K
     n_vox = models[0].arrange.P
-    
-    # Intialize data arrays 
+
+    # Intialize data arrays
     Prop = pt.zeros((n_iter,K,n_vox))
     V = []
 
     for i,M in enumerate(models):
 
         pp = M.arrange.logpi.softmax(axis=0)
-        if i == 0: 
+        if i == 0:
             indx = np.arange(K)
         else:
             indx = ev.matching_greedy(Prop[0,:,:],pp)
         Prop[i,:,:]=pp[indx,:]
         if inplace:
             models[i].arrange.logpi=models[i].arrange.logpi[indx,:]
-    
-        # Now switch the emission models accordingly: 
+
+        # Now switch the emission models accordingly:
         for j,em in enumerate(M.emissions):
             if i==0:
                 V.append(pt.zeros((n_iter,em.M,K)))
@@ -160,7 +160,7 @@ def batch_fit(datasets,sess,design_ind,subj=None,
                 atlas='SUIT3',K=10,arrange='independent',emission='VMF',
                 n_iter=10,save=True,name=None):
 
-    # Load all necessary data and designs 
+    # Load all necessary data and designs
     n_sets = len(datasets)
     data = []
     design = []
@@ -169,14 +169,14 @@ def batch_fit(datasets,sess,design_ind,subj=None,
 
     for i in range(n_sets):
         dat,info,ds = get_all_any(datasets[i],atlas=atlas,sess=sess[i])
-        if subj is None: 
+        if subj is None:
             data.append(dat)
         else:
             data.append(dat[subj[i],:,:])
         X = matrix.indicator(info[design_ind].values.reshape(-1,))
         design.append(X)
 
-    # Collect info and fits and iterate 
+    # Collect info and fits and iterate
     models=[]
     info = pd.DataFrame({'name':[name]*n_iter,
                          'atlas':[atlas]*n_iter,
@@ -186,41 +186,41 @@ def batch_fit(datasets,sess,design_ind,subj=None,
                          'subj':[subj]*n_iter,
                          'arrange':[arrange]*n_iter,
                          'emission':[emission]*n_iter});
-    
+
     for i in range(n_iter):
         print(f'iter: {i}')
 
-        # Initialize arrangement model 
+        # Initialize arrangement model
         if arrange=='independent':
             P = data[0].shape[2]
             ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
                                          remove_redundancy=False)
-        else: 
+        else:
             raise(NameError(f'unknown arrangement model:{arrange}'))
-        # Intialize randomly 
+        # Intialize randomly
         pt.normal(0.0,1.0,ar_model.logpi.shape,out=ar_model.logpi)
 
-        # Initialize emission models 
+        # Initialize emission models
         em_models=[]
         for j,ds in enumerate(data):
             if emission=='VMF':
-                em_model = em.MixVMF(K=K, N=40, P=P, 
+                em_model = em.MixVMF(K=K, N=40, P=P,
                                      X=design[j], uniform_kappa=True)
             else:
                 raise((NameError(f'unknown emission model:{emission}')))
             em_model.initialize(ds)
             em_models.append(em_model)
- 
-        # Make a full fusion model (add options later) 
+
+        # Make a full fusion model (add options later)
         M = fm.FullMultiModel(ar_model, em_models)
 
         # Step 5: Estimate the parameter thetas to fit the new model using EM
-        M, ll, theta, U_hat = M.fit_em(Y=data, iter=20, 
+        M, ll, theta, U_hat = M.fit_em(Y=data, iter=20,
                         tol=0.00001, fit_arrangement=True)
         info
         models.append(M)
-    
-    # Align the different models 
+
+    # Align the different models
     align_fits(models)
 
     # Save the fits and information
@@ -237,8 +237,11 @@ def batch_fit(datasets,sess,design_ind,subj=None,
 
 if __name__ == "__main__":
     mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
-    
+    suit_atlas = am.AtlasVolumetric('SUIT3',mask_img=mask)
+
+    mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
+    sym_atlas = am.AtlasVolumeSymmetric('MNISymC2',mask_img=mask)
+
     datasets = ['MDTB']
     sess = ['all']
     design_ind= ['cond_num_uni']

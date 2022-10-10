@@ -3,7 +3,7 @@ import pandas as pd
 import shutil
 from pathlib import Path
 import mat73
-import numpy as np 
+import numpy as np
 import atlas_map as am
 from dataset import DataSetMDTB
 from dataset import DataSetHcpResting
@@ -18,11 +18,11 @@ if sys.platform == "win32":  # for windows user
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
-def make_mdtb_suit(): 
-    # Make the atlas object 
+def make_mdtb_suit():
+    # Make the atlas object
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('SUIT',mask_img=mask)
-    # initialize the data set object 
+    # initialize the data set object
     mdtb_dataset = DataSetMDTB(data_dir)
 
     # create and calculate the atlas map for each participant
@@ -36,22 +36,22 @@ def make_mdtb_suit():
         #a=mdtb_dataset.get_data_fnames(s,'ses-s1')
         pass
 
-def make_mdtb_fs32k(): 
-    # Make the atlas object 
-    atlas =[] 
+def make_mdtb_fs32k():
+    # Make the atlas object
+    atlas =[]
     bm_name = ['cortex_left','cortex_right']
     for i,hem in enumerate(['L','R']):
         mask = atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
         atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
-    # initialize the data set object 
+    # initialize the data set object
     mdtb_dataset = DataSetMDTB(data_dir)
 
     # create and calculate the atlas map for each participant
     T = mdtb_dataset.get_participants()
     for s in T.participant_id:
         atlas_maps = []
-        data = [] 
-        for i,hem in enumerate(['L','R']): 
+        data = []
+        for i,hem in enumerate(['L','R']):
             adir = mdtb_dataset.anatomical_dir.format(s)
             pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
             white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
@@ -72,16 +72,16 @@ def make_hcp_suit():
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('SUIT',mask_img=mask)
     hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
-    
+
     # create and calculate the atlas map for each participant
     T = hcp_dataset.get_participants()
- 
+
     # hcp resting state is in MNI space, so we can use the deformation from MNI to suit space
     deform = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
     mask = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152AsymC_res-2_gmcmask2.nii'
 
-    for s in T.participant_id.values: 
-        # create a mapping based on atlas deformation 
+    for s in T.participant_id.values:
+        # create a mapping based on atlas deformation
         atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
         # print(f"building atlas map")
         atlas_map.build(smooth=2.0) # smoothing level?
@@ -121,7 +121,7 @@ def make_hcp_tessel0042():
     ts_list = []
     for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
             # just get the cortical surfaces
-            if (idx == 0): # just for cortex left (idx = 0) 
+            if (idx == 0): # just for cortex left (idx = 0)
                 # get the values corresponding to the brain model
                 bm_vals = ts_array[:, slc]
                 # get the voxels/vertices corresponding to the current brain model
@@ -133,7 +133,7 @@ def make_hcp_tessel0042():
 
     ts_mean = am.get_average_data(data = bm_vals, labels=gii_label, mask = gii_mask)
 
-    # initialize the data set object 
+    # initialize the data set object
     # hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
 
     return ts_mean
@@ -150,7 +150,7 @@ def make_tessels0042_atlas():
     p_axis = myAtlas.get_parcel_axis()
     return myAtlas,p_axis
 
-def test_pdscalar_file(): 
+def test_pdscalar_file():
     atlas, p_axis = make_tessels0042_atlas()
     D= np.random.normal(0,1,(5,len(p_axis)))
     names = [f'row {r:02}' for r in range(D.shape[0])]
@@ -171,7 +171,7 @@ def hcp_fc_fp(tessel=162):
     deform = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
     mask = base_dir + '/Atlases/tpl-MNI152NLin6AsymC/tpl-MNI152AsymC_res-2_gmcmask2.nii'
 
-    
+
 
     # get the tessellation file
     tessel_dir = atlas_dir + '/tpl-fs32k'
@@ -182,14 +182,14 @@ def hcp_fc_fp(tessel=162):
     # get the gifti of the mask
     gii_mask = [nb.load(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'),
                 nb.load(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii')]
-    
+
     # create and calculate the atlas map for each participant
     # hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
 
     # T = hcp_dataset.get_participants()
     # con_fp = [] # connectivity finger print list
     # for s in T.participant_id.values:
-    #     # create a mapping based on atlas deformation 
+    #     # create a mapping based on atlas deformation
     #     atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
     #     # print(f"building atlas map")
     #     atlas_map.build(smooth=2.0) # smoothing level?
@@ -199,9 +199,28 @@ def hcp_fc_fp(tessel=162):
 
     return con_fp
 
+def test_atlas_sym():
+    mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
+    sym_atlas = am.AtlasVolumeSymmetric('MNISymC2',mask_img=mask)
+
+    # First test: Does indx_full work?
+    Left = sym_atlas.world[:,sym_atlas.indx_full[0]]
+    Right = sym_atlas.world[:,sym_atlas.indx_full[1]]
+    Left[0,:] = -Left[0,:]
+    assert(np.all(Left==Right))
+    # Second test: Does indx_reduced work?
+    New = Right[:,sym_atlas.indx_reduced]
+    New[0,sym_atlas.indx_full[0]]*=-1
+    assert(np.all(New == sym_atlas.world))
+    # Third test: flipping
+    Flipped = sym_atlas.world[:,sym_atlas.indx_flip]
+    Flipped[0,:] = - Flipped[0,:]
+    assert(np.all(Flipped == sym_atlas.world))
+    pass
+
 
 if __name__ == "__main__":
     # make_mdtb_suit()
-    test_pdscalar_file()
+    test_atlas_sym()
     pass
 

@@ -6,6 +6,7 @@ The functions of atlas definition and atlas mapping
 Created on 3/30/2022 at 3:00 PM
 Author: dzhi, jdiedrichsen
 """
+from matplotlib.ticker import IndexLocator
 import numpy as np
 from numpy.linalg import inv
 import nibabel as nb
@@ -22,8 +23,8 @@ class Atlas():
     for mapping from the P brain locations back to nii or gifti files
     Each Atlas is associated with a set of atlas maps
     """
-    def __init__(self):
-        self.name = 'other'
+    def __init__(self,name):
+        self.name = name
         self.P = np.nan # Number of locations in this atlas
 
     def map_data(self,data):
@@ -42,7 +43,7 @@ class AtlasVolumetric(Atlas):
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_img (str): file name of mask image defining atlas location
         """
-        self.name = name
+        super().__init__(name)
         self.mask_img = nb.load(mask_img)
         Xmask = self.mask_img.get_data()
         Xmask = (Xmask>0)
@@ -100,6 +101,58 @@ class AtlasVolumetric(Atlas):
         img = nb.Nifti1Image(X,self.mask_img.affine)
         return img
 
+class AtlasVolumeSymmetric(AtlasVolumetric):
+    """ Volumetric atlas with left-right symmetry
+    The atlas behaves like AtlasVolumetrc, but provides
+    mapping indices from a full representation to
+    a reduced (symmetric) representation of size Psym.
+    """
+    def __init__(self,name,mask_img):
+        """AtlasVolumeSymmeytric class constructor: Generates members
+        indx_full, indx_reduced, indx_flip.
+        Assume you have a
+            Full: N x P array
+            Left: N x Psym array
+            Right: N x Psym array
+        then:
+            Left = Full[:,index_full[0]]
+            Right = Full[:,index_full[1]]
+            Avrg = (Left + Right)/2
+            Full = Avrg[:,index_reduced]
+        To Flip:
+            flippedFull = Full[:,index_flip]
+        Args:
+            name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            mask_img (str): file name of mask image defining atlas location
+        """
+        super().__init__(name,mask_img)
+        # Find left and righgt hemispheric voxels
+        indx_left = np.where(self.world[0,:]<=0)[0]
+        indx_right = np.where(self.world[0,:]>=0)[0]
+        # Make a version with absolute x-coordiate
+        world_coord = self.world.copy()
+        world_coord[0,:]=np.abs(world_coord[0,:])
+        # Initialize indices
+        self.Psym = indx_left.shape[0]
+        self.indx_full = np.zeros((2,self.Psym),dtype=int)
+        self.indx_full[0,:] = indx_left
+        self.indx_reduced = np.zeros((self.P,),dtype=int)
+        self.indx_reduced[indx_left] = np.arange((self.Psym))
+
+        # Now find a ordering of the right hemisphere
+        # that matches the left hemisphere
+        for i in range(self.Psym):
+            a=np.nonzero(np.all(world_coord[:,i:i+1]==self.world[:,indx_right],axis=0))[0]
+            if len(a)!=1:
+                raise(NameError('The voxels in mask do not seem to be fully symmetric along the x-axis'))
+            self.indx_full[1,i]=indx_right[a[0]]
+            self.indx_reduced[indx_right[a[0]]]=i
+        # Generate flipping index
+        indx_orig = np.arange(self.P,dtype=int)
+        self.indx_flip = np.zeros((self.P,),dtype=int)
+        self.indx_flip[self.indx_full[0]]=indx_orig[self.indx_full[1]]
+        self.indx_flip[self.indx_full[1]]=indx_orig[self.indx_full[0]]
+
 class AtlasSurface(Atlas):
     """Surface-based altas space
     """
@@ -110,7 +163,7 @@ class AtlasSurface(Atlas):
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_gii (str): gifti file name of mask image defining atlas locations
         """
-        self.name = name
+        super().__init__(name)
         self.mask_gii = nb.load(mask_gii)
         Xmask = self.mask_gii.agg_data()
         self.vertex_mask = (Xmask>0)
