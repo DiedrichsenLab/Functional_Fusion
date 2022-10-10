@@ -22,8 +22,8 @@ class Atlas():
     for mapping from the P brain locations back to nii or gifti files
     Each Atlas is associated with a set of atlas maps
     """
-    def __init__(self):
-        self.name = 'other'
+    def __init__(self,name):
+        self.name = name
         self.P = np.nan # Number of locations in this atlas
 
     def map_data(self,data):
@@ -42,7 +42,7 @@ class AtlasVolumetric(Atlas):
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_img (str): file name of mask image defining atlas location
         """
-        self.name = name
+        super().__init__(name)
         self.mask_img = nb.load(mask_img)
         Xmask = self.mask_img.get_data()
         Xmask = (Xmask>0)
@@ -100,6 +100,38 @@ class AtlasVolumetric(Atlas):
         img = nb.Nifti1Image(X,self.mask_img.affine)
         return img
 
+class AtlasVolumeSymmetric(AtlasVolumetric):
+    """ Volumetric atlas with with left-right symmetry
+    The atlas behaves like AtlasVolumetrc, but provides
+    mapping functions from left to right and from full to half
+    """
+    def __init__(self,name,mask_img):
+        """AtlasVolumeSymmeytric class constructor
+        Args:
+            name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            mask_img (str): file name of mask image defining atlas location
+        """
+        super().__init__(name,mask_img)
+
+        pass
+
+    def flip(data):
+        """Flips data in a left-right fashion
+
+        Args:
+            data (ndarray): NxP array of data to flip
+        Returns:
+            flipped_data (ndarray): NxP flipped data
+        """
+        pass
+
+    def condense(data,side=0):
+
+        pass
+
+    def expand(data,side=0):
+        pass
+
 class AtlasSurface(Atlas):
     """Surface-based altas space
     """
@@ -110,7 +142,7 @@ class AtlasSurface(Atlas):
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_gii (str): gifti file name of mask image defining atlas locations
         """
-        self.name = name
+        super().__init__(name)
         self.mask_gii = nb.load(mask_gii)
         Xmask = self.mask_gii.agg_data()
         self.vertex_mask = (Xmask>0)

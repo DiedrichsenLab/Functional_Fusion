@@ -62,19 +62,19 @@ def get_all_nishi(atlas='SUIT3'):
     return data_nn, info_nn, nn_dataset
 
 def fit_fusion(data,design,K=10,intialization='random'):
-    
+
     P = data[0].shape[2]
     ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
                                          remove_redundancy=False)
     pt.normal(0.0,1.0,ar_model.logpi.shape,out=ar_model.logpi)
 
-    # Initialize emission models 
+    # Initialize emission models
     em_models=[]
     for i,ds in enumerate(data):
         em_model = em.MixVMF(K=K, N=40, P=P, X=design[i], uniform_kappa=True)
         em_model.initialize(ds)
         em_models.append(em_model)
- 
+
     # Use random prior
     M = fm.FullMultiModel(ar_model, em_models)
 
@@ -93,7 +93,7 @@ def fit_niter(data,design,K,n_iter):
         print(f'iter: {i}')
         M,ll,theta,U_hat = fit_fusion(data,design,K=K)
         pp = M.arrange.logpi.softmax(axis=0)
-        if i == 0: 
+        if i == 0:
             indx = np.arange(K)
         else:
             indx = ev.matching_greedy(Prop[0,:,:],pp)
@@ -122,14 +122,14 @@ if __name__ == "__main__":
     data_mdtb, info_mdtb, mdtb_dataset = get_all_mdtb(atlas='SUIT3')
     # data_pt, info_pt, pt7_dataset = get_all_pontine(atlas='SUIT3')
     # data_nn, info_nn, nn_dataset = get_all_nishi(atlas='SUIT3')
-    # design matrix for emission model 
+    # design matrix for emission model
     X_mdtb = matrix.indicator(info_mdtb.cond_num_uni)
     n_vox = data_mdtb.shape[2]
     n_iter = 4
     data = [data_mdtb]
     design = [X_mdtb]
     n_sets = len(data)
-    K=10  # Number of parcels 
+    K=10  # Number of parcels
 
     Prop, V = fit_niter(data,design,K,n_iter)
     parcel = pt.argmax(Prop,dim=1)
