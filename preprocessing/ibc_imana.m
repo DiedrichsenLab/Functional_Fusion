@@ -68,7 +68,7 @@ subj_id = 1:length(subj_n);
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
-session_names = {'spatial-navigation'}
+session_names = {'enumeration'}
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -875,7 +875,7 @@ switch what
                 runs = {listing2.name};
                 runs = runs(startsWith(runs, 'rsub-'));
                 
-                if smapstr == 'spatialnavigation'
+                if  strcmp(smapstr, 'spatialnavigation')
                     runs(1)= []
                 end
                 
@@ -955,53 +955,49 @@ switch what
                         idxs2 = find(contains(trial_names, ...
                             'simple_sentence'));
                         trial_names(idxs2) = {'simple_sentence'};
+                    elseif strcmp(task, 'VSTM1') || strcmp(task, 'VSTM2')
+                        idxs = find(contains(trial_names, 'memorization'));
+                        for i = 1:length(idxs)
+                            trial_names(idxs(i)) = strrep(...
+                                trial_names(idxs(i)), 'memorization', ...
+                                'response');
+                        end
                     elseif strcmp(task,'Self1') || ...
                             strcmp(task,'Self2') || ...
                             strcmp(task,'Self3') || ...
                             strcmp(task,'Self4')
                         idxs1 = find(contains(trial_names, ...
                             'self_relevance_with_response'));
-                        trial_names(idxs1) = {'encode_self'};
-                        
+                        trial_names(idxs1) = {'encode_self'};                        
                         idxs2 = find(contains(trial_names, ...
                             'other_relevance_with_response'));
-                        trial_names(idxs2) = {'encode_other'};
-                        
+                        trial_names(idxs2) = {'encode_other'};                      
                         idxs3 = find(contains(trial_names, ...
                             'self_relevance_no_response'));
-                        trial_names(idxs3) = {'encode_self_no_response'};
-                        
+                        trial_names(idxs3) = {'encode_self_no_response'};                        
                         idxs4 = find(contains(trial_names, ...
                             'other_relevance_no_response'));
-                        trial_names(idxs4) = {'encode_other_no_response'};
-                        
+                        trial_names(idxs4) = {'encode_other_no_response'};                        
                         idxs5 = find(contains(trial_names, ...
                             'old_self_hit'));
-                        trial_names(idxs5) = {'recognition_self_hit'};
-                        
+                        trial_names(idxs5) = {'recognition_self_hit'};                       
                         idxs6 = find(contains(trial_names, ...
                             'old_self_miss'));
-                        trial_names(idxs6) = {'recognition_self_miss'};
-                        
+                        trial_names(idxs6) = {'recognition_self_miss'};                       
                         idxs7 = find(contains(trial_names, ...
                             'old_other_hit'));
-                        trial_names(idxs7) = {'recognition_other_hit'};
-                        
+                        trial_names(idxs7) = {'recognition_other_hit'};                       
                         idxs8 = find(contains(trial_names, ...
                             'old_other_miss'));
-                        trial_names(idxs8) = {'recognition_other_miss'};
-                        
+                        trial_names(idxs8) = {'recognition_other_miss'};                       
                         idxs9 = find(contains(trial_names, 'new_fa'));
-                        trial_names(idxs9) = {'false_alarm'};
-                        
+                        trial_names(idxs9) = {'false_alarm'};                        
                         idxs10 = find(contains(trial_names, 'new_cr'));
-                        trial_names(idxs10) = {'correct_rejection'};
-                        
+                        trial_names(idxs10) = {'correct_rejection'};                        
                         idxs11 = find(contains(trial_names, ...
                             'old_self_no_response'));
                         trial_names(idxs11) = {...
-                            'recognition_self_no_response'};
-                        
+                            'recognition_self_no_response'};                        
                         idxs12 = find(contains(trial_names, ...
                             'old_other_no_response'));
                         trial_names(idxs12) = {...
@@ -1111,7 +1107,7 @@ switch what
                         end
                     end
                     
-                    if strcmp(task, 'SpatialNavigation') && run==8
+                    if strcmp(task, 'VSTM1')
                         disp('yeah!')
                     end
                     
