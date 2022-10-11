@@ -868,7 +868,7 @@ switch what
                 J.mthresh          = 0.05;
                 J.cvi_mask         = {char(fullfile(deriv_sess_dir, ...
                     'rmask_gray.nii'))};
-                J.cvi              = 'wls';
+                J.cvi              = 'fast';
                 
                 % get the list of runs for the current session
                 listing2 = dir(deriv_sess_dir);
@@ -934,6 +934,12 @@ switch what
                     % Get the task id
                     tasks = task_name(find(contains(sessid, smap)));
                     task = replace(tasks{rn}, ' ', '');
+                    idxs = [];
+                    idxs1 = [];
+                    idxs2 = [];
+                    idxs3 = [];
+                    idxs4 = [];
+                    idxs5 = [];
                     % Adjustments in some design matrices
                     if strcmp(task, 'ArchiSocial')
                         idxs = find(~contains(trial_names, 'pourquoi'));
@@ -1007,6 +1013,9 @@ switch what
                     elseif strcmp(task, 'Moto')
                         idxs = find(~contains(trial_names, 'Bfix'));
                         trial_names = trial_names(idxs);
+                        trial_onsets = trial_onsets(idxs);
+                        trial_durations = trial_durations(idxs);
+                        
                         idxs1 = find(contains(trial_names, ...
                             'Ins_'));
                         trial_names(idxs1) = {'instructions'};
@@ -1019,6 +1028,9 @@ switch what
                     elseif strcmp(task, 'MCSE')
                         idxs = find(~contains(trial_names, 'Bfix'));
                         trial_names = trial_names(idxs);
+                        trial_onsets = trial_onsets(idxs);
+                        trial_durations = trial_durations(idxs);
+                        
                         idxs1 = find(contains(trial_names, ...
                             'hi_salience_left'));
                         trial_names(idxs1) = {'high_salience_left'};
@@ -1028,67 +1040,116 @@ switch what
                     elseif strcmp(task, 'MVEB')
                         idxs1 = find(~contains(trial_names, 'cross'));
                         trial_names = trial_names(idxs1);
+                        trial_onsets = trial_onsets(idxs1);
+                        trial_durations = trial_durations(idxs1);
                         idxs2 = find(~contains(trial_names, 'blank2'));
                         trial_names = trial_names(idxs2);
+                        trial_onsets = trial_onsets(idxs2);
+                        trial_durations = trial_durations(idxs2);
                     elseif strcmp(task, 'MVIS')
                         idxs1 = find(~contains(trial_names, 'grid'));
                         trial_names = trial_names(idxs1);
+                        trial_onsets = trial_onsets(idxs1);
+                        trial_durations = trial_durations(idxs1);
                         idxs2 = find(~contains(trial_names, 'Bfix'));
                         trial_names = trial_names(idxs2);
+                        trial_onsets = trial_onsets(idxs2);
+                        trial_durations = trial_durations(idxs2);
                         idxs3 = find(~contains(trial_names, ...
                             'maintenance'));
                         trial_names = trial_names(idxs3);
+                        trial_onsets = trial_onsets(idxs3);
+                        trial_durations = trial_durations(idxs3);
                     elseif strcmp(task, 'Lec1')
                         idxs1 = find(~contains(trial_names, 'Bfix'));
                         trial_names = trial_names(idxs1);
+                        trial_onsets = trial_onsets(idxs1);
+                        trial_durations = trial_durations(idxs1);
                         idxs2 = find(~contains(trial_names, ...
                             'start_random_string'));
                         trial_names = trial_names(idxs2);
+                        trial_onsets = trial_onsets(idxs2);
+                        trial_durations = trial_durations(idxs2);
                         idxs3 = find(~contains(trial_names, ...
                             'start_pseudoword'));
                         trial_names = trial_names(idxs3);
+                        trial_onsets = trial_onsets(idxs3);
+                        trial_durations = trial_durations(idxs3);
                         idxs4 = find(~contains(trial_names, ...
                             'start_word'));
                         trial_names = trial_names(idxs4);
+                        trial_onsets = trial_onsets(idxs4);
+                        trial_durations = trial_durations(idxs4);
                     elseif strcmp(task, 'Lec2')
                         idxs1 = find(~contains(trial_names, 'Bfix'));
                         trial_names = trial_names(idxs1);
+                        trial_onsets = trial_onsets(idxs1);
+                        trial_durations = trial_durations(idxs1);
                         idxs2 = find(~contains(trial_names, 'Suite'));
                         trial_names = trial_names(idxs2);
+                        trial_onsets = trial_onsets(idxs2);
+                        trial_durations = trial_durations(idxs2);
                     elseif strcmp(task, 'Audi')
                         idxs1 = find(~contains(trial_names, 'Bfix'));
                         trial_names = trial_names(idxs1);
+                        trial_onsets = trial_onsets(idxs1);
+                        trial_durations = trial_durations(idxs1);
                         idxs2 = find(~contains(trial_names, ...
                             'start_sound'));
                         trial_names = trial_names(idxs2);
+                        trial_onsets = trial_onsets(idxs2);
+                        trial_durations = trial_durations(idxs2);
                         idxs3 = find(~contains(trial_names, 'cut'));
                         trial_names = trial_names(idxs3);
+                        trial_onsets = trial_onsets(idxs3);
+                        trial_durations = trial_durations(idxs3);
                         idxs4 = find(~contains(trial_names, '1'));
                         trial_names = trial_names(idxs4);
+                        trial_onsets = trial_onsets(idxs4);
+                        trial_durations = trial_durations(idxs4);
+                        
                         idxs5 = find(contains(trial_names, 'envir'));
                         trial_names(idxs5) = {'environment'};
                     elseif strcmp(task, 'Visu')
                         idxs1 = find(~contains(trial_names, 'Bfix'));
                         trial_names = trial_names(idxs1);
+                        trial_onsets = trial_onsets(idxs1);
+                        trial_durations = trial_durations(idxs1);
+                        
                         idxs2 = find(contains(trial_names, 'visage'));
                         trial_names(idxs2) = {'face'};
                     elseif strcmp(task, 'MathLanguage1') || ...
                             strcmp(task,'MathLanguage2')
                         idxs1 = find(~contains(trial_names, 'TTL'));
                         trial_names = trial_names(idxs1);
+                        trial_onsets = trial_onsets(idxs1);
+                        trial_durations = trial_durations(idxs1);
                         idxs2 = find(~contains(trial_names, 'bip'));
                         trial_names = trial_names(idxs2);
+                        trial_onsets = trial_onsets(idxs2);
+                        trial_durations = trial_durations(idxs2);
                         idxs3 = find(~contains(trial_names, 'blank'));
                         trial_names = trial_names(idxs3);
+                        trial_onsets = trial_onsets(idxs3);
+                        trial_durations = trial_durations(idxs3);
                         idxs4 = find(~contains(trial_names, 'empty'));
                         trial_names = trial_names(idxs4);
+                        trial_onsets = trial_onsets(idxs4);
+                        trial_durations = trial_durations(idxs4);
                         idxs5 = find(~contains(trial_names, 'keypressed'));
                         trial_names = trial_names(idxs5);
+                        trial_onsets = trial_onsets(idxs5);
+                        trial_durations = trial_durations(idxs5);
                     elseif strcmp(task, 'SpatialNavigation')
                         idxs1 = find(~contains(trial_names, 'fixation'));
                         trial_names = trial_names(idxs1);
+                        trial_onsets = trial_onsets(idxs1);
+                        trial_durations = trial_durations(idxs1);
                         idxs2 = find(~contains(trial_names, 'encoding_'));
                         trial_names = trial_names(idxs2);
+                        trial_onsets = trial_onsets(idxs2);
+                        trial_durations = trial_durations(idxs2);
+                        
                         idxs3 = find(contains(trial_names, ...
                             'intersection_'));
                         trial_names(idxs3) = {'intersection'};
@@ -1109,7 +1170,7 @@ switch what
                         end
                     end
                     
-                    if strcmp(task, 'PreferenceFood')
+                    if strcmp(task, 'PreferencePaintings')
                         disp('yeah!')
                     end
                     
