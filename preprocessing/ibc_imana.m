@@ -57,8 +57,8 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-% subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
@@ -68,7 +68,7 @@ subj_id = 1:length(subj_n);
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
-session_names = {'archi'}
+session_names = {'spatial-navigation'}
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -875,25 +875,29 @@ switch what
                 runs = {listing2.name};
                 runs = runs(startsWith(runs, 'rsub-'));
                 
+                if smapstr == 'spatialnavigation'
+                    runs(1)= []
+                end
+                
                 % loop over runs
                 for rn = 1:length(runs)
+                    run = str2num(extractBefore(extractAfter(runs{rn}, ...
+                        'run-'), [3]));
                     if ~exist(fullfile(est_sess_dir, ...
-                            sprintf('run-%02d', rn)), 'dir')
+                            sprintf('run-%02d', run)), 'dir')
                         mkdir(fullfile(est_sess_dir, ...
-                            sprintf('run-%02d', rn)))
+                            sprintf('run-%02d', run)))
                     else
                         if any(size(dir(fullfile(est_sess_dir, ...
-                                sprintf('run-%02d', rn), 'SPM.mat')), 1))
+                                sprintf('run-%02d', run), 'SPM.mat')), 1))
                             delete(fullfile(est_sess_dir, ...
-                                sprintf('run-%02d', rn), 'SPM.mat'))
+                                sprintf('run-%02d', run), 'SPM.mat'))
                         end
                     end
                     J.dir = {fullfile(est_sess_dir, ...
-                        sprintf('run-%02d', rn))};
+                        sprintf('run-%02d', run))};
                     
                     % Load the scans
-                    run = str2num(extractBefore(extractAfter(runs{rn}, ...
-                        'run-'), [3]));
                     fname = fullfile(deriv_sess_dir, ...
                         sprintf('%s%s_ses-%s_run-%02d_bold.nii', ...
                         prefix, subj_str{s}, smapstr, run));
@@ -930,11 +934,166 @@ switch what
                     % Get the task id
                     tasks = task_name(find(contains(sessid, smap)));
                     task = replace(tasks{rn}, ' ', '');
+                    % Adjustments in some design matrices
                     if strcmp(task, 'ArchiSocial')
                         idxs = find(~contains(trial_names, 'pourquoi'));
                         trial_names = trial_names(idxs);
                         trial_onsets = trial_onsets(idxs);
                         trial_durations = trial_durations(idxs);
+                    elseif strcmp(task, 'HcpLanguage')
+                        idxs = find(~contains(trial_names, 'dummy'));
+                        trial_names = trial_names(idxs);
+                        trial_onsets = trial_onsets(idxs);
+                        trial_durations = trial_durations(idxs);
+                    elseif strcmp(task, 'HcpMotor')
+                        idxs = find(contains(trial_names, 'cue'));
+                        trial_names(idxs) = {'cue'};
+                    elseif strcmp(task, 'RSVPLanguage')
+                        idxs1 = find(contains(trial_names, ...
+                            'complex_sentence'));
+                        trial_names(idxs1) = {'complex_sentence'};
+                        idxs2 = find(contains(trial_names, ...
+                            'simple_sentence'));
+                        trial_names(idxs2) = {'simple_sentence'};
+                    elseif strcmp(task,'Self1') || ...
+                            strcmp(task,'Self2') || ...
+                            strcmp(task,'Self3') || ...
+                            strcmp(task,'Self4')
+                        idxs1 = find(contains(trial_names, ...
+                            'self_relevance_with_response'));
+                        trial_names(idxs1) = {'encode_self'};
+                        
+                        idxs2 = find(contains(trial_names, ...
+                            'other_relevance_with_response'));
+                        trial_names(idxs2) = {'encode_other'};
+                        
+                        idxs3 = find(contains(trial_names, ...
+                            'self_relevance_no_response'));
+                        trial_names(idxs3) = {'encode_self_no_response'};
+                        
+                        idxs4 = find(contains(trial_names, ...
+                            'other_relevance_no_response'));
+                        trial_names(idxs4) = {'encode_other_no_response'};
+                        
+                        idxs5 = find(contains(trial_names, ...
+                            'old_self_hit'));
+                        trial_names(idxs5) = {'recognition_self_hit'};
+                        
+                        idxs6 = find(contains(trial_names, ...
+                            'old_self_miss'));
+                        trial_names(idxs6) = {'recognition_self_miss'};
+                        
+                        idxs7 = find(contains(trial_names, ...
+                            'old_other_hit'));
+                        trial_names(idxs7) = {'recognition_other_hit'};
+                        
+                        idxs8 = find(contains(trial_names, ...
+                            'old_other_miss'));
+                        trial_names(idxs8) = {'recognition_other_miss'};
+                        
+                        idxs9 = find(contains(trial_names, 'new_fa'));
+                        trial_names(idxs9) = {'false_alarm'};
+                        
+                        idxs10 = find(contains(trial_names, 'new_cr'));
+                        trial_names(idxs10) = {'correct_rejection'};
+                        
+                        idxs11 = find(contains(trial_names, ...
+                            'old_self_no_response'));
+                        trial_names(idxs11) = {...
+                            'recognition_self_no_response'};
+                        
+                        idxs12 = find(contains(trial_names, ...
+                            'old_other_no_response'));
+                        trial_names(idxs12) = {...
+                            'recognition_other_no_response'};
+                    elseif strcmp(task, 'Moto')
+                        idxs = find(~contains(trial_names, 'Bfix'));
+                        trial_names = trial_names(idxs);
+                        idxs1 = find(contains(trial_names, ...
+                            'Ins_'));
+                        trial_names(idxs1) = {'instructions'};
+                        idxs2 = find(contains(trial_names, ...
+                            'sacaade_right'));
+                        trial_names(idxs2) = {'saccade_right'};
+                        idxs3 = find(contains(trial_names, ...
+                            'sacaade_left'));
+                        trial_names(idxs3) = {'saccade_left'};
+                    elseif strcmp(task, 'MCSE')
+                        idxs = find(~contains(trial_names, 'Bfix'));
+                        trial_names = trial_names(idxs);
+                        idxs1 = find(contains(trial_names, ...
+                            'hi_salience_left'));
+                        trial_names(idxs1) = {'high_salience_left'};
+                        idxs2 = find(contains(trial_names, ...
+                            'hi_salience_right'));
+                        trial_names(idxs2) = {'high_salience_right'};
+                    elseif strcmp(task, 'MVEB')
+                        idxs1 = find(~contains(trial_names, 'cross'));
+                        trial_names = trial_names(idxs1);
+                        idxs2 = find(~contains(trial_names, 'blank2'));
+                        trial_names = trial_names(idxs2);
+                    elseif strcmp(task, 'MVIS')
+                        idxs1 = find(~contains(trial_names, 'grid'));
+                        trial_names = trial_names(idxs1);
+                        idxs2 = find(~contains(trial_names, 'Bfix'));
+                        trial_names = trial_names(idxs2);
+                        idxs3 = find(~contains(trial_names, ...
+                            'maintenance'));
+                        trial_names = trial_names(idxs3);
+                    elseif strcmp(task, 'Lec1')
+                        idxs1 = find(~contains(trial_names, 'Bfix'));
+                        trial_names = trial_names(idxs1);
+                        idxs2 = find(~contains(trial_names, ...
+                            'start_random_string'));
+                        trial_names = trial_names(idxs2);
+                        idxs3 = find(~contains(trial_names, ...
+                            'start_pseudoword'));
+                        trial_names = trial_names(idxs3);
+                        idxs4 = find(~contains(trial_names, ...
+                            'start_word'));
+                        trial_names = trial_names(idxs4);
+                    elseif strcmp(task, 'Lec2')
+                        idxs1 = find(~contains(trial_names, 'Bfix'));
+                        trial_names = trial_names(idxs1);
+                        idxs2 = find(~contains(trial_names, 'Suite'));
+                        trial_names = trial_names(idxs2);
+                    elseif strcmp(task, 'Audi')
+                        idxs1 = find(~contains(trial_names, 'Bfix'));
+                        trial_names = trial_names(idxs1);
+                        idxs2 = find(~contains(trial_names, ...
+                            'start_sound'));
+                        trial_names = trial_names(idxs2);
+                        idxs3 = find(~contains(trial_names, 'cut'));
+                        trial_names = trial_names(idxs3);
+                        idxs4 = find(~contains(trial_names, '1'));
+                        trial_names = trial_names(idxs4);
+                        idxs5 = find(contains(trial_names, 'envir'));
+                        trial_names(idxs5) = {'environment'};
+                    elseif strcmp(task, 'Visu')
+                        idxs1 = find(~contains(trial_names, 'Bfix'));
+                        trial_names = trial_names(idxs1);
+                        idxs2 = find(contains(trial_names, 'visage'));
+                        trial_names(idxs2) = {'face'};
+                    elseif strcmp(task, 'MathLanguage1') || ...
+                            strcmp(task,'MathLanguage2')
+                        idxs1 = find(~contains(trial_names, 'TTL'));
+                        trial_names = trial_names(idxs1);
+                        idxs2 = find(~contains(trial_names, 'bip'));
+                        trial_names = trial_names(idxs2);
+                        idxs3 = find(~contains(trial_names, 'blank'));
+                        trial_names = trial_names(idxs3);
+                        idxs4 = find(~contains(trial_names, 'empty'));
+                        trial_names = trial_names(idxs4);
+                        idxs5 = find(~contains(trial_names, 'keypressed'));
+                        trial_names = trial_names(idxs5);
+                    elseif strcmp(task, 'SpatialNavigation')
+                        idxs1 = find(~contains(trial_names, 'fixation'));
+                        trial_names = trial_names(idxs1);
+                        idxs2 = find(~contains(trial_names, 'encoding_'));
+                        trial_names = trial_names(idxs2);
+                        idxs3 = find(contains(trial_names, ...
+                            'intersection_'));
+                        trial_names(idxs3) = {'intersection'};
                     end
                     
                     % Prepare .mat file containing the paradigm descriptors
@@ -952,9 +1111,10 @@ switch what
                         end
                     end
                     
-                    if strcmp(task, 'ArchiEmotional')
-                        disp('ArchiEmotional')
+                    if strcmp(task, 'SpatialNavigation') && run==8
+                        disp('yeah!')
                     end
+                    
                     save(sprintf(...
                         '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
                         subj_str{s}, smapstr, run), ...
