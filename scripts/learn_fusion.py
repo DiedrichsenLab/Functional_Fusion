@@ -29,7 +29,7 @@ if sys.platform == "win32":
     base_dir = 'Y:\data\FunctionalFusion'
     sys.path.append('../')
 
-def get_all_any(dataset,atlas='SUIT3',sess=all,type='CondHalf'):
+def get_all_any(dataset,atlas='SUIT3',sess='all',type='CondHalf'):
     if dataset == 'MDTB':
         data,info,dataset = get_all_mdtb(atlas,sess,type)
     if dataset == 'pontine7T':
@@ -93,7 +93,6 @@ def plot_parcel_flat(data,suit_atlas,grid):
         plt.subplot(grid[0],grid[1],i+1)
         suit.flatmap.plot(surf_data[:,i], render='matplotlib',cmap=MDTBcolors, new_figure=False)
 
-
 def fit_fusion(data,design,K=10,intialization='random'):
 
     P = data[0].shape[2]
@@ -129,6 +128,7 @@ def align_fits(models,inplace=True):
     """
     n_iter = len(models)
     K = models[0].arrange.K
+    K_em = models[0].emissions[0].K
     n_vox = models[0].arrange.P
 
     # Intialize data arrays
@@ -149,10 +149,14 @@ def align_fits(models,inplace=True):
         # Now switch the emission models accordingly:
         for j,em in enumerate(M.emissions):
             if i==0:
-                V.append(pt.zeros((n_iter,em.M,K)))
-            V[j][i,:,:]=em.V[:,indx]
+                V.append(pt.zeros((n_iter,em.M,K_em)))
+            if K == K_em: # non-symmetric model
+                V[j][i,:,:]=em.V[:,indx]
+            else:
+                V[j][i,:,:]=em.V[:,np.concatenate([indx,indx+K])]
+
             if inplace:
-                em.V=em.V[:,indx]
+                em.V=V[j][j,:,:]
     return Prop, V
 
 
@@ -208,16 +212,19 @@ def batch_fit(datasets,sess,design_ind,subj=None,
     # Check for size of Atlas + whether symmetric
     if isinstance(atlas,am.AtlasVolumeSymmetric):
         P_arrange = atlas.Psym
+        K_arrange = np.ceil(K/2).astype(int)
     else:
         P_arrange = atlas.P
+        K_arrange = K
 
     for i in range(n_iter):
         print(f'iter: {i}')
 
         # Initialize arrangement model
         if arrange=='independent':
-            ar_model = ar.ArrangeIndependent(K=K, P=P_arrange, spatial_specific=True,
-                                         remove_redundancy=False)
+            ar_model = ar.ArrangeIndependent(K=K_arrange, P=P_arrange,
+                                             spatial_specific=True,
+                                             remove_redundancy=False)
         else:
             raise(NameError(f'unknown arrangement model:{arrange}'))
         # Intialize randomly
@@ -234,7 +241,7 @@ def batch_fit(datasets,sess,design_ind,subj=None,
             em_model.initialize(ds)
             em_models.append(em_model)
 
-        # Make a full fusion model (add options later)
+        # Make a full fusion model
         if isinstance(atlas,am.AtlasVolumeSymmetric):
                 M = fm.FullMultiModelSymmetric(ar_model, em_models,
                                                atlas.indx_full,atlas.indx_reduced,
@@ -245,7 +252,6 @@ def batch_fit(datasets,sess,design_ind,subj=None,
         # Step 5: Estimate the parameter thetas to fit the new model using EM
         M, ll, theta, U_hat = M.fit_em(Y=data, iter=20,
                         tol=0.00001, fit_arrangement=True)
-        info
         models.append(M)
 
     # Align the different models
@@ -256,28 +262,49 @@ def batch_fit(datasets,sess,design_ind,subj=None,
         wdir = base_dir + '/Models'
         fname = f'/{name}_space-{atlas.name}_K-{K}'
         info.to_csv(wdir + fname + '.tsv',sep='\t')
-        pickle.dump(models,wdir + fname + '.pickle')
-
+        with open(wdir + fname + '.pickle','wb') as file:
+            pickle.dump(models,file)
     return info,models
 
+def load_batch_fit(name,atl_name,K):
+    wdir = base_dir + '/Models'
+    fname = f'/{name}_space-{atl_name}_K-{K}'
+    info = pd.read_csv(wdir + fname + '.tsv',sep='\t')
+    with open(wdir + fname + '.pickle','rb') as file:
+        models = pickle.load(file)
+    n_iter = len(models)
+        # Intialize data arrays
+    Prop = pt.zeros((n_iter,models[0].arrange.K,models[0].arrange.P))
+    V = []
 
+    for i,M in enumerate(models):
+        Prop[i,:,:] = M.arrange.logpi.softmax(axis=0)
 
+        # Now switch the emission models accordingly:
+        for j,em in enumerate(M.emissions):
+            if i==0:
+                V.append(pt.zeros((n_iter,em.M,K)))
+            V[j][i,:,:]=em.V
+    return info,models,Prop,V
 
 if __name__ == "__main__":
-    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('SUIT3',mask_img=mask)
+    # mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    # suit_atlas = am.AtlasVolumetric('SUIT3',mask_img=mask)
 
-    mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
-    sym_atlas = am.AtlasVolumeSymmetric('MNISymC2',mask_img=mask)
+    mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
+    sym_atlas = am.AtlasVolumeSymmetric('MNISymC3',mask_img=mask)
 
-    datasets = ['MDTB']
-    sess = ['all']
-    design_ind= ['cond_num_uni']
-
-    batch_fit(datasets,sess,design_ind,atlas=sym_atlas,
-              K=10,name='SingleMDTB',n_iter=10, save=True)
-
-
+    #datasets = ['MDTB']
+    #sess = [['ses-s1']]
+    #design_ind= ['cond_num_uni']
+    #batch_fit(datasets,sess,design_ind,atlas=sym_atlas,
+    #           K=10,name='SingleMDTB',n_iter=10, save=True)
+    info,models,Prop,V = load_batch_fit('SingleMDTB','MNISymC3',10)
+    parcel = pt.argmax(Prop,dim=1) # Get winner take all 
+    parcel=parcel[:,sym_atlas.indx_reduced] # Put back into full space
+    plot_parcel_flat(parcel[0:3,:],sym_atlas,grid=[1,4]) 
+    pass
+    pass
     # Prop, V = fit_niter(data,design,K,n_iter)
     # r1 = ev.calc_consistency(Prop,dim_rem=0)
     # r2 = ev.calc_consistency(V[0],dim_rem=2)

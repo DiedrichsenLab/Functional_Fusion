@@ -27,11 +27,20 @@ def downsample_mask(res=2):
         Downsamples a graymatter mask to a lower functional resolution 
     '''
     adir = atlas_dir +'/tpl-MNI152NLIn2000cSymC'
-    img_name = adir + '/tpl-MNISymC_res-1.nii'
-    out_name = adir + f'/tpl-MNISymC_res-{res:d}.nii'
+    img_name = adir + '/tpl-MNISymC_res-1_gmcmask.nii'
+    out_name = adir + f'/tpl-MNISymC_res-{res:d}_gmcmask.nii'
     in_img = nb.load(img_name)
     #     out_img = nb.processing.resample_from_to(in_img,)
-    temp_img = resample_to_output(in_img,voxel_sizes=[res,res,res])
+    dimension = np.ceil(np.array(in_img.shape)/res).astype(int)
+    if (dimension[0] % 2) == 0:
+        dimension[0] = dimension[0]+1
+
+    mag = np.eye(4)*res
+    mag[3,3]=1
+    affineM = in_img.affine @ mag
+    affineM[0,3] = -np.floor(dimension[0]/2)*res
+    temp_img = resample_from_to(in_img,(dimension,affineM))
+    # temp_img = resample_to_output(in_img,voxel_sizes=[res,res,res])
     X=temp_img.get_fdata()
     X = (X+np.flip(X,axis=0))/2
     X=np.array(X>0.1,dtype=np.uint8)
