@@ -157,9 +157,27 @@ def align_fits(models,inplace=True):
 
 
 def batch_fit(datasets,sess,design_ind,subj=None,
-                atlas='SUIT3',K=10,arrange='independent',emission='VMF',
+                atlas=None,K=10,arrange='independent',emission='VMF',
                 n_iter=10,save=True,name=None):
+    """ Executes a set of fits starting from random starting values
+    saves the
 
+    Args:
+        datasets (list): _description_
+        sess (list): _description_
+        design_ind (list): _description_
+        subj (list, optional): _description_. Defaults to None.
+        atlas (Atlas): Atlas to be used. Defaults to None.
+        K (int): Number of parcels. Defaults to 10.
+        arrange (str): Type of arangement model. Defaults to 'independent'.
+        emission (list / strs): Type of emission models. Defaults to 'VMF'.
+        n_iter (int, optional): Number of fits random starting values. Defaults to 10.
+        save (bool): Save the resulting fits? Defaults to True.
+        name (str): Name of model (for filename). Defaults to None.
+
+    Returns:
+        info (pd.DataFrame):
+    """
     # Load all necessary data and designs
     n_sets = len(datasets)
     data = []
@@ -168,7 +186,7 @@ def batch_fit(datasets,sess,design_ind,subj=None,
         sess = ['all']*n_sets
 
     for i in range(n_sets):
-        dat,info,ds = get_all_any(datasets[i],atlas=atlas,sess=sess[i])
+        dat,info,ds = get_all_any(datasets[i],atlas=atlas.name,sess=sess[i])
         if subj is None:
             data.append(dat)
         else:
@@ -179,7 +197,7 @@ def batch_fit(datasets,sess,design_ind,subj=None,
     # Collect info and fits and iterate
     models=[]
     info = pd.DataFrame({'name':[name]*n_iter,
-                         'atlas':[atlas]*n_iter,
+                         'atlas':[atlas.name]*n_iter,
                          'K':[K]*n_iter,
                          'datasets':[datasets]*n_iter,
                          'sess':[sess]*n_iter,
@@ -187,13 +205,18 @@ def batch_fit(datasets,sess,design_ind,subj=None,
                          'arrange':[arrange]*n_iter,
                          'emission':[emission]*n_iter});
 
+    # Check for size of Atlas + whether symmetric
+    if isinstance(atlas,am.AtlasVolumeSymmetric):
+        P_arrange = atlas.Psym
+    else:
+        P_arrange = atlas.P
+
     for i in range(n_iter):
         print(f'iter: {i}')
 
         # Initialize arrangement model
         if arrange=='independent':
-            P = data[0].shape[2]
-            ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
+            ar_model = ar.ArrangeIndependent(K=K, P=P_arrange, spatial_specific=True,
                                          remove_redundancy=False)
         else:
             raise(NameError(f'unknown arrangement model:{arrange}'))
@@ -204,7 +227,7 @@ def batch_fit(datasets,sess,design_ind,subj=None,
         em_models=[]
         for j,ds in enumerate(data):
             if emission=='VMF':
-                em_model = em.MixVMF(K=K, N=40, P=P,
+                em_model = em.MixVMF(K=K, N=40, P=atlas.P,
                                      X=design[j], uniform_kappa=True)
             else:
                 raise((NameError(f'unknown emission model:{emission}')))
@@ -212,7 +235,12 @@ def batch_fit(datasets,sess,design_ind,subj=None,
             em_models.append(em_model)
 
         # Make a full fusion model (add options later)
-        M = fm.FullMultiModel(ar_model, em_models)
+        if isinstance(atlas,am.AtlasVolumeSymmetric):
+                M = fm.FullMultiModelSymmetric(ar_model, em_models,
+                                               atlas.indx_full,atlas.indx_reduced,
+                                               same_parcels=False)
+        else:
+                M = fm.FullMultiModel(ar_model, em_models)
 
         # Step 5: Estimate the parameter thetas to fit the new model using EM
         M, ll, theta, U_hat = M.fit_em(Y=data, iter=20,
@@ -226,7 +254,7 @@ def batch_fit(datasets,sess,design_ind,subj=None,
     # Save the fits and information
     if save is True:
         wdir = base_dir + '/Models'
-        fname = f'/{name}_space-{atlas}_K-{K}'
+        fname = f'/{name}_space-{atlas.name}_K-{K}'
         info.to_csv(wdir + fname + '.tsv',sep='\t')
         pickle.dump(models,wdir + fname + '.pickle')
 
@@ -246,7 +274,7 @@ if __name__ == "__main__":
     sess = ['all']
     design_ind= ['cond_num_uni']
 
-    batch_fit(datasets,sess,design_ind,atlas='SUIT3',
+    batch_fit(datasets,sess,design_ind,atlas=sym_atlas,
               K=10,name='SingleMDTB',n_iter=10, save=True)
 
 
