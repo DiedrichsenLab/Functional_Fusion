@@ -84,8 +84,8 @@ if __name__ == "__main__":
     # parcel_nishi_fs32k(res=162,ses_id='ses-02',type='condHalf')
     # parcel_nishi_fs32k(res=362,ses_id='ses-02',type='condHalf')
     # parcel_nishi_fs32k(res=642,ses_id='ses-02',type='condHalf')
-    extract_nishi_suit(ses_id='ses-01',type='CondHalf')
-    extract_nishi_suit(ses_id='ses-02',type='CondHalf')
-    extract_nishi_fs32k(ses_id='ses-01',type='CondHalf')
-    extract_nishi_fs32k(ses_id='ses-02',type='CondHalf')
+    extract_nishi_suit(ses_id='ses-01',type='CondHalf',atlas='MNISym3')
+    extract_nishi_suit(ses_id='ses-02',type='CondHalf',atlas='MNISym3')
+    # extract_nishi_fs32k(ses_id='ses-01',type='CondHalf')
+    # extract_nishi_fs32k(ses_id='ses-02',type='CondHalf')
     pass
