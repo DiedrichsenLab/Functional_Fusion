@@ -294,9 +294,9 @@ if __name__ == "__main__":
     mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
     sym_atlas = am.AtlasVolumeSymmetric('MNISymC3',mask_img=mask)
 
-    #datasets = ['MDTB']
-    #sess = [['ses-s1']]
-    #design_ind= ['cond_num_uni']
+    #datasets = ['MDTB','pontine','nishimoto']
+    #sess = [['ses-s1'],['ses-01'],['ses-01','ses-02']]
+    #design_ind= ['cond_num_uni','task_id',',..']
     #batch_fit(datasets,sess,design_ind,atlas=sym_atlas,
     #           K=10,name='SingleMDTB',n_iter=10, save=True)
     info,models,Prop,V = load_batch_fit('SingleMDTB','MNISymC3',10)
