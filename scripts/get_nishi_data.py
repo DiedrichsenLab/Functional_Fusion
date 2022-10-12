@@ -17,11 +17,11 @@ if not Path(base_dir).exists():
 data_dir = base_dir + '/Nishimoto_103Task'
 atlas_dir = base_dir + '/Atlases'
 
-def extract_nishi_suit(ses_id='ses-01',type='condHalf', atlas= 'SUIT3'):
+def extract_nishi_suit(ses_id='ses-01',type='CondHalf', atlas= 'SUIT3'):
     nishi_dataset = DataSetNishi(data_dir)
     nishi_dataset.extract_all_suit(ses_id,type,atlas)
     
-def extract_nishi_fs32k(ses_id='ses-01',type='condHalf'):
+def extract_nishi_fs32k(ses_id='ses-01',type='CondHalf'):
     nishi_dataset = DataSetNishi(data_dir)
     nishi_dataset.extract_all_fs32k(ses_id,type)
 
@@ -32,8 +32,8 @@ def show_nishi_suit(subj,ses,cond):
     T = nishi_dataset.get_participants()
     s = T.participant_id[subj]
     ses = f'ses-{ses:02d}'
-    C = nb.load(nishi_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_condHalf.dscalar.nii')
-    D = pd.read_csv(nishi_dataset.data_dir.format(s) + f'/{s}_{ses}_info-condHalf.tsv',sep='\t')
+    C = nb.load(nishi_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_CondHalf.dscalar.nii')
+    D = pd.read_csv(nishi_dataset.data_dir.format(s) + f'/{s}_{ses}_info-CondHalf.tsv',sep='\t')
     X = C.get_fdata()
     Nifti = suit_atlas.data_to_nifti(X)
     surf_data = suit.flatmap.vol_to_surf(Nifti)
@@ -84,8 +84,8 @@ if __name__ == "__main__":
     # parcel_nishi_fs32k(res=162,ses_id='ses-02',type='condHalf')
     # parcel_nishi_fs32k(res=362,ses_id='ses-02',type='condHalf')
     # parcel_nishi_fs32k(res=642,ses_id='ses-02',type='condHalf')
-    extract_nishi_suit(ses_id='ses-01',type='CondHalf',atlas='MNISym3')
-    extract_nishi_suit(ses_id='ses-02',type='CondHalf',atlas='MNISym3')
+    extract_nishi_suit(ses_id='ses-01',type='CondHalf',atlas='MNISymC3')
+    extract_nishi_suit(ses_id='ses-02',type='CondHalf',atlas='MNISymC3')
     # extract_nishi_fs32k(ses_id='ses-01',type='CondHalf')
     # extract_nishi_fs32k(ses_id='ses-02',type='CondHalf')
     pass
