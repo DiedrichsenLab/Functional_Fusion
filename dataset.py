@@ -65,7 +65,20 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
         data = np.concatenate(data_nn,axis=1)
     # ----------------------------
     if dataset == 'IBC':
-        pass
+        my_dataset = DataSetIBC(base_dir + '/IBC')
+        info_ibc = []
+        data_ibc = []
+        if sess=='all':
+            sess=my_dataset.sess_list
+
+        for s in sess:
+            dat,info = my_dataset.get_data(atlas,s,type)
+            data_ibc.append(dat)
+            info['sess']=[s]*info.shape[0]
+            info_ibc.append(info)
+
+        info = pd.concat(info_ibc,ignore_index=True,sort=False)
+        data = np.concatenate(data_ibc,axis=1)
     return data,info,my_dataset
 
 def prewhiten_data(data):
@@ -810,3 +823,50 @@ class DataSetNishi(DataSet):
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
         
         return data_new, data_info
+
+
+class DataSetIBC(DataSet):
+    def __init__(self, dir):
+        super().__init__(dir)
+        sess_list = ['ses-archi','ses-hcp1']
+    
+    def extract_data(self,participant_id,
+                     atlas_maps,
+                     ses_id,
+                     type='CondHalf'):
+        """  extraction of atlasmap locations
+        from nii files 
+
+        Args:
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
+                'CondHalf': Conditions estimates from each 
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+        
+        fnames,info = self.get_data_fnames(participant_id,ses_id)
+        data = am.get_data3D(fnames,atlas_maps)
+        # For debugging: data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
+
+        # Depending on the type, make a new contrast
+        n_cond = np.max(info.cond_num)
+        if type == 'CondHalf':
+
+            # Make new data frame for the information of the new regressors
+            # Ensure that only the regressors you desire are included and ensure that the the structure of the info file is exactly the same across participant
+            # IF NOT, SUBSET / REORDER INFO / DATA 
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Make sure that the data_info has as many rows and the data_n
+        return data_n, data_info
