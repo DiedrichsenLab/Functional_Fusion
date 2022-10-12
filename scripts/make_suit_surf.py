@@ -13,14 +13,16 @@ def deform_surface(surface,xfm_file):
     xfm_img = nb.load(xfm_file)
     coords = gifti.agg_data('NIFTI_INTENT_POINTSET')
     new_coords = nt.sample_image(xfm_img,coords[:,0],coords[:,1],coords[:,2],1)
+    new_coords=new_coords.squeeze()
+    new_coords[np.isnan(new_coords)]=0
     gifti.darrays[0].data=new_coords.astype(np.float32)
     return gifti
 
 def deform_suit_surfaces():
     adir = atlas_dir +'/tpl-MNI152NLin2000cSymC'
     def_name = adir + '/tpl-MNI152NLin2009cSymC_space-SUIT_xfm.nii'
-    in_files = ['WHITE_SUIT.surf.gii','PIAL_SUIT.surf.gii']
-    out_files = ['WHITE_MNISymC.surf.gii','PIAL_MNISymC.surf.gii']
+    in_files = ['PIAL_SUIT.surf.gii','WHITE_SUIT.surf.gii']
+    out_files = ['PIAL_MNISymC.surf.gii','WHITE_MNISymC.surf.gii']
     for i,fn in enumerate(in_files):
         gii=deform_surface(suit_dir + '/' + fn,def_name)
         nb.save(gii,suit_dir + '/' + out_files[i])

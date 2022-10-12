@@ -80,13 +80,13 @@ def get_all_nishi(atlas='SUIT3',sess='all',type='CondHalf'):
     data_nn=np.concatenate(data_nn,axis=1)
     return data_nn, info_nn, nn_dataset
 
-def plot_parcel_flat(data,suit_atlas,grid):
+def plot_parcel_flat(data,suit_atlas,grid,map_space='SUIT'):
     color_file = base_dir + '/Atlases/tpl-SUIT/atl-MDTB10.lut'
     color_info = pd.read_csv(color_file, sep=' ', header=None)
     MDTBcolors = np.zeros((11, 3))
     MDTBcolors[1:11, :] = color_info.iloc[:, 1:4].to_numpy()
     Nifti = suit_atlas.data_to_nifti(data)
-    surf_data = suit.flatmap.vol_to_surf(Nifti, stats='mode')
+    surf_data = suit.flatmap.vol_to_surf(Nifti, stats='mode',space=map_space)
 
     plt.figure
     for i in range(surf_data.shape[1]):
@@ -302,7 +302,7 @@ if __name__ == "__main__":
     info,models,Prop,V = load_batch_fit('SingleMDTB','MNISymC3',10)
     parcel = pt.argmax(Prop,dim=1) # Get winner take all 
     parcel=parcel[:,sym_atlas.indx_reduced] # Put back into full space
-    plot_parcel_flat(parcel[0:3,:],sym_atlas,grid=[1,4]) 
+    plot_parcel_flat(parcel[0:3,:],sym_atlas,grid=[1,3],map_space='MNISymC') 
     pass
     pass
     # Prop, V = fit_niter(data,design,K,n_iter)
