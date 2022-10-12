@@ -463,8 +463,8 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
                                      num_signal_bins=100, std_V=True)
         em_model.Estep(Data_1)  # sample s and s2 in E-step
     elif e == 'VMF':
-        em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
-        em_model.initialize(Data_1, part_Vec=partV_1)
+        em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign_1, part_Vec=partV_1, uniform_kappa=True)
+        em_model.initialize(Data_1)
     elif e == 'wVMF':
         em_model = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
         em_model.initialize(Data_1)
@@ -489,8 +489,8 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
         em_model2 = em.MixGaussianExp(K=K, N=40, P=P, X=Xdesign_2, num_signal_bins=100, std_V=True)
         em_model2.Estep(Data_2)
     elif e == 'VMF':
-        em_model2 = em.MixVMF(K=K, N=40, P=P, X=Xdesign_2, uniform_kappa=True)
-        em_model2.initialize(Data_2, part_Vec=partV_2)
+        em_model2 = em.MixVMF(K=K, N=40, P=P, X=Xdesign_2, part_Vec=partV_2, uniform_kappa=True)
+        em_model2.initialize(Data_2)
     elif e == 'wVMF':
         em_model2 = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_2, uniform_kappa=True)
         em_model2.initialize(Data_2)
@@ -511,7 +511,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     elif e == 'VMF':
         lower_bound = ev.coserr(pt.tensor(Data_2),
                                 pt.matmul(Xdesign_2, em_model2.V),
-                                pt.softmax(em_model2.Estep(Y=Data_2, part_Vec=partV_2), dim=1),
+                                pt.softmax(em_model2.Estep(Y=Data_2), dim=1),
                                 adjusted=True, soft_assign=True)
     elif e == 'wVMF':
         lower_bound = ev.coserr(pt.tensor(Data_2),
@@ -529,7 +529,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     if e == 'GME':
         U_hat_em = M.emission.Estep(Y=Data_1)
     elif e == 'VMF':
-        U_hat_em = M.emission.Estep(Y=Data_1, part_Vec=partV_1)
+        U_hat_em = M.emission.Estep(Y=Data_1)
     elif e == 'wVMF':
         U_hat_em = M.emission.Estep(Y=Data_1, pure_compute=True)
     else:
