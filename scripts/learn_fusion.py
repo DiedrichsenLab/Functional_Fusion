@@ -29,57 +29,6 @@ if sys.platform == "win32":
     base_dir = 'Y:\data\FunctionalFusion'
     sys.path.append('../')
 
-def get_all_any(dataset,atlas='SUIT3',sess='all',type='CondHalf'):
-    if dataset == 'MDTB':
-        data,info,dataset = get_all_mdtb(atlas,sess,type)
-    if dataset == 'pontine7T':
-        data,info,dataset = get_all_mdtb(atlas,sess,type)
-    if dataset == 'nishimotor':
-        data,info,dataset = get_all_mdtb(atlas,sess,type)
-    return data,info,dataset
-
-def get_all_mdtb(atlas='SUIT3',sess='all',type='CondHalf'):
-    mdtb_dataset = DataSetMDTB(base_dir + '/MDTB')
-    fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
-    info_mdtb = []
-    data_mdtb = []
-    if sess=='all':
-        sess=['ses-s1','ses-s2']
-
-    for s in sess:
-        dat,info = mdtb_dataset.get_data(atlas,s,type,fields=fiel)
-        data_mdtb.append(dat)
-        info['sess']=[s]*info.shape[0]
-        info_mdtb.append(info)
-    info_mdtb = pd.concat(info_mdtb,ignore_index=True,sort=False)
-    data_mdtb=np.concatenate(data_mdtb,axis=1)
-    return data_mdtb, info_mdtb, mdtb_dataset
-
-def get_all_pontine(atlas='SUIT3',type='TaskHalf'):
-    pt7_dataset = DataSetPontine(base_dir + '/pontine7T')
-    fiel = ['task_name','task_num','half']
-    data_pt,info_pt = pt7_dataset.get_data(atlas,'ses-01',
-                                           'TaskHalf',fields=fiel)
-    return data_pt, info_pt, pt7_dataset
-
-def get_all_nishi(atlas='SUIT3',sess='all',type='CondHalf'):
-    nn_dataset = DataSetNishi(base_dir + '/Nishimoto_103Task')
-    fiel = ['task_name','reg_id','half']
-    info_nn = []
-    data_nn = []
-    if sess=='all':
-        sess=['ses-01','ses-02']
-
-    for s in sess:
-        dat,info = nn_dataset.get_data(atlas,s,type,fields=fiel)
-        data_nn.append(dat)
-        info['sess']=[s]*info.shape[0]
-        info_nn.append(info)
-
-    info_nn = pd.concat(info_nn,ignore_index=True,sort=False)
-    data_nn=np.concatenate(data_nn,axis=1)
-    return data_nn, info_nn, nn_dataset
-
 def plot_parcel_flat(data,suit_atlas,grid,map_space='SUIT'):
     color_file = base_dir + '/Atlases/tpl-SUIT/atl-MDTB10.lut'
     color_info = pd.read_csv(color_file, sep=' ', header=None)
@@ -190,7 +139,7 @@ def batch_fit(datasets,sess,design_ind,subj=None,
         sess = ['all']*n_sets
 
     for i in range(n_sets):
-        dat,info,ds = get_all_any(datasets[i],atlas=atlas.name,sess=sess[i])
+        dat,info,ds = get_dataset(base_dir,datasets[i],atlas=atlas.name,sess=sess[i])
         if subj is None:
             data.append(dat)
         else:
