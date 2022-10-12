@@ -68,7 +68,7 @@ def import_anat(source_dir, dest_dir, anat_name, participant_id):
         except FileNotFoundError:
             print('skipping ' + src[i])
 
-def import_freesurfer(source_dir,dest_dir,old_id,new_id):
+def import_freesurfer(source_dir, dest_dir, old_id, new_id):
     """
     Imports the output of a freesurfer reconstruction (and subsequent
     workbench import).

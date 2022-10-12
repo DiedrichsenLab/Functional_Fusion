@@ -52,6 +52,30 @@ def show_mdtb_suit(subj,sess,cond):
     print(f'Showing {D.cond_name[cond]}')
     pass
 
+def get_all_mdtb(atlas='SUIT3'):
+    mdtb_dataset = DataSetMDTB(base_dir + '/MDTB')
+    fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
+    data_mdtb1,info_mdtb1 = mdtb_dataset.get_data(atlas,'ses-s1',
+                                                  'CondHalf',fields=fiel)
+    data_mdtb2,info_mdtb2 = mdtb_dataset.get_data(atlas,'ses-s2',
+                                                  'CondHalf',fields=fiel)
+    info_mdtb1['sess']=np.ones((info_mdtb1.shape[0],))*1
+    info_mdtb2['sess']=np.ones((info_mdtb2.shape[0],))*2
+    info_mdtb = pd.concat([info_mdtb1,info_mdtb2],ignore_index=True,sort=False)
+    data_mdtb=np.concatenate([data_mdtb1,data_mdtb2],axis=1)
+    return data_mdtb, info_mdtb, mdtb_dataset
+
+def get_sess_mdtb(atlas='SUIT3', ses_id='ses-s1', type='CondHalf'):
+    mdtb_dataset = DataSetMDTB(base_dir + '/MDTB')
+    fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
+    data_mdtb, info_mdtb = mdtb_dataset.get_data(atlas, ses_id,
+                                                 'CondHalf', fields=fiel)
+
+    info_mdtb['sess']=np.ones((info_mdtb.shape[0],))
+    X = matrix.indicator(info_mdtb.cond_num_uni)
+    part_Vec = np.bincount(np.asarray(info_mdtb['half'])).cumsum()[1:-1]
+    return data_mdtb, X, int(part_Vec)
+
 def get_hcp_data(tessel=162, ses_id=['ses-01'], range=None, save=False):
     """Get the HCP resting-state connnectivity profile
        The running time of this function is very slow (~1m per subject/sess)
@@ -412,6 +436,154 @@ def learn_runs(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     return T, group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
 
 
+def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
+                   runs=np.arange(1, 17), sub=None, do_plot=True):
+    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
+
+    Data_1, Xdesign_1, partV_1 = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s1')
+    Data_2, Xdesign_2, partV_2 = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
+    Xdesign_1 = pt.tensor(Xdesign_1)
+    Xdesign_2 = pt.tensor(Xdesign_2)
+
+    # Make arrangement model and initialize the prior from the MDTB map
+    P = Data_1.shape[2]
+    prior_w = 7.0  # Weight of prior
+    mdtb_parcel, mdtb_colors = get_mdtb_parcel(do_plot=False)
+    logpi = ar.expand_mn(mdtb_parcel.reshape(1, P) - 1, K)
+    logpi = logpi.squeeze() * prior_w
+    # Set parcel 0 to unassigned
+    logpi[:, mdtb_parcel == 0] = 0
+
+    # Train on sc 1 data
+    ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
+                                         remove_redundancy=False)
+    if e == 'GME':
+        em_model = em.MixGaussianExp(K=K, N=40, P=P, X=Xdesign_1,
+                                     num_signal_bins=100, std_V=True)
+        em_model.Estep(Data_1)  # sample s and s2 in E-step
+    elif e == 'VMF':
+        em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
+        em_model.initialize(Data_1, part_Vec=partV_1)
+    elif e == 'wVMF':
+        em_model = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
+        em_model.initialize(Data_1)
+    else:
+        raise NameError('Unrecognized emission type.')
+
+    # Initilize parameters from group prior and train the m odel
+    mdtb_prior = logpi.softmax(dim=0).unsqueeze(0).repeat(em_model.num_subj,1,1)
+    em_model.Mstep(mdtb_prior)
+    M = fm.FullModel(ar_model, em_model)
+    M, ll, theta, U_hat = M.fit_em(Y=Data_1, iter=max_iter, tol=0.00001, fit_arrangement=True)
+    plt.plot(ll, color='b')
+    plt.show()
+
+    ### fig a: Plot group prior
+    # _plot_maps(pt.argmax(M.arrange.logpi, dim=0) + 1, color=True, render_type='matplotlib',
+    #            save='group_prior.pdf')
+    prior = pt.softmax(M.arrange.logpi, dim=0).unsqueeze(0).repeat(Data_1.shape[0], 1, 1)
+
+    # train emission model on sc2 by frezzing arrangement model learned from sc1
+    if e == 'GME':
+        em_model2 = em.MixGaussianExp(K=K, N=40, P=P, X=Xdesign_2, num_signal_bins=100, std_V=True)
+        em_model2.Estep(Data_2)
+    elif e == 'VMF':
+        em_model2 = em.MixVMF(K=K, N=40, P=P, X=Xdesign_2, uniform_kappa=True)
+        em_model2.initialize(Data_2, part_Vec=partV_2)
+    elif e == 'wVMF':
+        em_model2 = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_2, uniform_kappa=True)
+        em_model2.initialize(Data_2)
+    else:
+        raise NameError('Unrecognized emission type.')
+    em_model2.Mstep(prior)  # give a good starting value by U_hat learned from sc1
+    # M2 = fm.FullModel(M.arrange, em_model2)
+    # M2, ll_2, _, U_hat_sc2 = M2.fit_em(Y=data_sc2, iter=max_iter, tol=0.01, fit_arrangement=False)
+
+    group_baseline = ev.coserr(pt.tensor(Data_2),
+                               pt.matmul(Xdesign_2, em_model2.V), prior,
+                               adjusted=True, soft_assign=True)
+    if e == 'GME':
+        lower_bound = ev.coserr(pt.tensor(Data_2),
+                                pt.matmul(Xdesign_2, em_model2.V),
+                                pt.softmax(em_model2.Estep(Y=Data_2), dim=1),
+                                adjusted=True, soft_assign=True)
+    elif e == 'VMF':
+        lower_bound = ev.coserr(pt.tensor(Data_2),
+                                pt.matmul(Xdesign_2, em_model2.V),
+                                pt.softmax(em_model2.Estep(Y=Data_2, part_Vec=partV_2), dim=1),
+                                adjusted=True, soft_assign=True)
+    elif e == 'wVMF':
+        lower_bound = ev.coserr(pt.tensor(Data_2),
+                                pt.matmul(Xdesign_2, em_model2.V),
+                                pt.softmax(em_model2.Estep(Y=Data_2), dim=1),
+                                adjusted=True, soft_assign=True)
+    else:
+        raise NameError('Unrecognized emission type.')
+
+    ############################# Cross-validation starts here #############################
+    indices, cos_em, cos_complete, uhat_em_all, uhat_complete_all = [],[],[],[],[]
+    T = pd.DataFrame()
+
+    # Infer on current accumulated runs data
+    if e == 'GME':
+        U_hat_em = M.emission.Estep(Y=Data_1)
+    elif e == 'VMF':
+        U_hat_em = M.emission.Estep(Y=Data_1, part_Vec=partV_1)
+    elif e == 'wVMF':
+        U_hat_em = M.emission.Estep(Y=Data_1, pure_compute=True)
+    else:
+        raise NameError('Unrecognized emission type.')
+
+    U_hat_complete, _ = M.arrange.Estep(U_hat_em)
+    # U_hat_complete, _ = M.Estep(Y=Data_cv[:,acc_run_idx,:])
+    uhat_em_all.append(U_hat_em)
+    uhat_complete_all.append(U_hat_complete)
+
+    # Calculate cosine error/u abs error between another test data
+    # and U_hat inferred from testing
+    coserr_Uem = ev.coserr(pt.tensor(Data_2),
+                           pt.matmul(Xdesign_2, em_model2.V),
+                           pt.softmax(U_hat_em, dim=1),
+                           adjusted=True, soft_assign=True)
+    coserr_Uall = ev.coserr(pt.tensor(Data_2),
+                            pt.matmul(Xdesign_2, em_model2.V), U_hat_complete,
+                            adjusted=True, soft_assign=True)
+
+    cos_em.append(coserr_Uem)
+    cos_complete.append(coserr_Uall)
+
+    for sub, a in enumerate(group_baseline):
+        D1 = {}
+        D1['type'] = ['group']
+        D1['coserr'] = [a.item()]
+        D1['subject'] = [sub+1]
+        T = pd.concat([T, pd.DataFrame(D1)])
+
+    for sub, a in enumerate(lower_bound):
+        D1 = {}
+        D1['type'] = ['lowerbound']
+        D1['coserr'] = [a.item()]
+        D1['subject'] = [sub+1]
+        T = pd.concat([T, pd.DataFrame(D1)])
+
+    for sub, a in enumerate(coserr_Uem):
+        D1 = {}
+        D1['type'] = ['emissionOnly']
+        D1['coserr'] = [a.item()]
+        D1['subject'] = [sub+1]
+        T = pd.concat([T, pd.DataFrame(D1)])
+
+    for sub, b in enumerate(coserr_Uall):
+        D2 = {}
+        D2['type'] = ['emissionAndPrior']
+        D2['coserr'] = [b.item()]
+        D2['subject'] = [sub + 1]
+        T = pd.concat([T, pd.DataFrame(D2)])
+
+    return T, group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
+
+
 def figure_indiv_group():
     D = pd.read_csv('scripts/indiv_group_err.csv')
     nf = D['noise_floor'].mean()
@@ -434,11 +606,47 @@ def figure_indiv_group():
     fig.savefig('indiv_group_err.pdf',format='pdf')
     pass
 
+
+def _plot_vmf_wvmf(T, T2):
+    """Plot the evaluation of wVMF and VMF
+    Args:
+        T: VMF
+        T2: wVMF
+    Returns:
+        plot
+    """
+    plt.figure(figsize=(12,6))
+    plt.subplot(121)
+    plt.bar(['emission', 'emission+prior'], [T[T['type'] == 'emissionOnly']['coserr'].mean(),
+                                             T[T['type'] == 'emissionAndPrior']['coserr'].mean()],
+            yerr=[T[T['type'] == 'emissionOnly']['coserr'].std()/np.sqrt(24),
+                  T[T['type'] == 'emissionOnly']['coserr'].std()/np.sqrt(24)])
+    plt.axhline(y=T[T['type'] == 'group']['coserr'].mean(), color='r', linestyle=':')
+    plt.axhline(y=T[T['type'] == 'lowerbound']['coserr'].mean(), color='k', linestyle=':')
+    plt.ylim(0.2, 0.32)
+    plt.title('VMF')
+
+    plt.subplot(122)
+    plt.bar(['emission', 'emission+prior'], [T2[T2['type'] == 'emissionOnly']['coserr'].mean(),
+                                             T2[T2['type'] == 'emissionAndPrior']['coserr'].mean()],
+            yerr=[T2[T2['type'] == 'emissionOnly']['coserr'].std()/np.sqrt(24),
+                  T2[T2['type'] == 'emissionOnly']['coserr'].std()/np.sqrt(24)])
+    plt.axhline(y=T2[T2['type'] == 'group']['coserr'].mean(), color='r', linestyle=':')
+    plt.axhline(y=T2[T2['type'] == 'lowerbound']['coserr'].mean(), color='k', linestyle=':')
+    plt.ylim(0.2, 0.32)
+    plt.title('wVMF')
+    plt.show()
+
+
 if __name__ == "__main__":
     # Data_HCP = get_hcp_data(ses_id=['ses-01', 'ses-02'], range=np.arange(77, 100), save=True)
     # data = get_hcp_data_from_csv(tessel=162, ses_id=['ses-01'], range=[0])
     # data = data[0, :, :].cpu().detach().numpy()
     # _plot_maps(data, sub=1, stats='nanmean', overlay='func', color=None, save=None)
+
+    T, gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_half(K=10, e='VMF',
+                                                                          runs=np.arange(1, 17))
+    T.to_csv('coserrs_wVMF.csv')
 
     A = pt.load('D:/data/nips_2022_supp/uhat_complete_all.pt')[15]
     parcel = pt.argmax(A, dim=1) + 1
