@@ -21,11 +21,11 @@ if not Path(base_dir).exists():
 data_dir = base_dir + '/Pontine7T'
 atlas_dir = base_dir + '/Atlases'
 
-def extract_pontine_suit(ses_id='ses-01',type='taskHalf',atlas='SUIT3'):
+def extract_pontine_suit(ses_id='ses-01',type='TaskHalf',atlas='SUIT3'):
     p7_dataset = DataSetPontine(data_dir)
     p7_dataset.extract_all_suit(ses_id,type,atlas)
 
-def extract_pontine_fs32k(ses_id='ses-01',type='taskHalf'):
+def extract_pontine_fs32k(ses_id='ses-01',type='TaskHalf'):
     p7_dataset = DataSetPontine(data_dir)
     p7_dataset.extract_all_fs32k(ses_id,type)
 
@@ -36,8 +36,8 @@ def show_pontine_suit(subj,sess,cond):
     T = pontine_dataset.get_participants()
     s = T.participant_id[subj]
     ses = f'ses-{sess:02d}'
-    C = nb.load(pontine_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_taskHalf.dscalar.nii')
-    D = pd.read_csv(pontine_dataset.data_dir.format(s) + f'/{s}_{ses}_info-taskHalf.tsv',sep='\t')
+    C = nb.load(pontine_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_TaskHalf.dscalar.nii')
+    D = pd.read_csv(pontine_dataset.data_dir.format(s) + f'/{s}_{ses}_info-TaskHalf.tsv',sep='\t')
     X = C.get_fdata()
     Nifti = suit_atlas.data_to_nifti(X)
     surf_data = suit.flatmap.vol_to_surf(Nifti)
@@ -47,5 +47,5 @@ def show_pontine_suit(subj,sess,cond):
     pass
 
 if __name__ == "__main__":
-    extract_pontine_suit(ses_id='ses-01',type='taskHalf')
-    extract_pontine_fs32k(ses_id='ses-01',type='taskHalf')
+    extract_pontine_suit(ses_id='ses-01',type='TaskHalf',atlas='MNISymC3')
+    # extract_pontine_fs32k(ses_id='ses-01',type='TaskHalf')
