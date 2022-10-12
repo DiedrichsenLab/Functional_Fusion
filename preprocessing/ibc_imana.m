@@ -881,6 +881,7 @@ switch what
                 
                 % loop over runs
                 for rn = 1:length(runs)
+                %for rn = 2:length(runs)
                     run = str2num(extractBefore(extractAfter(runs{rn}, ...
                         'run-'), [3]));
                     if ~exist(fullfile(est_sess_dir, ...
@@ -919,7 +920,7 @@ switch what
                     % get the path to the tsv file
                     tsv_file = fullfile(raw_sess_dir, sprintf(...
                         '%s_ses-%s_run-%02d_events.tsv', ...
-                        subj_str{s}, smapstr, run));
+                        subj_str{s}, smapstr, run))
                     % get the tsvfile for the current run
                     D = struct([]); 
                     D = tdfread(tsv_file,'\t');
@@ -946,8 +947,12 @@ switch what
                             strcmp(task,'PreferencePaintings') || ...
                             strcmp(task,'PreferenceFaces') || ...
                             strcmp(task,'PreferenceHouses')
-                        trial_mods = char();
-                        trial_mods = cellstr(D.score)
+                        
+                        trial_mods = num2cell(D.score)
+                        % trial_mods = D.score
+                        %trial_mods = cellstr(D.score};
+                        
+                        %trial_mods = {D.score};
                         for t = 1:length(trial_mods)
                             if strcmp(trial_mods{t}, 'n/a')
                                 trial_mods{t} = NaN;
@@ -1213,7 +1218,7 @@ switch what
                         new_durations = {durations{1}, durations{1}, ...
                             durations{1}};
                         pmod = {{}, linear.', quadratic.'};
-                        if ~any(strcmp(trial_names, '_too-slow'));
+                        if any(strcmp(trial_names, '_too-slow'));
                             new_names{4} = append(names{1},'_too-slow');
                             new_onsets{4} = onsets{2};
                             new_durations{4} = durations{2};
@@ -1225,6 +1230,17 @@ switch what
                         names = new_names;
                         onsets = new_onsets;
                         durations = new_durations;
+                        save(...
+                            sprintf(...
+                            '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
+                            subj_str{s}, smapstr, run), ...
+                            'names', 'onsets', 'durations', 'pmod');
+                    else
+                        save(...
+                            sprintf(...
+                            '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
+                            subj_str{s}, smapstr, run), ...
+                            'names', 'onsets', 'durations'); 
                     end
                     
                     save(sprintf(...
