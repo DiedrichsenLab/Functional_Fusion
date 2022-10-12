@@ -940,6 +940,22 @@ switch what
                     idxs3 = [];
                     idxs4 = [];
                     idxs5 = [];
+                    
+                    % Extract parametric modulators for Preference Tasks
+                    if strcmp(task,'PreferenceFood') || ...
+                            strcmp(task,'PreferencePaintings') || ...
+                            strcmp(task,'PreferenceFaces') || ...
+                            strcmp(task,'PreferenceHouses')
+                        trial_mods = char();
+                        trial_mods = cellstr(D.score)
+                        for t = 1:length(trial_mods)
+                            if strcmp(trial_mods{t}, 'n/a')
+                                trial_mods{t} = NaN;
+                            else
+                                trial_mods{t} = str2num(trial_mods{t});
+                            end
+                        end
+                    end
                     % Adjustments in some design matrices
                     if strcmp(task, 'ArchiSocial')
                         idxs = find(~contains(trial_names, 'pourquoi'));
@@ -1170,8 +1186,45 @@ switch what
                         end
                     end
                     
-                    if strcmp(task, 'PreferencePaintings')
-                        disp('yeah!')
+                    if strcmp(smapstr, 'preference')
+                        linear = repnan(cell2mat(trial_mods))
+                        mean_linear = mean(linear)
+                        linear = linear - mean_linear
+                        quadratic = linear.^2
+                        mean_quadratic = mean(quadratic)
+                        quadratic = quadratic - mean_quadratic
+                        quadratic = quadratic - (...
+                            linear * dot(quadratic, linear))/dot(...
+                            linear, linear)
+                        if strcmp(task,'PreferenceFood')
+                            new_names = {'food_constant', ...
+                                'food_linear', 'food_quadratic'};
+                        elseif strcmp(task,'PreferencePaintings')
+                            new_names = {'paintings_constant', ...
+                                'paintings_linear', 'paintings_quadratic'};
+                        elseif strcmp(task,'PreferenceFaces')
+                            new_names = {'faces_constant', ...
+                                'faces_linear', 'faces_quadratic'};
+                        else
+                            new_names = {'houses_constant', ...
+                                'houses_linear', 'houses_quadratic'};
+                        end
+                        new_onsets = {onsets{1}, onsets{1}, onsets{1}};
+                        new_durations = {durations{1}, durations{1}, ...
+                            durations{1}};
+                        pmod = {{}, linear.', quadratic.'};
+                        if ~any(strcmp(trial_names, '_too-slow'));
+                            new_names{4} = append(names{1},'_too-slow');
+                            new_onsets{4} = onsets{2};
+                            new_durations{4} = durations{2};
+                            pmod{4} = {};
+                        end
+                        names = {};
+                        onsets = {};
+                        durations = {};
+                        names = new_names;
+                        onsets = new_onsets;
+                        durations = new_durations;
                     end
                     
                     save(sprintf(...
