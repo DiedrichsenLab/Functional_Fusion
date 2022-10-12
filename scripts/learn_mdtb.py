@@ -72,8 +72,9 @@ def get_sess_mdtb(atlas='SUIT3', ses_id='ses-s1', type='CondHalf'):
                                                  'CondHalf', fields=fiel)
 
     info_mdtb['sess']=np.ones((info_mdtb.shape[0],))
-    info_mdtb = matrix.indicator(info_mdtb.cond_num_uni)
-    return data_mdtb, info_mdtb
+    X = matrix.indicator(info_mdtb.cond_num_uni)
+    part_Vec = np.bincount(np.asarray(info_mdtb['half'])).cumsum()[1:-1]
+    return data_mdtb, X, int(part_Vec)
 
 def get_hcp_data(tessel=162, ses_id=['ses-01'], range=None, save=False):
     """Get the HCP resting-state connnectivity profile
@@ -440,8 +441,8 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
 
-    Data_1, Xdesign_1 = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s1')
-    Data_2, Xdesign_2 = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
+    Data_1, Xdesign_1, partV_1 = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s1')
+    Data_2, Xdesign_2, partV_2 = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
     Xdesign_1 = pt.tensor(Xdesign_1)
     Xdesign_2 = pt.tensor(Xdesign_2)
 
@@ -463,7 +464,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
         em_model.Estep(Data_1)  # sample s and s2 in E-step
     elif e == 'VMF':
         em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
-        em_model.initialize(Data_1)
+        em_model.initialize(Data_1, part_Vec=partV_1)
     elif e == 'wVMF':
         em_model = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
         em_model.initialize(Data_1)
@@ -489,7 +490,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
         em_model2.Estep(Data_2)
     elif e == 'VMF':
         em_model2 = em.MixVMF(K=K, N=40, P=P, X=Xdesign_2, uniform_kappa=True)
-        em_model2.initialize(Data_2)
+        em_model2.initialize(Data_2, part_Vec=partV_2)
     elif e == 'wVMF':
         em_model2 = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_2, uniform_kappa=True)
         em_model2.initialize(Data_2)
@@ -510,12 +511,12 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     elif e == 'VMF':
         lower_bound = ev.coserr(pt.tensor(Data_2),
                                 pt.matmul(Xdesign_2, em_model2.V),
-                                pt.softmax(em_model2.Estep(Y=Data_2, pure_compute=True), dim=1),
+                                pt.softmax(em_model2.Estep(Y=Data_2, part_Vec=partV_2), dim=1),
                                 adjusted=True, soft_assign=True)
     elif e == 'wVMF':
         lower_bound = ev.coserr(pt.tensor(Data_2),
                                 pt.matmul(Xdesign_2, em_model2.V),
-                                pt.softmax(em_model2.Estep(Y=Data_2, pure_compute=True), dim=1),
+                                pt.softmax(em_model2.Estep(Y=Data_2), dim=1),
                                 adjusted=True, soft_assign=True)
     else:
         raise NameError('Unrecognized emission type.')
@@ -528,7 +529,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     if e == 'GME':
         U_hat_em = M.emission.Estep(Y=Data_1)
     elif e == 'VMF':
-        U_hat_em = M.emission.Estep(Y=Data_1, pure_compute=True)
+        U_hat_em = M.emission.Estep(Y=Data_1, part_Vec=partV_1)
     elif e == 'wVMF':
         U_hat_em = M.emission.Estep(Y=Data_1, pure_compute=True)
     else:
@@ -643,13 +644,9 @@ if __name__ == "__main__":
     # data = data[0, :, :].cpu().detach().numpy()
     # _plot_maps(data, sub=1, stats='nanmean', overlay='func', color=None, save=None)
 
-    # T, gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_half(K=10, e='wVMF',
-    #                                                                       runs=np.arange(1, 17))
-    # T.to_csv('coserrs_wVMF.csv')
-
-    T = pd.read_csv('coserrs_VMF.csv')
-    T2 = pd.read_csv('coserrs_wVMF.csv')
-    _plot_vmf_wvmf(T, T2)
+    T, gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_half(K=10, e='VMF',
+                                                                          runs=np.arange(1, 17))
+    T.to_csv('coserrs_wVMF.csv')
 
     A = pt.load('D:/data/nips_2022_supp/uhat_complete_all.pt')[15]
     parcel = pt.argmax(A, dim=1) + 1
