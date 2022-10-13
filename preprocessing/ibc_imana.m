@@ -880,10 +880,9 @@ switch what
                 end
                 
                 % loop over runs
-                % for rn = 1:length(runs)
-                for rn = 2:length(runs)
+                for rn = 1:length(runs)
                     run = str2num(extractBefore(extractAfter(runs{rn}, ...
-                        'run-'), [3]))
+                        'run-'), [3]));
                     if ~exist(fullfile(est_sess_dir, ...
                             sprintf('run-%02d', run)), 'dir')
                         mkdir(fullfile(est_sess_dir, ...
@@ -942,7 +941,8 @@ switch what
                     idxs4 = [];
                     idxs5 = [];
                     
-                    % Extract parametric modulators for Preference Tasks
+                    % Extract the scores to build the parametric ...
+                    % modulators for Preference Tasks
                     if strcmp(task,'PreferenceFood') || ...
                             strcmp(task,'PreferencePaintings') || ...
                             strcmp(task,'PreferenceFaces') || ...
@@ -951,11 +951,13 @@ switch what
                         if isa(D.score, 'double')
                             trial_mods = num2cell(D.score);
                         else
-                            trial_mods = cellstr(D.score);
-                        end
-                        for t = 1:length(trial_mods)
-                            if strcmp(trial_mods{t}, 'n/a')
-                                trial_mods{t} = NaN;
+                            for t = 1:length(D.score)
+                                if strcmp(D.score(t, 1:3), 'n/a')
+                                    trial_mods{t, 1} = NaN;
+                                else
+                                    trial_mods{t, 1} = ...
+                                        str2num(D.score(t, 1:3)); 
+                                end
                             end
                         end
                     end
@@ -1190,44 +1192,43 @@ switch what
                     end
                     
                     if strcmp(smapstr, 'preference')
-%                         linear = repnan(cell2mat(trial_mods))
-%                         mean_linear = mean(linear)
-%                         linear = linear - mean_linear
-%                         quadratic = linear.^2
-%                         mean_quadratic = mean(quadratic)
-%                         quadratic = quadratic - mean_quadratic
-%                         quadratic = quadratic - (...
-%                             linear * dot(quadratic, linear))/dot(...
-%                             linear, linear)
-                        if strcmp(task,'PreferenceFood')
-                            new_names = {'food_constant', ...
-                                'food_linear', 'food_quadratic'};
-                        elseif strcmp(task,'PreferencePaintings')
-                            new_names = {'paintings_constant', ...
-                                'paintings_linear', 'paintings_quadratic'};
-                        elseif strcmp(task,'PreferenceFaces')
-                            new_names = {'faces_constant', ...
-                                'faces_linear', 'faces_quadratic'};
-                        else
-                            new_names = {'houses_constant', ...
-                                'houses_linear', 'houses_quadratic'};
-                        end
-                        new_onsets = {onsets{1}, onsets{1}, onsets{1}};
-                        new_durations = {durations{1}, durations{1}, ...
-                            durations{1}};
-                        pmod = {{}, linear.', quadratic.'};
-                        if any(strcmp(trial_names, '_too-slow'));
-                            new_names{4} = append(names{1},'_too-slow');
-                            new_onsets{4} = onsets{2};
-                            new_durations{4} = durations{2};
-                            pmod{4} = {};
-                        end
-                        names = {};
-                        onsets = {};
-                        durations = {};
-                        names = new_names;
-                        onsets = new_onsets;
-                        durations = new_durations;
+                        
+                        % Handle the NaNs
+                        linear = repnan(cell2mat(trial_mods));
+                        % Mean center the modulator of the amplitude
+                        % In the present case, these are the scores
+                        mean_linear = mean(linear);
+                        linear = linear - mean_linear;
+
+                        % Define parametric modulators                       
+                        pmod = struct('name', {''}, 'param', {}, ...
+                            'poly', {});
+                        pmod(1).name{1} = 'linear';
+                        pmod(1).param{1} = linear;
+                        pmod(1).poly{1} = 2; % this will create both the linear and the quadratic terms of the condition #1
+                        
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        
+%                         % This snippet of code computes explicitly the
+%                         % second order of the polynomial modulator 
+%                         % (i.e. the quadratic term)
+%                         
+                        quadratic = linear.^2;
+                        mean_quadratic = mean(quadratic);
+                        quadratic = quadratic - mean_quadratic;
+                        quadratic = quadratic - (...
+                            linear * dot(quadratic, linear))/dot(...
+                            linear, linear);
+%                         
+%                         % using this, we have then to create the modulator
+%                         % and set poly to 1
+%                         
+%                         pmod(1).name{2} = 'quadratic';
+%                         pmod(1).param{2} = quadratic;
+%                         pmod(1).poly{2} = 1;
+                        
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
                         save(...
                             sprintf(...
                             '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
@@ -1240,11 +1241,7 @@ switch what
                             subj_str{s}, smapstr, run), ...
                             'names', 'onsets', 'durations'); 
                     end
-                    
-                    save(sprintf(...
-                        '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
-                        subj_str{s}, smapstr, run), ...
-                        'names', 'onsets', 'durations');                                          
+                                       
                     J.sess.multi = {sprintf(...
                         '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
                         subj_str{s}, smapstr, run)};
