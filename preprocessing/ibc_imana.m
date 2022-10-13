@@ -948,6 +948,7 @@ switch what
                             strcmp(task,'PreferenceFaces') || ...
                             strcmp(task,'PreferenceHouses')
                         
+                        trial_mods = {};
                         if isa(D.score, 'double')
                             trial_mods = num2cell(D.score);
                         else
@@ -1183,7 +1184,7 @@ switch what
                     names = unique(trial_names).';
                     for u = 1:length(names)
                         indexes = [];
-                        indexes = find(contains(trial_names, names{u}));
+                        indexes = find(strcmp(trial_names, names{u}));
                         for idx = 1:length(indexes)
                             onsets{u}(idx) = trial_onsets{indexes(idx)};
                             durations{u}(idx) = ...
@@ -1193,12 +1194,15 @@ switch what
                     
                     if strcmp(smapstr, 'preference')
                         
-                        % Handle the NaNs
-                        linear = repnan(cell2mat(trial_mods));
+                        % Remove NaNs from cell
+                        trial_mods(cellfun(@(trial_mods) any(isnan(...
+                            trial_mods)), trial_mods)) = [];
+                        % linear = repnan(cell2mat(trial_mods));
                         % Mean center the modulator of the amplitude
                         % In the present case, these are the scores
-                        mean_linear = mean(linear);
-                        linear = linear - mean_linear;
+                        trial_mods = cell2mat(trial_mods);
+                        mean_linear = mean(trial_mods);
+                        linear = trial_mods - mean_linear;
 
                         % Define parametric modulators                       
                         pmod = struct('name', {''}, 'param', {}, ...
@@ -1213,12 +1217,12 @@ switch what
 %                         % second order of the polynomial modulator 
 %                         % (i.e. the quadratic term)
 %                         
-                        quadratic = linear.^2;
-                        mean_quadratic = mean(quadratic);
-                        quadratic = quadratic - mean_quadratic;
-                        quadratic = quadratic - (...
-                            linear * dot(quadratic, linear))/dot(...
-                            linear, linear);
+%                         quadratic = linear.^2;
+%                         mean_quadratic = mean(quadratic);
+%                         quadratic = quadratic - mean_quadratic;
+%                         quadratic = quadratic - (...
+%                             linear * dot(quadratic, linear))/dot(...
+%                             linear, linear);
 %                         
 %                         % using this, we have then to create the modulator
 %                         % and set poly to 1
