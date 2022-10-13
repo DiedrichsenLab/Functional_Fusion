@@ -880,10 +880,10 @@ switch what
                 end
                 
                 % loop over runs
-                for rn = 1:length(runs)
-                %for rn = 2:length(runs)
+                % for rn = 1:length(runs)
+                for rn = 2:length(runs)
                     run = str2num(extractBefore(extractAfter(runs{rn}, ...
-                        'run-'), [3]));
+                        'run-'), [3]))
                     if ~exist(fullfile(est_sess_dir, ...
                             sprintf('run-%02d', run)), 'dir')
                         mkdir(fullfile(est_sess_dir, ...
@@ -948,16 +948,14 @@ switch what
                             strcmp(task,'PreferenceFaces') || ...
                             strcmp(task,'PreferenceHouses')
                         
-                        trial_mods = num2cell(D.score)
-                        % trial_mods = D.score
-                        %trial_mods = cellstr(D.score};
-                        
-                        %trial_mods = {D.score};
+                        if isa(D.score, 'double')
+                            trial_mods = num2cell(D.score);
+                        else
+                            trial_mods = cellstr(D.score);
+                        end
                         for t = 1:length(trial_mods)
                             if strcmp(trial_mods{t}, 'n/a')
                                 trial_mods{t} = NaN;
-                            else
-                                trial_mods{t} = str2num(trial_mods{t});
                             end
                         end
                     end
@@ -1192,15 +1190,15 @@ switch what
                     end
                     
                     if strcmp(smapstr, 'preference')
-                        linear = repnan(cell2mat(trial_mods))
-                        mean_linear = mean(linear)
-                        linear = linear - mean_linear
-                        quadratic = linear.^2
-                        mean_quadratic = mean(quadratic)
-                        quadratic = quadratic - mean_quadratic
-                        quadratic = quadratic - (...
-                            linear * dot(quadratic, linear))/dot(...
-                            linear, linear)
+%                         linear = repnan(cell2mat(trial_mods))
+%                         mean_linear = mean(linear)
+%                         linear = linear - mean_linear
+%                         quadratic = linear.^2
+%                         mean_quadratic = mean(quadratic)
+%                         quadratic = quadratic - mean_quadratic
+%                         quadratic = quadratic - (...
+%                             linear * dot(quadratic, linear))/dot(...
+%                             linear, linear)
                         if strcmp(task,'PreferenceFood')
                             new_names = {'food_constant', ...
                                 'food_linear', 'food_quadratic'};
