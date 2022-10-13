@@ -14,7 +14,7 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 
-data_dir = base_dir + '/Nishimoto_103Task'
+data_dir = base_dir + '/Nishimoto'
 atlas_dir = base_dir + '/Atlases'
 
 def extract_nishi_suit(ses_id='ses-01',type='CondHalf', atlas= 'SUIT3'):

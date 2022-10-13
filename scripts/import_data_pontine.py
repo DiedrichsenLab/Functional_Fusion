@@ -14,8 +14,8 @@ import scipy.io as sio
 from import_data import *
 
 if __name__ == '__main__':
-    src_base_dir = '/Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/'
-    dest_base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Pontine7T/'
+    src_base_dir = '/Volumes/diedrichsen_data$/data/Cerebellum/Pontine/'
+    dest_base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Pontine/'
     for participant_id in ['01', '03', '04', '07', '95', '96', '97', '98']:
 
         # # --- Importing SUIT ---
@@ -44,4 +44,4 @@ if __name__ == '__main__':
         #import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
 
 
-# /Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/GLM_firstlevel_2/S01/beta_0048.nii
+# /Volumes/diedrichsen_data$/data/Cerebellum/Pontine/GLM_firstlevel_2/S01/beta_0048.nii

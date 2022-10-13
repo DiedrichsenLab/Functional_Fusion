@@ -5,9 +5,6 @@ from pathlib import Path
 import mat73
 import numpy as np
 import sys
-# Discuss: This is causing trouble in compatibility
-# sys.path.append(
-#     '/Users/callithrix/Documents/Projects/Functional_Fusion/code/shared/Functional_Fusion/') # can be removed before push, but currently that is the best way to import atlas_map for me
 import atlas_map as am
 from dataset import DataSetPontine
 import nibabel as nb
@@ -18,7 +15,7 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 
-data_dir = base_dir + '/Pontine7T'
+data_dir = base_dir + '/Pontine'
 atlas_dir = base_dir + '/Atlases'
 
 def extract_pontine_suit(ses_id='ses-01',type='TaskHalf',atlas='SUIT3'):
