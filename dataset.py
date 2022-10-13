@@ -42,13 +42,13 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
         data = np.concatenate(data_mdtb,axis=1)
     # ----------------------------
     if dataset == 'Pontine':
-        my_dataset = DataSetPontine(base_dir + '/pontine7T')
+        my_dataset = DataSetPontine(base_dir + '/Pontine')
         fiel = ['task_name','task_num','half']
         data_pt,info_pt = my_dataset.get_data(atlas,'ses-01',
                                            type,fields=fiel)
     # ----------------------------
     if dataset == 'Nishimoto':
-        my_dataset = DataSetNishi(base_dir + '/Nishimoto_103Task')
+        my_dataset = DataSetNishi(base_dir + '/Nishimoto')
         fiel = ['task_name','reg_id','half']
         info_nn = []
         data_nn = []
