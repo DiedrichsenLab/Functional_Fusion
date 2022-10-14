@@ -22,7 +22,7 @@ from numpy.linalg import pinv,solve
 
 def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     # ----------------------------
-    if dataset == 'MDTB':
+    if dataset.casefold() == 'MDTB'.casefold():
         my_dataset = DataSetMDTB(base_dir + '/MDTB')
         fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
         info_mdtb = []
@@ -41,13 +41,13 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
         info = pd.concat(info_mdtb,ignore_index=True,sort=False)
         data = np.concatenate(data_mdtb,axis=1)
     # ----------------------------
-    if dataset == 'Pontine':
+    if dataset.casefold() == 'Pontine'.casefold():
         my_dataset = DataSetPontine(base_dir + '/Pontine')
         fiel = ['task_name','task_num','half']
         data_pt,info_pt = my_dataset.get_data(atlas,'ses-01',
                                            type,fields=fiel)
     # ----------------------------
-    if dataset == 'Nishimoto':
+    if dataset.casefold() == 'Nishimoto'.casefold():
         my_dataset = DataSetNishi(base_dir + '/Nishimoto')
         fiel = ['task_name','reg_id','half']
         info_nn = []
@@ -64,7 +64,7 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
         info = pd.concat(info_nn,ignore_index=True,sort=False)
         data = np.concatenate(data_nn,axis=1)
     # ----------------------------
-    if dataset == 'IBC':
+    if dataset.casefold() == 'IBC'.casefold():
         pass
     return data,info,my_dataset
 
