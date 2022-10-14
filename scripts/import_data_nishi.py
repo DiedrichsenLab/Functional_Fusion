@@ -166,8 +166,8 @@ def import_spm_designmatrix(source_dir,dest_dir,sub_id,sess_id):
 
 
 if __name__ == "__main__":
-    base_source_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Nishimoto_103Task/raw/'
-    base_dest_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Nishimoto_103Task/derivatives/'
+    base_source_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Nishimoto/raw/'
+    base_dest_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Nishimoto/derivatives/'
     
     subj_list = []
     for i in range(1, 7):
