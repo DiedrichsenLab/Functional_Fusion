@@ -262,13 +262,18 @@ def fit_all(set_ind=[0,1,2]):
     asym_atlas = am.AtlasVolumetric('MNISymC3',mask_img=mask)
 
     # Data sets need to numpy arrays to allow indixing by list
-    datasets = np.array(['Mdtb','Pontine','Nishimoto'])
+    datasets = np.array(['Mdtb','Pontine','Nishimoto'],
+                    dtype = object)
     sess = np.array([['ses-s1','ses-s2'],
             ['ses-01'],
-            ['ses-01','ses-02']])
-    type = np.array(['CondHalf','TaskHalf','CondHalf'])
-    design_ind= np.array(['cond_num_uni','task_id','cond_num'])
-    part_ind = np.array(['half','half','half'])
+            ['ses-01','ses-02']],
+            dtype = object)
+    type = np.array(['CondHalf','TaskHalf','CondHalf'],
+            dtype = object)
+    design_ind= np.array(['cond_num_uni','task_id','cond_num'],
+            dtype = object)
+    part_ind = np.array(['half','half','half'],
+            dtype = )
     
     #Make name from first two letters of each training data set 
     dataname = [datasets[i][0:2] for i in set_ind]
