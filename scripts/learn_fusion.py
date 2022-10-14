@@ -273,20 +273,19 @@ def fit_all(set_ind=[0,1,2]):
     design_ind= np.array(['cond_num_uni','task_id','cond_num'],
             dtype = object)
     part_ind = np.array(['half','half','half'],
-            dtype = )
+            dtype = object)
     
     #Make name from first two letters of each training data set 
     dataname = [datasets[i][0:2] for i in set_ind]
     name = ''.join(dataname) + '_sym'
-
-    
     batch_fit(datasets[set_ind],
               sess = sess[set_ind],
-              type = None,
+              type = type[set_ind],
               design_ind = design_ind[set_ind],
               part_ind = part_ind[set_ind],
               atlas=sym_atlas,
               K=10,name=name,n_iter=10, save=True)
+
     name = ''.join(dataname) + '_asym'
     batch_fit(datasets[set_ind],
               sess = sess[set_ind],
@@ -298,14 +297,14 @@ def fit_all(set_ind=[0,1,2]):
 
 
 if __name__ == "__main__":
-    fit_all([0])
+    # fit_all([0])
 
 
 
     #sess = [['ses-s1'],['ses-01'],['ses-01','ses-02']]
     #design_ind= ['cond_num_uni','task_id',',..']
-    # info,models,Prop,V = load_batch_fit('SingleMDTB','MNISymC3',10)
-    # parcel = pt.argmax(Prop,dim=1) # Get winner take all 
+    info,models,Prop,V = load_batch_fit('SingleMDTB','MNISymC3',10)
+    parcel = pt.argmax(Prop,dim=1) # Get winner take all 
     # parcel=parcel[:,sym_atlas.indx_reduced] # Put back into full space
     # plot_parcel_flat(parcel[0:3,:],sym_atlas,grid=[1,3],map_space='MNISymC') 
     # pass
