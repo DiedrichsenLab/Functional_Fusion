@@ -60,30 +60,30 @@ RSVPLanguage	probe	4	1
 RSVPLanguage	pseudoword_list	5	1
 RSVPLanguage	simple_sentence	6	1
 RSVPLanguage	word_list	7	1
-MTTWE	we_after_close_event	1	
-MTTWE	we_after_far_event	2	
-MTTWE	we_all_event_response	3	
-MTTWE	we_all_reference	4	
-MTTWE	we_all_space_cue	5	
-MTTWE	we_all_time_cue	6	
-MTTWE	we_before_close_event	7	
-MTTWE	we_before_far_event	8	
-MTTWE	we_eastside_close_event	9	
-MTTWE	we_eastside_far_event	10	
-MTTWE	we_westside_close_event	11	
-MTTWE	we_westside_far_event	12	
-MTTNS	sn_after_close_event	1	
-MTTNS	sn_after_far_event	2	
-MTTNS	sn_all_event_response	3	
-MTTNS	sn_all_reference	4	
-MTTNS	sn_all_space_cue	5	
-MTTNS	sn_all_time_cue	6	
-MTTNS	sn_before_close_event	7	
-MTTNS	sn_before_far_event	8	
-MTTNS	sn_eastside_close_event	9	
-MTTNS	sn_eastside_far_event	10	
-MTTNS	sn_westside_close_event	11	
-MTTNS	sn_westside_far_event	12	
+MTTWE	we_after_close_event	1	1
+MTTWE	we_after_far_event	2	1
+MTTWE	we_all_event_response	3	1
+MTTWE	we_all_reference	4	1
+MTTWE	we_all_space_cue	5	1
+MTTWE	we_all_time_cue	6	1
+MTTWE	we_before_close_event	7	1
+MTTWE	we_before_far_event	8	1
+MTTWE	we_eastside_close_event	9	1
+MTTWE	we_eastside_far_event	10	1
+MTTWE	we_westside_close_event	11	1
+MTTWE	we_westside_far_event	12	1
+MTTNS	sn_after_close_event	1	1
+MTTNS	sn_after_far_event	2	1
+MTTNS	sn_all_event_response	3	1
+MTTNS	sn_all_reference	4	1
+MTTNS	sn_all_space_cue	5	1
+MTTNS	sn_all_time_cue	6	1
+MTTNS	sn_before_close_event	7	1
+MTTNS	sn_before_far_event	8	1
+MTTNS	sn_northside_close_event	9	1
+MTTNS	sn_northside_far_event	10	1
+MTTNS	sn_southside_close_event	11	1
+MTTNS	sn_southside_far_event	12	1
 PreferenceFood	food_constant	1	
 PreferenceFood	food_linear	2	
 PreferenceFood	food_quadratic	3	
