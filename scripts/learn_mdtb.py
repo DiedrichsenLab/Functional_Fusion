@@ -73,8 +73,8 @@ def get_sess_mdtb(atlas='SUIT3', ses_id='ses-s1', type='CondHalf'):
 
     info_mdtb['sess']=np.ones((info_mdtb.shape[0],))
     X = matrix.indicator(info_mdtb.cond_num_uni)
-    part_Vec = np.bincount(np.asarray(info_mdtb['half'])).cumsum()[1:-1]
-    return data_mdtb, X, int(part_Vec)
+    part_Vec = np.asarray(info_mdtb['half'])
+    return data_mdtb, X, part_Vec
 
 def get_hcp_data(tessel=162, ses_id=['ses-01'], range=None, save=False):
     """Get the HCP resting-state connnectivity profile
@@ -463,7 +463,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
                                      num_signal_bins=100, std_V=True)
         em_model.Estep(Data_1)  # sample s and s2 in E-step
     elif e == 'VMF':
-        em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign_1, part_Vec=partV_1, uniform_kappa=True)
+        em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign_1, part_vec=partV_1, uniform_kappa=True)
         em_model.initialize(Data_1)
     elif e == 'wVMF':
         em_model = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
@@ -472,8 +472,8 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
         raise NameError('Unrecognized emission type.')
 
     # Initilize parameters from group prior and train the m odel
-    mdtb_prior = logpi.softmax(dim=0).unsqueeze(0).repeat(em_model.num_subj,1,1)
-    em_model.Mstep(mdtb_prior)
+    # mdtb_prior = logpi.softmax(dim=0).unsqueeze(0).repeat(em_model.num_subj,1,1)
+    # em_model.Mstep(mdtb_prior)
     M = fm.FullModel(ar_model, em_model)
     M, ll, theta, U_hat = M.fit_em(Y=Data_1, iter=max_iter, tol=0.00001, fit_arrangement=True)
     plt.plot(ll, color='b')
@@ -489,7 +489,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
         em_model2 = em.MixGaussianExp(K=K, N=40, P=P, X=Xdesign_2, num_signal_bins=100, std_V=True)
         em_model2.Estep(Data_2)
     elif e == 'VMF':
-        em_model2 = em.MixVMF(K=K, N=40, P=P, X=Xdesign_2, part_Vec=partV_2, uniform_kappa=True)
+        em_model2 = em.MixVMF(K=K, N=40, P=P, X=Xdesign_2, part_vec=partV_2, uniform_kappa=True)
         em_model2.initialize(Data_2)
     elif e == 'wVMF':
         em_model2 = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_2, uniform_kappa=True)
