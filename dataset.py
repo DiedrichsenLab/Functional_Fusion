@@ -11,6 +11,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import os
+import os.path as op
+import glob
 import Functional_Fusion.util as util
 import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
@@ -287,6 +289,73 @@ class DataSet:
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
+    
+    def group_average_suit(self, type='CondHalf', atlas='SUIT3'):
+        """Loads group data in SUIT space from a standard experiment structure
+        averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
+        Args:
+            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
+            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+        """
+        # Make the atlas object
+        if (atlas == 'SUIT3'):
+            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+        if (atlas == 'SUIT2'):
+            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
+        if (atlas == 'MNISymC3'):
+            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
+        if (atlas == 'MNISymC2'):
+            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
+        suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
+
+        # load data for each participant and each session
+        T = self.get_participants()
+        for i, s in enumerate(T.participant_id):
+            # find cifti files for all sessions
+            sessions = glob.glob(self.data_dir.format(s) +
+                      f'/{s}_space-{atlas}_ses-*_{type}.dscalar.nii')
+            if sessions == []:
+                print('No files found for subject {} in space {}. Need to run extraction first.'.format(
+                    s, atlas))
+                raise Exception("Check file exists.")
+            for j, ses in enumerate(sessions):
+                C = nb.load(ses)
+                if i == 0 and j == 0:
+                    # initialize tensor
+                    X = np.zeros(
+                        (C.shape[0], C.shape[1], T.shape[0] * len(sessions)))
+                X[:, :, i*len(sessions)+j] = C.get_fdata()
+        # average data across sessions and participants
+        X = X.mean(axis=2)
+        # load data info
+        tsv_file = op.basename(ses).split('.')[0].split('_')
+        tsv_file = '{}_{}_info-{}.tsv'.format(tsv_file[0], tsv_file[2], tsv_file[3])
+        D = pd.read_csv(op.join(op.dirname(ses), tsv_file), sep='\t')
+        
+        # get atlas for one subject
+        deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
+        if atlas[0:7] == 'MNISymC':
+            xfm_name = self.atlas_dir + \
+                '/tpl-MNI152NLIn2000cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
+            deform = [xfm_name, deform]
+        mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
+        atlas_map = am.AtlasMapDeform(self, suit_atlas, s, deform, mask)
+        atlas_map.build(smooth=2.0)
+        
+        # save group results as cifti
+        C = am.data_to_cifti(X, [atlas_map], D.task_name)
+        dest_dir = op.join(ses.split('sub-')[0], 'group')
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+        nb.save(C, dest_dir +
+                f'/group_space-{atlas}_{type}.dscalar.nii')
+        D.to_csv(
+            dest_dir + f'/group_info-{type}.tsv', sep='\t', index=False)
+        
+        # project to flatmap and save figure
+
+
+
+
 
     def extract_all_fs32k(self,ses_id='ses-s1',type='CondHalf'):
         """Extracts data in fs32K space from a standard experiment structure
