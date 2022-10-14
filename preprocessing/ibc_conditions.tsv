@@ -84,22 +84,22 @@ MTTNS	sn_northside_close_event	9	1
 MTTNS	sn_northside_far_event	10	1
 MTTNS	sn_southside_close_event	11	1
 MTTNS	sn_southside_far_event	12	1
-PreferenceFood	food_constant	1	
-PreferenceFood	food_linear	2	
-PreferenceFood	food_quadratic	3	
-PreferenceFood	food_too-slow	4	
-PreferencePaintings	painting_constant	5	
-PreferencePaintings	painting_linear	6	
-PreferencePaintings	painting_quadratic	7	
-PreferencePaintings	painting_too-slow	8	
-PreferenceFaces	face_constant	9	
-PreferenceFaces	face_linear	10	
-PreferenceFaces	face_quadratic	11	
-PreferenceFaces	face_too-slow	12	
-PreferenceHouses	house_constant	13	
-PreferenceHouses	house_linear	14	
-PreferenceHouses	house_quadratic	15	
-PreferenceHouses	house_too-slow	16	
+PreferenceFood	food_constant	1	1
+PreferenceFood	food_linear	2	0
+PreferenceFood	food_quadratic	3	0
+PreferenceFood	food_too-slow	4	0
+PreferencePaintings	painting_constant	5	1
+PreferencePaintings	painting_linear	6	0
+PreferencePaintings	painting_quadratic	7	0
+PreferencePaintings	painting_too-slow	8	0
+PreferenceFaces	face_constant	9	1
+PreferenceFaces	face_linear	10	0
+PreferenceFaces	face_quadratic	11	0
+PreferenceFaces	face_too-slow	12	0
+PreferenceHouses	house_constant	13	1
+PreferenceHouses	house_linear	14	0
+PreferenceHouses	house_quadratic	15	0
+PreferenceHouses	house_too-slow	16	0
 TheoryOfMind	belief	1	
 TheoryOfMind	photo	2	
 EmotionalPain	emotional_pain	3	
