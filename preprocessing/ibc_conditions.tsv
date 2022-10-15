@@ -106,20 +106,20 @@ EmotionalPain	emotional_pain	3	1
 EmotionalPain	physical_pain	4	1
 PainMovie	mental	5	1
 PainMovie	pain	6	1
-VSTM	vstm_num_1	1	
-VSTM	vstm_num_2	2	
-VSTM	vstm_num_3	3	
-VSTM	vstm_num_4	4	
-VSTM	vstm_num_5	5	
-VSTM	vstm_num_6	6	
-Enumeration	enumeration_num_1	7	
-Enumeration	enumeration_num_2	8	
-Enumeration	enumeration_num_3	9	
-Enumeration	enumeration_num_4	10	
-Enumeration	enumeration_num_5	11	
-Enumeration	enumeration_num_6	12	
-Enumeration	enumeration_num_7	13	
-Enumeration	enumeration_num_8	14	
+VSTM	vstm_response_num_1	1	
+VSTM	vstm_response_num_2	2	
+VSTM	vstm_response_num_3	3	
+VSTM	vstm_response_num_4	4	
+VSTM	vstm_response_num_5	5	
+VSTM	vstm_response_num_6	6	
+Enumeration	enumeration_response_num_1	7	
+Enumeration	enumeration_response_num_2	8	
+Enumeration	enumeration_response_num_3	9	
+Enumeration	enumeration_response_num_4	10	
+Enumeration	enumeration_response_num_5	11	
+Enumeration	enumeration_response_num_6	12	
+Enumeration	enumeration_response_num_7	13	
+Enumeration	enumeration_response_num_8	14	
 Self	correct_rejection	1	
 Self	encode_other	2	
 Self	encode_other_no_response	3	

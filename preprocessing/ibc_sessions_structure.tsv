@@ -51,12 +51,12 @@ tom	3	PainMovie	pa	178	1
 tom	4	TheoryOfMind	ap	186	2
 tom	5	EmotionalPain	ap	156	2
 tom	6	PainMovie	ap	178	2
-enumeration	1	VSTM1	pa	260	1
-enumeration	2	VSTM1	ap	260	2
+enumeration	1	VSTM	pa	260	1
+enumeration	2	VSTM	ap	260	2
 enumeration	3	Enumeration	pa	490	1
 enumeration	4	Enumeration	ap	490	2
-enumeration	5	VSTM2	pa	260	3
-enumeration	6	VSTM2	ap	260	4
+enumeration	5	VSTM	pa	260	3
+enumeration	6	VSTM	ap	260	4
 self	1	Self1	pa	359	1
 self	2	Self2	pa	359	2
 self	3	Self3	ap	359	3
