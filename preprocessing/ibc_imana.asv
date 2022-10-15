@@ -994,10 +994,10 @@ switch what
                         for k = 1:length(trial_names)
                             if strcmp(task, 'VSTM')
                                 trial_names(k) = strcat('vstm_', ...
-                                    trial_names(k));
+                                    trial_names(k))
                             else
                                 trial_names(k) = strcat('enumeration_', ...
-                                    trial_names(k));
+                                    trial_names(idxs(i)))
                             end
                         end
                     elseif strcmp(task,'Self1') || ...
