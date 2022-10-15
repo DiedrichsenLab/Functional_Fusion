@@ -100,12 +100,12 @@ PreferenceHouses	house_constant	13	1
 PreferenceHouses	house_linear	14	0
 PreferenceHouses	house_quadratic	15	0
 PreferenceHouses	house_too-slow	16	0
-TheoryOfMind	belief	1	
-TheoryOfMind	photo	2	
-EmotionalPain	emotional_pain	3	
-EmotionalPain	physical_pain	4	
-PainMovie	mental	5	
-PainMovie	pain	6	
+TheoryOfMind	belief	1	1
+TheoryOfMind	photo	2	1
+EmotionalPain	emotional_pain	3	1
+EmotionalPain	physical_pain	4	1
+PainMovie	mental	5	1
+PainMovie	pain	6	1
 VSTM	vstm_num_1	1	
 VSTM	vstm_num_2	2	
 VSTM	vstm_num_3	3	
