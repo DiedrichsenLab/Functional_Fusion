@@ -300,7 +300,7 @@ def fit_all(set_ind=[0,1,2]):
 if __name__ == "__main__":
     # fit_all([0])
     # fit_all([1])
-    fit_all([2])
+    fit_all([0])
     fit_all([0,1,2])
 
     #sess = [['ses-s1'],['ses-01'],['ses-01','ses-02']]
