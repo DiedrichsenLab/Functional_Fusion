@@ -46,7 +46,7 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     if dataset.casefold() == 'Pontine'.casefold():
         my_dataset = DataSetPontine(base_dir + '/Pontine')
         fiel = ['task_name','task_num','half']
-        data_pt,info_pt = my_dataset.get_data(atlas,'ses-01',
+        data,info = my_dataset.get_data(atlas,'ses-01',
                                            type,fields=fiel)
     # ----------------------------
     if dataset.casefold() == 'Nishimoto'.casefold():
