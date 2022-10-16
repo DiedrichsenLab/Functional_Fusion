@@ -106,47 +106,47 @@ EmotionalPain	emotional_pain	3	1
 EmotionalPain	physical_pain	4	1
 PainMovie	mental	5	1
 PainMovie	pain	6	1
-VSTM	vstm_response_num_1	1	
-VSTM	vstm_response_num_2	2	
-VSTM	vstm_response_num_3	3	
-VSTM	vstm_response_num_4	4	
-VSTM	vstm_response_num_5	5	
-VSTM	vstm_response_num_6	6	
-Enumeration	enumeration_response_num_1	7	
-Enumeration	enumeration_response_num_2	8	
-Enumeration	enumeration_response_num_3	9	
-Enumeration	enumeration_response_num_4	10	
-Enumeration	enumeration_response_num_5	11	
-Enumeration	enumeration_response_num_6	12	
-Enumeration	enumeration_response_num_7	13	
-Enumeration	enumeration_response_num_8	14	
-Self	correct_rejection	1	
-Self	encode_other	2	
-Self	encode_other_no_response	3	
-Self	encode_self	4	
-Self	encode_self_no_response	5	
-Self	false_alarm	6	
-Self	instructions	7	
-Self	new_no_response	8	
-Self	recognition_other_hit	9	
-Self	recognition_other_miss	10	
-Self	recognition_other_no_response	11	
-Self	recognition_self_hit	12	
-Self	recognition_self_miss	13	
-Self	recognition_self_no_response	14	
-Bang	no_talk	15	
-Bang	talk	16	
-Wedge	left_meridian	1	
-Wedge	lower_left	2	
-Wedge	lower_meridian	3	
-Wedge	lower_right	4	
-Wedge	right_meridian	5	
-Wedge	upper_left	6	
-Wedge	upper_meridian	7	
-Wedge	upper_right	8	
-Ring	foveal	9	
-Ring	middle	10	
-Ring	peripheral	11	
+VSTM	vstm_response_num_1	1	1
+VSTM	vstm_response_num_2	2	1
+VSTM	vstm_response_num_3	3	1
+VSTM	vstm_response_num_4	4	1
+VSTM	vstm_response_num_5	5	1
+VSTM	vstm_response_num_6	6	1
+Enumeration	enumeration_response_num_1	7	1
+Enumeration	enumeration_response_num_2	8	1
+Enumeration	enumeration_response_num_3	9	1
+Enumeration	enumeration_response_num_4	10	1
+Enumeration	enumeration_response_num_5	11	1
+Enumeration	enumeration_response_num_6	12	1
+Enumeration	enumeration_response_num_7	13	1
+Enumeration	enumeration_response_num_8	14	1
+Self	encode_other	1	1
+Self	encode_self	2	1
+Self	recognition_other_hit	3	1
+Self	recognition_self_hit	4	1
+Self	correct_rejection	5	1
+Self	encode_other_no_response	6	0
+Self	encode_self_no_response	7	0
+Self	false_alarm	8	0
+Self	instructions	9	0
+Self	new_no_response	10	0
+Self	recognition_other_miss	11	0
+Self	recognition_other_no_response	12	0
+Self	recognition_self_miss	13	0
+Self	recognition_self_no_response	14	0
+Bang	no_talk	15	1
+Bang	talk	16	1
+Wedge	left_meridian	1	1
+Wedge	lower_left	2	1
+Wedge	lower_meridian	3	1
+Wedge	lower_right	4	1
+Wedge	right_meridian	5	1
+Wedge	upper_left	6	1
+Wedge	upper_meridian	7	1
+Wedge	upper_right	8	1
+Ring	foveal	9	1
+Ring	middle	10	1
+Ring	peripheral	11	1
 Moto	finger_left	1	
 Moto	finger_right	2	
 Moto	fixation_left	3	
