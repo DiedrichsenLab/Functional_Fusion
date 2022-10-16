@@ -68,7 +68,7 @@ subj_id = 1:length(subj_n);
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
-session_names = {'enumeration'}
+session_names = {'preference', 'lyon1', 'lyon2', 'mathlang'}
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -983,6 +983,14 @@ switch what
                         idxs2 = find(contains(trial_names, ...
                             'simple_sentence'));
                         trial_names(idxs2) = {'simple_sentence'};
+                    elseif strcmp(task,'PreferenceFood') || ...
+                            strcmp(task,'PreferencePaintings') || ...
+                            strcmp(task,'PreferenceFaces') || ...
+                            strcmp(task,'PreferenceHouses')
+                        idxs = find(~contains(trial_names, '_too-slow'));
+                        trial_names = trial_names(idxs);
+                        trial_onsets = trial_onsets(idxs);
+                        trial_durations = trial_durations(idxs);
                     elseif strcmp(task, 'VSTM') || ...
                             strcmp(task, 'Enumeration')
                         idxs = find(contains(trial_names, 'memorization'));
