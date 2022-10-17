@@ -19,11 +19,16 @@ if not Path(base_dir).exists():
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
-def extract_mdtb_suit(ses_id='ses-s1',type='condHalf',atlas='SUIT3'):
+
+def extract_mdtb_group(type='CondHalf', atlas='SUIT3', info_column='cond_name'):
+    mdtb_dataset = DataSetMDTB(data_dir)
+    mdtb_dataset.group_average_suit(type, atlas, info_column)
+
+def extract_mdtb_suit(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
     mdtb_dataset = DataSetMDTB(data_dir)
     mdtb_dataset.extract_all_suit(ses_id,type,atlas)
 
-def extract_mdtb_fs32k(ses_id='ses-s1',type='condHalf'):
+def extract_mdtb_fs32k(ses_id='ses-s1', type='CondHalf'):
     mdtb_dataset = DataSetMDTB(data_dir)
     mdtb_dataset.extract_all_fs32k(ses_id,type)
 
@@ -93,8 +98,9 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
 
 if __name__ == "__main__":
     # parcel_mdtb_fs32k()
-    extract_mdtb_suit(ses_id='ses-s1',type='CondHalf',atlas='MNISymC3')
-    extract_mdtb_suit(ses_id='ses-s2',type='CondHalf',atlas='MNISymC3')
+    # extract_mdtb_suit(ses_id='ses-s1',type='CondHalf',atlas='MNISymC3')
+    # extract_mdtb_suit(ses_id='ses-s2',type='CondHalf',atlas='MNISymC3')
+    extract_mdtb_group(type='CondHalf', atlas='SUIT3')
     # extract_mdtb_suit(ses_id='ses-s1',type='CondAll')
     # extract_mdtb_suit(ses_id='ses-s2',type='CondAll')
     # extract_mdtb_fs32k(ses_id='ses-s1',type='CondAll')
