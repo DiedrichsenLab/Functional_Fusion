@@ -331,6 +331,8 @@ class DataSet:
         atlas_map = am.AtlasMapDeform(self, suit_atlas, s, deform, mask)
         atlas_map.build(smooth=2.0)
 
+        alldata = []
+        allinfo = []
         # get average activation for each session
         for j, ses in enumerate(sessions):
             for i, s in enumerate(T.participant_id):
@@ -338,52 +340,53 @@ class DataSet:
                             f'/{s}_space-{atlas}_ses-{ses}_{type}.dscalar.nii')
                 D = pd.read_csv(self.data_dir.format(s) +
                             f'/{s}_ses-{ses}_info-{type}.tsv', sep='\t')
-                if i == 0 and j == 0:
+                if i == 0:
                     # initialize tensor
                     X = np.zeros(
                         (C.shape[0], C.shape[1], T.shape[0]))
-            X[:, :, i] = C.get_fdata()
+                    X[:] = np.nan
+                X[:, :, i] = C.get_fdata()
             # average across participants
+            # print(f'/{s}_space-{atlas}_ses-{ses}_{type}.dscalar.nii')
             X = np.nanmean(X,axis=2)
             Xc = np.zeros(
                         (len(D.cond_name.unique()), C.shape[1]))
             # average conditions across session halves
             for k,cond in enumerate(D.cond_name.unique()):
+                print(f'/{k} {cond}')
                 Xc[k, :] = np.nanmean(X[D.cond_name == cond, :], axis=0)
+            # select unique rows for each condition
+            D = D.drop_duplicates('cond_name', keep='first')
             # save cifti file for session
-            C = am.data_to_cifti(Xc, [atlas_map], D.cond_name.unique())
+            C = am.data_to_cifti(Xc, [atlas_map], D.cond_name)
             dest_dir = op.join(self.data_dir.format(s).split('sub-')[0], 'group')
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir +
                     f'/group_ses-{ses}_space-{atlas}_{type}.dscalar.nii')
             D.to_csv(
                 dest_dir + f'/group_ses-{ses}_info-{type}.tsv', sep='\t', index=False)
+            alldata.append(Xc)
+            allinfo.append(D)
 
-        # # save group results as cifti
-        # C = am.data_to_cifti(X, [atlas_map], D.task_name)
-        # dest_dir = op.join(ses.split('sub-')[0], 'group')
-        # Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        # nb.save(C, dest_dir +
-        #         f'/group_space-{atlas}_{type}.dscalar.nii')
-        # D.to_csv(
-        #     dest_dir + f'/group_info-{type}.tsv', sep='\t', index=False)
-
-            
-        
-
-        
-        for i, s in enumerate(T.participant_id):
-            # find cifti files for all sessions
-            sessions = glob.glob(self.data_dir.format(s) +
-                      f'/{s}_space-{atlas}_ses-*_{type}.dscalar.nii')
-            # find info.tsv files for all sessions
-            ifiles = glob.glob(self.data_dir.format(s) +
-                                 f'/{s}_ses-*_info-{type}.tsv')
-            infos = [ pd.read_csv(op.join(op.dirname(ses), ifile), sep='\t') for ifile in ifiles]
-            n_cond = [len(info.task_name.unique()) for info in infos]
-
-        
-        
+        # average across sessions
+        conditions = [cond for sesinfo in allinfo for cond in sesinfo.cond_name]
+        conditions = sorted(set(conditions))
+        Xa = np.zeros((len(conditions), X.shape[1], len(sessions)))
+        Xa[:] = np.nan
+        for k, cond in enumerate(conditions):
+            # print(k,cond)
+            for j,ses in enumerate(sessions):
+                if cond in allinfo[j].cond_name.tolist():
+                    Xa[k, :, j] = alldata[j][allinfo[j].cond_name == cond, :]
+        Xa = np.nanmean(Xa, axis=2)
+        C = am.data_to_cifti(Xa, [atlas_map], list(conditions))
+        nb.save(C, dest_dir +
+                f'/group_space-{atlas}_{type}.dscalar.nii')
+        Da = pd.concat(allinfo)
+        Da = Da.drop_duplicates(
+            'cond_name', keep='first').drop(columns=['names', 'half', 'run'])
+        Da.to_csv(
+            dest_dir + f'/group_info-{type}.tsv', sep='\t', index=False)       
 
         
         # project to flatmap and save figure
