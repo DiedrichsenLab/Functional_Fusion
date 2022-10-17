@@ -290,12 +290,13 @@ class DataSet:
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
     
-    def group_average_suit(self, type='CondHalf', atlas='SUIT3'):
+    def group_average_suit(self, type='CondHalf', atlas='SUIT3', info_column='task_name'):
         """Loads group data in SUIT space from a standard experiment structure
         averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
         Args:
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+            info_column (str, optional): Column of info tsv file for which each average should be calculated. Defaults to 'task_name'
         """
         # Make the atlas object
         if (atlas == 'SUIT3'):
@@ -350,15 +351,15 @@ class DataSet:
             # print(f'/{s}_space-{atlas}_ses-{ses}_{type}.dscalar.nii')
             X = np.nanmean(X,axis=2)
             Xc = np.zeros(
-                        (len(D.cond_name.unique()), C.shape[1]))
+                        (len(D[info_column].unique()), C.shape[1]))
             # average conditions across session halves
-            for k,cond in enumerate(D.cond_name.unique()):
-                print(f'/{k} {cond}')
-                Xc[k, :] = np.nanmean(X[D.cond_name == cond, :], axis=0)
+            for k,cond in enumerate(D[info_column].unique()):
+                # print(f'/{k} {cond}')
+                Xc[k, :] = np.nanmean(X[D[info_column] == cond, :], axis=0)
             # select unique rows for each condition
-            D = D.drop_duplicates('cond_name', keep='first')
+            D = D.drop_duplicates(info_column, keep='first')
             # save cifti file for session
-            C = am.data_to_cifti(Xc, [atlas_map], D.cond_name)
+            C = am.data_to_cifti(Xc, [atlas_map], D[info_column])
             dest_dir = op.join(self.data_dir.format(s).split('sub-')[0], 'group')
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir +
@@ -369,22 +370,23 @@ class DataSet:
             allinfo.append(D)
 
         # average across sessions
-        conditions = [cond for sesinfo in allinfo for cond in sesinfo.cond_name]
+        conditions = [cond for sesinfo in allinfo for cond in sesinfo[info_column]]
         conditions = sorted(set(conditions))
         Xa = np.zeros((len(conditions), X.shape[1], len(sessions)))
         Xa[:] = np.nan
         for k, cond in enumerate(conditions):
             # print(k,cond)
             for j,ses in enumerate(sessions):
-                if cond in allinfo[j].cond_name.tolist():
-                    Xa[k, :, j] = alldata[j][allinfo[j].cond_name == cond, :]
+                if cond in allinfo[j][info_column].tolist():
+                    Xa[k, :, j] = alldata[j][allinfo[j][info_column] == cond, :]
         Xa = np.nanmean(Xa, axis=2)
+        # save cifti file for overall average
         C = am.data_to_cifti(Xa, [atlas_map], list(conditions))
         nb.save(C, dest_dir +
                 f'/group_space-{atlas}_{type}.dscalar.nii')
         Da = pd.concat(allinfo)
         Da = Da.drop_duplicates(
-            'cond_name', keep='first').drop(columns=['names', 'half', 'run'])
+            info_column, keep='first').drop(columns=['names', 'half'])
         Da.to_csv(
             dest_dir + f'/group_info-{type}.tsv', sep='\t', index=False)       
 

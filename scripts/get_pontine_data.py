@@ -19,9 +19,9 @@ data_dir = base_dir + '/Pontine'
 atlas_dir = base_dir + '/Atlases'
 
 
-def extract_pontine_group(type='TaskHalf', atlas='SUIT3'):
+def extract_pontine_group(type='TaskHalf', atlas='SUIT3', info_column='task_name'):
     p7_dataset = DataSetPontine(data_dir)
-    p7_dataset.group_average_suit(type, atlas)
+    p7_dataset.group_average_suit(type, atlas, info_column)
 
 def extract_pontine_suit(ses_id='ses-01',type='TaskHalf',atlas='SUIT3'):
     p7_dataset = DataSetPontine(data_dir)

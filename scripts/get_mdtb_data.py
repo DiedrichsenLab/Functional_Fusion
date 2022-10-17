@@ -20,9 +20,9 @@ data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
 
-def extract_mdtb_group(type='CondHalf', atlas='SUIT3'):
+def extract_mdtb_group(type='CondHalf', atlas='SUIT3', info_column='cond_name'):
     mdtb_dataset = DataSetMDTB(data_dir)
-    mdtb_dataset.group_average_suit(type, atlas)
+    mdtb_dataset.group_average_suit(type, atlas, info_column)
 
 def extract_mdtb_suit(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
     mdtb_dataset = DataSetMDTB(data_dir)
