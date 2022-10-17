@@ -271,7 +271,6 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
     ifolder = os.path.join(target_derivatives, sub, 'estimates',
                            'ses-' + new_sname)
     subject_no = sub[4:]
-    sess_no = session[4:]
     if not os.path.exists(ifolder):
         os.makedirs(ifolder)
     else:
@@ -280,24 +279,28 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
                 os.remove(ng)
     run_numbers = df2[df2.session == sname].srun.values
     task_names = df2[df2.session == sname].task.values
-    n_repetitions = df2[df2.session == sname].nrep.values
+    halfs = df2[df2.session == sname].half.values
     sessinfo = np.empty((0, 7))
-    for rnum, tname, n_rep in zip(run_numbers, task_names, n_repetitions):
+    for rnum, tname, n_half in zip(run_numbers, task_names, halfs):
         if sub == 'sub-11' and rnum == 6 and \
            tname == 'PreferencePaintings':
             tname = 'PreferenceFaces'
-        condition_names = df3[df3.task == tname].condition.tolist()
-        reg_numbers = df3[df3.task == tname].regressor.tolist()
-        sub_rep = np.repeat(subject_no, len(condition_names)).tolist()
-        sess_rep = np.repeat(sess_no, len(condition_names)).tolist()
-        rnum_rep = np.repeat(rnum, len(condition_names)).tolist()
-        tname_rep = np.repeat(tname, len(condition_names)).tolist()
-        nrep_rep = np.repeat(n_rep, len(condition_names)).tolist()
+        elif sub == 'sub-11' and rnum == 7 and \
+           tname == 'PreferenceFaces':
+            n_half = 3
+        condition_names = df3[
+            df3.task == tname][df3.reginterest == 1].condition.tolist()
+        reg_id = df3[df3.task == tname][df3.reginterest == 1].regid.tolist()
+        sub_rep = np.repeat(subject_no, len(reg_id)).tolist()
+        sess_rep = np.repeat(new_sname, len(reg_id)).tolist()
+        rnum_rep = np.repeat(rnum, len(reg_id)).tolist()
+        tname_rep = np.repeat(tname, len(reg_id)).tolist()
+        nhalf_rep = np.repeat(n_half, len(reg_id)).tolist()
         rstack = np.vstack((sub_rep, sess_rep, rnum_rep, tname_rep,
-                            condition_names, reg_numbers, nrep_rep)).T
+                            condition_names, reg_id, nhalf_rep)).T
         sessinfo = np.vstack((sessinfo, rstack))
     dff = pd.DataFrame(sessinfo, columns = ['sn', 'sess', 'run', 'task_name',
-                                            'cond_name', 'reg_num', 'n_rep'])
+                                            'cond_name', 'reg_id', 'half'])
     dff_fname = sub + '_ses-' + new_sname + '_reginfo.tsv'
     dff_path = os.path.join(ifolder, dff_fname)
     dff.to_csv(dff_path, sep='\t', index=False)
@@ -325,13 +328,15 @@ def rename_files(sub, sname, folder_path, df1, ext):
 
 # ############################### INPUTS ###############################
 
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [11]
 
-session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-# session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-#                  'clips4', 'lyon1', 'lyon2', 'mathlang',
-#                  'spatial-navigation']
+# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+                 'clips4', 'lyon1', 'lyon2', 'mathlang',
+                 'spatial-navigation']
+# session_names = ['preference']
 
 
 # ############################# PARAMETERS #############################

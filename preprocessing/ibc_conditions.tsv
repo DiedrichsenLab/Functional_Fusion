@@ -1,4 +1,4 @@
-task	condition	reg_id	reg_of_interest
+task	condition	regid	reginterest
 ArchiStandard	audio_computation	1	1
 ArchiStandard	audio_left_hand	2	1
 ArchiStandard	audio_right_hand	3	1
