@@ -12,14 +12,36 @@ import os
 import pandas as pd
 import shutil
 from pathlib import Path
-import mat73
+# import mat73
 import numpy as np
-import scipy.io as sio
-from import_data import *
+# import scipy.io as sio
+from import_data import import_suit, import_anat, import_freesurfer
 
-base_dir = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
-src_base_dir = os.path.join(base_dir, 'ibc')
-dest_base_dir = os.path.join(base_dir, 'FunctionalFusion/IBC')
+
+# ######################### FUNCTIONS ###################################
+
+
+def import_ibc_anatderivatives(anat_type, source_basedir, destination_basedir,
+                               participant):
+    anat_name = f'{pt}_T1w'
+    sub_id = '{}'.format(pt)
+    if anat_type == 'suit':
+        source_dir = '{}/raw/{}/suit'.format(source_basedir, pt)
+        dest_dir = '{}/derivatives/{}/suit'.format(destination_basedir,
+                                                   participant)
+        import_suit(source_dir, dest_dir, anat_name, participant)
+    elif anat_type == 'anatomical':
+        source_dir = '{}/raw/{}/anat'.format(source_basedir, pt)
+        dest_dir = '{}/derivatives/{}/anat'.format(destination_basedir,
+                                                   participant)
+        import_anat(source_dir, dest_dir, anat_name, participant)
+    else:
+        assert anat_type == 'freesurfer'
+        source_dir = '{}/surfaceWB/data/{}'.format(source_basedir, pt)
+        dest_dir = '{}/derivatives/{}/anat'.format(destination_basedir,
+                                                   participant)
+        import_freesurfer(source_dir, dest_dir, sub_id, sub_id)
+
 
 def import_ibc_glm(participant_id,sess_id):
     # --- Importing Estimates ---
@@ -69,6 +91,14 @@ def import_ibc_glm(participant_id,sess_id):
         #import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
 
 
+# ######################### INPUTS ######################################
+
+base_dir = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
+src_base_dir = os.path.join(base_dir, 'ibc')
+dest_base_dir = os.path.join(base_dir, 'FunctionalFusion/IBC')
+session_names = ['archi']
+
+# ########################## RUN ########################################
 
 if __name__ == '__main__':
     T = pd.read_csv(os.path.join(dest_base_dir, 'participants.tsv'),
@@ -76,22 +106,15 @@ if __name__ == '__main__':
     for pt in T.participant_id:
 
         # # --- Importing SUIT ---
-        source_dir = '{}/raw/{}/suit'.format(src_base_dir, pt)
-        dest_dir = '{}/derivatives/{}/suit'.format(dest_base_dir, pt)
-        anat_name = f'{pt}_T1w'
-        import_suit(source_dir, dest_dir, anat_name, pt)
-        pass
+        import_ibc_anatderivatives('suit', src_base_dir, dest_base_dir, pt)
 
         # # --- Importing ANAT ---
-        source_dir = '{}/raw/{}/anat'.format(src_base_dir, pt)
-        dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, pt)
-        anat_name = f'{pt}_T1w'
-        import_anat(source_dir, dest_dir, anat_name, pt)
-        pass
+        import_ibc_anatderivatives('anatomical', src_base_dir, dest_base_dir,
+                                   pt)
 
         # # --- Importing Freesurfer ---
-        source_dir = '{}/surfaceWB/data/{}'.format(src_base_dir, pt)
-        dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, pt)
-        sub_id = '{}'.format(pt)
-        import_freesurfer(source_dir, dest_dir, sub_id, sub_id)
+        import_ibc_anatderivatives('freesurfer', src_base_dir, dest_base_dir,
+                                   pt)
+
+        # # --- Importing Estimates ---
 
