@@ -43,52 +43,55 @@ def import_ibc_anatderivatives(anat_type, source_basedir, destination_basedir,
         import_freesurfer(source_dir, dest_dir, sub_id, sub_id)
 
 
-def import_ibc_glm(participant_id,sess_id):
+def import_ibc_glm(source_basedir, destination_basedir, participant_id, sess_id):
     # --- Importing Estimates ---
-    source_dir = '{}//S{}/'.format(src_base_dir, participant_id)
-    dest_dir = '{}/derivatives/sub-{}/estimates/ses-01'.format(dest_base_dir, participant_id)
+    source_dir = '{}/derivatives/{}/estimates/ses-{}'.format(
+        source_basedir, participant_id, sess_id)
+    dest_dir = '{}/derivatives/{}/estimates/ses-{}'.format(
+        destination_basedir, participant_id, sess_id)
 
+    # Create destination file if it does not exist
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
-    src = []
-    dest = []
-    # Load reginfo file from the source dir: 
-    info_name = (source_dir + f'/{participant_id}_{ses_id}_reginfo.tsv')
-    info = pd.read_csv(info_name,delimiter='\t')
-    N = info.shape[0]
 
+    # Load reginfo file from the source dir: 
+    info_name = (source_dir + f'/{participant_id}_ses-{sess_id}_reginfo.tsv')
+    info = pd.read_csv(info_name, delimiter='\t')
+    # N = info.shape[0]
     n_runs = np.max(info.run) 
-    # Ensure that run number is an integer value
-    info.to_csv(dest_dir + f'/{sub_id}_{sess_id}_reginfo.tsv', sep='\t')
+    # # Ensure that run number is an integer value
+    # info.to_csv(dest_dir + f'/{sub_id}_{sess_id}_reginfo.tsv', sep='\t')
 
     # Prepare beta files for transfer
     src = []
     dest = []
-    for i,r in info.iterrows():
-        src.append(f'run-{r.run:02d}/beta_{r.reg_num:04d}.nii')
-        dest.append(f'/{sub_id}_{sess_id}_run-{r.run:02d}_' +
-                    'reg-{r.reg_id:02d}_beta.nii')
-    
-    for r in np.unique(info.run):
-        # Mask
-        run_id = f'run-{r:02d}'
-        src.append('/{run_id}/mask.nii')
-        dest.append(f'/{sub_id}_{sess_id}_{run_id}_mask.nii')
-        src.append('/{run_id}/resms.nii')
-        dest.append(f'/{sub_id}_{sess_id}_{run_id}_resms.nii')
+    for i, r in info.iterrows():
+        src.append(f'run-{r.run:02d}/beta_{r.reg_id:04d}.nii')
+        dest_fname = participant_id + '_' + sess_id + '_run-%02d' % r.run + \
+            '_reg-%02d' % r.reg_id + '_beta.nii'
+        dest.append(dest_fname)
 
-    # Average Mask and resms.nii across runs and write them out as 
-    # f'{dest_dir}/{sub_id}_{sess_id}_resms.nii')
-    # f'{dest_dir}/{sub_id}_{sess_id}_mask.nii')
+    # # for r in np.unique(info.run):
+    # #     # Mask
+    # #     run_id = f'run-{r:02d}'
+    # #     src.append('/{run_id}/mask.nii')
+    # #     dest.append(f'/{sub_id}_{sess_id}_{run_id}_mask.nii')
+    # #     src.append('/{run_id}/resms.nii')
+    # #     dest.append(f'/{sub_id}_{sess_id}_{run_id}_resms.nii')
 
+    # # Average Mask and resms.nii across runs and write them out as 
+    # # f'{dest_dir}/{sub_id}_{sess_id}_resms.nii')
+    # # f'{dest_dir}/{sub_id}_{sess_id}_mask.nii')
 
     # Copy those files over
     for i in range(len(src)):
         try:
-            shutil.copyfile(source_dir+src[i], dest_dir+dest[i])
+            shutil.copyfile(source_dir + '/' + src[i],
+                            dest_dir + '/' + dest[i])
         except FileNotFoundError:
-            print('skipping ' + src[i])
+            print('skipping ' + source_dir + '/' + src[i])
 
-        #import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
+        # Saves SPM.mat file as a npy file
+        # import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
 
 
 # ######################### INPUTS ######################################
@@ -96,7 +99,7 @@ def import_ibc_glm(participant_id,sess_id):
 base_dir = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
 src_base_dir = os.path.join(base_dir, 'ibc')
 dest_base_dir = os.path.join(base_dir, 'FunctionalFusion/IBC')
-session_names = ['archi']
+sessions = ['archi']
 
 # ########################## RUN ########################################
 
@@ -105,16 +108,17 @@ if __name__ == '__main__':
                     delimiter='\t')
     for pt in T.participant_id:
 
-        # # --- Importing SUIT ---
-        import_ibc_anatderivatives('suit', src_base_dir, dest_base_dir, pt)
+        # # # --- Importing SUIT ---
+        # import_ibc_anatderivatives('suit', src_base_dir, dest_base_dir, pt)
 
-        # # --- Importing ANAT ---
-        import_ibc_anatderivatives('anatomical', src_base_dir, dest_base_dir,
-                                   pt)
+        # # # --- Importing ANAT ---
+        # import_ibc_anatderivatives('anatomical', src_base_dir, dest_base_dir,
+        #                            pt)
 
-        # # --- Importing Freesurfer ---
-        import_ibc_anatderivatives('freesurfer', src_base_dir, dest_base_dir,
-                                   pt)
+        # # # --- Importing Freesurfer ---
+        # import_ibc_anatderivatives('freesurfer', src_base_dir, dest_base_dir,
+        #                            pt)
 
         # # --- Importing Estimates ---
-
+        for session in sessions:
+            import_ibc_glm(src_base_dir, dest_base_dir, pt, session)
