@@ -68,7 +68,7 @@ subj_id = 1:length(subj_n);
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
-session_names = {'preference', 'lyon1', 'lyon2', 'mathlang'}
+session_names = {'self'}
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -878,6 +878,10 @@ switch what
                 if  strcmp(smapstr, 'spatialnavigation')
                     runs(1)= []
                 end
+  
+%                 if strcmp(task,'Self')
+%                     Regressors = {};
+%                 end
                 
                 % loop over runs
                 for rn = 1:length(runs)
@@ -1008,10 +1012,7 @@ switch what
                                     trial_names(k));
                             end
                         end
-                    elseif strcmp(task,'Self1') || ...
-                            strcmp(task,'Self2') || ...
-                            strcmp(task,'Self3') || ...
-                            strcmp(task,'Self4')
+                    elseif strcmp(task,'Self')
                         idxs1 = find(contains(trial_names, ...
                             'self_relevance_with_response'));
                         trial_names(idxs1) = {'encode_self'};                        
@@ -1268,7 +1269,11 @@ switch what
                     
                     J.sess.regress   = struct('name', {}, 'val', {});
                     J.sess.multi_reg = {''};
-                    J.sess.hpf       = hrf_cutoff; % set to 0'inf' if using J.cvi = 'FAST'. SPM HPF not applied                  
+                    J.sess.hpf       = hrf_cutoff; % set to 0'inf' if using J.cvi = 'FAST'. SPM HPF not applied
+
+%                     if strcmp(task,'Self')
+%                         Regressors{end+1} = names;
+%                     end
 
                     spm_rwls_run_fmri_spec(J);
                     
@@ -1278,7 +1283,14 @@ switch what
                     end
 
                 end % run (runs of current session)                
-            end % ss (session)          
+            end % ss (session)
+
+%         if strcmp(task,'Self')
+%             T = cell2table(Regressors)
+%             % Write the table to a TSV file
+%             writetable(T, 'newfile.csv', 'Delimiter', '\t');
+%         end
+        
         end % sn (subject)
 
     case 'GLM:check_design' % checking the design matrix
