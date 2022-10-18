@@ -1,4 +1,4 @@
-subject	run-01	run-02	run-03	run-04
+subject	run01	run02	run03	run04
 1	encode_other	encode_other	encode_other	encode_other
 1	encode_self	encode_self	encode_self	encode_other_no_response
 1	false_alarm	false_alarm	false_alarm	encode_self

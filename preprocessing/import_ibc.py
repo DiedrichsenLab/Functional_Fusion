@@ -265,7 +265,7 @@ def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
             os.rename(f, ff)
 
 
-def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
+def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3, df4):
     session = df1[df1[sub].values == sname].index.values[0]
     new_sname = sname.replace('-', '')
     ifolder = os.path.join(target_derivatives, sub, 'estimates',
@@ -285,17 +285,35 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
         if sub == 'sub-11' and rnum == 6 and \
            tname == 'PreferencePaintings':
             tname = 'PreferenceFaces'
-        elif sub == 'sub-11' and rnum == 7 and \
+        if sub == 'sub-11' and rnum == 7 and \
            tname == 'PreferenceFaces':
             n_half = 3
-        condition_names = df3[
-            df3.task == tname][df3.reginterest == 1].condition.tolist()
-        reg_id = df3[df3.task == tname][df3.reginterest == 1].regid.tolist()
+        if tname == 'Self':
+            condition_names = df4[df4.subject == int(subject_no)][
+                'run%02d' % rnum].values
+            condition_names = condition_names[
+                ~pd.isnull(condition_names)].tolist()
+            condition_names = df3[df3.reginterest == 1].loc[
+                df3['condition'].isin(condition_names)].condition.tolist()
+            reg_id = df3[df3.reginterest == 1].loc[
+                df3['condition'].isin(condition_names)].regid.tolist()
+            if rnum == 1:
+                nhalf_rep = np.repeat(n_half, len(reg_id)).tolist()
+            else:
+                unique, counts = np.unique(
+                    sessinfo[:, 4].tolist() + condition_names,
+                    return_counts=True)
+                nhalf_rep = counts[np.isin(unique, condition_names)]
+        else:
+            condition_names = df3[
+                df3.task == tname][df3.reginterest == 1].condition.tolist()
+            reg_id = df3[df3.task == tname][
+                df3.reginterest == 1].regid.tolist()
+            nhalf_rep = np.repeat(n_half, len(reg_id)).tolist()
         sub_rep = np.repeat(subject_no, len(reg_id)).tolist()
         sess_rep = np.repeat(new_sname, len(reg_id)).tolist()
         rnum_rep = np.repeat(rnum, len(reg_id)).tolist()
         tname_rep = np.repeat(tname, len(reg_id)).tolist()
-        nhalf_rep = np.repeat(n_half, len(reg_id)).tolist()
         rstack = np.vstack((sub_rep, sess_rep, rnum_rep, tname_rep,
                             condition_names, reg_id, nhalf_rep)).T
         sessinfo = np.vstack((sessinfo, rstack))
@@ -330,13 +348,13 @@ def rename_files(sub, sname, folder_path, df1, ext):
 
 # subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [11]
+# subjects_numbers = [4]
 
 # session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
                  'clips4', 'lyon1', 'lyon2', 'mathlang',
                  'spatial-navigation']
-# session_names = ['preference']
+# session_names = ['self']
 
 
 # ############################# PARAMETERS #############################
@@ -353,9 +371,11 @@ cbs_derivatives = os.path.join(cbs, 'derivatives')
 sess_map = 'ibc_sessions_map.tsv'
 sess_struct = 'ibc_sessions_structure.tsv'
 task_conditions = 'ibc_conditions.tsv'
+self_conditions = 'task-self_conditions.tsv'
 dfm = pd.read_csv(open(sess_map), sep='\t', index_col=0)
 dfs = pd.read_csv(open(sess_struct), sep='\t')
 dfc = pd.read_csv(open(task_conditions), sep='\t')
+dfself = pd.read_csv(open(self_conditions), sep='\t')
 
 subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 
@@ -388,7 +408,7 @@ if __name__ == "__main__":
 
             ## Generate tsv files with session info ##
             generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
-                              dfs, dfc)
+                              dfs, dfc, dfself)
 
             # rename_sessions(subject, session_name, cbs_sourcedata, dfm)
             # rename_sessions(subject, session_name, cbs_derivatives, dfm)
