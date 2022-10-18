@@ -18,7 +18,6 @@ import Functional_Fusion.matrix as matrix
 import matplotlib.pyplot as plt
 import seaborn as sb
 import sys
-import DCBC.DCBC_vol as dcbc
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -601,28 +600,6 @@ def learn_half(K=10, e='GME', max_iter=100, atlas='SUIT3', run_test=np.arange(58
         T = pd.concat([T, pd.DataFrame(D2)])
 
     return T, group_baseline, lower_bound, par_learned
-
-def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3):
-    """DCBC: evaluate the resultant parcellation using DCBC
-    Args:
-        parcels (np.ndarray): the input parcellation, shape
-        suit_atlas (<AtlasVolumetric>): the class object of atlas
-        func_data (np.ndarray): the functional data,
-                                shape (num_sub, N, P)
-        resolution (np.float or int): the resolution of atlas in mm
-    Returns:
-        dcbc_values (np.ndarray): the DCBC values of subjects
-    """
-    dist = dcbc.compute_dist(suit_atlas.vox.T, resolution=resolution)
-    if func_data is None:
-        func_data, _, _ = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
-
-    dcbc_values = []
-    for sub in range(func_data.shape[0]):
-        D = dcbc.compute_DCBC(parcellation=parcels, dist=dist, func=func_data[sub].T)
-        dcbc_values.append(D['DCBC'])
-
-    return np.asarray(dcbc_values)
 
 def figure_indiv_group():
     D = pd.read_csv('scripts/indiv_group_err.csv')
