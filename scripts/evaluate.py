@@ -15,6 +15,7 @@ import seaborn as sb
 import sys
 import pickle
 import DCBC.DCBC_vol as dcbc
+from learn_mdtb import get_all_mdtb
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -102,20 +103,27 @@ if __name__ == "__main__":
                   'asym_MdPoNi_space-MNISymC3_K-10']
     
     plot_parcel_flat_best(model_name,[2,2])
-    # mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
-    # atlas = am.AtlasVolumetric('MNISymC3',mask_img=mask)
 
-    #sess = [['ses-s1'],['ses-01'],['ses-01','ses-02']]
-    #design_ind= ['cond_num_uni','task_id',',..']
-    # info,models,Prop,V = load_batch_fit('asym_Md','MNISymC3',10)
-    # parcel = pt.argmax(Prop,dim=1)+1 # Get winner take all 
-    # parcel=parcel[:,sym_atlas.indx_reduced] # Put back into full space
-    # plot_parcel_flat(parcel[0:3,:],atlas,grid=[2,3],map_space='MNISymC') 
-    # pass
-    # pass
-    # Prop, V = fit_niter(data,design,K,n_iter)
-    # r1 = ev.calc_consistency(Prop,dim_rem=0)
-    # r2 = ev.calc_consistency(V[0],dim_rem=2)
+    # Evaluate DCBC on left out dataset
+    mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
+    atlas = am.AtlasVolumetric('MNISymC3',mask_img=mask)
+
+    sess = [['ses-s1'],['ses-01'],['ses-01','ses-02']]
+    design_ind= ['cond_num_uni','task_id',',..']
+    info,models,Prop,V = load_batch_fit('asym_Md','MNISymC3',10)
+    parcel = pt.argmax(Prop,dim=1)+1 # Get winner take all 
+    parcel=parcel[:,atlas.indx_reduced] # Put back into full space
+
+
+    # Evaluate case
+    # T, gbase, lb, parcellation = learn_half(
+    #     K=10, e='VMF', runs=np.arange(1, 17))
+    # T.to_csv('coserrs_wVMF.csv')
+    # plot_parcel_flat(parcellation, suit_atlas, grid=[
+                    #  1, 1], save_nii=False)  # Plot flat map
+    data_eval, _, _ = get_all_mdtb(atlas='MNISymC3')
+    dcbc_values = eval_dcbc(parcellation.numpy(), atlas,
+                            func_data=data_eval, resolution=3)
 
 
     # parcel = pt.argmax(Prop,dim=1)

@@ -656,15 +656,6 @@ def _plot_vmf_wvmf(T, T2):
 
 
 if __name__ == "__main__":
-    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
-
-    T, gbase, lb, parcellation = learn_half(K=10, e='VMF', runs=np.arange(1, 17))
-    # T.to_csv('coserrs_wVMF.csv')
-    plot_parcel_flat(parcellation, suit_atlas, grid=[1, 1], save_nii=False)  # Plot flat map
-    data_eval, _, _ = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
-    dcbc_values = eval_dcbc(parcellation.numpy(), suit_atlas,
-                            func_data=data_eval, resolution=3)
 
     # A = pt.load('D:/data/nips_2022_supp/uhat_complete_all.pt')[15]
     # parcel = pt.argmax(A, dim=1) + 1
