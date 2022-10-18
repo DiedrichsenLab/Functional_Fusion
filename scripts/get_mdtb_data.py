@@ -94,6 +94,7 @@ def show_mdtb_group(type='CondHalf', atlas='SUIT3', cond=0, info_column='cond_na
             # save figure
             if savefig:
                 plt.savefig(dest_dir + f'group_{c}.png')
+            plt.clf()
             pass
 
     else:
