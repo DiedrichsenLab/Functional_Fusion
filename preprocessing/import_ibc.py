@@ -280,7 +280,7 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3, df4):
     run_numbers = df2[df2.session == sname].srun.values
     task_names = df2[df2.session == sname].task.values
     halfs = df2[df2.session == sname].half.values
-    sessinfo = np.empty((0, 7))
+    sessinfo = np.empty((0, 8))
     for rnum, tname, n_half in zip(run_numbers, task_names, halfs):
         if sub == 'sub-11' and rnum == 6 and \
            tname == 'PreferencePaintings':
@@ -293,12 +293,17 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3, df4):
                 'run%02d' % rnum].values
             condition_names = condition_names[
                 ~pd.isnull(condition_names)].tolist()
+            reg_id = np.arange(1, len(condition_names) + 1)
+            reg_interest = df3[
+                df3.task == tname].loc[df3['condition'].isin(
+                    condition_names)].reginterest.values.astype(np.bool)
+            reg_id = reg_id[reg_interest]
             condition_names = df3[df3.reginterest == 1].loc[
                 df3['condition'].isin(condition_names)].condition.tolist()
-            reg_id = df3[df3.reginterest == 1].loc[
-                df3['condition'].isin(condition_names)].regid.tolist()
+            reg_num = df3[df3.reginterest == 1].loc[
+                df3['condition'].isin(condition_names)].regnum.tolist()
             if rnum == 1:
-                nhalf_rep = np.repeat(n_half, len(reg_id)).tolist()
+                nhalf_rep = np.repeat(n_half, len(reg_num)).tolist()
             else:
                 unique, counts = np.unique(
                     sessinfo[:, 4].tolist() + condition_names,
@@ -307,18 +312,21 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3, df4):
         else:
             condition_names = df3[
                 df3.task == tname][df3.reginterest == 1].condition.tolist()
+            reg_num = df3[df3.task == tname][
+                df3.reginterest == 1].regnum.tolist()
             reg_id = df3[df3.task == tname][
                 df3.reginterest == 1].regid.tolist()
-            nhalf_rep = np.repeat(n_half, len(reg_id)).tolist()
-        sub_rep = np.repeat(subject_no, len(reg_id)).tolist()
-        sess_rep = np.repeat(new_sname, len(reg_id)).tolist()
-        rnum_rep = np.repeat(rnum, len(reg_id)).tolist()
-        tname_rep = np.repeat(tname, len(reg_id)).tolist()
+            nhalf_rep = np.repeat(n_half, len(reg_num)).tolist()
+        sub_rep = np.repeat(subject_no, len(reg_num)).tolist()
+        sess_rep = np.repeat(new_sname, len(reg_num)).tolist()
+        rnum_rep = np.repeat(rnum, len(reg_num)).tolist()
+        tname_rep = np.repeat(tname, len(reg_num)).tolist()
         rstack = np.vstack((sub_rep, sess_rep, rnum_rep, tname_rep,
-                            condition_names, reg_id, nhalf_rep)).T
+                            condition_names, reg_num, reg_id, nhalf_rep)).T
         sessinfo = np.vstack((sessinfo, rstack))
     dff = pd.DataFrame(sessinfo, columns = ['sn', 'sess', 'run', 'task_name',
-                                            'cond_name', 'reg_id', 'half'])
+                                            'cond_name', 'reg_num', 'reg_id',
+                                            'half'])
     dff_fname = sub + '_ses-' + new_sname + '_reginfo.tsv'
     dff_path = os.path.join(ifolder, dff_fname)
     dff.to_csv(dff_path, sep='\t', index=False)
@@ -346,14 +354,14 @@ def rename_files(sub, sname, folder_path, df1, ext):
 
 # ############################### INPUTS ###############################
 
-# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 # subjects_numbers = [4]
 
-# session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-                 'clips4', 'lyon1', 'lyon2', 'mathlang',
-                 'spatial-navigation']
+session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+# session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+#                  'clips4', 'lyon1', 'lyon2', 'mathlang',
+#                  'spatial-navigation']
 # session_names = ['self']
 
 
