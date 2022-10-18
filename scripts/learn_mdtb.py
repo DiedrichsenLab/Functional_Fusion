@@ -22,10 +22,11 @@ import sys
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-
-if sys.platform == "win32":
+if not Path(base_dir).exists():
     base_dir = 'Y:\data\FunctionalFusion'
-    sys.path.append('../')
+if not Path(base_dir).exists():
+    raise(NameError('Could not find base_dir'))
+    
 
 hcp_dir = base_dir + '/HCP'
 data_dir = base_dir + '/MDTB'

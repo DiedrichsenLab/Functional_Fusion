@@ -24,10 +24,11 @@ import pickle
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-
-if sys.platform == "win32":
+if not Path(base_dir).exists():
     base_dir = 'Y:\data\FunctionalFusion'
-    sys.path.append('../')
+if not Path(base_dir).exists():
+    raise(NameError('Could not find base_dir'))
+    
 
 def plot_parcel_flat(data,suit_atlas,grid,map_space='SUIT'):
     color_file = base_dir + '/Atlases/tpl-SUIT/atl-MDTB10.lut'
@@ -111,9 +112,9 @@ def align_fits(models,inplace=True):
 
 def batch_fit(datasets,sess,type=None,design_ind=None,part_ind=None,subj=None,
                 atlas=None,K=10,arrange='independent',emission='VMF',
-                n_starts=10,n_iter=20,save=True,name=None):
+                n_rep=3, n_inits=10, n_iter=20,save=True,name=None):
     """ Executes a set of fits starting from random starting values
-    saves the
+    selects the best one from a batch and saves them 
 
     Args:
         datasets (list): List of dataset names to be used as training
@@ -126,7 +127,7 @@ def batch_fit(datasets,sess,type=None,design_ind=None,part_ind=None,subj=None,
         K (int): Number of parcels. Defaults to 10.
         arrange (str): Type of arangement model. Defaults to 'independent'.
         emission (list / strs): Type of emission models. Defaults to 'VMF'.
-        n_starts (int): Number of random starting values. default: 10
+        n_inits (int): Number of random starting values. default: 10
         n_iter (int): Maximal number of iterations per fit: default: 20
         save (bool): Save the resulting fits? Defaults to True.
         name (str): Name of model (for filename). Defaults to None.
@@ -165,29 +166,31 @@ def batch_fit(datasets,sess,type=None,design_ind=None,part_ind=None,subj=None,
 
     # Initialize data frame for results
     models=[]
-    info = pd.DataFrame({'name':[name]*n_starts,
-                         'atlas':[atlas.name]*n_starts,
-                         'K':[K]*n_starts,
-                         'datasets':[datasets]*n_starts,
-                         'sess':[sess]*n_starts,
-                         'type':[type]*n_starts,
-                         'subj':[subj]*n_starts,
-                         'arrange':[arrange]*n_starts,
-                         'emission':[emission]*n_starts,
-                         'loglik':[np.nan]*n_starts});
+    n_fits = n_rep
+    info = pd.DataFrame({'name':[name]*n_fits,
+                         'atlas':[atlas.name]*n_fits,
+                         'K':[K]*n_fits,
+                         'datasets':[datasets]*n_fits,
+                         'sess':[sess]*n_fits,
+                         'type':[type]*n_fits,
+                         'subj':[subj]*n_fits,
+                         'arrange':[arrange]*n_fits,
+                         'emission':[emission]*n_fits,
+                         'loglik':[np.nan]*n_fits});
 
-    # Check for size of Atlas + whether symmetric
-    if isinstance(atlas,am.AtlasVolumeSymmetric):
-        P_arrange = atlas.Psym
-        K_arrange = np.ceil(K/2).astype(int)
-    else:
-        P_arrange = atlas.P
-        K_arrange = K
 
     # Iterate over the number of fits
-    ll = np.empty((n_starts,n_iter))
-    for i in range(n_starts):
-        print(f'start: {i}')
+    ll = np.empty((n_fits,n_iter))
+    for i in range(n_fits):
+        print(f'fit: {i}')
+
+        # Check for size of Atlas + whether symmetric
+        if isinstance(atlas,am.AtlasVolumeSymmetric):
+            P_arrange = atlas.Psym
+            K_arrange = np.ceil(info.K[i]/2).astype(int)
+        else:
+            P_arrange = atlas.P
+            K_arrange = info.K[i]
 
         # Initialize arrangement model
         if arrange=='independent':
@@ -203,7 +206,7 @@ def batch_fit(datasets,sess,type=None,design_ind=None,part_ind=None,subj=None,
         em_models=[]
         for j,ds in enumerate(data):
             if emission=='VMF':
-                em_model = em.MixVMF(K=K, N=40, 
+                em_model = em.MixVMF(K=info.K[i], N=40, 
                                      P=atlas.P,
                                      X=design[j], 
                                      part_vec=part_vec[j],
@@ -222,14 +225,19 @@ def batch_fit(datasets,sess,type=None,design_ind=None,part_ind=None,subj=None,
                 M = fm.FullMultiModel(ar_model, em_models)
 
         # Step 5: Estimate the parameter thetas to fit the new model using EM
-        M, ll[i,:], theta, U_hat = M.fit_em(Y=data, iter=n_iter,
-                        tol=0.00001, fit_arrangement=True)
-        info.loglik.iloc[i] = ll[i,~np.isnan(ll[i,:])][-1]
+        M, ll, theta, U_hat, ll_init = M.fit_em_ninits(Y=data,
+                                        iter=n_iter,
+                                        tol=0.00001, 
+                                        fit_arrangement=True,
+                                        n_inits=n_inits,
+                                        first_iter=10)
+        info.loglik.at[i] = ll[-1]
         M.clear()
         models.append(M)
 
     # Align the different models
-    Prop,V = align_fits(models)
+    models = np.array(models,dtype=object)
+    align_fits(models)
 
     # Save the fits and information
     if save is True:
@@ -295,20 +303,28 @@ def fit_all(set_ind=[0,1,2]):
               design_ind = design_ind[set_ind],
               part_ind = part_ind[set_ind],
               atlas=atlas[i],
-              K=10,name=name,n_starts=10, save=True)
+              K=[10],
+              name=name,
+              n_inits=20, 
+              n_iter=200,
+              save=True)
 
 if __name__ == "__main__":
     # fit_all([0])
     # fit_all([1])
-    fit_all([0])
-    fit_all([0,1,2])
+    # fit_all([0])
+    # fit_all([0])
+    # fit_all([0,1,2])
+
+    mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
+    atlas = am.AtlasVolumetric('MNISymC3',mask_img=mask)
 
     #sess = [['ses-s1'],['ses-01'],['ses-01','ses-02']]
     #design_ind= ['cond_num_uni','task_id',',..']
-    # info,models,Prop,V = load_batch_fit('SingleMDTB','MNISymC3',10)
-    # parcel = pt.argmax(Prop,dim=1) # Get winner take all 
+    info,models,Prop,V = load_batch_fit('asym_Md','MNISymC3',10)
+    parcel = pt.argmax(Prop,dim=1) # Get winner take all 
     # parcel=parcel[:,sym_atlas.indx_reduced] # Put back into full space
-    # plot_parcel_flat(parcel[0:3,:],sym_atlas,grid=[1,3],map_space='MNISymC') 
+    plot_parcel_flat(parcel[0:3,:],atlas,grid=[1,3],map_space='MNISymC') 
     # pass
     # pass
     # Prop, V = fit_niter(data,design,K,n_iter)
