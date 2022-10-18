@@ -290,12 +290,13 @@ class DataSet:
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
     
-    def group_average_suit(self, type='CondHalf', atlas='SUIT3'):
+    def group_average_suit(self, type='CondHalf', atlas='SUIT3', info_column='task_name'):
         """Loads group data in SUIT space from a standard experiment structure
         averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
         Args:
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+            info_column (str, optional): Column of info tsv file for which each average should be calculated. Defaults to 'task_name'
         """
         # Make the atlas object
         if (atlas == 'SUIT3'):
@@ -307,31 +308,20 @@ class DataSet:
         if (atlas == 'MNISymC2'):
             mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
         suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
-
-        # load data for each participant and each session
-        T = self.get_participants()
-        for i, s in enumerate(T.participant_id):
-            # find cifti files for all sessions
-            sessions = glob.glob(self.data_dir.format(s) +
-                      f'/{s}_space-{atlas}_ses-*_{type}.dscalar.nii')
-            if sessions == []:
-                print('No files found for subject {} in space {}. Need to run extraction first.'.format(
-                    s, atlas))
-                raise Exception("Check file exists.")
-            for j, ses in enumerate(sessions):
-                C = nb.load(ses)
-                if i == 0 and j == 0:
-                    # initialize tensor
-                    X = np.zeros(
-                        (C.shape[0], C.shape[1], T.shape[0] * len(sessions)))
-                X[:, :, i*len(sessions)+j] = C.get_fdata()
-        # average data across sessions and participants
-        X = X.mean(axis=2)
-        # load data info
-        tsv_file = op.basename(ses).split('.')[0].split('_')
-        tsv_file = '{}_{}_info-{}.tsv'.format(tsv_file[0], tsv_file[2], tsv_file[3])
-        D = pd.read_csv(op.join(op.dirname(ses), tsv_file), sep='\t')
         
+
+        # get session indices
+        T = self.get_participants()
+        s = T.participant_id[0]
+
+        sessions = glob.glob(self.data_dir.format(s) +
+                             f'/{s}_space-{atlas}_ses-*_{type}.dscalar.nii')
+        if sessions == []:
+            print('No files found for subject {} in space {}. Need to run extraction first.'.format(
+                s, atlas))
+            raise Exception("Check file exists.")
+        sessions = [ ses.split(f'space-{atlas}_ses-')[1].split('_')[0] for ses in sessions]
+
         # get atlas for one subject
         deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
         if atlas[0:7] == 'MNISymC':
@@ -341,15 +331,65 @@ class DataSet:
         mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
         atlas_map = am.AtlasMapDeform(self, suit_atlas, s, deform, mask)
         atlas_map.build(smooth=2.0)
-        
-        # save group results as cifti
-        C = am.data_to_cifti(X, [atlas_map], D.task_name)
-        dest_dir = op.join(ses.split('sub-')[0], 'group')
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+
+        alldata = []
+        allinfo = []
+        # get average activation for each session
+        for j, ses in enumerate(sessions):
+            for i, s in enumerate(T.participant_id):
+                C = nb.load(self.data_dir.format(s) +
+                            f'/{s}_space-{atlas}_ses-{ses}_{type}.dscalar.nii')
+                D = pd.read_csv(self.data_dir.format(s) +
+                            f'/{s}_ses-{ses}_info-{type}.tsv', sep='\t')
+                if i == 0:
+                    # initialize tensor
+                    X = np.zeros(
+                        (C.shape[0], C.shape[1], T.shape[0]))
+                    X[:] = np.nan
+                X[:, :, i] = C.get_fdata()
+            # average across participants
+            # print(f'/{s}_space-{atlas}_ses-{ses}_{type}.dscalar.nii')
+            X = np.nanmean(X,axis=2)
+            Xc = np.zeros(
+                        (len(D[info_column].unique()), C.shape[1]))
+            # average conditions across session halves
+            for k,cond in enumerate(D[info_column].unique()):
+                # print(f'/{k} {cond}')
+                Xc[k, :] = np.nanmean(X[D[info_column] == cond, :], axis=0)
+            # select unique rows for each condition
+            D = D.drop_duplicates(info_column, keep='first')
+            # save cifti file for session
+            C = am.data_to_cifti(Xc, [atlas_map], D[info_column])
+            dest_dir = op.join(self.data_dir.format(s).split('sub-')[0], 'group')
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir +
+                    f'/group_ses-{ses}_space-{atlas}_{type}.dscalar.nii')
+            D.to_csv(
+                dest_dir + f'/group_ses-{ses}_info-{type}.tsv', sep='\t', index=False)
+            alldata.append(Xc)
+            allinfo.append(D)
+
+        # average across sessions
+        conditions = [cond for sesinfo in allinfo for cond in sesinfo[info_column]]
+        conditions = sorted(set(conditions))
+        Xa = np.zeros((len(conditions), X.shape[1], len(sessions)))
+        Xa[:] = np.nan
+        for k, cond in enumerate(conditions):
+            # print(k,cond)
+            for j,ses in enumerate(sessions):
+                if cond in allinfo[j][info_column].tolist():
+                    Xa[k, :, j] = alldata[j][allinfo[j][info_column] == cond, :]
+        Xa = np.nanmean(Xa, axis=2)
+        # save cifti file for overall average
+        C = am.data_to_cifti(Xa, [atlas_map], list(conditions))
         nb.save(C, dest_dir +
                 f'/group_space-{atlas}_{type}.dscalar.nii')
-        D.to_csv(
-            dest_dir + f'/group_info-{type}.tsv', sep='\t', index=False)
+        Da = pd.concat(allinfo)
+        Da = Da.drop_duplicates(
+            info_column, keep='first').drop(columns=['names', 'half'])
+        Da.to_csv(
+            dest_dir + f'/group_info-{type}.tsv', sep='\t', index=False)       
+
         
         # project to flatmap and save figure
 
