@@ -304,7 +304,7 @@ def eval_dcbc_best(model_names, space, testdata):
     return results
 
 
-def eval_dcbc(parcels, testdata, atlas, resolution=3):
+def eval_dcbc(parcels, testdata, atlas, resolution=3, trim_nan=False):
     """DCBC: evaluate the resultant parcellation using DCBC
     Args:
         parcels (np.ndarray): the input parcellation, shape
@@ -321,6 +321,10 @@ def eval_dcbc(parcels, testdata, atlas, resolution=3):
     """
 
     dist = dcbc.compute_dist(atlas.vox.T, resolution=resolution)
+    
+    if trim_nan:  # mask the nan voxel pairs distance to nan
+        dist[np.where(np.isnan(parcels))[0], :] = np.nan
+        dist[:, np.where(np.isnan(parcels))[0]] = np.nan
 
     dcbc_values = []
     for sub in range(testdata.shape[0]):
