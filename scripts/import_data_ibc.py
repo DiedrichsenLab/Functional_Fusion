@@ -28,6 +28,12 @@ import nibabel as nb
 # ######################### FUNCTIONS ###################################
 
 
+def delete_old(ddir, ext):
+    if glob.glob(ddir + '/*.' + ext):
+        for f in glob.glob(ddir + '/*.' + ext):
+            os.remove(f)
+
+
 def copy_betas(info_path, subject, sess, sdir, ddir):
     # Load reginfo file from the source dir
     reginfo = pd.read_csv(info_path, sep='\t')
@@ -39,10 +45,6 @@ def copy_betas(info_path, subject, sess, sdir, ddir):
         dest_fname = subject + '_ses-' + sess + \
             '_run-%02d' % r.run + '_reg-%02d' % r.reg_num + '_beta.nii'
         dest.append(dest_fname)
-    # Delete any pre-existing .nii file from destination folder
-    if glob.glob(ddir + '/*.nii'):
-        for ni in glob.glob(ddir + '/*.nii'):
-            os.remove(ni)
     # Copy those files over
     for i in range(len(src)):
         try:
@@ -81,11 +83,6 @@ def import_spm_ibc_dmtx(sdir, ddir, sub_id, sess_id):
         sub_id (_type_): New name for the subject
         sess_id (_type_): ID of the session to import
     """
-
-    # Delete any pre-existing dm npy files from destination folder
-    if glob.glob(ddir + '/*.npy'):
-        for dmtx in glob.glob(ddir + '/*.npy'):
-            os.remove(dmtx)
 
     # Create new files
     for dm in glob.glob(sdir + '/run-*/design_matrix_unf.mat'):
@@ -133,10 +130,16 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
     # Create destination file if it does not exist
     Path(destination_dir).mkdir(parents=True, exist_ok=True)
 
+    # Clean destination directory
+    delete_old(destination_dir, 'tsv')
+    delete_old(destination_dir, 'nii')
+    delete_old(destination_dir, 'npy')
+
+    # Reginfo file of the session
     info_name = pt + '_ses-' + session_id + '_reginfo.tsv'
     info_path = os.path.join(source_dir, info_name)
 
-    # Copy reginfo files
+    # Copy reginfo file
     shutil.copyfile(info_path, os.path.join(destination_dir, info_name))
 
     # Copy beta files to derivatives folder and rename them
@@ -166,11 +169,12 @@ base_dir = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
 src_base_dir = os.path.join(base_dir, 'ibc')
 dest_base_dir = os.path.join(base_dir, 'FunctionalFusion/IBC')
 
-# sessions = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-# sessions = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-#             'clips4', 'lyon1', 'lyon2', 'mathlang',
-#             'spatial-navigation']
-sessions = ['archi']
+session_group1 = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_group2 = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+                  'clips4', 'lyon1', 'lyon2', 'mathlang',
+                  'spatial-navigation']
+sessions = session_group1 + session_group1
+# sessions = ['archi']
 
 # ########################## RUN ########################################
 
@@ -193,4 +197,7 @@ if __name__ == '__main__':
 
         # # --- Importing Estimates ---
         for session in sessions:
-            import_ibc_glm(src_base_dir, dest_base_dir, pt, session)
+            if pt == 'sub-02' and session in session_group2:
+                continue
+            else:
+                import_ibc_glm(src_base_dir, dest_base_dir, pt, session)
