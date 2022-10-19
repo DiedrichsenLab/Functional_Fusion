@@ -10,16 +10,55 @@ Last update: October 2022
 
 import os
 import glob
-import pandas as pd
 import shutil
+
 from pathlib import Path
-# import mat73
+
 import numpy as np
-# import scipy.io as sio
-from import_data import import_suit, import_anat, import_freesurfer
+import pandas as pd
+
+from import_data import (import_suit, import_anat, import_freesurfer,
+                         import_spm_designmatrix)
+
+import mat73
+import scipy.io as sio
+import nibabel as nb
 
 
 # ######################### FUNCTIONS ###################################
+
+
+def copy_betas(info_path, subject, sess, sdir, ddir):
+    # Load reginfo file from the source dir
+    reginfo = pd.read_csv(info_path, sep='\t')
+    # Prepare beta files for transfer
+    src = []
+    dest = []
+    for i, r in reginfo.iterrows():
+        src.append(f'run-{r.run:02d}/beta_{r.reg_id:04d}.nii')
+        dest_fname = subject + '_ses-' + sess + \
+            '_run-%02d' % r.run + '_reg-%02d' % r.reg_num + '_beta.nii'
+        dest.append(dest_fname)
+    # Delete any pre-existing .nii file from destination folder
+    if glob.glob(ddir + '/*.nii'):
+        for ni in glob.glob(ddir + '/*.nii'):
+            os.remove(ni)
+    # Copy those files over
+    for i in range(len(src)):
+        try:
+            shutil.copyfile(os.path.join(sdir, src[i]),
+                            os.path.join(ddir, dest[i]))
+        except FileNotFoundError:
+            print('skipping ' + os.path.join(sdir, src[i]))
+
+
+def compute_mean_nifti(vol_paths):
+    vols = [nb.load(vol_path) for vol_path in vol_paths]
+    X = [vol.get_fdata() for vol in vols]
+    Y = np.mean(X, axis=0)
+    mean_vol = nb.Nifti1Image(Y, vols[0].affine)
+
+    return mean_vol
 
 
 def import_ibc_anatderivatives(anat_type, source_basedir, destination_basedir,
@@ -44,58 +83,44 @@ def import_ibc_anatderivatives(anat_type, source_basedir, destination_basedir,
         import_freesurfer(source_dir, dest_dir, sub_id, sub_id)
 
 
-def import_ibc_glm(source_basedir, destination_basedir, participant_id,
-                   sess_id):
-    # --- Importing Estimates ---
+def import_ibc_glm(source_basedir, destination_basedir, participant,
+                   session_id):
+
+    # Define source and destination paths
     source_dir = '{}/derivatives/{}/estimates/ses-{}'.format(
-        source_basedir, participant_id, sess_id)
-    dest_dir = '{}/derivatives/{}/estimates/ses-{}'.format(
-        destination_basedir, participant_id, sess_id)
+        source_basedir, participant, session_id)
+    destination_dir = '{}/derivatives/{}/estimates/ses-{}'.format(
+        destination_basedir, participant, session_id)
 
     # Create destination file if it does not exist
-    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    Path(destination_dir).mkdir(parents=True, exist_ok=True)
 
-    info_name = pt + '_ses-' + sess_id + '_reginfo.tsv'
-    for info_path in glob.glob(os.path.join(source_dir, info_name)):
-        # Copy reginfo files
-        shutil.copyfile(info_path, os.path.join(dest_dir, info_name))
-        # Load reginfo file from the source dir: 
-        info = pd.read_csv(info_path, sep='\t')
-        n_runs = np.max(info.run) 
-        # Prepare beta files for transfer
-        src = []
-        dest = []
-        for i, r in info.iterrows():
-            src.append(f'run-{r.run:02d}/beta_{r.reg_id:04d}.nii')
-            dest_fname = participant_id + '_ses-' + sess_id + \
-                '_run-%02d' % r.run + '_reg-%02d' % r.reg_num + '_beta.nii'
-            dest.append(dest_fname)
-        # Delete any pre-existing .nii file from destination folder
-        if glob.glob(dest_dir + '/*.nii'):
-            for ni in glob.glob(dest_dir + '/*.nii'):
-                os.remove(ni)
-        # Copy those files over
-        for i in range(len(src)):
-            try:
-                shutil.copyfile(os.path.join(source_dir, src[i]),
-                                os.path.join(dest_dir, dest[i]))
-            except FileNotFoundError:
-                print('skipping ' + os.path.join(source_dir, src[i]))
+    info_name = pt + '_ses-' + session_id + '_reginfo.tsv'
+    info_path = os.path.join(source_dir, info_name)
 
-        # Saves SPM.mat file as a npy file
-        # import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
+    # Copy reginfo files
+    shutil.copyfile(info_path, os.path.join(dest_dir, info_name))
 
-    # # for r in np.unique(info.run):
-    # #     # Mask
-    # #     run_id = f'run-{r:02d}'
-    # #     src.append('/{run_id}/mask.nii')
-    # #     dest.append(f'/{sub_id}_{sess_id}_{run_id}_mask.nii')
-    # #     src.append('/{run_id}/resms.nii')
-    # #     dest.append(f'/{sub_id}_{sess_id}_{run_id}_resms.nii')
+    # Copy beta files to derivatives folder and rename them
+    copy_betas(info_path, participant, session_id, source_dir, destination_dir)
 
-    # # Average Mask and resms.nii across runs and write them out as 
-    # # f'{dest_dir}/{sub_id}_{sess_id}_resms.nii')
-    # # f'{dest_dir}/{sub_id}_{sess_id}_mask.nii')
+    # Compute mean of masks and save in destination folder
+    masks_paths = glob.glob(source_dir + '/run-*/mask.nii')
+    mean_mask = compute_mean_nifti(masks_paths)
+    mean_mask_path = os.path.join(
+        destination_dir, participant + '_ses-' + session_id + '_mask.nii')
+    nb.save(mean_mask, mean_mask_path)
+
+    # Compute mean of Residual-Sum-of-Squares and save in destination folder
+    resmss_paths = glob.glob(source_dir + '/run-*/ResMS.nii')
+    mean_resms = compute_mean_nifti(resmss_paths)
+    mean_resms_path = os.path.join(
+        destination_dir, participant + '_ses-' + session_id + '_resms.nii')
+    nb.save(mean_resms, mean_resms_path)
+
+    # Saves SPM.mat file as a npy file
+    import_spm_designmatrix(source_dir, destination_dir, participant,
+                            session_id)
 
 
 # ######################### INPUTS ######################################
