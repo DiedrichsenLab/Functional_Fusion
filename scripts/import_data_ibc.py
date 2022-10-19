@@ -170,14 +170,20 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
 
 # ######################### INPUTS ######################################
 
-if os.path.exists(os.path.join(os.path.expanduser('~'), 'diedrichsen_data')):
-    base_dir = os.path.join(os.path.expanduser('~'),
-                            'diedrichsen_data/data')
-else:
-    base_dir = '/srv/diedrichsen/data'
+try:
+    BASE = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
 
-src_base_dir = os.path.join(base_dir, 'ibc')
-dest_base_dir = os.path.join(base_dir, 'FunctionalFusion/IBC')
+except FileNotFoundError:
+    pass
+
+try:
+    BASE = '/srv/diedrichsen/data'
+
+except FileNotFoundError:
+    print('Base directory does not exist.')
+
+src_base_dir = os.path.join(BASE, 'ibc')
+dest_base_dir = os.path.join(BASE, 'FunctionalFusion/IBC')
 
 session_group1 = ['archi', 'hcp1', 'hcp2', 'rsvplanguage']
 session_group2 = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
