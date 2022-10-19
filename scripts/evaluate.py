@@ -25,7 +25,10 @@ from learn_mdtb import get_all_mdtb
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-
+if not Path(base_dir).exists():
+    base_dir = 'Y:\data\FunctionalFusion'
+if not Path(base_dir).exists():
+    raise(NameError('Could not find base_dir'))
 
 def load_batch_fit(fname):
     wdir = base_dir + '/Models/'
@@ -247,7 +250,8 @@ def calc_prediction_error(model_names,test_data,test_sess,
                 results = pd.concat([results, ev_df], ignore_index=True)
     return results
 
-def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3):
+def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3,
+              trim_nan=False):
     """DCBC: evaluate the resultant parcellation using DCBC
     Args:
         parcels (np.ndarray): the input parcellation, shape
@@ -255,10 +259,18 @@ def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3):
         func_data (np.ndarray): the functional data,
                                 shape (num_sub, N, P)
         resolution (np.float or int): the resolution of atlas in mm
+        trim_nan (boolean): if true, make the nan voxel label will be
+                            removed from DCBC calculation. Otherwise,
+                            we treat nan voxels are in the same parcel
+                            which is label 0 by default.
     Returns:
         dcbc_values (np.ndarray): the DCBC values of subjects
     """
     dist = dcbc.compute_dist(suit_atlas.vox.T, resolution=resolution)
+    if trim_nan:  # mask the nan voxel pairs distance to nan
+        dist[np.where(np.isnan(parcels))[0], :] = np.nan
+        dist[:, np.where(np.isnan(parcels))[0]] = np.nan
+
     if func_data is None:
         func_data, _, _ = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
 
@@ -314,7 +326,55 @@ def eval2():
     dcbc_values = eval_dcbc(parcellation.numpy(), atlas,
                             func_data=data_eval, resolution=3)
 
+def eval_generative_SNMF(model_names = ['asym_Md_space-SUIT3_K-10']):
+    """This is the evaluation case of the parcellation comparison
+    between the new fusion model vs. convex semi non-negative matrix
+    factorization (King et. al, 2019).
 
+    Args:
+        model_names (list): the list of model names to be evaluated
+    Returns:
+        the plot
+    Note:
+        I'm just simply curious whether the fusion model fit on mdtb
+        standalone (indepent ar. + VMF em.) can beat NMF algorithm
+        or not. So nothing hurt the script.    -- dzhi
+    """
+    # Use specific mask / atlas.
+    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    atlas = am.AtlasVolumetric('SUIT3', mask_img=mask)
+
+    # get original mdtb parcels (nmf)
+    from learn_mdtb import get_mdtb_parcel
+    mdtb_par, _ = get_mdtb_parcel(do_plot=False)
+    mdtb_par = np.where(mdtb_par == 0, np.nan, mdtb_par)
+
+    parcel = np.empty((len(model_names), atlas.P))
+
+    for i, mn in enumerate(model_names):
+        info, models, Prop, V = load_batch_fit(mn)
+        j = np.argmax(info.loglik)
+        # Get winner take all
+        par = pt.argmax(Prop[j, :, :], dim=0) + 1
+        parcel[i, :] = np.where(np.isnan(mdtb_par), np.nan, par.numpy())
+
+    # Evaluate case: use all MDTB data
+    # It kinda of overfitting but still fair comparison
+    data_eval, _, _ = get_all_mdtb(atlas='SUIT3')
+    dcbc_base = eval_dcbc(mdtb_par, atlas, func_data=data_eval,
+                          resolution=3, trim_nan=True)
+
+    dcbc_compare = []
+    for p in range(parcel.shape[0]):
+        this_dcbc = eval_dcbc(parcel[p], atlas, func_data=data_eval,
+                              resolution=3, trim_nan=True)
+        dcbc_compare.append(this_dcbc)
+
+    plt.figure()
+    plt.bar(['NMF', 'ind+vmf'], [dcbc_base.mean(), dcbc_compare[0].mean()],
+            yerr=[dcbc_base.std() / np.sqrt(24),
+                  dcbc_compare[0].std() / np.sqrt(24)])
+    plt.show()
 
 if __name__ == "__main__":
     eval2()
