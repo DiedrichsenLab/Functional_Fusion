@@ -280,6 +280,41 @@ def fit_all(set_ind=[0,1,2]):
               first_iter=30,
               save=True)
 
+def fit_single(set_ind=[0, 1, 2]):
+    """Fit full model on single dataset using different atlas
+    Args:
+        set_ind (list): which dataset to fit
+
+    Returns:
+        None. save pickle file in /model folder
+    """
+    # Data sets need to numpy arrays to allow indixing by list
+    datasets = np.array(['Mdtb', 'Pontine', 'Nishimoto'],
+                        dtype=object)
+    sess = np.array([['ses-s1', 'ses-s2'],
+                     ['ses-01'],
+                     ['ses-01', 'ses-02']],
+                    dtype=object)
+    type = np.array(['CondHalf', 'TaskHalf', 'CondHalf'],
+                    dtype=object)
+    design_ind = np.array(['cond_num_uni', 'task_num', 'reg_id'],
+                          dtype=object)
+    part_ind = np.array(['half', 'half', 'half'],
+                        dtype=object)
+
+    # Use specific mask / atlas.
+    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    atlas = am.AtlasVolumetric('SUIT3', mask_img=mask)
+
+    # Generate a dataname from first two letters of each training data set
+    dataname = [datasets[i][0:2] for i in set_ind]
+
+    name = 'asym' + '_' + ''.join(dataname)
+    info, model = batch_fit(datasets[set_ind], sess=sess[set_ind], type=type[set_ind],
+                            design_ind=design_ind[set_ind], part_ind=part_ind[set_ind],
+                            atlas=atlas, K=10, name=name, n_inits=20, n_iter=200,
+                            n_rep=10, first_iter=30, save=False)
+
 if __name__ == "__main__":
     fit_all([0])
     fit_all([1])
