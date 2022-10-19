@@ -33,3 +33,13 @@ info.contrast.value_counts()
 # H-E          78
 info.imagetype.value_counts() # 354 each
 
+# --- For visualisation only: replace nans with zero to display in fsleyes ---
+# -- pull images for subject 756 (has 16 images) into visualisation folder with nans set to 0.
+# mkdir /Volumes/diedrichsen_data$/data/FunctionalFusion/Language/raw/visualisation
+# for i in /Volumes/diedrichsen_data$/data/FunctionalFusion/Language/raw/756_*; do fslmaths $i -nan ${i%%756*}/visualisation/${i##*raw/}; done
+
+
+# --- For bids-standard: prepend sub- before subject id number ---
+# for i in /Volumes/diedrichsen_data$/data/FunctionalFusion/Language/raw/*; do
+# echo mv $i ${i%%raw/*}raw/sub-${i##*raw/};
+# done

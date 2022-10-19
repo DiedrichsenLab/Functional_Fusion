@@ -20,7 +20,7 @@ import seaborn as sb
 import sys
 import pickle
 import DCBC.DCBC_vol as dcbc
-from learn_mdtb import get_all_mdtb
+from learn_mdtb import get_sess_mdtb
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -247,25 +247,78 @@ def calc_prediction_error(model_names,test_data,test_sess,
                 results = pd.concat([results, ev_df], ignore_index=True)
     return results
 
-def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3):
+
+def eval_dcbc_best(model_names, space, testdata):
+    s = space.split('C')[0]
+    r = int(space.split('C')[1])
+    mask = base_dir + \
+        f'/Atlases/tpl-MNI152NLIn2000cSymC/tpl-{s}C_res-{r}_gmcmask.nii'
+    atlas = am.AtlasVolumetric(space, mask_img=mask)
+
+    if testdata is None:
+        tdata, _, _ = get_sess_mdtb(atlas=space, ses_id='ses-s2')
+    elif testdata == 'Md':
+        tdata, tinfo, _ = get_dataset(base_dir, 'MDTB',
+                                        atlas=space)
+    elif testdata == 'Po':
+        tdata, tinfo, _ = get_dataset(base_dir, 'Pontine',
+                                            atlas=space)
+    elif testdata == 'Ni':
+        tdata, tinfo, _ = get_dataset(base_dir, 'Nishimoto',
+                                            atlas=space)
+    
+    wdir = base_dir + '/Models/'
+    
+
+    # parcel = np.empty((len(model_names), atlas.P))
+    results = pd.DataFrame()
+    for i, mn in enumerate(model_names):
+        
+        info, models, Prop, V = load_batch_fit(mn)
+        j = np.argmax(info.loglik)
+        par = pt.argmax(Prop[j, :, :], dim=0) + 1  # Get winner take all
+        # parcel[i, :] = par
+        if i == 0:
+            dcbc = np.zeros((len(model_names), tdata.shape[0]))
+        dcbc[i, :] = eval_dcbc(par, tdata, atlas, r)
+        minfo = pd.read_csv(wdir + mn + '.tsv', sep='\t')
+        num_subj = tdata.shape[0]
+
+        ev_df = pd.DataFrame({'model_name': [minfo.name[i]] * num_subj,
+                            'atlas': [minfo.atlas[i]] * num_subj,
+                            'K': [minfo.K[i]] * num_subj,
+                            'model_num': [i] * num_subj,
+                            'train_data': [minfo.datasets[i]] * num_subj,
+                            'train_loglik': [minfo.loglik[i]] * num_subj,
+                            'test_data': [testdata] * num_subj,
+                            'subj_num': np.arange(num_subj),
+                            'dcbc': dcbc[i,:]
+                            })
+        
+        
+        results = pd.concat([results, ev_df], ignore_index=True)
+    
+    return results
+
+
+def eval_dcbc(parcels, testdata, atlas, resolution=3):
     """DCBC: evaluate the resultant parcellation using DCBC
     Args:
         parcels (np.ndarray): the input parcellation, shape
-        suit_atlas (<AtlasVolumetric>): the class object of atlas
-        func_data (np.ndarray): the functional data,
+        atlas (<AtlasVolumetric>): the class object of atlas
+        testdata (np.ndarray): the functional test dataset,
                                 shape (num_sub, N, P)
         resolution (np.float or int): the resolution of atlas in mm
     Returns:
         dcbc_values (np.ndarray): the DCBC values of subjects
     """
-    dist = dcbc.compute_dist(suit_atlas.vox.T, resolution=resolution)
-    if func_data is None:
-        func_data, _, _ = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
+
+    dist = dcbc.compute_dist(atlas.vox.T, resolution=resolution)
 
     dcbc_values = []
-    for sub in range(func_data.shape[0]):
+    for sub in range(testdata.shape[0]):
         D = dcbc.compute_DCBC(parcellation=parcels,
-                              dist=dist, func=func_data[sub].T)
+                              dist=dist, func=testdata[sub].T)
         dcbc_values.append(D['DCBC'])
 
     return np.asarray(dcbc_values)
@@ -287,32 +340,21 @@ def eval1():
     R.to_csv(base_dir + '/Models/eval_Mdtb.tsv',sep='\t')
 
 def eval2():
-    model_name = ['asym_Md_space-MNISymC3_K-10',
-                   'asym_Po_space-MNISymC3_K-10',
-                   'asym_Ni_space-MNISymC3_K-10',
-                   'asym_MdPoNi_space-MNISymC3_K-10']
-    plot_parcel_flat_best(model_name,[2,2])
+    space = 'MNISymC3'
+    model_name = [f'asym_Md_space-{space}_K-10',
+                  f'asym_Po_space-{space}_K-10',
+                   f'asym_Ni_space-{space}_K-10',
+                   f'asym_MdPoNi_space-{space}_K-10']
 
-    # Evaluate DCBC on left out dataset
-    mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
-    atlas = am.AtlasVolumetric('MNISymC3',mask_img=mask)
+    testdata = 'Md'
+ 
+    R = eval_dcbc_best(model_name, space,
+                                 testdata)
+    
+    R.to_csv(base_dir + '/Models/eval2_Mdtb.tsv', sep='\t')
+    print(R)
 
-    sess = [['ses-s1'],['ses-01'],['ses-01','ses-02']]
-    design_ind= ['cond_num_uni','task_id',',..']
-    info,models,Prop,V = load_batch_fit('asym_Md','MNISymC3',10)
-    parcel = pt.argmax(Prop,dim=1)+1 # Get winner take all 
-    parcel=parcel[:,atlas.indx_reduced] # Put back into full space
-
-
-    # Evaluate case
-    # T, gbase, lb, parcellation = learn_half(
-    #     K=10, e='VMF', runs=np.arange(1, 17))
-    # T.to_csv('coserrs_wVMF.csv')
-    # plot_parcel_flat(parcellation, suit_atlas, grid=[
-                    #  1, 1], save_nii=False)  # Plot flat map
-    data_eval, _, _ = get_all_mdtb(atlas='MNISymC3')
-    dcbc_values = eval_dcbc(parcellation.numpy(), atlas,
-                            func_data=data_eval, resolution=3)
+    pass
 
 
 
