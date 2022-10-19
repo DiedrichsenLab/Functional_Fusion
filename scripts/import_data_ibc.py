@@ -93,7 +93,10 @@ def import_spm_ibc_dmtx(sdir, ddir, sub_id, sess_id):
             '_designmatrix_unf.npy'
         fpath = os.path.join(ddir, fname)
         # Save current file in the path
-        np.save(fpath, DM)
+        try:
+            np.save(fpath, DM)
+        except FileNotFoundError:
+            print('Could not save ' + fpath)
 
 
 def import_ibc_anatderivatives(anat_type, source_basedir, destination_basedir,
@@ -140,7 +143,10 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
     info_path = os.path.join(source_dir, info_name)
 
     # Copy reginfo file
-    shutil.copyfile(info_path, os.path.join(destination_dir, info_name))
+    try:
+        shutil.copyfile(info_path, os.path.join(destination_dir, info_name))
+    except FileNotFoundError:
+        print('skipping regfile' + info_path)
 
     # Copy beta files to derivatives folder and rename them
     copy_betas(info_path, participant, session_id, source_dir, destination_dir)
@@ -173,16 +179,17 @@ session_group1 = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
 session_group2 = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
                   'clips4', 'lyon1', 'lyon2', 'mathlang',
                   'spatial-navigation']
-sessions = session_group1 + session_group1
-# sessions = ['archi']
+sessions = session_group1 + session_group2
+# sessions = ['hcp1', 'hcp2', 'rsvp-language']
 
 # ########################## RUN ########################################
 
 if __name__ == '__main__':
     T = pd.read_csv(os.path.join(dest_base_dir, 'participants.tsv'),
                     delimiter='\t')
+
     for pt in T.participant_id:
-    # for pt in ['sub-01']:
+    # for pt in T.participant_id[T.participant_id.index > 2]:
 
         # # # --- Importing SUIT ---
         # import_ibc_anatderivatives('suit', src_base_dir, dest_base_dir, pt)
