@@ -20,7 +20,6 @@ import pandas as pd
 
 from import_data import import_suit, import_anat, import_freesurfer
 
-import mat73
 import scipy.io as sio
 import nibabel as nb
 
@@ -171,16 +170,21 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
 
 # ######################### INPUTS ######################################
 
-base_dir = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
+if os.path.exists(os.path.join(os.path.expanduser('~'), 'diedrichsen_data')):
+    base_dir = os.path.join(os.path.expanduser('~'),
+                            'diedrichsen_data/data')
+else:
+    base_dir = '/srv/diedrichsen/data'
+
 src_base_dir = os.path.join(base_dir, 'ibc')
 dest_base_dir = os.path.join(base_dir, 'FunctionalFusion/IBC')
 
-session_group1 = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_group1 = ['archi', 'hcp1', 'hcp2', 'rsvplanguage']
 session_group2 = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
                   'clips4', 'lyon1', 'lyon2', 'mathlang',
-                  'spatial-navigation']
-sessions = session_group1 + session_group2
-# sessions = ['hcp1', 'hcp2', 'rsvp-language']
+                  'spatialnavigation']
+# sessions = session_group1 + session_group2
+sessions = session_group2
 
 # ########################## RUN ########################################
 
