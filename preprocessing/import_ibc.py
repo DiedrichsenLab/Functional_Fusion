@@ -265,13 +265,12 @@ def transfer_estimates(sub, sname, source_derivatives, target_derivatives,
             os.rename(f, ff)
 
 
-def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
+def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3, df4):
     session = df1[df1[sub].values == sname].index.values[0]
     new_sname = sname.replace('-', '')
     ifolder = os.path.join(target_derivatives, sub, 'estimates',
                            'ses-' + new_sname)
     subject_no = sub[4:]
-    sess_no = session[4:]
     if not os.path.exists(ifolder):
         os.makedirs(ifolder)
     else:
@@ -280,24 +279,54 @@ def generate_sessinfo(sub, sname, target_derivatives, df1, df2, df3):
                 os.remove(ng)
     run_numbers = df2[df2.session == sname].srun.values
     task_names = df2[df2.session == sname].task.values
-    n_repetitions = df2[df2.session == sname].nrep.values
-    sessinfo = np.empty((0, 7))
-    for rnum, tname, n_rep in zip(run_numbers, task_names, n_repetitions):
-        if sub == 'sub-11' and rnum == 6 and \
-           tname == 'PreferencePaintings':
+    halfs = df2[df2.session == sname].half.values
+    sessinfo = np.empty((0, 8))
+    for rnum, tname, n_half in zip(run_numbers, task_names, halfs):
+        if sub == 'sub-11' and rnum == 6 and tname == 'PreferencePaintings':
             tname = 'PreferenceFaces'
-        condition_names = df3[df3.task == tname].condition.tolist()
-        reg_numbers = df3[df3.task == tname].regressor.tolist()
-        sub_rep = np.repeat(subject_no, len(condition_names)).tolist()
-        sess_rep = np.repeat(sess_no, len(condition_names)).tolist()
-        rnum_rep = np.repeat(rnum, len(condition_names)).tolist()
-        tname_rep = np.repeat(tname, len(condition_names)).tolist()
-        nrep_rep = np.repeat(n_rep, len(condition_names)).tolist()
+        if sub == 'sub-11' and rnum == 7 and tname == 'PreferenceFaces':
+            n_half = 3
+        if tname == 'SpatialNavigation' and rnum == 1:
+            continue
+        if tname == 'Self':
+            condition_names = df4[df4.subject == int(subject_no)][
+                'run%02d' % rnum].values
+            condition_names = condition_names[
+                ~pd.isnull(condition_names)].tolist()
+            reg_id = np.arange(1, len(condition_names) + 1)
+            reg_interest = df3[
+                df3.task == tname].loc[df3['condition'].isin(
+                    condition_names)].reginterest.values.astype(np.bool)
+            reg_id = reg_id[reg_interest]
+            condition_names = df3[df3.reginterest == 1].loc[
+                df3['condition'].isin(condition_names)].condition.tolist()
+            reg_num = df3[df3.reginterest == 1].loc[
+                df3['condition'].isin(condition_names)].regnum.tolist()
+            if rnum == 1:
+                nhalf_rep = np.repeat(n_half, len(reg_num)).tolist()
+            else:
+                unique, counts = np.unique(
+                    sessinfo[:, 4].tolist() + condition_names,
+                    return_counts=True)
+                nhalf_rep = counts[np.isin(unique, condition_names)]
+        else:
+            condition_names = df3[
+                df3.task == tname][df3.reginterest == 1].condition.tolist()
+            reg_num = df3[df3.task == tname][
+                df3.reginterest == 1].regnum.tolist()
+            reg_id = df3[df3.task == tname][
+                df3.reginterest == 1].regid.tolist()
+            nhalf_rep = np.repeat(n_half, len(reg_num)).tolist()
+        sub_rep = np.repeat(subject_no, len(reg_num)).tolist()
+        sess_rep = np.repeat(new_sname, len(reg_num)).tolist()
+        rnum_rep = np.repeat(rnum, len(reg_num)).tolist()
+        tname_rep = np.repeat(tname, len(reg_num)).tolist()
         rstack = np.vstack((sub_rep, sess_rep, rnum_rep, tname_rep,
-                            condition_names, reg_numbers, nrep_rep)).T
+                            condition_names, reg_num, reg_id, nhalf_rep)).T
         sessinfo = np.vstack((sessinfo, rstack))
     dff = pd.DataFrame(sessinfo, columns = ['sn', 'sess', 'run', 'task_name',
-                                            'cond_name', 'reg_num', 'n_rep'])
+                                            'cond_name', 'reg_num', 'reg_id',
+                                            'half'])
     dff_fname = sub + '_ses-' + new_sname + '_reginfo.tsv'
     dff_path = os.path.join(ifolder, dff_fname)
     dff.to_csv(dff_path, sep='\t', index=False)
@@ -325,13 +354,17 @@ def rename_files(sub, sname, folder_path, df1, ext):
 
 # ############################### INPUTS ###############################
 
-subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-# subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subjects_numbers = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+# subjects_numbers = [4]
 
-session_names = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
-# session_names = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-#                  'clips4', 'lyon1', 'lyon2', 'mathlang',
-#                  'spatial-navigation']
+session_names1 = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+session_names2 = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+                 'clips4', 'lyon1', 'lyon2', 'mathlang',
+                 'spatial-navigation']
+
+# sessions = session_names1 + session_names2
+session_names = ['spatial-navigation']
 
 
 # ############################# PARAMETERS #############################
@@ -348,9 +381,11 @@ cbs_derivatives = os.path.join(cbs, 'derivatives')
 sess_map = 'ibc_sessions_map.tsv'
 sess_struct = 'ibc_sessions_structure.tsv'
 task_conditions = 'ibc_conditions.tsv'
+self_conditions = 'task-self_conditions.tsv'
 dfm = pd.read_csv(open(sess_map), sep='\t', index_col=0)
 dfs = pd.read_csv(open(sess_struct), sep='\t')
 dfc = pd.read_csv(open(task_conditions), sep='\t')
+dfself = pd.read_csv(open(self_conditions), sep='\t')
 
 subjects_list = ['sub-%02d' % s for s in subjects_numbers]
 
@@ -362,35 +397,43 @@ if __name__ == "__main__":
         # transfer_t1w(subject, drago_derivatives, cbs_sourcedata)
 
         for session_name in session_names:
-            ## Import raw EPI ##
-            # source_funcdata(subject, session_name, drago_sourcedata,
-            #                 cbs_sourcedata, dfm, dfs)
+            if subject == 'sub-02' and session in session_group2:
+                continue
+            else:
+                ## Import raw EPI ##
+                # source_funcdata(subject, session_name, drago_sourcedata,
+                #                 cbs_sourcedata, dfm, dfs)
 
-            ## Import normalized-EPI ##
-            # wepi(subject, session_name, drago_derivatives, cbs_derivatives,
-            #      dfm, dfs, first_run_only = True)
+                ## Import normalized-EPI ##
+                # wepi(subject, session_name, drago_derivatives,
+                #      cbs_derivatives, dfm, dfs, first_run_only = True)
 
-            ## Compute mean normalized-EPI ##
-            # compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
+                ## Compute mean normalized-EPI ##
+                # compute_wmeanepi(subject, session_name, cbs_derivatives, dfm)
 
-            ## Import paradigm descriptors ##
-            # source_funcdata(subject, session_name, drago_sourcedata,
-            #                 cbs_sourcedata, dfm, dfs, data_type='events.tsv')
+                ## Import paradigm descriptors ##
+                # source_funcdata(subject, session_name, drago_sourcedata,
+                #                 cbs_sourcedata, dfm, dfs,
+                #                 data_type='events.tsv')
 
-            ## Import derivatives ##
-            # transfer_estimates(subject, session_name, drago_derivatives,
-            #                    cbs_derivatives, dfm, dfs, dfc)
+                ## Import derivatives ##
+                # transfer_estimates(subject, session_name, drago_derivatives,
+                #                    cbs_derivatives, dfm, dfs, dfc)
 
-            ## Generate tsv files with session info ##
-            generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
-                              dfs, dfc)
+                ## Generate tsv files with session info ##
+                generate_sessinfo(subject, session_name, cbs_derivatives, dfm,
+                                  dfs, dfc, dfself)
 
-            # rename_sessions(subject, session_name, cbs_sourcedata, dfm)
-            # rename_sessions(subject, session_name, cbs_derivatives, dfm)
+                # rename_sessions(subject, session_name, cbs_sourcedata, dfm)
+                # rename_sessions(subject, session_name, cbs_derivatives, dfm)
 
-            # rename_files(subject, session_name, cbs_sourcedata, dfm, 'tsv')
-            # rename_files(subject, session_name, cbs_sourcedata, dfm, 'nii.gz')
+                # rename_files(subject, session_name, cbs_sourcedata, dfm, 'tsv')
+                # rename_files(subject, session_name, cbs_sourcedata, dfm,
+                #              'nii.gz')
 
-            # rename_files(subject, session_name, cbs_derivatives, dfm, 'txt')
-            # rename_files(subject, session_name, cbs_derivatives, dfm, 'nii')
-            # rename_files(subject, session_name, cbs_derivatives, dfm, 'mat')
+                # rename_files(subject, session_name, cbs_derivatives, dfm,
+                #              'txt')
+                # rename_files(subject, session_name, cbs_derivatives, dfm,
+                #              'nii')
+                # rename_files(subject, session_name, cbs_derivatives, dfm,
+                #              'mat')

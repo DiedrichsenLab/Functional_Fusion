@@ -1,101 +1,101 @@
-session	srun	task	phase	nrep
-archi	1	ArchiStandard	pa	156
-archi	2	ArchiSpatial	pa	252
-archi	3	ArchiSocial	pa	262
-archi	4	ArchiEmotional	pa	220
-archi	5	ArchiStandard	ap	156
-archi	6	ArchiSpatial	ap	252
-archi	7	ArchiSocial	ap	262
-archi	8	ArchiEmotional	ap	220
-hcp1	1	HcpEmotion	pa	139
-hcp1	2	HcpGambling	pa	188
-hcp1	3	HcpMotor	pa	185
-hcp1	4	HcpLanguage	pa	229
-hcp1	5	HcpEmotion	ap	139
-hcp1	6	HcpGambling	ap	188
-hcp1	7	HcpMotor	ap	185
-hcp1	8	HcpLanguage	ap	229
-hcp2	1	HcpRelational	pa	311
-hcp2	2	HcpSocial	pa	196
-hcp2	3	HcpWm	pa	303
-hcp2	4	HcpRelational	ap	311
-hcp2	5	HcpSocial	ap	196
-hcp2	6	HcpWm	ap	303
-rsvp-language	1	RSVPLanguage	pa	310
-rsvp-language	2	RSVPLanguage	pa	310
-rsvp-language	3	RSVPLanguage	pa	310
-rsvp-language	4	RSVPLanguage	ap	310
-rsvp-language	5	RSVPLanguage	ap	310
-rsvp-language	6	RSVPLanguage	ap	310
-mtt1	1	RestingState	pa	1120
-mtt1	2	RestingState	ap	1120
-mtt1	3	MTTWE	pa	394
-mtt1	4	MTTWE	pa	394
-mtt1	5	MTTWE	ap	394
-mtt2	1	RestingState	pa	1120
-mtt2	2	RestingState	ap	1120
-mtt2	3	MTTNS	pa	394
-mtt2	4	MTTNS	pa	394
-mtt2	5	MTTNS	ap	394
-preference	1	PreferenceFood	pa	248
-preference	2	PreferencePaintings	pa	248
-preference	3	PreferenceFaces	pa	248
-preference	4	PreferenceHouses	pa	248
-preference	5	PreferenceFood	ap	248
-preference	6	PreferencePaintings	ap	248
-preference	7	PreferenceFaces	ap	248
-preference	8	PreferenceHouses	ap	248
-tom	1	TheoryOfMind	pa	186
-tom	2	EmotionalPain	pa	156
-tom	3	PainMovie	pa	178
-tom	4	TheoryOfMind	ap	186
-tom	5	EmotionalPain	ap	156
-tom	6	PainMovie	ap	178
-enumeration	1	VSTM1	pa	260
-enumeration	2	VSTM1	ap	260
-enumeration	3	Enumeration	pa	490
-enumeration	4	Enumeration	ap	490
-enumeration	5	VSTM2	pa	260
-enumeration	6	VSTM2	ap	260
-self	1	Self1	pa	359
-self	2	Self2	pa	359
-self	3	Self3	ap	359
-self	4	Self4	ap	480
-self	5	Bang	pa	243
-clips4	1	WedgeClock	pa	165
-clips4	2	WedgeAnti	pa	165
-clips4	3	ExpRing	pa	165
-clips4	4	ContRing	ap	165
-clips4	5	WedgeClock	ap	165
-clips4	6	WedgeAnti	ap	165
-lyon1	1	Moto	pa	359
-lyon1	2	MCSE	pa	177
-lyon1	3	MVEB	pa	203
-lyon1	4	MVIS	pa	178
-lyon1	5	Moto	ap	359
-lyon1	6	MCSE	ap	177
-lyon1	7	MVEB	ap	196
-lyon1	8	MVIS	ap	178
-lyon2	1	Lec1	pa	190
-lyon2	2	Lec2	pa	143
-lyon2	3	Audi	pa	347
-lyon2	4	Visu	pa	173
-lyon2	5	Lec1	ap	190
-lyon2	6	Lec2	ap	137
-lyon2	7	Audi	ap	347
-lyon2	8	Visu	ap	173
-mathlang	1	MathLanguage1	pa	281
-mathlang	2	MathLanguage1	ap	280
-mathlang	3	MathLanguage1	pa	286
-mathlang	4	MathLanguage1	ap	288
-mathlang	5	MathLanguage2	pa	283
-mathlang	6	MathLanguage2	ap	283
-mathlang	7	MathLanguage2	pa	280
-spatial-navigation	1	SpatialNavigation	pa	151
-spatial-navigation	2	SpatialNavigation	pa	241
-spatial-navigation	3	SpatialNavigation	pa	241
-spatial-navigation	4	SpatialNavigation	pa	241
-spatial-navigation	5	SpatialNavigation	ap	241
-spatial-navigation	6	SpatialNavigation	ap	241
-spatial-navigation	7	SpatialNavigation	ap	241
-spatial-navigation	8	SpatialNavigation	ap	241
+session	srun	task	phase	nrep	half
+archi	1	ArchiStandard	pa	156	1
+archi	2	ArchiSpatial	pa	252	1
+archi	3	ArchiSocial	pa	262	1
+archi	4	ArchiEmotional	pa	220	1
+archi	5	ArchiStandard	ap	156	2
+archi	6	ArchiSpatial	ap	252	2
+archi	7	ArchiSocial	ap	262	2
+archi	8	ArchiEmotional	ap	220	2
+hcp1	1	HcpEmotion	pa	139	1
+hcp1	2	HcpGambling	pa	188	1
+hcp1	3	HcpMotor	pa	185	1
+hcp1	4	HcpLanguage	pa	229	1
+hcp1	5	HcpEmotion	ap	139	2
+hcp1	6	HcpGambling	ap	188	2
+hcp1	7	HcpMotor	ap	185	2
+hcp1	8	HcpLanguage	ap	229	2
+hcp2	1	HcpRelational	pa	311	1
+hcp2	2	HcpSocial	pa	196	1
+hcp2	3	HcpWm	pa	303	1
+hcp2	4	HcpRelational	ap	311	2
+hcp2	5	HcpSocial	ap	196	2
+hcp2	6	HcpWm	ap	303	2
+rsvp-language	1	RSVPLanguage	pa	310	1
+rsvp-language	2	RSVPLanguage	pa	310	2
+rsvp-language	3	RSVPLanguage	pa	310	3
+rsvp-language	4	RSVPLanguage	ap	310	4
+rsvp-language	5	RSVPLanguage	ap	310	5
+rsvp-language	6	RSVPLanguage	ap	310	6
+mtt1	1	RestingState	pa	1120	n/a
+mtt1	2	RestingState	ap	1120	n/a
+mtt1	3	MTTWE	pa	394	1
+mtt1	4	MTTWE	pa	394	2
+mtt1	5	MTTWE	ap	394	3
+mtt2	1	RestingState	pa	1120	n/a
+mtt2	2	RestingState	ap	1120	n/a
+mtt2	3	MTTNS	pa	394	1
+mtt2	4	MTTNS	pa	394	2
+mtt2	5	MTTNS	ap	394	3
+preference	1	PreferenceFood	pa	248	1
+preference	2	PreferencePaintings	pa	248	1
+preference	3	PreferenceFaces	pa	248	1
+preference	4	PreferenceHouses	pa	248	1
+preference	5	PreferenceFood	ap	248	2
+preference	6	PreferencePaintings	ap	248	2
+preference	7	PreferenceFaces	ap	248	2
+preference	8	PreferenceHouses	ap	248	2
+tom	1	TheoryOfMind	pa	186	1
+tom	2	EmotionalPain	pa	156	1
+tom	3	PainMovie	pa	178	1
+tom	4	TheoryOfMind	ap	186	2
+tom	5	EmotionalPain	ap	156	2
+tom	6	PainMovie	ap	178	2
+enumeration	1	VSTM	pa	260	1
+enumeration	2	VSTM	ap	260	2
+enumeration	3	Enumeration	pa	490	1
+enumeration	4	Enumeration	ap	490	2
+enumeration	5	VSTM	pa	260	3
+enumeration	6	VSTM	ap	260	4
+self	1	Self	pa	359	1
+self	2	Self	pa	359	2
+self	3	Self	ap	359	3
+self	4	Self	ap	480	4
+self	5	Bang	pa	243	1
+clips4	1	Wedge	pa	165	1
+clips4	2	Wedge	pa	165	2
+clips4	3	Ring	pa	165	1
+clips4	4	Ring	ap	165	2
+clips4	5	Clock	ap	165	3
+clips4	6	Anti	ap	165	4
+lyon1	1	Moto	pa	359	1
+lyon1	2	MCSE	pa	177	1
+lyon1	3	MVEB	pa	203	1
+lyon1	4	MVIS	pa	178	1
+lyon1	5	Moto	ap	359	2
+lyon1	6	MCSE	ap	177	2
+lyon1	7	MVEB	ap	196	2
+lyon1	8	MVIS	ap	178	2
+lyon2	1	Lec1	pa	190	1
+lyon2	2	Lec2	pa	143	1
+lyon2	3	Audi	pa	347	1
+lyon2	4	Visu	pa	173	1
+lyon2	5	Lec1	ap	190	2
+lyon2	6	Lec2	ap	137	2
+lyon2	7	Audi	ap	347	2
+lyon2	8	Visu	ap	173	2
+mathlang	1	MathLanguage	pa	281	1
+mathlang	2	MathLanguage	ap	280	2
+mathlang	3	MathLanguage	pa	286	3
+mathlang	4	MathLanguage	ap	288	4
+mathlang	5	MathLanguage	pa	283	5
+mathlang	6	MathLanguage	ap	283	6
+mathlang	7	MathLanguage	pa	280	7
+spatial-navigation	1	SpatialNavigation	pa	151	1
+spatial-navigation	2	SpatialNavigation	pa	241	2
+spatial-navigation	3	SpatialNavigation	pa	241	3
+spatial-navigation	4	SpatialNavigation	pa	241	4
+spatial-navigation	5	SpatialNavigation	ap	241	5
+spatial-navigation	6	SpatialNavigation	ap	241	6
+spatial-navigation	7	SpatialNavigation	ap	241	7
+spatial-navigation	8	SpatialNavigation	ap	241	8
