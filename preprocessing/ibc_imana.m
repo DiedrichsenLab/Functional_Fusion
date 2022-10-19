@@ -68,7 +68,7 @@ subj_id = 1:length(subj_n);
 % session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
-session_names = {'self'}
+session_names = {'spatial-navigation'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -1331,6 +1331,46 @@ switch what
                 
             end % r (runs)
         end % s (sn)
+
+    case 'GLM:dmtx_unf' 
+        % Saves a copy of SPM.mat prepared to be loaded in python       
+        
+        sn       = subj_id; % subject list
+        ses = session_names; 
+        vararginoptions(varargin, {'sn', 'ses'})
+        
+        for s = sn
+            estderiv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s}, est_dir);
+            
+            sbj_number = str2double((extractAfter(subj_str{s},'sub-')));
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
+                '%02d')]));
+            
+            % loop over sessions
+            for smap = ses
+                % sesstag = sessnum{find(contains(subsess, smap))};
+                smapstr = replace(smap{1}, '-', '');
+                est_sess_dir = fullfile(estderiv_subj_dir, ...
+                    ['ses-' smapstr]);
+                
+                % get the list of runs for the current session
+                listing = dir(est_sess_dir);
+                listitems = {listing.name};
+                runtags = listitems(startsWith(listitems, 'run-'));
+                
+                for rn = 1:length(runtags)
+                    estimates_dir = fullfile(est_sess_dir, ...
+                        char(runtags(rn)));
+                    load(fullfile(estimates_dir, 'SPM.mat'));
+                    X = SPM.xX.xKXs.X;
+                    save(fullfile(estimates_dir, ...
+                        'design_matrix_unf.mat'), 'X');
+
+                end % rn (runtags)
+            end % ss (sessions)
+        end % s (sn)
+        
 
     case 'GLM:estimate'     % estimate beta values
         % Example usage: ibc_imana('GLM:estimate', 'sn', [1], 'ses', {'archi'})
