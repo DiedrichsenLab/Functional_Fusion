@@ -10,6 +10,7 @@ Last update: October 2022
 
 import os
 import glob
+import re
 import shutil
 
 from pathlib import Path
@@ -17,8 +18,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from import_data import (import_suit, import_anat, import_freesurfer,
-                         import_spm_designmatrix)
+from import_data import import_suit, import_anat, import_freesurfer
 
 import mat73
 import scipy.io as sio
@@ -61,6 +61,44 @@ def compute_mean_nifti(vol_paths):
     return mean_vol
 
 
+def import_spm_ibc_dmtx(sdir, ddir, sub_id, sess_id):
+    """
+    Imports the SPM design matrix for optimal contrast recombination
+    at a later stage. Because python gives some errors when trying to
+    read an SPM.mat structure, this requires the design matrix
+    information to be extracted from the SPM.mat before, using the
+    following matlab code (for every subject):
+ 
+    load('SPM.mat');
+    X = SPM.xX.xKXs.X
+    save design_matrix.mat X
+
+    See readme for output structure.
+    Args:
+        source_dir (_type_): Directory of the SPM GLM
+        dest_dir (_type_): Destination directory for that
+                           subject / session
+        sub_id (_type_): New name for the subject
+        sess_id (_type_): ID of the session to import
+    """
+
+    # Delete any pre-existing dm npy files from destination folder
+    if glob.glob(ddir + '/*.npy'):
+        for dmtx in glob.glob(ddir + '/*.npy'):
+            os.remove(dmtx)
+
+    # Create new files
+    for dm in glob.glob(sdir + '/run-*/design_matrix_unf.mat'):
+        X = sio.loadmat(dm)
+        DM = X['X']
+        runtag = re.match('.*/(.*)/design_matrix_unf.mat', dm).groups()[0]
+        fname = sub_id + '_ses-' + sess_id + '_' + runtag + \
+            '_designmatrix_unf.npy'
+        fpath = os.path.join(ddir, fname)
+        # Save current file in the path
+        np.save(fpath, DM)
+
+
 def import_ibc_anatderivatives(anat_type, source_basedir, destination_basedir,
                                participant):
     anat_name = f'{pt}_T1w'
@@ -99,7 +137,7 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
     info_path = os.path.join(source_dir, info_name)
 
     # Copy reginfo files
-    shutil.copyfile(info_path, os.path.join(dest_dir, info_name))
+    shutil.copyfile(info_path, os.path.join(destination_dir, info_name))
 
     # Copy beta files to derivatives folder and rename them
     copy_betas(info_path, participant, session_id, source_dir, destination_dir)
@@ -118,9 +156,8 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
         destination_dir, participant + '_ses-' + session_id + '_resms.nii')
     nb.save(mean_resms, mean_resms_path)
 
-    # Saves SPM.mat file as a npy file
-    import_spm_designmatrix(source_dir, destination_dir, participant,
-                            session_id)
+    # Saves SPM.mat file as a .npy file
+    import_spm_ibc_dmtx(source_dir, destination_dir, participant, session_id)
 
 
 # ######################### INPUTS ######################################
@@ -128,6 +165,11 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
 base_dir = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
 src_base_dir = os.path.join(base_dir, 'ibc')
 dest_base_dir = os.path.join(base_dir, 'FunctionalFusion/IBC')
+
+# sessions = ['archi', 'hcp1', 'hcp2', 'rsvp-language']
+# sessions = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+#             'clips4', 'lyon1', 'lyon2', 'mathlang',
+#             'spatial-navigation']
 sessions = ['archi']
 
 # ########################## RUN ########################################
@@ -135,8 +177,8 @@ sessions = ['archi']
 if __name__ == '__main__':
     T = pd.read_csv(os.path.join(dest_base_dir, 'participants.tsv'),
                     delimiter='\t')
-    # for pt in T.participant_id:
-    for pt in ['sub-01']:
+    for pt in T.participant_id:
+    # for pt in ['sub-01']:
 
         # # # --- Importing SUIT ---
         # import_ibc_anatderivatives('suit', src_base_dir, dest_base_dir, pt)
