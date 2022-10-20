@@ -22,10 +22,11 @@ import sys
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-
-if sys.platform == "win32":
+if not Path(base_dir).exists():
     base_dir = 'Y:\data\FunctionalFusion'
-    sys.path.append('../')
+if not Path(base_dir).exists():
+    raise(NameError('Could not find base_dir'))
+    
 
 hcp_dir = base_dir + '/HCP'
 data_dir = base_dir + '/MDTB'
@@ -180,6 +181,24 @@ def get_mdtb_parcel(do_plot=True):
         fig = suit.flatmap.plot(surf_data,render='plotly',overlay_type='label',cmap= MDTBcolors)
         fig.show()
     return data,MDTBcolors
+
+def plot_parcel_flat(data,suit_atlas,grid,map_space='SUIT', save_nii=False):
+    color_file = base_dir + '/Atlases/tpl-SUIT/atl-MDTB10.lut'
+    color_info = pd.read_csv(color_file, sep=' ', header=None)
+    MDTBcolors = np.zeros((11, 3))
+    MDTBcolors[1:11, :] = color_info.iloc[:, 1:4].to_numpy()
+    Nifti = suit_atlas.data_to_nifti(data)
+    surf_data = suit.flatmap.vol_to_surf(Nifti, stats='mode',space=map_space)
+
+    plt.figure
+    for i in range(surf_data.shape[1]):
+        plt.subplot(grid[0],grid[1],i+1)
+        suit.flatmap.plot(surf_data[:,i], render='matplotlib',cmap=MDTBcolors, new_figure=False)
+
+    if save_nii:
+        return Nifti
+    else:
+        plt.show()
 
 def _plot_maps(data, sub=None, stats='mode', render_type='plotly',
                overlay='label', color=None, save=None):
@@ -436,13 +455,11 @@ def learn_runs(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     return T, group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
 
 
-def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
+def learn_half(K=10, e='GME', max_iter=100, atlas='SUIT3', run_test=np.arange(58, 122),
                    runs=np.arange(1, 17), sub=None, do_plot=True):
-    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
 
-    Data_1, Xdesign_1, partV_1 = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s1')
-    Data_2, Xdesign_2, partV_2 = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
+    Data_1, Xdesign_1, partV_1 = get_sess_mdtb(atlas=atlas, ses_id='ses-s1')
+    Data_2, Xdesign_2, partV_2 = get_sess_mdtb(atlas=atlas, ses_id='ses-s2')
     Xdesign_1 = pt.tensor(Xdesign_1)
     Xdesign_2 = pt.tensor(Xdesign_2)
 
@@ -466,7 +483,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
         em_model = em.MixVMF(K=K, N=40, P=P, X=Xdesign_1, part_Vec=partV_1, uniform_kappa=True)
         em_model.initialize(Data_1)
     elif e == 'wVMF':
-        em_model = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_1, uniform_kappa=True)
+        em_model = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_1, part_vec=partV_1, uniform_kappa=True)
         em_model.initialize(Data_1)
     else:
         raise NameError('Unrecognized emission type.')
@@ -483,6 +500,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     # _plot_maps(pt.argmax(M.arrange.logpi, dim=0) + 1, color=True, render_type='matplotlib',
     #            save='group_prior.pdf')
     prior = pt.softmax(M.arrange.logpi, dim=0).unsqueeze(0).repeat(Data_1.shape[0], 1, 1)
+    par_learned = pt.argmax(M.arrange.logpi, dim=0) + 1
 
     # train emission model on sc2 by frezzing arrangement model learned from sc1
     if e == 'GME':
@@ -492,7 +510,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
         em_model2 = em.MixVMF(K=K, N=40, P=P, X=Xdesign_2, part_Vec=partV_2, uniform_kappa=True)
         em_model2.initialize(Data_2)
     elif e == 'wVMF':
-        em_model2 = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_2, uniform_kappa=True)
+        em_model2 = em.wMixVMF(K=K, N=40, P=P, X=Xdesign_2, part_vec=partV_2, uniform_kappa=True)
         em_model2.initialize(Data_2)
     else:
         raise NameError('Unrecognized emission type.')
@@ -531,7 +549,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     elif e == 'VMF':
         U_hat_em = M.emission.Estep(Y=Data_1)
     elif e == 'wVMF':
-        U_hat_em = M.emission.Estep(Y=Data_1, pure_compute=True)
+        U_hat_em = M.emission.Estep(Y=Data_1)
     else:
         raise NameError('Unrecognized emission type.')
 
@@ -581,8 +599,7 @@ def learn_half(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
         D2['subject'] = [sub + 1]
         T = pd.concat([T, pd.DataFrame(D2)])
 
-    return T, group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
-
+    return T, group_baseline, lower_bound, par_learned
 
 def figure_indiv_group():
     D = pd.read_csv('scripts/indiv_group_err.csv')
@@ -639,55 +656,18 @@ def _plot_vmf_wvmf(T, T2):
 
 
 if __name__ == "__main__":
-    # Data_HCP = get_hcp_data(ses_id=['ses-01', 'ses-02'], range=np.arange(77, 100), save=True)
-    # data = get_hcp_data_from_csv(tessel=162, ses_id=['ses-01'], range=[0])
-    # data = data[0, :, :].cpu().detach().numpy()
-    # _plot_maps(data, sub=1, stats='nanmean', overlay='func', color=None, save=None)
 
-    T, gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_half(K=10, e='VMF',
-                                                                          runs=np.arange(1, 17))
-    T.to_csv('coserrs_wVMF.csv')
-
-    A = pt.load('D:/data/nips_2022_supp/uhat_complete_all.pt')[15]
-    parcel = pt.argmax(A, dim=1) + 1
-    for i in range(parcel.shape[0]):
-        outname = f'MDTB10_16runs_sub-{i}.nii'
-        _make_maps(parcel, sub=i, save=True, fname=outname)
-
-    T, gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_runs(K=10, e='VMF',
-                                                                          runs=np.arange(1, 17))
-    df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1)), dim=0)
-    df1 = pd.DataFrame(df1).to_csv('coserrs_gb_lb_VMF.csv')
-    T.to_csv('coserrs_VMF.csv')
-    # pt.save(pt.stack(uhat_em_all), 'uhat_em_all.pt')
-    # pt.save(pt.stack(uhat_complete_all), 'uhat_complete_all.pt')
-
-    # plt.figure()
-    # x = np.arange(len(np.arange(1, 17)))
-    # plt.errorbar(x, pt.stack(cos_em).mean(dim=1),
-    #          yerr=pt.stack(cos_em).std(dim=1)/np.sqrt(24), capsize=10, label='emission only')
-    # plt.errorbar(x, pt.stack(cos_complete).mean(dim=1),
-    #          yerr=pt.stack(cos_complete).std(dim=1)/np.sqrt(24), capsize=10, label='emi + prior')
-    # plt.axhline(y=lb.mean(), color='r', linestyle=':', label='lower bound')
-    # plt.axhline(y=gbase.mean(), color='k', linestyle=':', label='goup prior')
-    # plt.xticks(np.arange(16))
-    # plt.xlabel('Inferred on individual runs')
-    # plt.ylabel('Adjusted cosine error')
-    # plt.ylim(0.2, 0.32)
-    # plt.legend(loc='upper right')
-    # plt.title('test on session 2 - all runs')
-    # plt.savefig('results.eps', format='eps')
-    # plt.show()
-
-    # # Save as dataframe properly
-    # nsub_list = np.arange(24)
-    # labels_col = ['sub_' + f'{x+1:02}' for x in nsub_list]
+    # A = pt.load('D:/data/nips_2022_supp/uhat_complete_all.pt')[15]
+    # parcel = pt.argmax(A, dim=1) + 1
+    # for i in range(parcel.shape[0]):
+    #     outname = f'MDTB10_16runs_sub-{i}.nii'
+    #     _make_maps(parcel, sub=i, save=True, fname=outname)
     #
-    # runs = np.arange(1, 17)
-    # labels_row = ['group map', 'noise_floor'] + ['dataOnly_run_' + f'{x:02}' for x in runs] + ['data+prior_run_' + f'{x:02}' for x in runs]
-    # data.columns = labels_col
-    # data.index = labels_row
-    # data.to_csv("cosine_err.csv")
-    # print(data)
-    figure_indiv_group()
+    # T, gbase, lb, cos_em, cos_complete, uhat_em_all, uhat_complete_all = learn_runs(K=10, e='VMF',
+    #                                                                       runs=np.arange(1, 17))
+    # df1 = pt.cat((gbase.reshape(1,-1),lb.reshape(1,-1)), dim=0)
+    # df1 = pd.DataFrame(df1).to_csv('coserrs_gb_lb_VMF.csv')
+    # T.to_csv('coserrs_VMF.csv')
+    #
+    # figure_indiv_group()
     pass
