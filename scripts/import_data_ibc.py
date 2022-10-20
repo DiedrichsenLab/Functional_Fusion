@@ -129,12 +129,12 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
     destination_dir = '{}/derivatives/{}/estimates/ses-{}'.format(
         destination_basedir, participant, session_id)
 
-    # # Create destination file if it does not exist
-    # Path(destination_dir).mkdir(parents=True, exist_ok=True)
+    # Create destination file if it does not exist
+    Path(destination_dir).mkdir(parents=True, exist_ok=True)
 
-    # # Clean destination directory
-    # delete_old(destination_dir, 'tsv')
-    # delete_old(destination_dir, 'nii')
+    # Clean destination directory
+    delete_old(destination_dir, 'tsv')
+    delete_old(destination_dir, 'nii')
     delete_old(destination_dir, 'npy')
 
     # Reginfo file of the session
