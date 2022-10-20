@@ -5,9 +5,6 @@ from pathlib import Path
 import mat73
 import numpy as np
 import sys
-# Discuss: This is causing trouble in compatibility
-# sys.path.append(
-#     '/Users/callithrix/Documents/Projects/Functional_Fusion/code/shared/Functional_Fusion/') # can be removed before push, but currently that is the best way to import atlas_map for me
 import atlas_map as am
 from dataset import DataSetPontine
 import nibabel as nb
@@ -18,14 +15,19 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 
-data_dir = base_dir + '/Pontine7T'
+data_dir = base_dir + '/Pontine'
 atlas_dir = base_dir + '/Atlases'
 
-def extract_pontine_suit(ses_id='ses-01',type='taskHalf',atlas='SUIT3'):
+
+def extract_pontine_group(type='TaskHalf', atlas='SUIT3', info_column='task_name'):
+    p7_dataset = DataSetPontine(data_dir)
+    p7_dataset.group_average_suit(type, atlas, info_column)
+
+def extract_pontine_suit(ses_id='ses-01',type='TaskHalf',atlas='SUIT3'):
     p7_dataset = DataSetPontine(data_dir)
     p7_dataset.extract_all_suit(ses_id,type,atlas)
 
-def extract_pontine_fs32k(ses_id='ses-01',type='taskHalf'):
+def extract_pontine_fs32k(ses_id='ses-01',type='TaskHalf'):
     p7_dataset = DataSetPontine(data_dir)
     p7_dataset.extract_all_fs32k(ses_id,type)
 
@@ -36,8 +38,8 @@ def show_pontine_suit(subj,sess,cond):
     T = pontine_dataset.get_participants()
     s = T.participant_id[subj]
     ses = f'ses-{sess:02d}'
-    C = nb.load(pontine_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_taskHalf.dscalar.nii')
-    D = pd.read_csv(pontine_dataset.data_dir.format(s) + f'/{s}_{ses}_info-taskHalf.tsv',sep='\t')
+    C = nb.load(pontine_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_TaskHalf.dscalar.nii')
+    D = pd.read_csv(pontine_dataset.data_dir.format(s) + f'/{s}_{ses}_info-TaskHalf.tsv',sep='\t')
     X = C.get_fdata()
     Nifti = suit_atlas.data_to_nifti(X)
     surf_data = suit.flatmap.vol_to_surf(Nifti)
@@ -47,5 +49,13 @@ def show_pontine_suit(subj,sess,cond):
     pass
 
 if __name__ == "__main__":
-    extract_pontine_suit(ses_id='ses-01',type='taskHalf')
-    extract_pontine_fs32k(ses_id='ses-01',type='taskHalf')
+    extract_pontine_group(type='TaskHalf', atlas='MNISymC3')
+    # extract_pontine_fs32k(ses_id='ses-01',type='TaskHalf')
+    # extract_mdtb_suit(ses_id='ses-s1', type='CondHalf', atlas='MNISymC3')
+    # extract_mdtb_suit(ses_id='ses-s2', type='CondHalf', atlas='MNISymC3')
+    # extract_mdtb_suit(ses_id='ses-s1',type='CondAll')
+    # extract_mdtb_suit(ses_id='ses-s2',type='CondAll')
+    # extract_mdtb_fs32k(ses_id='ses-s1',type='CondAll')
+    # extract_mdtb_fs32k(ses_id='ses-s2',type='condHalf')
+    # show_mdtb_suit('all',1,0)
+    pass

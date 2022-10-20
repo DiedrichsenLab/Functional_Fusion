@@ -57,18 +57,18 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
 end
 subj_id = 1:length(subj_n);
 
-% session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
+session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
-session_names = {'preference'}
+% session_names = {'spatial-navigation'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
@@ -878,6 +878,10 @@ switch what
                 if  strcmp(smapstr, 'spatialnavigation')
                     runs(1)= []
                 end
+  
+%                 if strcmp(task,'Self')
+%                     Regressors = {};
+%                 end
                 
                 % loop over runs
                 for rn = 1:length(runs)
@@ -919,7 +923,7 @@ switch what
                     % get the path to the tsv file
                     tsv_file = fullfile(raw_sess_dir, sprintf(...
                         '%s_ses-%s_run-%02d_events.tsv', ...
-                        subj_str{s}, smapstr, run));
+                        subj_str{s}, smapstr, run))
                     % get the tsvfile for the current run
                     D = struct([]); 
                     D = tdfread(tsv_file,'\t');
@@ -940,6 +944,28 @@ switch what
                     idxs3 = [];
                     idxs4 = [];
                     idxs5 = [];
+                    
+                    % Extract the scores to build the parametric ...
+                    % modulators for Preference Tasks
+                    if strcmp(task,'PreferenceFood') || ...
+                            strcmp(task,'PreferencePaintings') || ...
+                            strcmp(task,'PreferenceFaces') || ...
+                            strcmp(task,'PreferenceHouses')
+                        
+                        trial_mods = {};
+                        if isa(D.score, 'double')
+                            trial_mods = num2cell(D.score);
+                        else
+                            for t = 1:length(D.score)
+                                if strcmp(D.score(t, 1:3), 'n/a')
+                                    trial_mods{t, 1} = NaN;
+                                else
+                                    trial_mods{t, 1} = ...
+                                        str2num(D.score(t, 1:3)); 
+                                end
+                            end
+                        end
+                    end
                     % Adjustments in some design matrices
                     if strcmp(task, 'ArchiSocial')
                         idxs = find(~contains(trial_names, 'pourquoi'));
@@ -961,8 +987,15 @@ switch what
                         idxs2 = find(contains(trial_names, ...
                             'simple_sentence'));
                         trial_names(idxs2) = {'simple_sentence'};
-                    elseif strcmp(task, 'VSTM1') || ...
-                            strcmp(task, 'VSTM2') || ...
+                    elseif strcmp(task,'PreferenceFood') || ...
+                            strcmp(task,'PreferencePaintings') || ...
+                            strcmp(task,'PreferenceFaces') || ...
+                            strcmp(task,'PreferenceHouses')
+                        idxs = find(~contains(trial_names, '_too-slow'));
+                        trial_names = trial_names(idxs);
+                        trial_onsets = trial_onsets(idxs);
+                        trial_durations = trial_durations(idxs);
+                    elseif strcmp(task, 'VSTM') || ...
                             strcmp(task, 'Enumeration')
                         idxs = find(contains(trial_names, 'memorization'));
                         for i = 1:length(idxs)
@@ -970,10 +1003,16 @@ switch what
                                 trial_names(idxs(i)), 'memorization', ...
                                 'response');
                         end
-                    elseif strcmp(task,'Self1') || ...
-                            strcmp(task,'Self2') || ...
-                            strcmp(task,'Self3') || ...
-                            strcmp(task,'Self4')
+                        for k = 1:length(trial_names)
+                            if strcmp(task, 'VSTM')
+                                trial_names(k) = strcat('vstm_', ...
+                                    trial_names(k));
+                            else
+                                trial_names(k) = strcat('enumeration_', ...
+                                    trial_names(k));
+                            end
+                        end
+                    elseif strcmp(task,'Self')
                         idxs1 = find(contains(trial_names, ...
                             'self_relevance_with_response'));
                         trial_names(idxs1) = {'encode_self'};                        
@@ -1162,7 +1201,7 @@ switch what
                     names = unique(trial_names).';
                     for u = 1:length(names)
                         indexes = [];
-                        indexes = find(contains(trial_names, names{u}));
+                        indexes = find(strcmp(trial_names, names{u}));
                         for idx = 1:length(indexes)
                             onsets{u}(idx) = trial_onsets{indexes(idx)};
                             durations{u}(idx) = ...
@@ -1170,21 +1209,71 @@ switch what
                         end
                     end
                     
-                    if strcmp(task, 'PreferencePaintings')
-                        disp('yeah!')
+                    if strcmp(smapstr, 'preference')
+                        
+                        % Remove NaNs from cell
+                        trial_mods(cellfun(@(trial_mods) any(isnan(...
+                            trial_mods)), trial_mods)) = [];
+                        % linear = repnan(cell2mat(trial_mods));
+                        % Mean center the modulator of the amplitude
+                        % In the present case, these are the scores
+                        trial_mods = cell2mat(trial_mods);
+                        mean_linear = mean(trial_mods);
+                        linear = trial_mods - mean_linear;
+
+                        % Define parametric modulators                       
+                        pmod = struct('name', {''}, 'param', {}, ...
+                            'poly', {});
+                        pmod(1).name{1} = 'linear';
+                        pmod(1).param{1} = linear;
+                        pmod(1).poly{1} = 2; % this will create both the linear and the quadratic terms of the condition #1
+                        
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        
+%                         % This snippet of code computes explicitly the
+%                         % second order of the polynomial modulator 
+%                         % (i.e. the quadratic term)
+%                         
+%                         quadratic = linear.^2;
+%                         mean_quadratic = mean(quadratic);
+%                         quadratic = quadratic - mean_quadratic;
+%                         quadratic = quadratic - (...
+%                             linear * dot(quadratic, linear))/dot(...
+%                             linear, linear);
+%                         
+%                         % using this, we have then to create the modulator
+%                         % and set poly to 1
+%                         
+%                         pmod(1).name{2} = 'quadratic';
+%                         pmod(1).param{2} = quadratic;
+%                         pmod(1).poly{2} = 1;
+                        
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                        save(...
+                            sprintf(...
+                            '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
+                            subj_str{s}, smapstr, run), ...
+                            'names', 'onsets', 'durations', 'pmod');
+                    else
+                        save(...
+                            sprintf(...
+                            '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
+                            subj_str{s}, smapstr, run), ...
+                            'names', 'onsets', 'durations'); 
                     end
-                    
-                    save(sprintf(...
-                        '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
-                        subj_str{s}, smapstr, run), ...
-                        'names', 'onsets', 'durations');                                          
+                                       
                     J.sess.multi = {sprintf(...
                         '/localscratch/%s_ses-%s_run-%02d_events.mat', ...
                         subj_str{s}, smapstr, run)};
                     
                     J.sess.regress   = struct('name', {}, 'val', {});
                     J.sess.multi_reg = {''};
-                    J.sess.hpf       = hrf_cutoff; % set to 0'inf' if using J.cvi = 'FAST'. SPM HPF not applied                  
+                    J.sess.hpf       = hrf_cutoff; % set to 0'inf' if using J.cvi = 'FAST'. SPM HPF not applied
+
+%                     if strcmp(task,'Self')
+%                         Regressors{end+1} = names;
+%                     end
 
                     spm_rwls_run_fmri_spec(J);
                     
@@ -1194,7 +1283,14 @@ switch what
                     end
 
                 end % run (runs of current session)                
-            end % ss (session)          
+            end % ss (session)
+
+%         if strcmp(task,'Self')
+%             T = cell2table(Regressors)
+%             % Write the table to a TSV file
+%             writetable(T, 'newfile.csv', 'Delimiter', '\t');
+%         end
+        
         end % sn (subject)
 
     case 'GLM:check_design' % checking the design matrix
@@ -1235,6 +1331,49 @@ switch what
                 
             end % r (runs)
         end % s (sn)
+
+    case 'GLM:dmtx_unf' 
+        % Saves a copy of SPM.mat prepared to be loaded in python       
+        
+        sn       = subj_id; % subject list
+        ses = session_names; 
+        vararginoptions(varargin, {'sn', 'ses'})
+        
+        for s = sn
+            estderiv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s}, est_dir);
+            
+            sbj_number = str2double((extractAfter(subj_str{s},'sub-')));
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
+                '%02d')]));
+            
+            % loop over sessions
+            for smap = ses
+                % sesstag = sessnum{find(contains(subsess, smap))};
+                smapstr = replace(smap{1}, '-', '');
+                est_sess_dir = fullfile(estderiv_subj_dir, ...
+                    ['ses-' smapstr]);
+                
+                % get the list of runs for the current session
+                listing = dir(est_sess_dir);
+                listitems = {listing.name};
+                runtags = listitems(startsWith(listitems, 'run-'));
+                
+                for rn = 1:length(runtags)
+                    estimates_dir = fullfile(est_sess_dir, ...
+                        char(runtags(rn)));
+                    if any(size(dir([estimates_dir '/design_matrix_unf.mat']),1))
+                        delete([estimates_dir '/design_matrix_unf.mat'])
+                    end
+                    load(fullfile(estimates_dir, 'SPM.mat'));
+                    X = SPM.xX.xKXs.X;
+                    save(fullfile(estimates_dir, ...
+                        'design_matrix.mat'), 'X');
+
+                end % rn (runtags)
+            end % ss (sessions)
+        end % s (sn)
+        
 
     case 'GLM:estimate'     % estimate beta values
         % Example usage: ibc_imana('GLM:estimate', 'sn', [1], 'ses', {'archi'})

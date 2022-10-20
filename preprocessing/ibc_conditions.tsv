@@ -1,308 +1,227 @@
-task	condition	regressor
-ArchiStandard	audio_computation	1
-ArchiStandard	audio_left_button_press	2
-ArchiStandard	audio_right_button_press	3
-ArchiStandard	audio_sentence	4
-ArchiStandard	horizontal_checkerboard	5
-ArchiStandard	vertical_checkerboard	6
-ArchiStandard	video_computation	7
-ArchiStandard	video_left_button_press	8
-ArchiStandard	video_right_button_press	9
-ArchiStandard	video_sentence	10
-ArchiSpatial	object_grasp	1
-ArchiSpatial	object_orientation	2
-ArchiSpatial	rotation_hand	3
-ArchiSpatial	rotation_side	4
-ArchiSpatial	saccades	5
-ArchiSocial	false_belief_audio	1
-ArchiSocial	false_belief_video	2
-ArchiSocial	mechanistic_audio	3
-ArchiSocial	mechanistic_video	4
-ArchiSocial	non_speech_sound	5
-ArchiSocial	speech_sound	6
-ArchiSocial	triangle_mental	7
-ArchiSocial	triangle_random	8
-ArchiEmotional	expression_control	1
-ArchiEmotional	expression_gender	2
-ArchiEmotional	expression_intention	3
-ArchiEmotional	face_control	4
-ArchiEmotional	face_gender	5
-ArchiEmotional	face_trusty	6
-HcpEmotion	face	1
-HcpEmotion	shape	2
-HcpGambling	neutral	1
-HcpGambling	punishment	2
-HcpGambling	reward	3
-HcpMotor	cue	1
-HcpMotor	left_foot	2
-HcpMotor	left_hand	3
-HcpMotor	right_foot	4
-HcpMotor	right_hand	5
-HcpMotor	tongue	6
-HcpLanguage	math	1
-HcpLanguage	story	2
-HcpRelational	control	1
-HcpRelational	relational	2
-HcpSocial	mental	1
-HcpSocial	random	2
-HcpWm	0back_body	1
-HcpWm	0back_face	2
-HcpWm	0back_place	3
-HcpWm	0back_tools	4
-HcpWm	2back_body	5
-HcpWm	2back_face	6
-HcpWm	2back_place	7
-HcpWm	2back_tools	8
-RSVPLanguage	complex_sentence	1
-RSVPLanguage	consonant_string	2
-RSVPLanguage	jabberwocky	3
-RSVPLanguage	probe	4
-RSVPLanguage	pseudoword_list	5
-RSVPLanguage	simple_sentence	6
-RSVPLanguage	word_list	7
-MTTWE	we_after_close_event	1
-MTTWE	we_after_far_event	2
-MTTWE	we_all_event_response	3
-MTTWE	we_all_reference	4
-MTTWE	we_all_space_cue	5
-MTTWE	we_all_time_cue	6
-MTTWE	we_before_close_event	7
-MTTWE	we_before_far_event	8
-MTTWE	we_eastside_close_event	9
-MTTWE	we_eastside_far_event	10
-MTTWE	we_westside_close_event	11
-MTTWE	we_westside_far_event	12
-MTTNS	sn_after_close_event	1
-MTTNS	sn_after_far_event	2
-MTTNS	sn_all_event_response	3
-MTTNS	sn_all_reference	4
-MTTNS	sn_all_space_cue	5
-MTTNS	sn_all_time_cue	6
-MTTNS	sn_before_close_event	7
-MTTNS	sn_before_far_event	8
-MTTNS	sn_eastside_close_event	9
-MTTNS	sn_eastside_far_event	10
-MTTNS	sn_westside_close_event	11
-MTTNS	sn_westside_far_event	12
-PreferenceFood	food_constant	1
-PreferenceFood	food_linear	2
-PreferenceFood	food_quadratic	3
-PreferencePaintings	painting_constant	1
-PreferencePaintings	painting_linear	2
-PreferencePaintings	painting_quadratic	3
-PreferenceFaces	face_constant	1
-PreferenceFaces	face_linear	2
-PreferenceFaces	face_quadratic	3
-PreferenceHouses	house_constant	1
-PreferenceHouses	house_linear	2
-PreferenceHouses	house_quadratic	3
-TheoryOfMind	belief	1
-TheoryOfMind	photo	2
-EmotionalPain	emotional_pain	1
-EmotionalPain	physical_pain	2
-PainMovie	mental	1
-PainMovie	pain	2
-VSTM1	response_num_1	1
-VSTM1	response_num_2	2
-VSTM1	response_num_3	3
-VSTM1	response_num_4	4
-VSTM1	response_num_5	5
-VSTM1	response_num_6	6
-VSTM2	response_num_1	1
-VSTM2	response_num_2	2
-VSTM2	response_num_3	3
-VSTM2	response_num_4	4
-VSTM2	response_num_5	5
-VSTM2	response_num_6	6
-Enumeration	response_num_1	1
-Enumeration	response_num_2	2
-Enumeration	response_num_3	3
-Enumeration	response_num_4	4
-Enumeration	response_num_5	5
-Enumeration	response_num_6	6
-Enumeration	response_num_7	7
-Enumeration	response_num_8	8
-Self1	correct_rejection	1
-Self1	encode_other	2
-Self1	encode_other_no_response	3
-Self1	encode_self	4
-Self1	encode_self_no_response	5
-Self1	false_alarm	6
-Self1	instructions	7
-Self1	new_no_response	8
-Self1	recognition_other_hit	9
-Self1	recognition_other_miss	10
-Self1	recognition_other_no_response	11
-Self1	recognition_self_hit	12
-Self1	recognition_self_miss	13
-Self1	recognition_self_no_response	14
-Self2	correct_rejection	1
-Self2	encode_other	2
-Self2	encode_other_no_response	3
-Self2	encode_self	4
-Self2	encode_self_no_response	5
-Self2	false_alarm	6
-Self2	instructions	7
-Self2	new_no_response	8
-Self2	recognition_other_hit	9
-Self2	recognition_other_miss	10
-Self2	recognition_other_no_response	11
-Self2	recognition_self_hit	12
-Self2	recognition_self_miss	13
-Self2	recognition_self_no_response	14
-Self3	correct_rejection	1
-Self3	encode_other	2
-Self3	encode_other_no_response	3
-Self3	encode_self	4
-Self3	encode_self_no_response	5
-Self3	false_alarm	6
-Self3	instructions	7
-Self3	new_no_response	8
-Self3	recognition_other_hit	9
-Self3	recognition_other_miss	10
-Self3	recognition_other_no_response	11
-Self3	recognition_self_hit	12
-Self3	recognition_self_miss	13
-Self3	recognition_self_no_response	14
-Self4	correct_rejection	1
-Self4	encode_other	2
-Self4	encode_other_no_response	3
-Self4	encode_self	4
-Self4	encode_self_no_response	5
-Self4	false_alarm	6
-Self4	instructions	7
-Self4	new_no_response	8
-Self4	recognition_other_hit	9
-Self4	recognition_other_miss	10
-Self4	recognition_other_no_response	11
-Self4	recognition_self_hit	12
-Self4	recognition_self_miss	13
-Self4	recognition_self_no_response	14
-Bang	no_talk	1
-Bang	talk	2
-WedgeClock	left_meridian	1
-WedgeClock	lower_left	2
-WedgeClock	lower_meridian	3
-WedgeClock	lower_right	4
-WedgeClock	right_meridian	5
-WedgeClock	upper_left	6
-WedgeClock	upper_meridian	7
-WedgeClock	upper_right	8
-WedgeAnti	left_meridian	1
-WedgeAnti	lower_left	2
-WedgeAnti	lower_meridian	3
-WedgeAnti	lower_right	4
-WedgeAnti	right_meridian	5
-WedgeAnti	upper_left	6
-WedgeAnti	upper_meridian	7
-WedgeAnti	upper_right	8
-ExpRing	foveal	1
-ExpRing	middle	2
-ExpRing	peripheral	3
-ContRing	foveal	1
-ContRing	middle	2
-ContRing	peripheral	3
-Lec2	attend	1
-Lec2	unattend	2
-Audi	alphabet	1
-Audi	animals	2
-Audi	cough	3
-Audi	environment	4
-Audi	human	5
-Audi	laugh	6
-Audi	music	7
-Audi	reverse	8
-Audi	silence	9
-Audi	speech	10
-Audi	suomi	11
-Audi	tear	12
-Audi	yawn	13
-Visu	animal	1
-Visu	characters	2
-Visu	face	3
-Visu	house	4
-Visu	pseudoword	5
-Visu	scene	6
-Visu	scrambled	7
-Visu	target_fruit	8
-Visu	tool	9
-Lec1	pseudoword	1
-Lec1	random_string	2
-Lec1	word	3
-MVEB	2_letters_different	1
-MVEB	4_letters_different	2
-MVEB	6_letters_different	3
-MVEB	2_letters_same	4
-MVEB	4_letters_same	5
-MVEB	6_letters_same	6
-MVEB	p_startup	7
-MVEB	response	8
-MVIS	2_dots	1
-MVIS	2_dots_control	2
-MVIS	4_dots	3
-MVIS	4_dots_control	4
-MVIS	6_dots	5
-MVIS	6_dots_control	6
-MVIS	p_startup	7
-MVIS	response	8
-Moto	finger_left	1
-Moto	finger_right	2
-Moto	fixation_left	3
-Moto	fixation_right	4
-Moto	foot_left	5
-Moto	foot_right	6
-Moto	hand_left	7
-Moto	hand_right	8
-Moto	instructions	9
-Moto	saccade_left	10
-Moto	saccade_right	11
-Moto	tongue_left	12
-Moto	tongue_right	13
-MCSE	high_salience_left	1
-MCSE	high_salience_right	2
-MCSE	low_salience_left	3
-MCSE	low_salience_right	4
-Audio	mean-silence	1
-Audio	animal-silence	2
-Audio	music-silence	3
-Audio	nature-silence	4
-Audio	speech-silence	5
-Audio	voice-silence	6
-MathLanguage1	arithmetic_fact_auditory	1
-MathLanguage1	arithmetic_fact_visual	2
-MathLanguage1	arithmetic_principle_auditory	3
-MathLanguage1	arithmetic_principle_visual	4
-MathLanguage1	colorlessg_auditory	5
-MathLanguage1	colorlessg_visual	6
-MathLanguage1	context_auditory	7
-MathLanguage1	context_visual	8
-MathLanguage1	general_auditory	9
-MathLanguage1	general_visual	10
-MathLanguage1	geometry_fact_auditory	11
-MathLanguage1	geometry_fact_visual	12
-MathLanguage1	theory_of_mind_auditory	13
-MathLanguage1	theory_of_mind_visual	14
-MathLanguage1	wordlist_auditory	15
-MathLanguage1	wordlist_visual	16
-MathLanguage2	arithmetic_fact_auditory	1
-MathLanguage2	arithmetic_fact_visual	2
-MathLanguage2	arithmetic_principle_auditory	3
-MathLanguage2	arithmetic_principle_visual	4
-MathLanguage2	colorlessg_auditory	5
-MathLanguage2	colorlessg_visual	6
-MathLanguage2	context_auditory	7
-MathLanguage2	context_visual	8
-MathLanguage2	general_auditory	9
-MathLanguage2	general_visual	10
-MathLanguage2	geometry_fact_auditory	11
-MathLanguage2	geometry_fact_visual	12
-MathLanguage2	theory_of_mind_auditory	13
-MathLanguage2	theory_of_mind_visual	14
-MathLanguage2	wordlist_auditory	15
-MathLanguage2	wordlist_visual	16
-SpatialNavigation	control	1
-SpatialNavigation	experimental	2
-SpatialNavigation	intersection	3
-SpatialNavigation	navigation	4
-SpatialNavigation	pointing_control	5
-SpatialNavigation	pointing_experimental	6
+task	condition	regnum	regid	reginterest
+ArchiStandard	audio_computation	1	1	1
+ArchiStandard	audio_left_hand	2	2	1
+ArchiStandard	audio_right_hand	3	3	1
+ArchiStandard	audio_sentence	4	4	1
+ArchiStandard	horizontal_checkerboard	5	5	1
+ArchiStandard	vertical_checkerboard	6	6	1
+ArchiStandard	video_computation	7	7	1
+ArchiStandard	video_left_hand	8	8	1
+ArchiStandard	video_right_hand	9	9	1
+ArchiStandard	video_sentence	10	10	1
+ArchiSpatial	object_grasp	11	1	1
+ArchiSpatial	object_orientation	12	2	1
+ArchiSpatial	rotation_hand	13	3	1
+ArchiSpatial	rotation_side	14	4	1
+ArchiSpatial	saccade	15	5	1
+ArchiSocial	false_belief_audio	16	1	1
+ArchiSocial	false_belief_video	17	2	1
+ArchiSocial	mechanistic_audio	18	3	1
+ArchiSocial	mechanistic_video	19	4	1
+ArchiSocial	non_speech	20	5	1
+ArchiSocial	speech	21	6	1
+ArchiSocial	triangle_intention	22	7	1
+ArchiSocial	triangle_random	23	8	1
+ArchiEmotional	expression_control	24	1	1
+ArchiEmotional	expression_gender	25	2	1
+ArchiEmotional	expression_intention	26	3	1
+ArchiEmotional	face_control	27	4	1
+ArchiEmotional	face_gender	28	5	1
+ArchiEmotional	face_trusty	29	6	1
+HcpEmotion	face	1	1	1
+HcpEmotion	shape	2	2	1
+HcpGambling	neutral	3	1	1
+HcpGambling	punishment	4	2	1
+HcpGambling	reward	5	3	1
+HcpMotor	cue	6	1	1
+HcpMotor	left_foot	7	2	1
+HcpMotor	left_hand	8	3	1
+HcpMotor	right_foot	9	4	1
+HcpMotor	right_hand	10	5	1
+HcpMotor	tongue	11	6	1
+HcpLanguage	math	12	1	1
+HcpLanguage	story	13	2	1
+HcpRelational	control	1	1	1
+HcpRelational	relational	2	2	1
+HcpSocial	mental	3	1	1
+HcpSocial	random	4	2	1
+HcpWm	0back_body	5	1	1
+HcpWm	0back_face	6	2	1
+HcpWm	0back_place	7	3	1
+HcpWm	0back_tools	8	4	1
+HcpWm	2back_body	9	5	1
+HcpWm	2back_face	10	6	1
+HcpWm	2back_place	11	7	1
+HcpWm	2back_tools	12	8	1
+RSVPLanguage	complex_sentence	1	1	1
+RSVPLanguage	consonant_string	2	2	1
+RSVPLanguage	jabberwocky	3	3	1
+RSVPLanguage	probe	4	4	1
+RSVPLanguage	pseudoword_list	5	5	1
+RSVPLanguage	simple_sentence	6	6	1
+RSVPLanguage	word_list	7	7	1
+MTTWE	we_after_close_event	1	1	1
+MTTWE	we_after_far_event	2	2	1
+MTTWE	we_all_event_response	3	3	1
+MTTWE	we_all_reference	4	4	1
+MTTWE	we_all_space_cue	5	5	1
+MTTWE	we_all_time_cue	6	6	1
+MTTWE	we_before_close_event	7	7	1
+MTTWE	we_before_far_event	8	8	1
+MTTWE	we_eastside_close_event	9	9	1
+MTTWE	we_eastside_far_event	10	10	1
+MTTWE	we_westside_close_event	11	11	1
+MTTWE	we_westside_far_event	12	12	1
+MTTNS	sn_after_close_event	1	1	1
+MTTNS	sn_after_far_event	2	2	1
+MTTNS	sn_all_event_response	3	3	1
+MTTNS	sn_all_reference	4	4	1
+MTTNS	sn_all_space_cue	5	5	1
+MTTNS	sn_all_time_cue	6	6	1
+MTTNS	sn_before_close_event	7	7	1
+MTTNS	sn_before_far_event	8	8	1
+MTTNS	sn_northside_close_event	9	9	1
+MTTNS	sn_northside_far_event	10	10	1
+MTTNS	sn_southside_close_event	11	11	1
+MTTNS	sn_southside_far_event	12	12	1
+PreferenceFood	food_constant	1	1	1
+PreferenceFood	food_linear	2	2	0
+PreferenceFood	food_quadratic	3	3	0
+PreferencePaintings	painting_constant	4	1	1
+PreferencePaintings	painting_linear	5	2	0
+PreferencePaintings	painting_quadratic	6	3	0
+PreferenceFaces	face_constant	7	1	1
+PreferenceFaces	face_linear	8	2	0
+PreferenceFaces	face_quadratic	9	3	0
+PreferenceHouses	house_constant	10	1	1
+PreferenceHouses	house_linear	11	2	0
+PreferenceHouses	house_quadratic	12	3	0
+TheoryOfMind	belief	1	1	1
+TheoryOfMind	photo	2	2	1
+EmotionalPain	emotional_pain	3	1	1
+EmotionalPain	physical_pain	4	2	1
+PainMovie	mental	5	1	1
+PainMovie	pain	6	2	1
+VSTM	vstm_response_num_1	1	1	1
+VSTM	vstm_response_num_2	2	2	1
+VSTM	vstm_response_num_3	3	3	1
+VSTM	vstm_response_num_4	4	4	1
+VSTM	vstm_response_num_5	5	5	1
+VSTM	vstm_response_num_6	6	6	1
+Enumeration	enumeration_response_num_1	7	1	1
+Enumeration	enumeration_response_num_2	8	2	1
+Enumeration	enumeration_response_num_3	9	3	1
+Enumeration	enumeration_response_num_4	10	4	1
+Enumeration	enumeration_response_num_5	11	5	1
+Enumeration	enumeration_response_num_6	12	6	1
+Enumeration	enumeration_response_num_7	13	7	1
+Enumeration	enumeration_response_num_8	14	8	1
+Self	correct_rejection	1	1	1
+Self	encode_other	2	2	1
+Self	encode_other_no_response	3	3	0
+Self	encode_self	4	4	1
+Self	encode_self_no_response	5	5	0
+Self	false_alarm	6	6	0
+Self	instructions	7	7	0
+Self	new_no_response	8	8	0
+Self	recognition_other_hit	9	9	1
+Self	recognition_other_miss	10	10	0
+Self	recognition_other_no_response	11	11	0
+Self	recognition_self_hit	12	12	1
+Self	recognition_self_miss	13	13	0
+Self	recognition_self_no_response	14	14	0
+Bang	no_talk	15	1	1
+Bang	talk	16	2	1
+Wedge	left_meridian	1	1	1
+Wedge	lower_left	2	2	1
+Wedge	lower_meridian	3	3	1
+Wedge	lower_right	4	4	1
+Wedge	right_meridian	5	5	1
+Wedge	upper_left	6	6	1
+Wedge	upper_meridian	7	7	1
+Wedge	upper_right	8	8	1
+Ring	foveal	9	1	1
+Ring	middle	10	2	1
+Ring	peripheral	11	3	1
+Moto	finger_left	1	1	1
+Moto	finger_right	2	2	1
+Moto	fixation_left	3	3	1
+Moto	fixation_right	4	4	1
+Moto	foot_left	5	5	1
+Moto	foot_right	6	6	1
+Moto	hand_left	7	7	1
+Moto	hand_right	8	8	1
+Moto	instructions	9	9	0
+Moto	saccade_left	10	10	1
+Moto	saccade_right	11	11	1
+Moto	tongue_left	12	12	1
+Moto	tongue_right	13	13	1
+MCSE	high_salience_left	14	1	1
+MCSE	high_salience_right	15	2	1
+MCSE	low_salience_left	16	3	1
+MCSE	low_salience_right	17	4	1
+MVEB	2_letters_different	18	1	1
+MVEB	2_letters_same	19	2	1
+MVEB	4_letters_different	20	3	1
+MVEB	4_letters_same	21	4	1
+MVEB	6_letters_same	22	5	1
+MVEB	6_letters_different	23	6	1
+MVEB	p_startup	24	7	1
+MVEB	response	25	8	1
+MVIS	2_dots	26	1	1
+MVIS	2_dots_control	27	2	1
+MVIS	4_dots	28	3	1
+MVIS	4_dots_control	29	4	1
+MVIS	6_dots	30	5	1
+MVIS	6_dots_control	31	6	1
+MVIS	p_startup	32	7	1
+MVIS	response	33	8	1
+Lec1	pseudoword	1	1	1
+Lec1	random_string	2	2	1
+Lec1	word	3	3	1
+Lec2	attend	4	1	1
+Lec2	unattend	5	2	1
+Audi	alphabet	6	1	1
+Audi	animals	7	2	1
+Audi	cough	8	3	1
+Audi	environment	9	4	1
+Audi	human	10	5	1
+Audi	laugh	11	6	1
+Audi	music	12	7	1
+Audi	reverse	13	8	1
+Audi	silence	14	9	1
+Audi	speech	15	10	1
+Audi	suomi	16	11	1
+Audi	tear	17	12	1
+Audi	yawn	18	13	1
+Visu	animal	19	1	1
+Visu	characters	20	2	1
+Visu	face	21	3	1
+Visu	house	22	4	1
+Visu	pseudoword	23	5	1
+Visu	scene	24	6	1
+Visu	scrambled	25	7	1
+Visu	target_fruit	26	8	1
+Visu	tool	27	9	1
+MathLanguage	arithmetic_fact_auditory	1	1	1
+MathLanguage	arithmetic_fact_visual	2	2	1
+MathLanguage	arithmetic_principle_auditory	3	3	1
+MathLanguage	arithmetic_principle_visual	4	4	1
+MathLanguage	colorlessg_auditory	5	5	1
+MathLanguage	colorlessg_visual	6	6	1
+MathLanguage	context_auditory	7	7	1
+MathLanguage	context_visual	8	8	1
+MathLanguage	general_auditory	9	9	1
+MathLanguage	general_visual	10	10	1
+MathLanguage	geometry_fact_auditory	11	11	1
+MathLanguage	geometry_fact_visual	12	12	1
+MathLanguage	theory_of_mind_auditory	13	13	1
+MathLanguage	theory_of_mind_visual	14	14	1
+MathLanguage	wordlist_auditory	15	15	1
+MathLanguage	wordlist_visual	16	16	1
+SpatialNavigation	control	1	1	1
+SpatialNavigation	experimental	2	2	1
+SpatialNavigation	intersection	3	3	1
+SpatialNavigation	navigation	4	4	1
+SpatialNavigation	pointing_control	5	5	1
+SpatialNavigation	pointing_experimental	6	6	1
