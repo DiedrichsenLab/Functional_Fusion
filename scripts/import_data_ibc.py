@@ -84,12 +84,12 @@ def import_spm_ibc_dmtx(sdir, ddir, sub_id, sess_id):
     """
 
     # Create new files
-    for dm in glob.glob(sdir + '/run-*/design_matrix_unf.mat'):
+    for dm in glob.glob(sdir + '/run-*/design_matrix.mat'):
         X = sio.loadmat(dm)
         DM = X['X']
-        runtag = re.match('.*/(.*)/design_matrix_unf.mat', dm).groups()[0]
+        runtag = re.match('.*/(.*)/design_matrix.mat', dm).groups()[0]
         fname = sub_id + '_ses-' + sess_id + '_' + runtag + \
-            '_designmatrix_unf.npy'
+            '_designmatrix.npy'
         fpath = os.path.join(ddir, fname)
         # Save current file in the path
         try:
@@ -129,12 +129,12 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
     destination_dir = '{}/derivatives/{}/estimates/ses-{}'.format(
         destination_basedir, participant, session_id)
 
-    # Create destination file if it does not exist
-    Path(destination_dir).mkdir(parents=True, exist_ok=True)
+    # # Create destination file if it does not exist
+    # Path(destination_dir).mkdir(parents=True, exist_ok=True)
 
-    # Clean destination directory
-    delete_old(destination_dir, 'tsv')
-    delete_old(destination_dir, 'nii')
+    # # Clean destination directory
+    # delete_old(destination_dir, 'tsv')
+    # delete_old(destination_dir, 'nii')
     delete_old(destination_dir, 'npy')
 
     # Reginfo file of the session
@@ -173,14 +173,12 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
 try:
     BASE = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
 
-except FileNotFoundError:
-    pass
+except Exception:
+    try:
+        BASE = '/srv/diedrichsen/data'
 
-try:
-    BASE = '/srv/diedrichsen/data'
-
-except FileNotFoundError:
-    print('Base directory does not exist.')
+    except FileNotFoundError:
+        print('Base directory does not exist.')
 
 src_base_dir = os.path.join(BASE, 'ibc')
 dest_base_dir = os.path.join(BASE, 'FunctionalFusion/IBC')
@@ -189,8 +187,7 @@ session_group1 = ['archi', 'hcp1', 'hcp2', 'rsvplanguage']
 session_group2 = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
                   'clips4', 'lyon1', 'lyon2', 'mathlang',
                   'spatialnavigation']
-# sessions = session_group1 + session_group2
-sessions = session_group2
+sessions = session_group1 + session_group2
 
 # ########################## RUN ########################################
 
