@@ -388,7 +388,9 @@ def ploteval2():
     sb.violinplot(data=R, x="test_data", y="dcbc", hue="train_data",
                 dodge=True, jitter=True)
     
-
+    R = pd.read_csv(base_dir + '/Models/eval_Mdtb.tsv', sep='\t')
+    sb.violinplot(data=R, x="test_data", y="coserr_group", hue="train_data",
+                  dodge=True, jitter=True)
 
 
     pass
