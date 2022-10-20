@@ -23,10 +23,11 @@ import DCBC.DCBC_vol as dcbc
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-
-if sys.platform == "win32":
+if not Path(base_dir).exists():
     base_dir = 'Y:\data\FunctionalFusion'
-    sys.path.append('../')
+if not Path(base_dir).exists():
+    raise(NameError('Could not find base_dir'))
+    
 
 hcp_dir = base_dir + '/HCP'
 data_dir = base_dir + '/MDTB'
@@ -601,6 +602,7 @@ def learn_half(K=10, e='GME', max_iter=100, atlas='SUIT3', run_test=np.arange(58
 
     return T, group_baseline, lower_bound, par_learned
 
+
 def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3):
     """DCBC: evaluate the resultant parcellation using DCBC
     Args:
@@ -622,6 +624,7 @@ def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3):
         dcbc_values.append(D['DCBC'])
 
     return np.asarray(dcbc_values)
+
 
 def figure_indiv_group():
     D = pd.read_csv('scripts/indiv_group_err.csv')
@@ -678,6 +681,7 @@ def _plot_vmf_wvmf(T, T2):
 
 
 if __name__ == "__main__":
+
     mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
 
@@ -687,6 +691,7 @@ if __name__ == "__main__":
     data_eval, _, _ = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
     dcbc_values = eval_dcbc(parcellation.numpy(), suit_atlas,
                             func_data=data_eval, resolution=3)
+
 
     # A = pt.load('D:/data/nips_2022_supp/uhat_complete_all.pt')[15]
     # parcel = pt.argmax(A, dim=1) + 1
