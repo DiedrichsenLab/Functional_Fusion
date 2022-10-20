@@ -84,7 +84,6 @@ def plot_parcel_flat_best(model_names,grid):
             par=par[sym_atlas.indx_reduced] # Put back into full space
         parcel[i,:]=par
     plot_parcel_flat(parcel,atlas,grid=grid,map_space='MNISymC') 
-        
 
 def cross_prediction_error(M,tdata,U_hats):
     """Evaluates the predictions from a trained full model on some testdata. 
@@ -262,13 +261,13 @@ def eval_dcbc_best(model_names, space, testdata):
         tdata, _, _ = get_sess_mdtb(atlas=space, ses_id='ses-s2')
     elif testdata == 'Md':
         tdata, tinfo, _ = get_dataset(base_dir, 'MDTB',
-                                        atlas=space)
+                                      atlas=space, type='CondHalf')
     elif testdata == 'Po':
         tdata, tinfo, _ = get_dataset(base_dir, 'Pontine',
-                                            atlas=space)
+                                      atlas=space, type='TaskHalf')
     elif testdata == 'Ni':
         tdata, tinfo, _ = get_dataset(base_dir, 'Nishimoto',
-                                            atlas=space)
+                                      atlas=space, type='CondHalf')
     
     wdir = base_dir + '/Models/'
     
@@ -321,7 +320,7 @@ def eval_dcbc(parcels, testdata, atlas, resolution=3, trim_nan=False):
     """
 
     dist = dcbc.compute_dist(atlas.vox.T, resolution=resolution)
-    
+
     if trim_nan:  # mask the nan voxel pairs distance to nan
         dist[np.where(np.isnan(parcels))[0], :] = np.nan
         dist[:, np.where(np.isnan(parcels))[0]] = np.nan
@@ -357,13 +356,40 @@ def eval2():
                    f'asym_Ni_space-{space}_K-10',
                    f'asym_MdPoNi_space-{space}_K-10']
 
-    testdata = 'Md'
- 
-    R = eval_dcbc_best(model_name, space,
-                                 testdata)
+    allR = pd.DataFrame()
+    for testdata in ['Md', 'Po', 'Ni']:
+        R = eval_dcbc_best(model_name, space,
+                                    testdata)
+        # R.to_csv(base_dir + f'/Models/eval2_{testdata}.tsv', sep='\t')
+        allR = pd.concat([allR, R], ignore_index=True)
+
+    allR.to_csv(base_dir + f'/Models/eval2.tsv', sep='\t')
     
-    R.to_csv(base_dir + '/Models/eval2_Mdtb.tsv', sep='\t')
-    print(R)
+    # print(R)
+
+    pass
+
+
+def ploteval2():
+
+    wdir = base_dir + '/Models/'
+    # R = pd.read_csv(base_dir + '/Models/eval2_Mdtb.tsv', sep='\t')
+    R = pd.read_csv(base_dir + '/Models/eval2.tsv', sep='\t')
+
+    
+    train_data = "['Mdtb']"
+    train_data = "['Pontine']"
+    train_data = "['Mdtb' 'Pontine' 'Nishimoto']"
+    R.query('train_data == @testdata').dcbc.describe()
+    R.query('train_data == @testdata').dcbc.describe()
+    R.query('train_data == @testdata').dcbc.describe()
+    R.query('train_data == @testdata').dcbc.describe()
+
+    sb.violinplot(data=R, x="test_data", y="dcbc", hue="train_data",
+                dodge=True, jitter=True)
+    
+
+
 
     pass
 
@@ -418,5 +444,6 @@ def eval_generative_SNMF(model_names = ['asym_Md_space-SUIT3_K-10']):
     plt.show()
 
 if __name__ == "__main__":
-    eval1()
+    # eval2()
+    ploteval2()
     pass
