@@ -316,10 +316,13 @@ def fit_single(set_ind=[0, 1, 2]):
                             n_rep=10, first_iter=30, save=False)
 
 if __name__ == "__main__":
-    fit_all([0])
-    fit_all([1])
-    fit_all([2])
-    fit_all([0,1,2])
+    # fit_all([0])
+    # fit_all([1])
+    # fit_all([2])
+    # fit_all([0,1,2])
+    # fit_all([0,1])
+    # fit_all([0, 2]) # problem with fitting 0 & 2: In "generativeMRF/full_model.py", line 466, 'best_theta' is referenced before assignment
+    fit_all([1, 2])
     # fit_all([0])
 
     #mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
