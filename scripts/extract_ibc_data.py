@@ -26,7 +26,6 @@ if __name__ == "__main__":
     info = ibc_dataset.get_participants()
     for ses in ibc_dataset.sessions:
         ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
-
     pass
 
 

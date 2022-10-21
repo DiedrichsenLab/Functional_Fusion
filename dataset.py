@@ -258,17 +258,7 @@ class DataSet:
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        # Make the atlas object
-        if (atlas=='SUIT3'):
-            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-        if (atlas=='SUIT2'):
-            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
-        if (atlas=='MNISymC3'):
-            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
-        if (atlas=='MNISymC2'):
-            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
-        suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
-
+        suit_atlas = am.get_atlas(atlas,self.atlas_dir)
         # create and calculate the atlas map for each participant
         T = self.get_participants()
         for s in T.participant_id:
@@ -299,16 +289,7 @@ class DataSet:
             info_column (str, optional): Column of info tsv file for which each average should be calculated. Defaults to 'task_name'
         """
         # Make the atlas object
-        if (atlas == 'SUIT3'):
-            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-        if (atlas == 'SUIT2'):
-            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
-        if (atlas == 'MNISymC3'):
-            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
-        if (atlas == 'MNISymC2'):
-            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
-        suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
-
+        suit_atlas = am.get_atlas(atlas,self.atlas_dir)
 
         # get session indices
         T = self.get_participants()
@@ -389,12 +370,6 @@ class DataSet:
             info_column, keep='first').drop(columns=['names', 'half'])
         Da.to_csv(
             dest_dir + f'/group_info-{type}.tsv', sep='\t', index=False)
-
-
-        # project to flatmap and save figure
-
-
-
 
 
     def extract_all_fs32k(self,ses_id='ses-s1',type='CondHalf'):
@@ -1015,6 +990,35 @@ class DataSetIBC(DataSet):
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
-
-
         return data_n, info
+
+    def extract_all_suit(self,ses_id='ses-archi',type='CondHalf',atlas='SUIT3'):
+        """Extracts data in SUIT space - we need to overload this from the standard, as the voxel-orientation (and therefore the atlasmap) is different from session to session in IBC.
+        Args:
+            ses_id (str, optional): Session. Defaults to 'ses-s1'.
+            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
+            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+        """
+        suit_atlas = am.get_atlas(atlas,self.atlas_dir)
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        for s in T.participant_id:
+            print(f'Atlasmap {s}')
+            deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
+            if atlas[0:7]=='MNISymC':
+                xfm_name = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
+                deform = [xfm_name,deform]
+            mask = self.estimates_dir.format(s) + f'/{ses_id}/{s}_{ses_id}_mask.nii'
+            add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
+            atlas_map = am.AtlasMapDeform(self, suit_atlas, s,deform, mask)
+            atlas_map.build(smooth=2.0,additional_mask = add_mask)
+            print(f'Extract {s}')
+            data,info = self.extract_data(s,[atlas_map],
+                                          ses_id=ses_id,
+                                          type=type)
+            C=am.data_to_cifti(data,[atlas_map],info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
+
