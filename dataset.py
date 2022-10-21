@@ -342,7 +342,7 @@ class DataSet:
         if subj is None:
             subj = np.arange(T.shape[0])
         # Loop over the different subjects
-        for i,s in enumerate (T.participant_id[subj]):
+        for i,s in enumerate (T.participant_id.iloc[subj]):
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
