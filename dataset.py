@@ -280,7 +280,90 @@ class DataSet:
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
 
-    def group_average_suit(self, type='CondHalf', atlas='SUIT3', info_column='task_name'):
+
+    def extract_all_fs32k(self,ses_id='ses-s1',type='CondHalf'):
+        """Extracts data in fs32K space from a standard experiment structure
+        across all subjects. Saves the results as CIFTI files in the data directory.
+
+        Args:
+            ses_id (str, optional): _description_. Defaults to 'ses-s1'.
+            type (str, optional): _description_. Defaults to 'CondHalf'.
+        """
+        # Make the atlas object
+        atlas =[]
+        bm_name = ['cortex_left','cortex_right']
+        for i,hem in enumerate(['L','R']):
+            mask = self.atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
+            atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
+
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        for s in T.participant_id:
+            atlas_maps = []
+            data = []
+            for i,hem in enumerate(['L','R']):
+                adir = self.anatomical_dir.format(s)
+                edir = self.estimates_dir.format(s)
+                pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
+                white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
+                mask = edir + f'/{ses_id}/{s}_{ses_id}_mask.nii'
+                atlas_maps.append(am.AtlasMapSurf(self, atlas[i],
+                            s,white,pial, mask))
+                atlas_maps[i].build()
+            print(f'Extract {s}')
+            data,info = self.extract_data(s,atlas_maps,
+                                                ses_id=ses_id,
+                                                type=type)
+            C=am.data_to_cifti(data,atlas_maps,info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
+            pass
+
+    def get_data(self,space='SUIT3',ses_id='ses-s1',
+                      type='CondHalf',subj=None,fields=None):
+        """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
+
+        Args:
+            space (str): Atlas space (Defaults to 'SUIT3').
+            ses_id (str): Session ID (Defaults to 'ses-s1').
+            type (str): Type of data (Defaults to 'CondHalf').
+            subj (ndarray): Subject numbers to get - by default all
+            fields (list): Column names of info stucture that are returned
+                these are also be tested to be equivalent across subjects
+        Returns:
+            Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
+            info (DataFramw): Data frame with common descriptor
+        """
+        T = self.get_participants()
+        # Assemble the data
+        Data = None
+        # Deal with subset of subject option
+        if subj is None:
+            subj = np.arange(T.shape[0])
+        # Loop over the different subjects
+        for i,s in enumerate (T.participant_id[subj]):
+            # Get an check the information
+            info_raw = pd.read_csv(self.data_dir.format(s)
+                                   + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
+            if fields is not None:
+                if i==0:
+                    info = info_raw[fields]
+                else:
+                    if not info.equals(info_raw[fields]):
+                        raise(NameError('Info structure different for subject' + f'{s}. All info structures need to match'
+                        + 'on the fields'))
+            else:
+                info=info_raw
+
+            # Load the data
+            C = nb.load(self.data_dir.format(s) + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
+            if Data is None:
+                Data = np.zeros((len(subj),C.shape[0],C.shape[1]))
+            Data[i,:,:] = C.get_fdata()
+        return Data, info
+
+    def group_average_data(self, type='CondHalf', atlas='SUIT3', info_column='task_name'):
         """Loads group data in SUIT space from a standard experiment structure
         averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
         Args:
@@ -372,87 +455,6 @@ class DataSet:
             dest_dir + f'/group_info-{type}.tsv', sep='\t', index=False)
 
 
-    def extract_all_fs32k(self,ses_id='ses-s1',type='CondHalf'):
-        """Extracts data in fs32K space from a standard experiment structure
-        across all subjects. Saves the results as CIFTI files in the data directory.
-
-        Args:
-            ses_id (str, optional): _description_. Defaults to 'ses-s1'.
-            type (str, optional): _description_. Defaults to 'CondHalf'.
-        """
-        # Make the atlas object
-        atlas =[]
-        bm_name = ['cortex_left','cortex_right']
-        for i,hem in enumerate(['L','R']):
-            mask = self.atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
-            atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
-
-        # create and calculate the atlas map for each participant
-        T = self.get_participants()
-        for s in T.participant_id:
-            atlas_maps = []
-            data = []
-            for i,hem in enumerate(['L','R']):
-                adir = self.anatomical_dir.format(s)
-                edir = self.estimates_dir.format(s)
-                pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
-                white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
-                mask = edir + f'/{ses_id}/{s}_{ses_id}_mask.nii'
-                atlas_maps.append(am.AtlasMapSurf(self, atlas[i],
-                            s,white,pial, mask))
-                atlas_maps[i].build()
-            print(f'Extract {s}')
-            data,info = self.extract_data(s,atlas_maps,
-                                                ses_id=ses_id,
-                                                type=type)
-            C=am.data_to_cifti(data,atlas_maps,info.names)
-            dest_dir = self.data_dir.format(s)
-            Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
-            pass
-
-    def get_data(self,space='SUIT3',ses_id='ses-s1',
-                      type='CondHalf',subj=None,fields=None):
-        """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
-
-        Args:
-            space (str): Atlas space (Defaults to 'SUIT3').
-            ses_id (str): Session ID (Defaults to 'ses-s1').
-            type (str): Type of data (Defaults to 'CondHalf').
-            subj (ndarray): Subject numbers to get - by default all
-            fields (list): Column names of info stucture that are returned
-                these are also be tested to be equivalent across subjects
-        Returns:
-            Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
-            info (DataFramw): Data frame with common descriptor
-        """
-        T = self.get_participants()
-        # Assemble the data
-        Data = None
-        # Deal with subset of subject option
-        if subj is None:
-            subj = np.arange(T.shape[0])
-        # Loop over the different subjects
-        for i,s in enumerate (T.participant_id[subj]):
-            # Get an check the information
-            info_raw = pd.read_csv(self.data_dir.format(s)
-                                   + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
-            if fields is not None:
-                if i==0:
-                    info = info_raw[fields]
-                else:
-                    if not info.equals(info_raw[fields]):
-                        raise(NameError('Info structure different for subject' + f'{s}. All info structures need to match'
-                        + 'on the fields'))
-            else:
-                info=info_raw
-
-            # Load the data
-            C = nb.load(self.data_dir.format(s) + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
-            if Data is None:
-                Data = np.zeros((len(subj),C.shape[0],C.shape[1]))
-            Data[i,:,:] = C.get_fdata()
-        return Data, info
 
 
 class DataSetMDTB(DataSet):
