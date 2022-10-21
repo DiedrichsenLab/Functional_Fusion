@@ -716,23 +716,116 @@ class DataSetHcpResting(DataSet):
 
 class DataSetLanguage(DataSet):
     def __init__(self, dir):
-        super(DataSetLanguage, self).__init__(base_dir=dir)
-        # self.func_dir = self.base_dir + '/{0}/estimates'
-        self.derivative_dir = self.base_dir + '/derivatives'
+        super().__init__(dir)
 
-    def get_data_fnames(self, participant_id):
-        """ Gets all raw data files
+    def extract_all_suit(self, ses_id='ses-01', type='TaskAll', atlas='SUIT3'):
+        """Extracts data in SUIT space from a standard experiment structure
+        across all subjects. Saves the results as CIFTI files in the data directory.
         Args:
-            participant_id (str): Subject
-        Returns:
-            fnames (list): List of fnames
+            ses_id (str, optional): Session. Defaults to 'ses-s1'.
+            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
+            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        dirw = self.derivative_dir + f"/{participant_id}" + "/func"
-        fnames = []
-        for r in range(4):
-            fnames.append(
-                f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
-        return fnames
+        # Make the atlas object
+        if (atlas == 'SUIT3'):
+            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+        if (atlas == 'SUIT2'):
+            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
+        if (atlas == 'MNISymC3'):
+            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
+        if (atlas == 'MNISymC2'):
+            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
+        suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
+
+        # Because data is in MNI space, get one atlas map for all subjects
+        mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+        suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
+
+        # Get the deformation map from MNI to SUIT
+        mni_atlas = self.atlas_dir + '/tpl-MNI152NLin6AsymC'
+        deform = mni_atlas + '/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
+        if atlas[0:7] == 'MNISymC':
+            xfm_name = self.atlas_dir + \
+                '/tpl-MNI152NLIn2000cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
+            deform = [xfm_name, deform]
+        mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
+        atlas_map = am.AtlasMapDeform(
+            self, suit_atlas, 'group', deform, mask)
+        atlas_map.build(smooth=2.0)
+
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        for s in T.participant_id:
+            print(f'Extract {s}')
+            data, info = self.extract_data(s, [atlas_map],
+                                           ses_id=ses_id,
+                                           type=type)
+            C = am.data_to_cifti(data, [atlas_map], info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir +
+                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(
+                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+
+    def extract_data(self, participant_id,
+                     atlas_maps,
+                     ses_id,
+                     type='TaskAll'):
+        """ Language extraction of atlasmap locations
+        from nii files
+
+        Args:
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
+                'TaskAll': Contrasts with one estimate for all the whole experiment
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+        fnames, info = self.get_data_fnames(participant_id, ses_id)
+        data = am.get_data3D(fnames, atlas_maps)
+        # For debugging: data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
+
+        # Depending on the type, make a new contrast
+        info['half'] = 2 - (info.run < 9)
+        n_cond = np.max(info.reg_id)
+        if type == 'TaskAll':
+
+            # Make new data frame for the information of the new regressors
+            ii = (info.run == 1) & (info.reg_id > 0)
+            data_info = info[ii].copy().reset_index(drop=True)
+            data_info['names'] = [
+                f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
+
+           # Contrast for the regressors of interest
+            reg = info.cond_num.copy()
+            reg[info.instruction == 1] = 0
+            C = matrix.indicator(reg, positive=True)  # Drop the instructions
+
+            # contrast for all instructions
+            CI = matrix.indicator(info.instruction, positive=True)
+            C = np.c_[C, CI]
+            reg_in = np.arange(n_cond, dtype=int)
+
+            # Baseline substraction
+            B = matrix.indicator(data_info.run, positive=True)
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Load the designmatrix and perform optimal contrast
+        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+        data_new = optimal_contrast(data_n, C, X, reg_in)
+
+        return data_new, data_info
 
 class DataSetPontine(DataSet):
     def __init__(self, dir):
