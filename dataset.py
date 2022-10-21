@@ -289,6 +289,22 @@ class DataSet:
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
+
+    def group_average_data(self, session_id='ses-s1', type='CondHalf', atlas='SUIT3', info_column='task_name'):
+        """Loads group data in SUIT space from a standard experiment structure
+        averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
+        Args:
+            ses_id (str, optional): Session. Defaults to 'ses-s1'.
+            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
+            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+            info_column (str, optional): Column of info tsv file for which each average should be calculated. Defaults to 'task_name'
+        """
+        # get the first cifti of your session
+        
+        # set the output cifti to that first cifti
+        # get all other ciftis and average across the data
+        # replace the data in the output cifti with the average data
+        # write output cifti
     
     def group_average_suit(self, type='CondHalf', atlas='SUIT3', info_column='task_name'):
         """Loads group data in SUIT space from a standard experiment structure

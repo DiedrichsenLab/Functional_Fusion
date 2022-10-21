@@ -258,58 +258,8 @@ def calc_dcbc():
     pass
 
 
-def eval_dcbc_all(model_names, space, testdata):
-    s = space.split('C')[0]
-    r = int(space.split('C')[1])
-    mask = base_dir + \
-        f'/Atlases/tpl-MNI152NLIn2000cSymC/tpl-{s}C_res-{r}_gmcmask.nii'
-    atlas = am.AtlasVolumetric(space, mask_img=mask)
-
-    if testdata is None:
-        tdata, _, _ = get_sess_mdtb(atlas=space, ses_id='ses-s2')
-    elif testdata == 'Md':
-        tdata, tinfo, _ = get_dataset(base_dir, 'MDTB',
-                                      atlas=space, type='CondHalf')
-    elif testdata == 'Po':
-        tdata, tinfo, _ = get_dataset(base_dir, 'Pontine',
-                                      atlas=space, type='TaskHalf')
-    elif testdata == 'Ni':
-        tdata, tinfo, _ = get_dataset(base_dir, 'Nishimoto',
-                                      atlas=space, type='CondHalf')
-
-    wdir = base_dir + '/Models/'
-
-    # parcel = np.empty((len(model_names), atlas.P))
-    results = pd.DataFrame()
-    for i, mn in enumerate(model_names):
-
-        info, models, Prop, V = load_batch_fit(mn)
-        for j in np.arange(models.shape[0]):
-            par = pt.argmax(Prop[j, :, :], dim=0) + 1  # Get winner take all
-            # parcel[i, :] = par
-            if i == 0:
-                dcbc = np.zeros((1, tdata.shape[0]))
-            dcbc = eval_dcbc(par, tdata, atlas, r)
-            minfo = pd.read_csv(wdir + mn + '.tsv', sep='\t')
-            num_subj = tdata.shape[0]
-
-            ev_df = pd.DataFrame({'model_name': [minfo.name[j]] * num_subj,
-                                'atlas': [minfo.atlas[j]] * num_subj,
-                                'K': [minfo.K[j]] * num_subj,
-                                'model_num': [i] * num_subj,
-                                'model_idx': [j] * num_subj,
-                                'train_data': [minfo.datasets[j]] * num_subj,
-                                'train_loglik': [minfo.loglik[j]] * num_subj,
-                                'test_data': [testdata] * num_subj,
-                                'subj_num': np.arange(num_subj),
-                                'dcbc': dcbc[:]
-                                })
-
-            results = pd.concat([results, ev_df], ignore_index=True)
-
-    return results
     
-def eval_dcbc_best(model_names, space, testdata):
+def eval_dcbc_group(model_names, space, testdata):
     s = space.split('C')[0]
     r = int(space.split('C')[1])
     mask = base_dir + \
@@ -417,12 +367,12 @@ def eval2():
 
     allR = pd.DataFrame()
     for testdata in ['Md', 'Po', 'Ni']:
-        R = eval_dcbc_all(model_name, space,
+        R = eval_dcbc_group(model_name, space,
                                     testdata)
         # R.to_csv(base_dir + f'/Models/eval2_{testdata}.tsv', sep='\t')
         allR = pd.concat([allR, R], ignore_index=True)
 
-    allR.to_csv(base_dir + f'/Models/eval2_all.tsv', sep='\t')
+    allR.to_csv(base_dir + f'/Models/eval_dcbc_group.tsv', sep='\t')
 
     # test_data = 'Mdtb'
     # R = calc_dcbc(model_name,
@@ -439,30 +389,6 @@ def eval2():
     pass
 
 
-def ploteval2():
-
-    wdir = base_dir + '/Models/'
-    # R = pd.read_csv(base_dir + '/Models/eval2_Mdtb.tsv', sep='\t')
-    R = pd.read_csv(base_dir + '/Models/eval2.tsv', sep='\t')
-
-    
-    train_data = "['Mdtb']"
-    train_data = "['Pontine']"
-    train_data = "['Mdtb' 'Pontine' 'Nishimoto']"
-    R.query('train_data == @testdata').dcbc.describe()
-    R.query('train_data == @testdata').dcbc.describe()
-    R.query('train_data == @testdata').dcbc.describe()
-    R.query('train_data == @testdata').dcbc.describe()
-
-    sb.violinplot(data=R, x="test_data", y="dcbc", hue="train_data",
-                dodge=True, jitter=True)
-    
-    R = pd.read_csv(base_dir + '/Models/eval_Mdtb.tsv', sep='\t')
-    sb.violinplot(data=R, x="test_data", y="coserr_group", hue="train_data",
-                  dodge=True, jitter=True)
-
-
-    pass
 
 def eval_generative_SNMF(model_names = ['asym_Md_space-SUIT3_K-10']):
     """This is the evaluation case of the parcellation comparison
@@ -516,5 +442,4 @@ def eval_generative_SNMF(model_names = ['asym_Md_space-SUIT3_K-10']):
 
 if __name__ == "__main__":
     eval2()
-    # ploteval2()
     pass
