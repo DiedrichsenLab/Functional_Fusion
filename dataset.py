@@ -452,10 +452,7 @@ class DataSet:
             info_column, keep='first').drop(columns=['names', 'half'])
         Da.to_csv(
             dest_dir + f'/group_info-{type}.tsv', sep='\t', index=False)
-
-
-
-
+            
 class DataSetMDTB(DataSet):
     def __init__(self, dir):
         super().__init__(dir)
