@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import seaborn as sb
 import sys
 import DCBC.DCBC_vol as dcbc
+import os
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -157,6 +158,36 @@ def get_hcp_data_from_csv(tessel=162, ses_id=['ses-01'], range=None):
         output.append(sub_data)
 
     return pt.stack(output)  # output is torch tensor
+
+def get_mdtb_parcel_indv(do_plot=False):
+    """Get the individual MDTB parcellations
+    Args:
+        do_plot: plot the parcellation if True
+
+    Returns:
+        individual parcellations
+    """
+    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    suit_atlas = am.AtlasVolumetric('SUIT3', mask_img=mask)
+    par_dir = 'Z:\data\super_cerebellum_new\sc2\encoding\glm4'
+
+    parcels = []
+    for file in os.listdir(par_dir):
+        is_dir = os.path.isdir(os.path.join(par_dir, file))
+        if file.startswith("s") and is_dir:
+            try:
+                filename = os.path.join(par_dir, file, 'map_SC1_cnvf_10_SUIT3.nii')
+                ind_par = nb.load(filename)
+                par = ind_par.get_fdata()
+                ind_par = par[suit_atlas.vox[0], suit_atlas.vox[1], suit_atlas.vox[2]]
+                ind_par = np.rint(ind_par)
+
+                parcels.append(ind_par)
+                del ind_par
+            except:
+                print(f'No individual parcellation file in subject {file}')
+
+    return np.asarray(parcels)
 
 def get_mdtb_parcel(do_plot=True):
     """Samples the existing MDTB10 parcellation
@@ -455,8 +486,10 @@ def learn_runs(K=10, e='GME', max_iter=100, run_test=np.arange(58, 122),
     return T, group_baseline, lower_bound, cos_em, cos_complete, uhat_em_all, uhat_complete_all
 
 
-def learn_half(K=10, e='GME', max_iter=100, atlas='SUIT3', run_test=np.arange(58, 122),
-                   runs=np.arange(1, 17), sub=None, do_plot=True):
+def learn_half(K=10, arrange='ind', e='GME', max_iter=100, atlas='SUIT3',
+               run_test=np.arange(58, 122), runs=np.arange(1, 17), sub=None, do_plot=True):
+    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    suit_atlas = am.AtlasVolumetric('SUIT3', mask_img=mask)
 
     Data_1, Xdesign_1, partV_1 = get_sess_mdtb(atlas=atlas, ses_id='ses-s1')
     Data_2, Xdesign_2, partV_2 = get_sess_mdtb(atlas=atlas, ses_id='ses-s2')
@@ -473,8 +506,16 @@ def learn_half(K=10, e='GME', max_iter=100, atlas='SUIT3', run_test=np.arange(58
     logpi[:, mdtb_parcel == 0] = 0
 
     # Train on sc 1 data
-    ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
-                                         remove_redundancy=False)
+    if arrange == 'ind':
+        ar_model = ar.ArrangeIndependent(K=K, P=P, spatial_specific=True,
+                                             remove_redundancy=False)
+    elif arrange == 'rbm':
+        ar_model = ar.cmpRBM(K, P, nh=P, eneg_iter=10, epos_iter=10,
+                             eneg_numchains=24)
+        ar_model.alpha = 0.1
+    else:
+        raise NameError('Unrecognized arrangement type.')
+
     if e == 'GME':
         em_model = em.MixGaussianExp(K=K, N=40, P=P, X=Xdesign_1,
                                      num_signal_bins=100, std_V=True)
@@ -491,16 +532,26 @@ def learn_half(K=10, e='GME', max_iter=100, atlas='SUIT3', run_test=np.arange(58
     # Initilize parameters from group prior and train the m odel
     mdtb_prior = logpi.softmax(dim=0).unsqueeze(0).repeat(em_model.num_subj,1,1)
     em_model.Mstep(mdtb_prior)
+    ar_model.logpi = logpi.softmax(dim=0)
+    # ar_model.bu = logpi.softmax(dim=0)
     M = fm.FullModel(ar_model, em_model)
-    M, ll, theta, U_hat = M.fit_em(Y=Data_1, iter=max_iter, tol=0.00001, fit_arrangement=True)
+    if arrange == 'rbm':
+        M, ll, theta, U_hat = M.fit_sml(Y=Data_1, iter=20)
+    elif arrange == 'ind':
+        M, ll, theta, U_hat = M.fit_em(Y=Data_1, iter=max_iter, tol=0.00001, fit_arrangement=True)
+
     plt.plot(ll, color='b')
     plt.show()
 
     ### fig a: Plot group prior
     # _plot_maps(pt.argmax(M.arrange.logpi, dim=0) + 1, color=True, render_type='matplotlib',
     #            save='group_prior.pdf')
-    prior = pt.softmax(M.arrange.logpi, dim=0).unsqueeze(0).repeat(Data_1.shape[0], 1, 1)
-    par_learned = pt.argmax(M.arrange.logpi, dim=0) + 1
+    if arrange == 'rbm':
+        prior = pt.softmax(M.arrange.bu, dim=0).unsqueeze(0).repeat(Data_1.shape[0], 1, 1)
+        par_learned = pt.argmax(M.arrange.bu, dim=0) + 1
+    elif arrange == 'ind':
+        prior = pt.softmax(M.arrange.logpi, dim=0).unsqueeze(0).repeat(Data_1.shape[0], 1, 1)
+        par_learned = pt.argmax(M.arrange.logpi, dim=0) + 1
 
     # train emission model on sc2 by frezzing arrangement model learned from sc1
     if e == 'GME':
@@ -599,9 +650,10 @@ def learn_half(K=10, e='GME', max_iter=100, atlas='SUIT3', run_test=np.arange(58
         D2['subject'] = [sub + 1]
         T = pd.concat([T, pd.DataFrame(D2)])
 
-    return T, group_baseline, lower_bound, par_learned
+    return T, group_baseline, lower_bound, par_learned, U_hat
 
-def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3):
+def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3,
+              trim_nan=False):
     """DCBC: evaluate the resultant parcellation using DCBC
     Args:
         parcels (np.ndarray): the input parcellation, shape
@@ -609,16 +661,25 @@ def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3):
         func_data (np.ndarray): the functional data,
                                 shape (num_sub, N, P)
         resolution (np.float or int): the resolution of atlas in mm
+        trim_nan (boolean): if true, make the nan voxel label will be
+                            removed from DCBC calculation. Otherwise,
+                            we treat nan voxels are in the same parcel
+                            which is label 0 by default.
     Returns:
         dcbc_values (np.ndarray): the DCBC values of subjects
     """
     dist = dcbc.compute_dist(suit_atlas.vox.T, resolution=resolution)
+    if trim_nan:  # mask the nan voxel pairs distance to nan
+        dist[np.where(np.isnan(parcels))[0], :] = np.nan
+        dist[:, np.where(np.isnan(parcels))[0]] = np.nan
+
     if func_data is None:
         func_data, _, _ = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
 
     dcbc_values = []
     for sub in range(func_data.shape[0]):
-        D = dcbc.compute_DCBC(parcellation=parcels, dist=dist, func=func_data[sub].T)
+        D = dcbc.compute_DCBC(parcellation=parcels,
+                              dist=dist, func=func_data[sub].T)
         dcbc_values.append(D['DCBC'])
 
     return np.asarray(dcbc_values)
@@ -677,16 +738,55 @@ def _plot_vmf_wvmf(T, T2):
     plt.show()
 
 
-if __name__ == "__main__":
-    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
+def eval_indv(mdtb_par_indv, fit_par_indv):
+    """Evaluate individual parcellations of fusion model vs. SNMF
+    Args:
+        mdtb_par_indv: SNMF parcellations
+        fit_par_indv: fusion model parcellations
 
-    T, gbase, lb, parcellation = learn_half(K=10, e='VMF', runs=np.arange(1, 17))
-    # T.to_csv('coserrs_wVMF.csv')
-    plot_parcel_flat(parcellation, suit_atlas, grid=[1, 1], save_nii=False)  # Plot flat map
+    Returns:
+        dcbc plots
+    """
+    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+    suit_atlas = am.AtlasVolumetric('SUIT3', mask_img=mask)
+
+    # Evaluate the two parcellations
+    dcbc_base, dcbc_eval = [], []
     data_eval, _, _ = get_sess_mdtb(atlas='SUIT3', ses_id='ses-s2')
-    dcbc_values = eval_dcbc(parcellation.numpy(), suit_atlas,
-                            func_data=data_eval, resolution=3)
+    for i in range(data_eval.shape[0]):
+        print(f'Evaluating DCBC on subject {i}')
+        this_data = np.expand_dims(data_eval[i], axis=0)
+        dbase = eval_dcbc(mdtb_par_indv[i], suit_atlas, func_data=this_data,
+                          resolution=3, trim_nan=True)
+        deval = eval_dcbc(fit_par_indv[i], suit_atlas, func_data=this_data,
+                          resolution=3, trim_nan=True)
+        dcbc_base.append(dbase)
+        dcbc_eval.append(deval)
+
+    dcbc_base = np.asarray(dcbc_base).reshape(-1)
+    dcbc_eval = np.asarray(dcbc_eval).reshape(-1)
+    import scipy.stats as spst
+    res = spst.ttest_rel(dcbc_base, dcbc_eval)
+
+    plt.figure()
+    plt.bar(['CNMF', 'ind+vmf'], [dcbc_base.mean(), dcbc_eval.mean()],
+            yerr=[dcbc_base.std() / np.sqrt(24),
+                  dcbc_eval.std() / np.sqrt(24)])
+    plt.ylabel('DCBC')
+    plt.title(f't_23 = {res[0]}, p = {res[1]}')
+    plt.show()
+
+
+if __name__ == "__main__":
+    # mdtb_par_group, _ = get_mdtb_parcel(do_plot=False)
+    mdtb_par_indv = get_mdtb_parcel_indv()
+    T, gbase, lb, group_par, indv_par = learn_half(K=10, arrange='ind', e='VMF')
+    # plot_parcel_flat(parcellation, suit_atlas, grid=[1, 1], save_nii=False)  # Plot flat map
+    indv_par = pt.argmax(indv_par, dim=1) + 1
+    fit_par_indv = indv_par.numpy()
+
+    # Evaluate the two parcellations
+    eval_indv(mdtb_par_indv, fit_par_indv)
 
     # A = pt.load('D:/data/nips_2022_supp/uhat_complete_all.pt')[15]
     # parcel = pt.argmax(A, dim=1) + 1
