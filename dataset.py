@@ -1025,9 +1025,9 @@ class DataSetIBC(DataSet):
                          'ses-mtt1','ses-mtt2',
                          'ses-preference',
                          'ses-rsvplanguage',
-                         'ses-self',
                          'ses-spatialnavigation',
                          'ses-tom']
+                        #   Not using 'ses-self' for now, as we need to deal with different numbers of regressors per subject 
 
     def get_participants(self):
         """ returns a data frame with all participants complete participants

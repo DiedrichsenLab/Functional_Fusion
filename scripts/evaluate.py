@@ -258,7 +258,6 @@ def calc_dcbc():
     pass
 
 
-    
 def eval_dcbc_group(model_names, space, testdata):
     s = space.split('C')[0]
     r = int(space.split('C')[1])
@@ -439,6 +438,9 @@ def eval_generative_SNMF(model_names = ['asym_Md_space-SUIT3_K-10']):
             yerr=[dcbc_base.std() / np.sqrt(24),
                   dcbc_compare[0].std() / np.sqrt(24)])
     plt.show()
+
+
+
 
 if __name__ == "__main__":
     eval2()
