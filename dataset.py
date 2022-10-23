@@ -33,14 +33,20 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
         # Extract all sessions
     elif dataset.casefold() == 'Pontine'.casefold():
         my_dataset = DataSetPontine(base_dir + '/Pontine')
+        if type is None:
+            type = 'TaskHalf'
         fiel = ['task_name','task_num','half']
         data,info = my_dataset.get_data(atlas,'ses-01',
                                            type,fields=fiel)
     elif dataset.casefold() == 'Nishimoto'.casefold():
         my_dataset = DataSetNishi(base_dir + '/Nishimoto')
+        if type is None:
+            type = 'CondHalf'
         fiel = ['task_name','reg_id','half']
     elif dataset.casefold() == 'IBC'.casefold():
         fiel = None
+        if type is None:
+            type = 'CondHalf'
         my_dataset = DataSetIBC(base_dir + '/IBC')
     else:
         raise(NameError('Unknown data set'))
