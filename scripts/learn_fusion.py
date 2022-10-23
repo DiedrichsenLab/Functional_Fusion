@@ -235,7 +235,7 @@ def batch_fit(datasets,sess,type=None,design_ind=None,part_ind=None,subj=None,
             pickle.dump(models,file)
     return info,models
 
-def fit_all(set_ind=[0,1,2]):
+def fit_all(set_ind=[0,1,2],K=10):
     # Data sets need to numpy arrays to allow indixing by list
     datasets = np.array(['Mdtb','Pontine','Nishimoto','Ibc'],
                     dtype = object)
@@ -267,7 +267,7 @@ def fit_all(set_ind=[0,1,2]):
               design_ind = design_ind[set_ind],
               part_ind = part_ind[set_ind],
               atlas=atlas[i],
-              K=10,
+              K=K,
               name=name,
               n_inits=20, 
               n_iter=200,
@@ -283,7 +283,11 @@ if __name__ == "__main__":
     # fit_all([0,1])
     # fit_all([0, 2]) # problem with fitting 0 & 2: In "generativeMRF/full_model.py", line 466, 'best_theta' is referenced before assignment
     # fit_all([1, 2])
-    fit_all([3])
+    fit_all([0,1,2,3],10)
+    fit_all([0],20)
+    fit_all([1],20)
+    fit_all([2],20)
+    fit_all([3],20)
     # check_IBC()
     #mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
     #atlas = am.AtlasVolumetric('MNISymC3',mask_img=mask)
