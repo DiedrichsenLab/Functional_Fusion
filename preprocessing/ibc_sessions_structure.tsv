@@ -66,8 +66,8 @@ clips4	1	Wedge	pa	165	1
 clips4	2	Wedge	pa	165	2
 clips4	3	Ring	pa	165	1
 clips4	4	Ring	ap	165	2
-clips4	5	Clock	ap	165	3
-clips4	6	Anti	ap	165	4
+clips4	5	Wedge	ap	165	3
+clips4	6	Wedge	ap	165	4
 lyon1	1	Moto	pa	359	1
 lyon1	2	MCSE	pa	177	1
 lyon1	3	MVEB	pa	203	1

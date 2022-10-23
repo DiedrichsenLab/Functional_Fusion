@@ -713,6 +713,27 @@ class DataSetHcpResting(DataSet):
 
         return coef  # shape (n_tessl,P)
 
+
+class DataSetLanguage(DataSet):
+    def __init__(self, dir):
+        super(DataSetLanguage, self).__init__(base_dir=dir)
+        # self.func_dir = self.base_dir + '/{0}/estimates'
+        self.derivative_dir = self.base_dir + '/derivatives'
+
+    def get_data_fnames(self, participant_id):
+        """ Gets all raw data files
+        Args:
+            participant_id (str): Subject
+        Returns:
+            fnames (list): List of fnames
+        """
+        dirw = self.derivative_dir + f"/{participant_id}" + "/func"
+        fnames = []
+        for r in range(4):
+            fnames.append(
+                f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
+        return fnames
+
 class DataSetPontine(DataSet):
     def __init__(self, dir):
         super().__init__(dir)

@@ -24,10 +24,11 @@ import os
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-
-if sys.platform == "win32":
+if not Path(base_dir).exists():
     base_dir = 'Y:\data\FunctionalFusion'
-    sys.path.append('../')
+if not Path(base_dir).exists():
+    raise(NameError('Could not find base_dir'))
+    
 
 hcp_dir = base_dir + '/HCP'
 data_dir = base_dir + '/MDTB'
@@ -684,6 +685,7 @@ def eval_dcbc(parcels, suit_atlas, func_data=None, resolution=3,
 
     return np.asarray(dcbc_values)
 
+
 def figure_indiv_group():
     D = pd.read_csv('scripts/indiv_group_err.csv')
     nf = D['noise_floor'].mean()
@@ -737,7 +739,6 @@ def _plot_vmf_wvmf(T, T2):
     plt.title('wVMF')
     plt.show()
 
-
 def eval_indv(mdtb_par_indv, fit_par_indv):
     """Evaluate individual parcellations of fusion model vs. SNMF
     Args:
@@ -787,6 +788,7 @@ if __name__ == "__main__":
 
     # Evaluate the two parcellations
     eval_indv(mdtb_par_indv, fit_par_indv)
+
 
     # A = pt.load('D:/data/nips_2022_supp/uhat_complete_all.pt')[15]
     # parcel = pt.argmax(A, dim=1) + 1

@@ -364,7 +364,7 @@ session_names2 = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
                  'spatial-navigation']
 
 # sessions = session_names1 + session_names2
-session_names = ['spatial-navigation']
+session_names = ['clips4']
 
 
 # ############################# PARAMETERS #############################
@@ -397,7 +397,7 @@ if __name__ == "__main__":
         # transfer_t1w(subject, drago_derivatives, cbs_sourcedata)
 
         for session_name in session_names:
-            if subject == 'sub-02' and session in session_group2:
+            if subject == 'sub-02' and session in session_names2:
                 continue
             else:
                 ## Import raw EPI ##
