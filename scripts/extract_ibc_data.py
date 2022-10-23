@@ -1,4 +1,4 @@
-# Script for importing the MDTB data set from super_cerebellum to general format.
+# Script for importing the IBC data set from super_cerebellum to general format.
 import pandas as pd
 import shutil
 from pathlib import Path
@@ -20,19 +20,26 @@ data_dir = base_dir + '/IBC'
 atlas_dir = base_dir + '/Atlases'
 
 
+
+
 if __name__ == "__main__":
     # parcel_mdtb_fs32k()
-    # ibc_dataset = DataSetIBC(data_dir)
-    # info = ibc_dataset.get_participants()
-    # for ses in ibc_dataset.sessions:
-    #     ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
+    ibc_dataset = DataSetIBC(data_dir)
+    info = ibc_dataset.get_participants()
+    for ses in ibc_dataset.sessions:
+        ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
     # pass
-    dataset = DataSetIBC(base_dir + '/IBC')
+    
+    # dataset = DataSetIBC(base_dir + '/IBC')
     # Specify the fields you want to have / check 
-    data,info = dataset.get_data('MNISymC3',dataset.sessions[0],'CondHalf')
-    rw = reliability_within_subj(data,part_vec=info.half,cond_vec=info.reg_num)
-    rb = reliability_between_subj(data,cond_vec=info.reg_num)
-    R = np.c_[rw.mean(axis=1),rb]
+    # data,info = dataset.get_data('MNISymC3',dataset.sessions[0],'CondHalf')
+    # rw = reliability_within_subj(data,part_vec=info.half,cond_vec=info.reg_num)
+    # rb = reliability_between_subj(data,cond_vec=info.reg_num)
+    # R = np.c_[rw.mean(axis=1),rb]
+    # pass
+
+    ibc_dataset.group_average_data(
+        ses_id=dataset.sessions[0], type='CondHalf', atlas='SUIT3')
     pass
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
     # for s in T.participant_id:
