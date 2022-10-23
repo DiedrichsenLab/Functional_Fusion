@@ -352,6 +352,8 @@ class DataSet:
             if Data is None:
                 Data = np.zeros((len(subj),C.shape[0],C.shape[1]))
             Data[i,:,:] = C.get_fdata()
+        # Ensure that infinite values (from div / 0) show up as NaNs
+        Data[np.isinf(Data)]=np.nan
         return Data, info
 
     def group_average_data(self, type='CondHalf', atlas='SUIT3', info_column='task_name'):
