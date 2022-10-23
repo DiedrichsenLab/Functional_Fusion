@@ -170,18 +170,17 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
 
 # ######################### INPUTS ######################################
 
-try:
-    BASE = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
 
-except Exception:
-    try:
-        BASE = '/srv/diedrichsen/data'
+base_dir = '/Volumes/diedrichsen_data$/data'
+if not Path(base_dir).exists():
+    base_dir = '/srv/diedrichsen/data'
+if not Path(base_dir).exists():
+    base_dir = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
+if not Path(base_dir).exists():
+    raise(NameError('Could not find base_dir'))
 
-    except FileNotFoundError:
-        print('Base directory does not exist.')
-
-src_base_dir = os.path.join(BASE, 'ibc')
-dest_base_dir = os.path.join(BASE, 'FunctionalFusion/IBC')
+src_base_dir = os.path.join(base_dir, 'ibc')
+dest_base_dir = os.path.join(base_dir, 'FunctionalFusion/IBC')
 
 session_group1 = ['archi', 'hcp1', 'hcp2', 'rsvplanguage']
 session_group2 = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
@@ -199,7 +198,7 @@ if __name__ == '__main__':
     # for pt in T.participant_id[T.participant_id.index > 2]:
 
         # # # --- Importing SUIT ---
-        # import_ibc_anatderivatives('suit', src_base_dir, dest_base_dir, pt)
+        import_ibc_anatderivatives('suit', src_base_dir, dest_base_dir, pt)
 
         # # # --- Importing ANAT ---
         # import_ibc_anatderivatives('anatomical', src_base_dir, dest_base_dir,
@@ -210,8 +209,8 @@ if __name__ == '__main__':
         #                            pt)
 
         # # --- Importing Estimates ---
-        for session in sessions:
-            if pt == 'sub-02' and session in session_group2:
-                continue
-            else:
-                import_ibc_glm(src_base_dir, dest_base_dir, pt, session)
+        #for session in sessions:
+        #     if pt == 'sub-02' and session in session_group2:
+         #        continue
+         #    else:
+         #        import_ibc_glm(src_base_dir, dest_base_dir, pt, session)

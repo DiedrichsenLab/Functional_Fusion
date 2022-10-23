@@ -17,6 +17,28 @@ import SUITPy as suit
 import surfAnalysisPy as surf
 import nitools as nt
 
+def get_atlas(atlas_str,atlas_dir):
+    """ returns an atlas from a code
+
+    Args:
+        atlas_str (str): Name of the atlas 
+        atlas_dir (str): directory name for the atlas  
+    """
+    # Make the atlas object
+    if (atlas_str=='SUIT3'):
+        mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+    if (atlas_str=='SUIT2'):
+        mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
+        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+    if (atlas_str=='MNISymC3'):
+        mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
+        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+    if (atlas_str =='MNISymC2'):
+        mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
+        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+    return atlas
+
 
 class Atlas():
     """The Atlas class implements the general atlas functions
@@ -388,7 +410,7 @@ class AtlasMapDeform(AtlasMap):
             self.deform_img.append(nb.load(di))
         self.mask_img = nb.load(mask_img)
 
-    def build(self,smooth = None):
+    def build(self, smooth = None, additional_mask=None):
         """
         Using the dataset, builds a list of voxel indices of
         For each of the locations. It creates:
@@ -396,12 +418,14 @@ class AtlasMapDeform(AtlasMap):
         vox_weight: Weight of each of these voxels to determine the atlas location
         Arg:
             smooth (double): SD of smoothing kernel (mm) or None for nearest neighbor
+            additional_mask: Additional Mask image (not necessarily in functional space - only voxels with elements > 0 in that image
+            will be used for the altas )
         """
         # Caluculate locations of atlas in individual (deformed) coordinates
         # Apply possible multiple deformation maps sequentially
         xyz = self.world.copy()
         for i,di in enumerate(self.deform_img):
-            xyz = suit.reslice.sample_image(di,
+            xyz = nt.sample_image(di,
                     xyz[0],
                     xyz[1],
                     xyz[2],1).squeeze().T
@@ -409,18 +433,31 @@ class AtlasMapDeform(AtlasMap):
         atlas_ind = xyz
         N = atlas_ind.shape[1] # Number of locations in atlas
 
+        # Determine which voxels are available in functional space 
+        # and apply additional mask if given  
+        M = self.mask_img.get_fdata()
+        i,j,k=np.where(M>0)
+        vox = np.vstack((i,j,k))
+        world_vox = nt.affine_transform_mat(vox,self.mask_img.affine) # available voxels in world coordiantes
+        if additional_mask is not None:
+            # If file name, load the nifti image 
+            if isinstance(additional_mask,str):
+                additional_mask = nb.load(additional_mask)
+            add_mask = nt.sample_image(additional_mask,
+                        world_vox[0],
+                        world_vox[1],
+                        world_vox[2],1)
+            world_vox = world_vox[:,add_mask>0]
+            vox = vox[:,add_mask>0]
+
         if smooth is None: # Use nearest neighbor interpolation
             linindx,good = nt.coords_to_linvidxs(atlas_ind,self.mask_img,mask=True)
             self.vox_list = linindx.reshape(-1,1)
             self.vox_weight = np.ones((linindx.shape[0],1))
             self.vox_weight[np.logical_not(good)]=np.nan
         else:              # Use smoothing kernel of specific size
-            # Get world coordinates and linear coordinates for all available voxels
-            M = self.mask_img.get_fdata()
-            i,j,k=np.where(M>0)
-            world_vox = nt.affine_transform_mat(np.vstack((i,j,k)),self.mask_img.affine) # available voxels in world coordiantes
-            linindx = np.ravel_multi_index((i,j,k),M.shape,mode='clip')
-
+            linindx = np.ravel_multi_index((vox[0,:],vox[1,:],vox[1,:]),
+                                            M.shape,mode='clip')
             # Distances between atlas coordinates and voxel coordinates
             D = nt.euclidean_dist_sq(atlas_ind,world_vox)
             # Find voxels with substantial power under gaussian kernel

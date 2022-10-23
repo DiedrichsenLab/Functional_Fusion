@@ -12,6 +12,8 @@ if isdir('/srv/diedrichsen/data')
     addpath(sprintf('%s/../matlab/imaging/tools/', workdir));
 elseif isdir('/home/analu/diedrichsen_data/data')
     workdir='/home/analu/diedrichsen_data/data';
+elseif isdir('/Volumes/diedrichsen_data$/data/')
+    workdir = '/Volumes/diedrichsen_data$/data/';
 else
     fprintf(...
         'Workdir not found. Mount or connect to server and try again.');
@@ -72,10 +74,10 @@ session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 
 SM = tdfread('ibc_sessions_map.tsv','\t');
 fields = fieldnames(SM);
-sessmap = RenameField(SM, fields, {'session', 'sub01', 'sub02', ...
-    'sub04', 'sub05', 'sub06', 'sub07', 'sub08', 'sub09', 'sub11', ... 
-    'sub12', 'sub13', 'sub14', 'sub15'});
-sessnum = cellstr(sessmap.session);
+% sessmap = RenameField(SM, fields, {'session', 'sub01', 'sub02', ...
+%     'sub04', 'sub05', 'sub06', 'sub07', 'sub08', 'sub09', 'sub11', ... 
+%     'sub12', 'sub13', 'sub14', 'sub15'});
+% sessnum = cellstr(sessmap.session);
 
 sesstruct = tdfread('ibc_sessions_structure.tsv','\t');
 sessid = cellstr(sesstruct.session);
@@ -1738,12 +1740,16 @@ switch what
             suit_subj_dir = fullfile(base_dir, raw_dir, subj_str{s}, ...
                 'suit');
             masks = {};
-            masks{1} = fullfile(suit_subj_dir, ...
-                sprintf('c_%s_T1w_pcereb_corr.nii', subj_str{s}));
+            % First image need to be in functional space to ensure 
+            % correct space 
+            masks{1} = fullfile(base_dir,'derivatives',subj_str{s},'estimates',...
+                        'ses-archi','run-01','mask.nii')
             masks{2} = fullfile(suit_subj_dir, ...
+                sprintf('c_%s_T1w_pcereb_corr.nii', subj_str{s}));
+            masks{3} = fullfile(suit_subj_dir, ...
                 sprintf('c_%s_T1w_seg1.nii', subj_str{s}));
             final_mask = fullfile(suit_subj_dir, 'maskbrainSUITGrey.nii');
-            spm_imcalc(masks, final_mask, 'i1>0 & i2>0.2');
+            spm_imcalc(masks, final_mask, 'i2>0.1 & i3>0.1');
         end
 
     case 'SUIT:reslice'            % Reslice stuff into suit space 
