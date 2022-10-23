@@ -33,14 +33,20 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
         # Extract all sessions
     elif dataset.casefold() == 'Pontine'.casefold():
         my_dataset = DataSetPontine(base_dir + '/Pontine')
+        if type is None:
+            type = 'TaskHalf'
         fiel = ['task_name','task_num','half']
         data,info = my_dataset.get_data(atlas,'ses-01',
                                            type,fields=fiel)
     elif dataset.casefold() == 'Nishimoto'.casefold():
         my_dataset = DataSetNishi(base_dir + '/Nishimoto')
+        if type is None:
+            type = 'CondHalf'
         fiel = ['task_name','reg_id','half']
     elif dataset.casefold() == 'IBC'.casefold():
         fiel = None
+        if type is None:
+            type = 'CondHalf'
         my_dataset = DataSetIBC(base_dir + '/IBC')
     else:
         raise(NameError('Unknown data set'))
@@ -352,6 +358,8 @@ class DataSet:
             if Data is None:
                 Data = np.zeros((len(subj),C.shape[0],C.shape[1]))
             Data[i,:,:] = C.get_fdata()
+        # Ensure that infinite values (from div / 0) show up as NaNs
+        Data[np.isinf(Data)]=np.nan
         return Data, info
 
     def group_average_data(self, ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
@@ -382,6 +390,7 @@ class DataSet:
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir +
                 f'/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
+
 
 
 
