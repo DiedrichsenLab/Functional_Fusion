@@ -3,8 +3,8 @@ from time import gmtime
 import pandas as pd
 from pathlib import Path
 import numpy as np
-import atlas_map as am
-from dataset import DataSetMDTB, DataSetHcpResting
+import Functional_Fusion.atlas_map as am
+from Functional_Fusion.dataset import DataSetMDTB, DataSetHcpResting
 from scipy.linalg import block_diag
 import nibabel as nb
 import SUITPy as suit
