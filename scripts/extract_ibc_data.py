@@ -25,11 +25,11 @@ atlas_dir = base_dir + '/Atlases'
 if __name__ == "__main__":
     # parcel_mdtb_fs32k()
     ibc_dataset = DataSetIBC(data_dir)
-    info = ibc_dataset.get_participants()
-    for ses in ibc_dataset.sessions:
-        ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
+    # info = ibc_dataset.get_participants()
+    # for ses in ibc_dataset.sessions:
+    #     ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
     # pass
-    
+
     # dataset = DataSetIBC(base_dir + '/IBC')
     # Specify the fields you want to have / check 
     # data,info = dataset.get_data('MNISymC3',dataset.sessions[0],'CondHalf')
@@ -38,8 +38,9 @@ if __name__ == "__main__":
     # R = np.c_[rw.mean(axis=1),rb]
     # pass
 
-    ibc_dataset.group_average_data(
-        ses_id=dataset.sessions[0], type='CondHalf', atlas='SUIT3')
+    for ses in ibc_dataset.sessions:
+        ibc_dataset.group_average_data(
+            ses_id=ses, type='CondHalf', atlas='MNISymC3')
     pass
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
     # for s in T.participant_id:
