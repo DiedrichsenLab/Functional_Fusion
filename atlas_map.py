@@ -35,7 +35,7 @@ def get_atlas(atlas_str,atlas_dir):
         mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
         atlas = AtlasVolumetric('cerebellum',mask_img=mask)
     if (atlas_str =='MNISymC2'):
-        mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
+        mask = atlas_dir + '/tpl-MNI152NLin2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
         atlas = AtlasVolumetric('cerebellum',mask_img=mask)
     return atlas
 
