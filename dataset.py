@@ -31,15 +31,15 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
             type = 'CondHalf'
         fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
         # Extract all sessions
-    if dataset.casefold() == 'Pontine'.casefold():
+    elif dataset.casefold() == 'Pontine'.casefold():
         my_dataset = DataSetPontine(base_dir + '/Pontine')
         fiel = ['task_name','task_num','half']
         data,info = my_dataset.get_data(atlas,'ses-01',
                                            type,fields=fiel)
-    if dataset.casefold() == 'Nishimoto'.casefold():
+    elif dataset.casefold() == 'Nishimoto'.casefold():
         my_dataset = DataSetNishi(base_dir + '/Nishimoto')
         fiel = ['task_name','reg_id','half']
-    if dataset.casefold() == 'IBC'.casefold():
+    elif dataset.casefold() == 'IBC'.casefold():
         fiel = None
         my_dataset = DataSetIBC(base_dir + '/IBC')
     else:
