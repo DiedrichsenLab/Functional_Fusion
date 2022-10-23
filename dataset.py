@@ -23,51 +23,42 @@ from numpy import eye,zeros,ones,empty,nansum, sqrt
 from numpy.linalg import pinv,solve
 
 def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
-    # ----------------------------
+    # Get defaults for each dataset 
     if dataset.casefold() == 'MDTB'.casefold():
         my_dataset = DataSetMDTB(base_dir + '/MDTB')
-        fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
-        info_mdtb = []
-        data_mdtb = []
         # Make defaults:
-        if sess=='all':
-            sess=['ses-s1','ses-s2']
         if type is None:
             type = 'CondHalf'
+        fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
         # Extract all sessions
-        for s in sess:
-            dat,info = my_dataset.get_data(atlas,s,type,fields=fiel)
-            data_mdtb.append(dat)
-            info['sess']=[s]*info.shape[0]
-            info_mdtb.append(info)
-        info = pd.concat(info_mdtb,ignore_index=True,sort=False)
-        data = np.concatenate(data_mdtb,axis=1)
-    # ----------------------------
     if dataset.casefold() == 'Pontine'.casefold():
         my_dataset = DataSetPontine(base_dir + '/Pontine')
         fiel = ['task_name','task_num','half']
         data,info = my_dataset.get_data(atlas,'ses-01',
                                            type,fields=fiel)
-    # ----------------------------
     if dataset.casefold() == 'Nishimoto'.casefold():
         my_dataset = DataSetNishi(base_dir + '/Nishimoto')
         fiel = ['task_name','reg_id','half']
-        info_nn = []
-        data_nn = []
-        if sess=='all':
-            sess=['ses-01','ses-02']
-
-        for s in sess:
-            dat,info = my_dataset.get_data(atlas,s,type,fields=fiel)
-            data_nn.append(dat)
-            info['sess']=[s]*info.shape[0]
-            info_nn.append(info)
-
-        info = pd.concat(info_nn,ignore_index=True,sort=False)
-        data = np.concatenate(data_nn,axis=1)
-    # ----------------------------
     if dataset.casefold() == 'IBC'.casefold():
-        pass
+        fiel = None
+        my_dataset = DataSetIBC(base_dir + '/IBC')
+    else:
+        raise(NameError('Unknown data set'))
+
+    # Get defaults sessions from dataset itself
+    if sess=='all':
+        sess=my_dataset.sessions
+    # Load all data and concatenate 
+    info_l = []
+    data_l = []
+    for s in sess:
+        dat,inf = my_dataset.get_data(atlas,s,type,fields=fiel)
+        data_l.append(dat)
+        inf['sess']=[s]*inf.shape[0]
+        info_l.append(inf)
+
+    info = pd.concat(info_l,ignore_index=True,sort=False)
+    data = np.concatenate(data_l,axis=1)
     return data,info,my_dataset
 
 def prewhiten_data(data):

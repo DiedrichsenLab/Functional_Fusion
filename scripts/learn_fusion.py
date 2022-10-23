@@ -29,9 +29,6 @@ if not Path(base_dir).exists():
 if not Path(base_dir).exists():
     raise(NameError('Could not find base_dir'))
     
-
-
-
 def fit_fusion(data,design,K=10,intialization='random'):
 
     P = data[0].shape[2]
@@ -240,17 +237,15 @@ def batch_fit(datasets,sess,type=None,design_ind=None,part_ind=None,subj=None,
 
 def fit_all(set_ind=[0,1,2]):
     # Data sets need to numpy arrays to allow indixing by list
-    datasets = np.array(['Mdtb','Pontine','Nishimoto'],
+    datasets = np.array(['Mdtb','Pontine','Nishimoto','Ibc'],
                     dtype = object)
-    sess = np.array([['ses-s1','ses-s2'],
-            ['ses-01'],
-            ['ses-01','ses-02']],
+    sess = np.array(['all','all','all','all'],
             dtype = object)
-    type = np.array(['CondHalf','TaskHalf','CondHalf'],
+    type = np.array(['CondHalf','TaskHalf','CondHalf','CondHalf'],
             dtype = object)
-    design_ind= np.array(['cond_num_uni','task_num','reg_id'],
+    design_ind= np.array(['cond_num_uni','task_num','reg_id','reg_num'],
             dtype = object)
-    part_ind = np.array(['half','half','half'],
+    part_ind = np.array(['half','half','half','half'],
             dtype = object)
 
     # Use specific mask / atlas. 
@@ -280,62 +275,6 @@ def fit_all(set_ind=[0,1,2]):
               first_iter=30,
               save=True)
 
-def fit_single(set_ind=[0, 1, 2]):
-    """Fit full model on single dataset using different atlas
-    Args:
-        set_ind (list): which dataset to fit
-
-    Returns:
-        None. save pickle file in /model folder
-    """
-    # Data sets need to numpy arrays to allow indixing by list
-    datasets = np.array(['Mdtb', 'Pontine', 'Nishimoto'],
-                        dtype=object)
-    sess = np.array([['ses-s1', 'ses-s2'],
-                     ['ses-01'],
-                     ['ses-01', 'ses-02']],
-                    dtype=object)
-    type = np.array(['CondHalf', 'TaskHalf', 'CondHalf'],
-                    dtype=object)
-    design_ind = np.array(['cond_num_uni', 'task_num', 'reg_id'],
-                          dtype=object)
-    part_ind = np.array(['half', 'half', 'half'],
-                        dtype=object)
-
-    # Use specific mask / atlas.
-    mask = base_dir + '/Atlases/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    atlas = am.AtlasVolumetric('SUIT3', mask_img=mask)
-
-    # Generate a dataname from first two letters of each training data set
-    dataname = [datasets[i][0:2] for i in set_ind]
-
-    name = 'asym' + '_' + ''.join(dataname)
-    info, model = batch_fit(datasets[set_ind], sess=sess[set_ind], type=type[set_ind],
-                            design_ind=design_ind[set_ind], part_ind=part_ind[set_ind],
-                            atlas=atlas, K=10, name=name, n_inits=20, n_iter=200,
-                            n_rep=10, first_iter=30, save=False)
-
-
-def check_IBC(): 
-    dataset = DataSetIBC(base_dir + '/IBC')
-    # Specify the fields you want to have / check 
-    T = dataset.get_participants()
-    num_sess = len(dataset.sessions)
-    RW = np.empty((T.shape[0],num_sess))
-    RB = np.empty((T.shape[0],num_sess))
-    Missing = np.empty((T.shape[0],num_sess))
-
-    for i,ses in enumerate(dataset.sessions):
-        data,info = dataset.get_data('MNISymC3',ses,'CondHalf')
-        m = np.isnan(data).sum(axis=1)
-        Missing[:,i] = (m>0).sum(axis=1)
-        rw = reliability_within_subj(data,part_vec=info.half,cond_vec=info.reg_num)
-        RW[:,i] = rw.mean(axis=1)
-        RB[:,i] = reliability_between_subj(data,cond_vec=info.reg_num)
-    pass
-
-
-
 if __name__ == "__main__":
     # fit_all([0])
     # fit_all([1])
@@ -344,8 +283,8 @@ if __name__ == "__main__":
     # fit_all([0,1])
     # fit_all([0, 2]) # problem with fitting 0 & 2: In "generativeMRF/full_model.py", line 466, 'best_theta' is referenced before assignment
     # fit_all([1, 2])
-    # fit_all([0])
-    check_IBC()
+    fit_all([3])
+    # check_IBC()
     #mask = base_dir + '/Atlases/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
     #atlas = am.AtlasVolumetric('MNISymC3',mask_img=mask)
 
