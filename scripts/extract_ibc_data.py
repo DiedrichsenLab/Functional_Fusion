@@ -59,21 +59,23 @@ def show_ibc_group(ses_id='ses-hcp1', type='CondHalf', atlas='MNISymC3', cond=0,
         print(f'Showing {D.cond_name[cond]}')
         pass
 
+def extract_all():
+    ibc_dataset = DataSetIBC(data_dir)
+    info = ibc_dataset.get_participants()
+    for ses in ibc_dataset.sessions:
+        print(f'extracting {ses}')
+        ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
 
 if __name__ == "__main__":
+    extract_all()
+
     # parcel_mdtb_fs32k()
-    ibc_dataset = DataSetIBC(data_dir)
-    info = ibc_dataset.get_participants()
-    for ses in ibc_dataset.sessions:
-         ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
     # 
-    type = 'CondHalf'
-    ibc_dataset = DataSetIBC(data_dir)
+    # type = 'CondHalf'
+    # ibc_dataset = DataSetIBC(data_dir)
     # ---- Extract all data 
-    info = ibc_dataset.get_participants()
-    for ses in ibc_dataset.sessions:
-        ibc_dataset.extract_all_suit(ses, type='CondHalf', atlas='SUIT3')
-    # 
+    # info = ibc_dataset.get_participants(
+    #     # 
     # --- Get group average ---
     for ses in ibc_dataset.sessions:
         ibc_dataset.group_average_data(

@@ -456,7 +456,7 @@ class AtlasMapDeform(AtlasMap):
             self.vox_weight = np.ones((linindx.shape[0],1))
             self.vox_weight[np.logical_not(good)]=np.nan
         else:              # Use smoothing kernel of specific size
-            linindx = np.ravel_multi_index((vox[0,:],vox[1,:],vox[1,:]),
+            linindx = np.ravel_multi_index((vox[0,:],vox[1,:],vox[2,:]),
                                             M.shape,mode='clip')
             # Distances between atlas coordinates and voxel coordinates
             D = nt.euclidean_dist_sq(atlas_ind,world_vox)

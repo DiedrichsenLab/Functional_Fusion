@@ -74,7 +74,8 @@ def prewhiten_data(data):
         # Prewhiten the data univariately
         resms = data[i][-1,:]
         data_n.append(data[i][0:-1,:])
-        data_n[i] = data_n[i] / np.sqrt(np.abs(resms))
+        resms[resms<=0]=np.nan
+        data_n[i] = data_n[i] / np.sqrt(resms)
     return data_n
 
 def optimal_contrast(data,C,X,reg_in=None,baseline=None):
@@ -383,10 +384,6 @@ class DataSet:
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir +
                 f'/group_{ses_id}_space-{atlas}_type-{type}.dscalar.nii')
-
-
-
-
 
 class DataSetMDTB(DataSet):
     def __init__(self, dir):
@@ -896,7 +893,7 @@ class DataSetNishi(DataSet):
         if type == 'CondHalf':
             # Make new data frame for the information of the new regressors
             info_gb = info.groupby(['sn','sess','half','reg_id','task_name'])
-            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
+            data_info = info_gb.agg({'n_rep':np.sum}).reset_index(drop=True)
             data_info['names']=[f'{d.task_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
@@ -928,7 +925,7 @@ class DataSetNishi(DataSet):
 
             # Make new data frame for the information of the new regressors
             info_gb = info.groupby(['sn','sess','reg_id','task_name'])
-            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
+            data_info = info_gb.agg({'n_rep':np.sum}).reset_index(drop=True)
             data_info['names']=[f'{d.task_name.strip()}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
