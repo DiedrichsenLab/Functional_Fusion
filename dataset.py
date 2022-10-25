@@ -47,6 +47,7 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
         type = my_dataset.default_type
 
     # Load all data and concatenate 
+    # across sessions
     info_l = []
     data_l = []
     for s in sess:
@@ -195,6 +196,11 @@ class DataSet:
         self.data_dir = base_dir + '/derivatives/{0}/data'
         # assume that the common atlas directory is on the level before
         self.atlas_dir = os.path.join(os.path.dirname(base_dir),'Atlases')
+        # Some information that a standard data set should have
+        self.sessions = [None] 
+        self.default_type = None 
+        self.cond_ind = None  # Condition Indicator (field in tsv file )
+        self.part_ind = None  # Partition Indicator (field in tsv file )
 
     def get_participants(self):
         """ returns a data frame with all participants
@@ -392,7 +398,8 @@ class DataSetMDTB(DataSet):
         super().__init__(dir)
         self.sessions=['ses-s1','ses-s2']
         self.default_type = 'CondHalf'
-        self.design_ind = 'cond_num_uni'
+        self.cond_ind = 'cond_num_uni'
+        self.part_ind = 'half'
 
     def extract_data(self,participant_id,
                      atlas_maps,
@@ -742,7 +749,8 @@ class DataSetPontine(DataSet):
         super().__init__(dir)
         self.sessions=['ses-01']
         self.default_type = 'TaskHalf'
-        self.design_ind = 'task_num'
+        self.cond_ind = 'task_num'
+        self.part_ind = 'half'
 
     def extract_data(self, participant_id,
                  atlas_maps,
@@ -856,7 +864,8 @@ class DataSetNishi(DataSet):
         super().__init__(dir)
         self.sessions=['ses-01','ses-02']
         self.default_type = 'CondHalf'
-        self.design_ind = 'reg_id'
+        self.cond_ind = 'reg_id'
+        self.part_ind = 'half'
 
     def extract_data(self,participant_id,
                     atlas_maps,
@@ -964,7 +973,8 @@ class DataSetIBC(DataSet):
                          'ses-spatialnavigation',
                          'ses-tom']
         self.default_type = 'CondHalf'
-        self.design_ind = 'reg_num'
+        self.cond_ind = 'cond_num_uni'
+        self.part_ind = 'half'
 
                         #   Not using 'ses-self' for now, as we need to deal with different numbers of regressors per subject 
 
