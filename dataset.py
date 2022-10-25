@@ -369,19 +369,14 @@ class DataSet:
             info_column (str, optional): Column of info tsv file for which each average should be calculated. Defaults to 'task_name'
         """
 
-        T = self.get_participants()
-        for i, s in enumerate(T.participant_id):
-                C = nb.load(self.data_dir.format(s) +
-                            f'/{s}_space-{atlas}_{ses_id}_type-{type}.dscalar.nii')
-                if i == 0:
-                    # initialize tensor
-                    X = np.zeros(
-                        (C.shape[0], C.shape[1], T.shape[0]))
-                    X[:] = np.nan
-                X[:, :, i] = C.get_fdata()
+        data, info = self.get_data(space='MNISymC3', ses_id=ses_id,
+                                   type='CondHalf')
         # average across participants
-        X = np.nanmean(X,axis=2)
+        X = np.nanmean(data,axis=0)
         # make output cifti
+        s = self.get_participants().participant_id[0]
+        C = nb.load(self.data_dir.format(s) +
+                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
         C = nb.Cifti2Image(dataobj=X, header=C.header)
         # save output
         dest_dir = op.join(self.data_dir.format(s).split('sub-')[0], 'group')
