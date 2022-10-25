@@ -67,12 +67,12 @@ def extract_all():
         ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
 
 if __name__ == "__main__":
-    extract_all()
+    # extract_all()
 
     # parcel_mdtb_fs32k()
     # 
-    # type = 'CondHalf'
-    # ibc_dataset = DataSetIBC(data_dir)
+    type = 'CondHalf'
+    ibc_dataset = DataSetIBC(data_dir)
     # ---- Extract all data 
     # info = ibc_dataset.get_participants(
     #     # 
@@ -102,8 +102,8 @@ if __name__ == "__main__":
     ibc_dataset = DataSetIBC(data_dir)
     for ses in ibc_dataset.sessions:
         show_ibc_group(ses_id=ses, type='CondHalf',
-                       atlas='MNISymC3', cond='all', savefig=True)
-        
+                    atlas='MNISymC3', cond='all', savefig=True)
+    
     pass
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
     # for s in T.participant_id:
