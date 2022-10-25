@@ -22,18 +22,27 @@ atlas_dir = base_dir + '/Atlases'
 
 if __name__ == "__main__":
     # parcel_mdtb_fs32k()
-    # ibc_dataset = DataSetIBC(data_dir)
-    # info = ibc_dataset.get_participants()
-    # for ses in ibc_dataset.sessions:
-    #     ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
-    # pass
-    dataset = DataSetIBC(base_dir + '/IBC')
-    # Specify the fields you want to have / check 
-    data,info = dataset.get_data('MNISymC3',dataset.sessions[0],'CondHalf')
-    rw = reliability_within_subj(data,part_vec=info.half,cond_vec=info.reg_num)
-    rb = reliability_between_subj(data,cond_vec=info.reg_num)
-    R = np.c_[rw.mean(axis=1),rb]
-    pass
-    # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
-    # for s in T.participant_id:
-    #     pass
+    ibc_dataset = DataSetIBC(data_dir)
+    info = ibc_dataset.get_participants()
+    for ses in ibc_dataset.sessions:
+         ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
+    # 
+    type = 'CondHalf'
+    ibc_dataset = DataSetIBC(data_dir)
+    # ---- Extract all data 
+    info = ibc_dataset.get_participants()
+    for ses in ibc_dataset.sessions:
+        ibc_dataset.extract_all_suit(ses, type='CondHalf', atlas='SUIT3')
+    # 
+    # --- Get group average ---
+    for ses in ibc_dataset.sessions:
+        ibc_dataset.group_average_data(
+            ses_id=ses, type=type, atlas='MNISymC3')
+        # write session tsv file for group average
+        s = ibc_dataset.get_participants().participant_id[0]
+        D = pd.read_csv(Path(ibc_dataset.data_dir.format(s)) /
+                        f'{s}_{ses}_info-{type}.tsv', sep='\t')
+        D = D.drop(columns=['sn', 'sess', 'run']).drop_duplicates(keep='first')
+        D.to_csv(ibc_dataset.data_dir.split('/{0}')[0] +
+                        f'/group/group_{ses}_info-{type}.tsv', sep='\t')
+
