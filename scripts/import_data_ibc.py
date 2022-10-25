@@ -14,17 +14,57 @@ import re
 import shutil
 
 from pathlib import Path
+from this import d
 
 import numpy as np
 import pandas as pd
 
 from import_data import import_suit, import_anat, import_freesurfer
+import dataset 
 
 import scipy.io as sio
 import nibabel as nb
 
+# ######################### INPUTS ######################################
+
+
+base_dir = '/Volumes/diedrichsen_data$/data'
+if not Path(base_dir).exists():
+    base_dir = '/srv/diedrichsen/data'
+if not Path(base_dir).exists():
+    base_dir = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
+if not Path(base_dir).exists():
+    raise(NameError('Could not find base_dir'))
+
+src_base_dir = os.path.join(base_dir, 'ibc')
+dest_base_dir = os.path.join(base_dir, 'FunctionalFusion/IBC')
+
+session_group1 = ['archi', 'hcp1', 'hcp2', 'rsvplanguage']
+session_group2 = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
+                  'clips4', 'lyon1', 'lyon2', 'mathlang',
+                  'spatialnavigation']
+sessions = session_group1 + session_group2
 
 # ######################### FUNCTIONS ###################################
+
+
+def add_condnum_to_tsv():
+    ds = dataset.DataSetIBC(dest_base_dir)
+    T=ds.get_participants() 
+    offset = 0 
+    for i in ds.sessions:
+        for s in T.participant_id: 
+            wdir = ds.estimates_dir.format(s) + f'/{i}'
+            fname = wdir + f'/{s}_{i}_reginfo.tsv'
+            D = pd.read_csv(fname ,delimiter='\t')
+            D['cond_num_uni']=D.reg_num+offset
+            D.to_csv(fname,sep='\t')
+            wdir = ds.data_dir.format(s)
+            fname = wdir + f'/{s}_{i}_info-CondHalf.tsv'
+            D = pd.read_csv(fname ,delimiter='\t')
+            D['cond_num_uni']=D.reg_num+offset
+            D.to_csv(fname,sep='\t')
+        offset = offset + D.reg_num.max()
 
 
 def delete_old(ddir, ext):
@@ -168,37 +208,20 @@ def import_ibc_glm(source_basedir, destination_basedir, participant,
     import_spm_ibc_dmtx(source_dir, destination_dir, participant, session_id)
 
 
-# ######################### INPUTS ######################################
 
-
-base_dir = '/Volumes/diedrichsen_data$/data'
-if not Path(base_dir).exists():
-    base_dir = '/srv/diedrichsen/data'
-if not Path(base_dir).exists():
-    base_dir = os.path.join(os.path.expanduser('~'), 'diedrichsen_data/data')
-if not Path(base_dir).exists():
-    raise(NameError('Could not find base_dir'))
-
-src_base_dir = os.path.join(base_dir, 'ibc')
-dest_base_dir = os.path.join(base_dir, 'FunctionalFusion/IBC')
-
-session_group1 = ['archi', 'hcp1', 'hcp2', 'rsvplanguage']
-session_group2 = ['mtt1', 'mtt2', 'preference', 'tom', 'enumeration', 'self',
-                  'clips4', 'lyon1', 'lyon2', 'mathlang',
-                  'spatialnavigation']
-sessions = session_group1 + session_group2
 
 # ########################## RUN ########################################
 
 if __name__ == '__main__':
-    T = pd.read_csv(os.path.join(dest_base_dir, 'participants.tsv'),
-                    delimiter='\t')
+    add_condnum_to_tsv()
+    # T = pd.read_csv(os.path.join(dest_base_dir, 'participants.tsv'),
+   #                 delimiter='\t')
 
-    for pt in T.participant_id:
+    # for pt in T.participant_id:
     # for pt in T.participant_id[T.participant_id.index > 2]:
 
         # # # --- Importing SUIT ---
-        import_ibc_anatderivatives('suit', src_base_dir, dest_base_dir, pt)
+        # import_ibc_anatderivatives('suit', src_base_dir, dest_base_dir, pt)
 
         # # # --- Importing ANAT ---
         # import_ibc_anatderivatives('anatomical', src_base_dir, dest_base_dir,

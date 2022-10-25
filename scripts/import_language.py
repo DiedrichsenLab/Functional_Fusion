@@ -30,13 +30,29 @@ def import_func_task(source_dir, dest_dir, participant_id):
                 'ProdE1_NProd', 'ProdE1_SComp', 'ProdE1_SProd', 'ProdE1_VisEvSem', 'ProdE1_WComp', 'ProdE1_WProd',
                 'ProdE2_SProd', 'ProdE2_WProd',
                 'ProdE3_NProd', 'ProdE3_SComp', 'ProdE3_SProd', 'ProdE3_VisEvSem', 'ProdE3_WComp', 'ProdE3_WProd']
-    # Make the destination directory
-    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    sessions = ['ses-01', 'ses-01',
+                'ses-02', 'ses-02', 'ses-02', 'ses-02', 'ses-02', 'ses-02',
+                'ses-03', 'ses-03',
+                'ses-04', 'ses-04', 'ses-04', 'ses-04', 'ses-04', 'ses-04']
+    
     for task,task_n in enumerate(task_name):
+        dest_dir = os.path.join(dest_dir, sessions[task])
+        
+
+        if 'loc' in task_n:
+            new_task_n = task_n.split('_')[0]
+        elif 'ProdE' in task_n:
+            new_task_n = task_n.split('_')[1]
+
+        task_id = sessions[task]
 
         # move data into the corresponding session folder
         src = (f'/{participant_id}_{task_n}_t.nii')
-        dest=(f'/{participant_id}_run-99_con-{task+1:02}_space-MNI.nii')
+        dest = (
+            f'/{participant_id}_run-99_con-{task_id:02}_space-MNI.nii')
+
+        # Make the destination directory
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
         try:
             shutil.copyfile(source_dir+src, 
@@ -51,6 +67,6 @@ if __name__ == "__main__":
         print(f"-Start importing subject {s}")
         # old_id = s.replace('sub-','s',1)
         source_dir = os.path.join(orig_dir, '%s/' % str(s))
-        dest_dir = os.path.join(target_dir, '%s/estimates/ses-01/' % str(s))
+        dest_dir = os.path.join(target_dir, '%s/estimates/' % str(s))
         import_func_task(source_dir, dest_dir, str(s))
         print(f"-Done subject {s}")

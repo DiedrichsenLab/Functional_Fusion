@@ -43,3 +43,5 @@ info.imagetype.value_counts() # 354 each
 # for i in /Volumes/diedrichsen_data$/data/FunctionalFusion/Language/raw/*; do
 # echo mv $i ${i%%raw/*}raw/sub-${i##*raw/};
 # done
+
+# 12 subjects have 14 contrasts (MDloc, langloc, ProdE1 [NProd, SComp, SProd, VisEvSem, WComp, WProd], ProdE3  [NProd, SComp, SProd, VisEvSem, WComp, WProd])
