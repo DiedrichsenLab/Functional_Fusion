@@ -22,9 +22,11 @@ data_dir = base_dir + '/IBC'
 atlas_dir = base_dir + '/Atlases'
 
 
-def show_ibc_group(ses_id = 'ses-hcp1', type='CondHalf', atlas='SUIT3', cond=0, info_column='names', savefig=False):
-    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+def show_ibc_group(ses_id='ses-hcp1', type='CondHalf', atlas='MNISymC3', cond=0, info_column='names', savefig=False):
+    if (atlas == 'MNISymC3'):
+        mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
+    
     ibc_dataset = DataSetIBC(data_dir)
     C = nb.load(ibc_dataset.data_dir.split('/{0}')[0] +
                 f'/group/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
@@ -39,7 +41,7 @@ def show_ibc_group(ses_id = 'ses-hcp1', type='CondHalf', atlas='SUIT3', cond=0, 
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         for i, c in enumerate(conditions):
             Nifti = suit_atlas.data_to_nifti(X[i, :])
-            surf_data = suit.flatmap.vol_to_surf(Nifti)
+            surf_data = suit.flatmap.vol_to_surf(Nifti, atlas[:-1])
             fig = suit.flatmap.plot(
                 surf_data, render='matplotlib', new_figure=True)
             fig.set_title(c)
@@ -63,21 +65,21 @@ if __name__ == "__main__":
     # 
     ibc_dataset = DataSetIBC(data_dir)
     # 
-    info = ibc_dataset.get_participants()
-    for ses in ibc_dataset.sessions:
-        ibc_dataset.extract_all_suit(ses, type='CondHalf', atlas='SUIT3')
+    # info = ibc_dataset.get_participants()
+    # for ses in ibc_dataset.sessions:
+    #     ibc_dataset.extract_all_suit(ses, type='CondHalf', atlas='SUIT3')
     # 
     # --- Get group average ---
-    for ses in ibc_dataset.sessions:
-        ibc_dataset.group_average_data(
-            ses_id=ses, type='CondHalf', atlas='SUIT3')
-        # write session averaged tsv file
-        s = ibc_dataset.get_participants().participant_id[0]
-        D = pd.read_csv(Path(ibc_dataset.data_dir.format(s)) /
-                        f'{s}_{ses}_info-{type}.tsv', sep='\t')
-        D = D.drop(columns=['sn', 'sess', 'run']).drop_duplicates(keep='first')
-        D.to_csv(ibc_dataset.data_dir.split('/{0}')[0] +
-                        f'/group/group_{ses}_info-{type}.tsv', sep='\t')
+    # for ses in ibc_dataset.sessions:
+    #     ibc_dataset.group_average_data(
+    #         ses_id=ses, type='CondHalf', atlas='SUIT3')
+    #     # write session averaged tsv file
+    #     s = ibc_dataset.get_participants().participant_id[0]
+    #     D = pd.read_csv(Path(ibc_dataset.data_dir.format(s)) /
+    #                     f'{s}_{ses}_info-{type}.tsv', sep='\t')
+    #     D = D.drop(columns=['sn', 'sess', 'run']).drop_duplicates(keep='first')
+    #     D.to_csv(ibc_dataset.data_dir.split('/{0}')[0] +
+    #                     f'/group/group_{ses}_info-{type}.tsv', sep='\t')
 
     
     # pass
