@@ -366,7 +366,7 @@ class DataSet:
         T = self.get_participants()
         for i, s in enumerate(T.participant_id):
                 C = nb.load(self.data_dir.format(s) +
-                            f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+                            f'/{s}_space-{atlas}_{ses_id}_type-{type}.dscalar.nii')
                 if i == 0:
                     # initialize tensor
                     X = np.zeros(
@@ -381,7 +381,7 @@ class DataSet:
         dest_dir = op.join(self.data_dir.format(s).split('sub-')[0], 'group')
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir +
-                f'/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
+                f'/group_{ses_id}_space-{atlas}_type-{type}.dscalar.nii')
 
 
 
