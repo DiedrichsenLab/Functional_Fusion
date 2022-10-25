@@ -383,7 +383,7 @@ class DataSet:
         dest_dir = op.join(self.data_dir.format(s).split('sub-')[0], 'group')
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir +
-                f'/group_{ses_id}_space-{atlas}_type-{type}.dscalar.nii')
+                f'/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
 
 class DataSetMDTB(DataSet):
     def __init__(self, dir):
