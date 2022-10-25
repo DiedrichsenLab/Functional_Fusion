@@ -26,27 +26,16 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     # Get defaults for each dataset 
     if dataset.casefold() == 'MDTB'.casefold():
         my_dataset = DataSetMDTB(base_dir + '/MDTB')
-        # Make defaults:
-        if type is None:
-            type = 'CondHalf'
         fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
         # Extract all sessions
     elif dataset.casefold() == 'Pontine'.casefold():
         my_dataset = DataSetPontine(base_dir + '/Pontine')
-        if type is None:
-            type = 'TaskHalf'
         fiel = ['task_name','task_num','half']
-        data,info = my_dataset.get_data(atlas,'ses-01',
-                                           type,fields=fiel)
     elif dataset.casefold() == 'Nishimoto'.casefold():
         my_dataset = DataSetNishi(base_dir + '/Nishimoto')
-        if type is None:
-            type = 'CondHalf'
         fiel = ['task_name','reg_id','half']
     elif dataset.casefold() == 'IBC'.casefold():
         fiel = None
-        if type is None:
-            type = 'CondHalf'
         my_dataset = DataSetIBC(base_dir + '/IBC')
     else:
         raise(NameError('Unknown data set'))
@@ -54,6 +43,9 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     # Get defaults sessions from dataset itself
     if sess=='all':
         sess=my_dataset.sessions
+    if type is None:
+        type = my_dataset.default_type
+
     # Load all data and concatenate 
     info_l = []
     data_l = []
@@ -399,6 +391,8 @@ class DataSetMDTB(DataSet):
     def __init__(self, dir):
         super().__init__(dir)
         self.sessions=['ses-s1','ses-s2']
+        self.default_type = 'CondHalf'
+        self.design_ind = 'cond_num_uni'
 
     def extract_data(self,participant_id,
                      atlas_maps,
@@ -747,6 +741,8 @@ class DataSetPontine(DataSet):
     def __init__(self, dir):
         super().__init__(dir)
         self.sessions=['ses-01']
+        self.default_type = 'TaskHalf'
+        self.design_ind = 'task_num'
 
     def extract_data(self, participant_id,
                  atlas_maps,
@@ -859,6 +855,8 @@ class DataSetNishi(DataSet):
     def __init__(self, dir):
         super().__init__(dir)
         self.sessions=['ses-01','ses-02']
+        self.default_type = 'CondHalf'
+        self.design_ind = 'reg_id'
 
     def extract_data(self,participant_id,
                     atlas_maps,
@@ -965,6 +963,9 @@ class DataSetIBC(DataSet):
                          'ses-rsvplanguage',
                          'ses-spatialnavigation',
                          'ses-tom']
+        self.default_type = 'CondHalf'
+        self.design_ind = 'reg_num'
+
                         #   Not using 'ses-self' for now, as we need to deal with different numbers of regressors per subject 
 
     def get_participants(self):
