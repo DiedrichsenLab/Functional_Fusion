@@ -499,8 +499,9 @@ class DataSetHcpResting(DataSet):
         # self.func_dir = self.base_dir + '/{0}/estimates'
         self.derivative_dir = self.base_dir + '/derivatives'
         self.sessions=['ses-01','ses-02']
+        self.hem_name = ['cortex_left', 'cortex_right']
 
-    def get_data_fnames(self, participant_id, refix=False):
+    def get_data_fnames(self, participant_id):
         """ Gets all raw data files
         Args:
             participant_id (str): Subject
@@ -514,11 +515,74 @@ class DataSetHcpResting(DataSet):
 
         return fnames
 
+    def extract_all_suit(self,ses_id='ses-s1',type='CondHalf',atlas='SUIT3', res=162):
+        """ MDTB extraction of atlasmap locations
+        from nii files - and filterting or averaring
+        as specified.
+
+        Args:
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+        suit_atlas = am.get_atlas(atlas, self.atlas_dir)
+
+        # Get the deformation map from MNI to SUIT
+        mni_atlas = self.atlas_dir + '/tpl-MNI152NLin6AsymC'
+        deform = mni_atlas + '/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
+        mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
+        atlas_map = am.AtlasMapDeform(self, suit_atlas, 'group', deform, mask)
+        atlas_map.build(smooth=2.0)
+
+        # Get the parcelation
+        surf_parcel = []
+        for i, h in enumerate(['L', 'R']):
+            dir = self.atlas_dir + '/tpl-fs32k'
+            gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
+            surf_parcel.append(am.AtlasSurfaceParcel(self.hem_name[i], gifti))
+
+        T = self.get_participants()
+        for s in T.participant_id:
+            print(f'Extract {s}')
+            if ses_id == 'ses-s1':
+                runs = [0, 1]
+            elif ses_id == 'ses-s2':
+                runs = [2, 3]
+            else:
+                raise ValueError('Unknown session id.')
+
+            coef = self.get_cereb_connectivity(s, atlas_map, surf_parcel, runs=runs)
+
+            if type == 'CondHalf':  # Average across runs
+                coef = np.nanmean(coef, axis=0)
+            elif type == 'CondRun': # Concatenate over runs
+                coef = np.concatenate(coef, axis=0)
+
+            # Build a connectivity CIFTI-file and save
+            bmc = suit_atlas.get_brain_model_axis()
+            bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
+            header = nb.Cifti2Header.from_axes((bpa, bmc))
+            cifti_img = nb.Cifti2Image(dataobj=coef, header=header)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(cifti_img, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}_{res}.dpconn.nii')
+
     def extract_ts_volume(self,
                 participant_id,
                 atlas_map,
-                runs=[0,1,2,3],
-                refix=False):
+                ses_id=[0,1,2,3],
+                type='CondHalf'):
         """ Returns the time series data for an atlas map
                 runs=[0,1,2,3]):
 
@@ -527,7 +591,7 @@ class DataSetHcpResting(DataSet):
             atlas_map (_type_): _description_
         """
         # get the file name for the cifti time series
-        fnames = self.get_data_fnames(participant_id, refix=refix)
+        fnames, info = self.get_data_fnames(participant_id)
         ts_volume = []
         for r in runs:
             # load the cifti
@@ -554,7 +618,7 @@ class DataSetHcpResting(DataSet):
         """
         hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
         # get the file name for the cifti time series
-        fnames = self.get_data_fnames(participant_id, refix=refix)
+        fnames = self.get_data_fnames(participant_id)
         coef = None
         ts_cortex=[]
         for r in runs:
@@ -580,15 +644,14 @@ class DataSetHcpResting(DataSet):
                  participant_id,
                  cereb_atlas_map,
                  cortical_atlas_parcels,
-                 runs=[0,1,2,3],
-                 refix=False):
+                 runs=[0,1,2,3]):
         """
         Uses the original CIFTI files to produce cerebellar connectivity
         file
         """
         hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
         # get the file name for the cifti time series
-        fnames = self.get_data_fnames(participant_id, refix=refix)
+        fnames = self.get_data_fnames(participant_id)
         coef = None
         for r in runs:
             # load the cifti
@@ -629,15 +692,14 @@ class DataSetHcpResting(DataSet):
     def get_cortical_connectivity(self,
                  participant_id,
                  cortical_atlas_parcels,
-                 runs=[0,1,2,3],
-                 refix=False):
+                 runs=[0,1,2,3]):
         """
         Uses the original CIFTI files to produce cortical connectivity
         file
         """
         hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
         # get the file name for the cifti time series
-        fnames = self.get_data_fnames(participant_id, refix=refix)
+        fnames = self.get_data_fnames(participant_id)
         coef_1, coef_2 = None, None
         for r in runs:
             # load the cifti

@@ -23,6 +23,10 @@ hcp_dir = base_dir + '/HCP'
 atlas_dir = base_dir + '/Atlases'
 hem_name = ['cortex_left','cortex_right']
 
+def extract_hcp_suit(ses_id='ses-s1', type='CondHalf', atlas='MNISymC3'):
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+    hcp_dataset.extract_all_suit(ses_id,type,atlas)
+
 def extract_hcp_data(res=162):
     # Make the atlas object
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
@@ -177,7 +181,8 @@ def indv_hcp_pscalar(res=162, index=range(0,100), refix=False):
         print(f"-Saved scalar file for subject {s}, ReFIX={refix}")
 
 if __name__ == "__main__":
-    extract_hcp_data()
-    avrg_hcp_dpconn()
-    C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
-    nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
+    extract_hcp_suit()
+    # extract_hcp_data()
+    # avrg_hcp_dpconn()
+    # C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
+    # nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
