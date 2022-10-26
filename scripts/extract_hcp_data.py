@@ -14,9 +14,10 @@ import sys
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-
-if sys.platform == "win32":  # for windows user
+if not Path(base_dir).exists():
     base_dir = 'Y:/data/FunctionalFusion'
+if not Path(base_dir).exists():
+    print('diedrichsen data server not mounted')
 
 hcp_dir = base_dir + '/HCP'
 atlas_dir = base_dir + '/Atlases'
@@ -58,13 +59,10 @@ def extract_hcp_data(res=162):
         cifti_img = nb.Cifti2Image(dataobj=coef,header=header)
         dest_dir = hcp_dataset.data_dir.format(s)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        if refix:
-            nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}-ReFIX.dpconn.nii')
-        else:
-            nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
+        nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
 
 
-def get_hcp_cortex(res=162, index=range(0, 100), refix=False):
+def get_hcp_fs32k(res=162, index=range(0, 100), refix=False):
     # Make the atlas object
     mask_L = atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'
     mask_R = atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii'

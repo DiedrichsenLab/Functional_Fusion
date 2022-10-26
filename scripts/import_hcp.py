@@ -13,8 +13,12 @@ import sys
 import time
 
 base_dir = '/Volumes/diedrichsen_data$/data'
-if sys.platform == "win32":  # for windows user
+if not Path(base_dir).exists():
+    base_dir = '/srv/diedrichsen/data'
+if not Path(base_dir).exists():
     base_dir = 'Y:/data'
+if not Path(base_dir).exists():
+    print('diedrichsen data server not mounted')
 
 orig_dir = os.path.join(base_dir, 'HCP_UR100_rfMRI')
 target_dir = os.path.join(base_dir, 'FunctionalFusion/HCP')
@@ -71,22 +75,22 @@ def import_FIX_extended(source_dir, dest_dir, participant_id):
 
 
 if __name__ == "__main__":
-    # T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
-    # for s in T.participant_id:
-    #     print(f"-Start importing subject {s}")
-    #     # old_id = s.replace('sub-','s',1)
-    #     dir1 = os.path.join(orig_dir, str(s))
-    #     dir2 = os.path.join(target_dir, 'derivatives/%s/func' % str(s))
-    #     import_func_resting(dir1, dir2, str(s))
-    #     print(f"-Done subject {s}")
-
-    S3server_dir = os.path.join('X:/', 'HCP_1200')
-    to_dir = os.path.join(base_dir, 'HCP_UR100_rfMRI')
-    T = pd.read_csv(to_dir + '/participants.tsv', delimiter='\t')
-    for s in T.participant_id[1:20]:
-        print(f"-Importing FIX_extended subject {s}")
+    T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+    for s in T.participant_id:
+        print(f"-Start importing subject {s}")
         # old_id = s.replace('sub-','s',1)
-        dir1 = os.path.join(S3server_dir, str(s))
-        dir2 = os.path.join(to_dir, '%s/MNINonLinear/Results' % str(s))
-        import_FIX_extended(dir1, dir2, str(s))
+        dir1 = os.path.join(orig_dir, str(s))
+        dir2 = os.path.join(target_dir, 'derivatives/%s/func' % str(s))
+        import_func_resting(dir1, dir2, str(s))
         print(f"-Done subject {s}")
+
+    # S3server_dir = os.path.join('X:/', 'HCP_1200')
+    # to_dir = os.path.join(base_dir, 'HCP_UR100_rfMRI')
+    # T = pd.read_csv(to_dir + '/participants.tsv', delimiter='\t')
+    # for s in T.participant_id[1:20]:
+    #     print(f"-Importing FIX_extended subject {s}")
+    #     # old_id = s.replace('sub-','s',1)
+    #     dir1 = os.path.join(S3server_dir, str(s))
+    #     dir2 = os.path.join(to_dir, '%s/MNINonLinear/Results' % str(s))
+    #     import_FIX_extended(dir1, dir2, str(s))
+    #     print(f"-Done subject {s}")
