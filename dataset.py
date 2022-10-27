@@ -566,12 +566,14 @@ class DataSetHcpResting(DataSet):
 
             if type == 'CondHalf':  # Average across runs
                 coef = np.nanmean(coef, axis=0)
+                bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
             elif type == 'CondRun': # Concatenate over runs
                 coef = np.concatenate(coef, axis=0)
+                bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis() + \
+                      surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
 
             # Build a connectivity CIFTI-file and save
             bmc = suit_atlas.get_brain_model_axis()
-            bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
             header = nb.Cifti2Header.from_axes((bpa, bmc))
             cifti_img = nb.Cifti2Image(dataobj=coef, header=header)
             dest_dir = self.data_dir.format(s)
