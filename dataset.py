@@ -518,7 +518,7 @@ class DataSetHcpResting(DataSet):
 
         return fnames
 
-    def extract_all_suit(self,ses_id='ses-s1',type='CondHalf',atlas='SUIT3', res=162):
+    def extract_all_suit(self, ses_id='ses-s1', type='CondAll', atlas='SUIT3', res=162):
         """ MDTB extraction of atlasmap locations
         from nii files - and filterting or averaring
         as specified.
@@ -528,9 +528,9 @@ class DataSetHcpResting(DataSet):
             atlas_maps (list): List of atlasmaps
             ses_id (str): Name of session
             type (str): Type of extraction:
-                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondAll': Conditions with single estimate per session
                 'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'CondHalf'.
+                    Defaults to 'CondAll'.
 
         Returns:
             Y (list of np.ndarray):
@@ -567,8 +567,19 @@ class DataSetHcpResting(DataSet):
 
             coef = self.get_cereb_connectivity(s, atlas_map, surf_parcel, runs=runs)
             bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
-            if type == 'CondHalf':  # Average across runs
+            if type == 'CondAll':  # Average across runs
                 coef = np.nanmean(coef, axis=0)
+
+                # Make info structure
+                reg_names = list(bpa.name)
+                reg_ids = np.arange(len(bpa)) + 1
+                info = pd.DataFrame({'sn': [s] * coef.shape[0],
+                                    'sess': [ses_id] * coef.shape[0],
+                                     'half': [1] * coef.shape[0],
+                                     'reg_id': reg_ids,
+                                     'region_name': reg_names,
+                                     'names': reg_names})
+
             elif type == 'CondRun': # Concatenate over runs
                 coef = np.concatenate(coef, axis=0)
 
