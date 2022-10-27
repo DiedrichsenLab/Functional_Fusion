@@ -500,6 +500,9 @@ class DataSetHcpResting(DataSet):
         self.derivative_dir = self.base_dir + '/derivatives'
         self.sessions=['ses-01','ses-02']
         self.hem_name = ['cortex_left', 'cortex_right']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'region_num'
+        self.part_ind = 'half'
 
     def get_data_fnames(self, participant_id):
         """ Gets all raw data files
@@ -563,22 +566,45 @@ class DataSetHcpResting(DataSet):
                 raise ValueError('Unknown session id.')
 
             coef = self.get_cereb_connectivity(s, atlas_map, surf_parcel, runs=runs)
-
+            bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
             if type == 'CondHalf':  # Average across runs
                 coef = np.nanmean(coef, axis=0)
-                bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
             elif type == 'CondRun': # Concatenate over runs
                 coef = np.concatenate(coef, axis=0)
-                bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis() + \
-                      surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
 
-            # Build a connectivity CIFTI-file and save
-            bmc = suit_atlas.get_brain_model_axis()
-            header = nb.Cifti2Header.from_axes((bpa, bmc))
-            cifti_img = nb.Cifti2Image(dataobj=coef, header=header)
+                # Make info structure
+                run_ids = np.repeat(runs, int(coef.shape[0] / len(runs)))
+                reg_names = list(bpa.name) * 2
+                reg_ids = np.tile(np.arange(len(bpa)), 2)+1
+                names = ["{}_run-{}".format(reg_name, run_id)
+                        for reg_name, run_id in zip(reg_names, run_ids)]
+                info = pd.DataFrame({'sn': [s] * coef.shape[0],
+                                    'sess': [ses_id] * coef.shape[0],
+                                    'run': run_ids,
+                                    'half': 2 - (run_ids < (len(np.unique(run_ids)) / 2 + 1)),
+                                    'reg_id': reg_ids,
+                                    'region_name': reg_names,
+                                    'names': names})
+                
+                # update brain parcel axis (repeat names)
+                bpa = bpa + bpa
+
+            
+            # --- Save cerebellar data as dscalar CIFTI-file and write info to tsv ---
+            C = am.data_to_cifti(coef, [atlas_map], info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(cifti_img, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}_{res}.dpconn.nii')
+            nb.save(C, dest_dir +
+                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(
+                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+            
+            # --- Build a connectivity CIFTI-file and save ---
+            # bmc = suit_atlas.get_brain_model_axis()
+            # header = nb.Cifti2Header.from_axes((bpa, bmc))
+            # cifti_img = nb.Cifti2Image(dataobj=coef, header=header)
+            # nb.save(cifti_img, dest_dir +
+            #         f'/{s}_space-{atlas}_{ses_id}_{type}_{res}.dpconn.nii')
 
     def extract_ts_volume(self,
                 participant_id,
