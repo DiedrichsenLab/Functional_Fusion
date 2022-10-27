@@ -28,15 +28,17 @@ def get_atlas(atlas_str,atlas_dir):
     if (atlas_str=='SUIT3'):
         mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
         atlas = AtlasVolumetric('cerebellum',mask_img=mask)
-    if (atlas_str=='SUIT2'):
+    elif (atlas_str=='SUIT2'):
         mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
         atlas = AtlasVolumetric('cerebellum',mask_img=mask)
-    if (atlas_str=='MNISymC3'):
+    elif (atlas_str=='MNISymC3'):
         mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
         atlas = AtlasVolumetric('cerebellum',mask_img=mask)
-    if (atlas_str =='MNISymC2'):
+    elif (atlas_str =='MNISymC2'):
         mask = atlas_dir + '/tpl-MNI152NLin2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
         atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+    else:
+        raise(NameError(f'Unknown atlas string:{atlas_str}'))
     return atlas
 
 
