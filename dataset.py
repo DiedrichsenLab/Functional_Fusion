@@ -653,9 +653,9 @@ class DataSetHcpResting(DataSet):
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id)
         coef = None
-        for r in runs:
+        for r,run in enumerate(runs):
             # load the cifti
-            ts_cifti = nb.load(fnames[r])
+            ts_cifti = nb.load(fnames[run])
 
             # get the ts in volume for subcorticals
             ts_vol = util.volume_from_cifti(ts_cifti)

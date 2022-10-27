@@ -181,7 +181,7 @@ def indv_hcp_pscalar(res=162, index=range(0,100), refix=False):
         print(f"-Saved scalar file for subject {s}, ReFIX={refix}")
 
 if __name__ == "__main__":
-    extract_hcp_suit()
+    extract_hcp_suit(ses_id='ses-s2')
     # extract_hcp_data()
     # avrg_hcp_dpconn()
     # C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
