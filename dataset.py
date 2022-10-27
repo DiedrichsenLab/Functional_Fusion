@@ -566,12 +566,14 @@ class DataSetHcpResting(DataSet):
 
             if type == 'CondHalf':  # Average across runs
                 coef = np.nanmean(coef, axis=0)
+                bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
             elif type == 'CondRun': # Concatenate over runs
                 coef = np.concatenate(coef, axis=0)
+                bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis() + \
+                      surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
 
             # Build a connectivity CIFTI-file and save
             bmc = suit_atlas.get_brain_model_axis()
-            bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
             header = nb.Cifti2Header.from_axes((bpa, bmc))
             cifti_img = nb.Cifti2Image(dataobj=coef, header=header)
             dest_dir = self.data_dir.format(s)
@@ -653,9 +655,9 @@ class DataSetHcpResting(DataSet):
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id)
         coef = None
-        for r in runs:
+        for r in range(len(runs)):
             # load the cifti
-            ts_cifti = nb.load(fnames[r])
+            ts_cifti = nb.load(fnames[runs[r]])
 
             # get the ts in volume for subcorticals
             ts_vol = util.volume_from_cifti(ts_cifti)
