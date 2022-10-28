@@ -226,11 +226,13 @@ if __name__ == "__main__":
     # avrg_hcp_dpconn()
     # C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
     # nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
-    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
+    # hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
     # data_hcp1, info_hcp1 = hcp_dataset.get_data(space = 'MNISymC3', ses_id = 'ses-s1', type='Run')
-    hcp_dataset.group_average_data(
-        ses_id='ses-s1', type='Run', atlas='MNISymC3')
-    show_hcp_group(ses_id='ses-s1', type='Run',
+    # hcp_dataset.group_average_data(
+    #     ses_id='ses-s1', type='Run', atlas='MNISymC3')
+    # hcp_dataset.group_average_data(
+    #     ses_id='ses-s2', type='Run', atlas='MNISymC3')
+    show_hcp_group(ses_id='ses-s2', type='Run',
                    atlas='MNISymC3', cond='all', info_column='names', savefig=True)
     pass
     
