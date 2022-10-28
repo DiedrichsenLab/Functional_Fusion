@@ -118,7 +118,7 @@ def optimal_contrast(data,C,X,reg_in=None,baseline=None):
         data_new.append(d)
     return data_new
 
-def reliability_within_subj(X,part_vec,cond_vec):
+def reliability_within_subj(X,part_vec,cond_vec,voxel_wise=False):
     """ Calculates the within-subject reliability of a data set
     Data (X) is grouped by condition vector, and the
     partition vector indicates the independent measurements
@@ -134,7 +134,10 @@ def reliability_within_subj(X,part_vec,cond_vec):
     partitions = np.unique(part_vec)
     n_part = partitions.shape[0]
     n_subj = X.shape[0]
-    r = np.zeros((n_subj,n_part))
+    if voxel_wise:
+        r = np.zeros((n_subj,n_part,X.shape[2]))    
+    else: 
+        r = np.zeros((n_subj,n_part))
     Z = matrix.indicator(cond_vec)
     for s in np.arange(n_subj):
         for pn,part in enumerate(partitions):
@@ -144,10 +147,15 @@ def reliability_within_subj(X,part_vec,cond_vec):
             X2 = pinv(Z[i2,:]) @ X[s,i2,:]
             X1 -= X1.mean(axis=0)
             X2 -= X2.mean(axis=0)
-            r[s,pn] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
+            if voxel_wise:
+                r[s,pn,:] = nansum(X1*X2,axis=0)/ \
+                    sqrt(nansum(X1*X1,axis=0)
+                        *nansum(X2*X2,axis=0))
+            else:
+                r[s,pn] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
     return r
 
-def reliability_between_subj(X,cond_vec=None):
+def reliability_between_subj(X,cond_vec=None,voxel_wise=False):
     """ Calculates the between-subject reliability of a data set
     If cond_vec is given, the data is averaged across multiple measurem
     first.
@@ -166,15 +174,47 @@ def reliability_between_subj(X,cond_vec=None):
     else:
         Z = eye(n_trials)
     subj_vec = np.arange(n_subj)
-    r = np.zeros((n_subj,))
+    if voxel_wise:
+        r = np.zeroes((n_subj,X.shape[2]))
+    else:
+        r = np.zeros((n_subj,))
     for s,i in enumerate(subj_vec):
         X1= pinv(Z) @ X[s,:,:]
         i2 = subj_vec!=s
         X2 = pinv(Z) @ X[i2,:,:].mean(axis=0)
         X1 -= X1.mean(axis=0)
         X2 -= X2.mean(axis=0)
-        r[i] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
+        if voxel_wise:
+            r[i,:] = nansum(X1*X2,axis=0)/ \
+                    sqrt(nansum(X1*X1,axis=0)
+                        *nansum(X2*X2,axis=0))
+        else:
+            r[i] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
     return r
+
+def reliability_maps(base_dir,dataset_name,atlas = 'MNISymC3'): 
+    """    Calculates the average within subject reliability maps across sessions for a single data
+
+    Args:
+        base_dir (str / path): Base directory
+        dataset_name (str): Name of data set 
+        atlas (str): _description_. Defaults to 'MNISymC3'.
+
+    Returns:
+        _type_: _description_
+    """
+    data,info,dataset = get_dataset(base_dir,dataset_name,atlas=atlas)
+    n_sess = len(dataset.sessions)
+    n_vox = data.shape[2]
+    Rel = np.zeros((n_sess,n_vox))
+    for i,s in enumerate(dataset.sessions):
+        indx = info.sess==s
+        r = reliability_within_subj(data[:,indx,:],
+                    part_vec=info.half[indx],
+                    cond_vec=info[dataset.cond_ind][indx],
+                    voxel_wise=True)
+        Rel[i,:] = np.nanmean(np.nanmean(r,axis=0),axis=0)
+    return Rel,dataset.sessions
 
 class DataSet:
     def __init__(self, base_dir):
