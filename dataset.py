@@ -37,6 +37,9 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     elif dataset.casefold() == 'IBC'.casefold():
         fiel = None
         my_dataset = DataSetIBC(base_dir + '/IBC')
+    elif dataset.casefold() == 'HCP'.casefold():
+        fiel = None
+        my_dataset = DataSetHcpResting(base_dir + '/HCP')
     else:
         raise(NameError('Unknown data set'))
 
