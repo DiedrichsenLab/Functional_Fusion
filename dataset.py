@@ -37,6 +37,9 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     elif dataset.casefold() == 'IBC'.casefold():
         fiel = None
         my_dataset = DataSetIBC(base_dir + '/IBC')
+    elif dataset.casefold() == 'HCP'.casefold():
+        fiel = None
+        my_dataset = DataSetHcpResting(base_dir + '/HCP')
     else:
         raise(NameError('Unknown data set'))
 
@@ -378,7 +381,7 @@ class DataSet:
         if subj is None:
             subj = np.arange(T.shape[0])
         # Loop over the different subjects
-        for i,s in enumerate (T.participant_id.iloc[subj]):
+        for i,s in enumerate (T.participant_id.iloc[:50]):
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
@@ -410,8 +413,8 @@ class DataSet:
             info_column (str, optional): Column of info tsv file for which each average should be calculated. Defaults to 'task_name'
         """
 
-        data, info = self.get_data(space='MNISymC3', ses_id=ses_id,
-                                   type='CondHalf')
+        data, info = self.get_data(space=atlas, ses_id=ses_id,
+                                   type=type)
         # average across participants
         X = np.nanmean(data,axis=0)
         # make output cifti
@@ -420,10 +423,12 @@ class DataSet:
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
         C = nb.Cifti2Image(dataobj=X, header=C.header)
         # save output
-        dest_dir = op.join(self.data_dir.format(s).split('sub-')[0], 'group')
+        dest_dir = op.join(self.data_dir.format(s).split('derivatives')[0], 'derivatives/group')
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir +
                 f'/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
+        info.drop(columns=['sn']).to_csv(dest_dir +
+            f'/group_{ses_id}_info-{type}.tsv', sep='\t')
 
 class DataSetMDTB(DataSet):
     def __init__(self, dir):
@@ -538,7 +543,11 @@ class DataSetHcpResting(DataSet):
         super(DataSetHcpResting, self).__init__(base_dir=dir)
         # self.func_dir = self.base_dir + '/{0}/estimates'
         self.derivative_dir = self.base_dir + '/derivatives'
-        self.sessions=['ses-01','ses-02']
+        self.sessions=['ses-s1','ses-s2']
+        self.hem_name = ['cortex_left', 'cortex_right']
+        self.default_type = 'All'
+        self.cond_ind = 'region_num'
+        self.part_ind = 'half'
 
     def get_data_fnames(self, participant_id):
         """ Gets all raw data files
@@ -551,20 +560,122 @@ class DataSetHcpResting(DataSet):
         fnames = []
         for r in range(4):
             fnames.append(f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
+
         return fnames
+
+    def extract_all_suit(self, ses_id='ses-s1', type='All', atlas='SUIT3', res=162):
+        """ MDTB extraction of atlasmap locations
+        from nii files - and filterting or averaring
+        as specified.
+
+        Args:
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
+                'All': Single estimate per session
+                'Run': Seperate estimates per run
+                    Defaults to 'All'.
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+        suit_atlas = am.get_atlas(atlas, self.atlas_dir)
+
+        # Get the deformation map from MNI to SUIT
+        mni_atlas = self.atlas_dir + '/tpl-MNI152NLin6AsymC'
+        deform = mni_atlas + '/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
+        mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
+        atlas_map = am.AtlasMapDeform(self, suit_atlas, 'group', deform, mask)
+        atlas_map.build(smooth=2.0)
+
+        # Get the parcelation
+        surf_parcel = []
+        for i, h in enumerate(['L', 'R']):
+            dir = self.atlas_dir + '/tpl-fs32k'
+            gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
+            surf_parcel.append(am.AtlasSurfaceParcel(self.hem_name[i], gifti))
+
+        T = self.get_participants()
+        for s in T.participant_id:
+            print(f'Extract {s}')
+            if ses_id == 'ses-s1':
+                runs = [0, 1]
+            elif ses_id == 'ses-s2':
+                runs = [2, 3]
+            else:
+                raise ValueError('Unknown session id.')
+
+            coef = self.get_cereb_connectivity(s, atlas_map, surf_parcel, runs=runs)
+            bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
+            if type == 'All':  # Average across runs
+                coef = np.nanmean(coef, axis=0)
+
+                # Make info structure
+                reg_names = list(bpa.name)
+                reg_ids = np.arange(len(bpa)) + 1
+                info = pd.DataFrame({'sn': [s] * coef.shape[0],
+                                    'sess': [ses_id] * coef.shape[0],
+                                     'half': [1] * coef.shape[0],
+                                     'reg_id': reg_ids,
+                                     'region_name': reg_names,
+                                     'names': reg_names})
+
+            elif type == 'Run': # Concatenate over runs
+                coef = np.concatenate(coef, axis=0)
+
+                # Make info structure
+                run_ids = np.repeat(runs, int(coef.shape[0] / len(runs)))
+                reg_names = list(bpa.name) * 2
+                reg_ids = np.tile(np.arange(len(bpa)), 2)+1
+                names = ["{}_run-{}".format(reg_name, run_id)
+                        for reg_name, run_id in zip(reg_names, run_ids)]
+                info = pd.DataFrame({'sn': [s] * coef.shape[0],
+                                    'sess': [ses_id] * coef.shape[0],
+                                    'run': run_ids,
+                                    'half': 2 - (run_ids < (len(np.unique(run_ids)) / 2 + 1)),
+                                    'reg_id': reg_ids,
+                                    'region_name': reg_names,
+                                    'names': names})
+                
+                # update brain parcel axis (repeat names)
+                bpa = bpa + bpa
+
+            
+            # --- Save cerebellar data as dscalar CIFTI-file and write info to tsv ---
+            C = am.data_to_cifti(coef, [atlas_map], info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir +
+                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(
+                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+            
+            # --- Build a connectivity CIFTI-file and save ---
+            # bmc = suit_atlas.get_brain_model_axis()
+            # header = nb.Cifti2Header.from_axes((bpa, bmc))
+            # cifti_img = nb.Cifti2Image(dataobj=coef, header=header)
+            # nb.save(cifti_img, dest_dir +
+            #         f'/{s}_space-{atlas}_{ses_id}_{type}_{res}.dpconn.nii')
 
     def extract_ts_volume(self,
                 participant_id,
                 atlas_map,
-                runs=[0,1,2,3]):
+                ses_id=[0,1,2,3],
+                type='Run'):
         """ Returns the time series data for an atlas map
-            sample from voxels
+                runs=[0,1,2,3]):
+
         Args:
             participant_id (_type_): _description_
             atlas_map (_type_): _description_
         """
         # get the file name for the cifti time series
-        fnames = self.get_data_fnames(participant_id)
+        fnames, info = self.get_data_fnames(participant_id)
         ts_volume = []
         for r in runs:
             # load the cifti
@@ -626,9 +737,9 @@ class DataSetHcpResting(DataSet):
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id)
         coef = None
-        for r in runs:
+        for r,run in enumerate(runs):
             # load the cifti
-            ts_cifti = nb.load(fnames[r])
+            ts_cifti = nb.load(fnames[run])
 
             # get the ts in volume for subcorticals
             ts_vol = util.volume_from_cifti(ts_cifti)
@@ -662,6 +773,49 @@ class DataSetHcpResting(DataSet):
 
         return coef  # shape (n_tessl,P)
 
+    def get_cortical_connectivity(self,
+                 participant_id,
+                 cortical_atlas_parcels,
+                 runs=[0,1,2,3]):
+        """
+        Uses the original CIFTI files to produce cortical connectivity
+        file
+        """
+        hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
+        # get the file name for the cifti time series
+        fnames = self.get_data_fnames(participant_id)
+        coef_1, coef_2 = None, None
+        for r in runs:
+            # load the cifti
+            ts_cifti = nb.load(fnames[r])
+
+            # get the ts in surface for corticals
+            ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
+
+            # Standardize the time series for easier calculation
+            ts_cortex = [util.zstandarize_ts(ts) for ts in ts_32k]
+
+            ts_parcel = []
+            for hem in range(2):
+                # get the average within parcels for this hemis
+                this_ts_parcel = cortical_atlas_parcels[hem].agg_data(ts_32k[hem])
+                this_ts_parcel = util.zstandarize_ts(this_ts_parcel)
+                ts_parcel.append(this_ts_parcel)
+
+            # Correlation calculation
+            if coef_1 is None:
+                coef_1 = np.empty((len(runs),ts_parcel[0].shape[1],
+                                   ts_cortex[0].shape[1])) # (runs, parcels, vertices)
+            if coef_2 is None:
+                coef_2 = np.empty((len(runs),ts_parcel[1].shape[1],
+                                   ts_cortex[1].shape[1])) # (runs, parcels, vertices)
+
+            N1 = ts_cortex[0].shape[0]
+            N2 = ts_cortex[1].shape[0]
+            coef_1[r,:,:] = ts_parcel[0].T @ ts_cortex[0] / N1
+            coef_2[r,:,:] = ts_parcel[1].T @ ts_cortex[1] / N2
+
+        return [coef_1,coef_2]  # shape (n_tessl,P)
 
 class DataSetLanguage(DataSet):
     def __init__(self, dir):
@@ -1097,4 +1251,5 @@ class DataSetIBC(DataSet):
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
+
 
