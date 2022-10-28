@@ -503,7 +503,7 @@ class DataSetHcpResting(DataSet):
         super(DataSetHcpResting, self).__init__(base_dir=dir)
         # self.func_dir = self.base_dir + '/{0}/estimates'
         self.derivative_dir = self.base_dir + '/derivatives'
-        self.sessions=['ses-01','ses-02']
+        self.sessions=['ses-s1','ses-s2']
         self.hem_name = ['cortex_left', 'cortex_right']
         self.default_type = 'All'
         self.cond_ind = 'region_num'
