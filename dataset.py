@@ -626,7 +626,7 @@ class DataSetHcpResting(DataSet):
                 participant_id,
                 atlas_map,
                 ses_id=[0,1,2,3],
-                type='CondHalf'):
+                type='Run'):
         """ Returns the time series data for an atlas map
                 runs=[0,1,2,3]):
 

@@ -24,12 +24,12 @@ hcp_dir = base_dir + '/HCP'
 atlas_dir = base_dir + '/Atlases'
 hem_name = ['cortex_left','cortex_right']
 
-def extract_hcp_suit(ses_id='ses-s1', type='CondHalf', atlas='MNISymC3'):
+def extract_hcp_suit(ses_id='ses-s1', type='Run', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
     hcp_dataset.extract_all_suit(ses_id,type,atlas)
 
 
-def show_hcp_group(ses_id='ses-s1', type='CondRun', atlas='MNISymC3', cond=0, info_column='names', savefig=True):
+def show_hcp_group(ses_id='ses-s1', type='Run', atlas='MNISymC3', cond=0, info_column='names', savefig=True):
     if (atlas == 'MNISymC3'):
         mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
@@ -229,8 +229,8 @@ if __name__ == "__main__":
     hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
     # data_hcp1, info_hcp1 = hcp_dataset.get_data(space = 'MNISymC3', ses_id = 'ses-s1', type='Run')
     hcp_dataset.group_average_data(
-        ses_id='ses-s1', type='CondRun', atlas='MNISymC3')
-    show_hcp_group(ses_id='ses-s1', type='CondRun',
+        ses_id='ses-s1', type='Run', atlas='MNISymC3')
+    show_hcp_group(ses_id='ses-s1', type='Run',
                    atlas='MNISymC3', cond='all', info_column='names', savefig=True)
     pass
     
