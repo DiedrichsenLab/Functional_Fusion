@@ -10,6 +10,7 @@ import nibabel as nb
 import SUITPy as suit
 import os
 import sys
+import matplotlib.pyplot as plt
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -26,6 +27,44 @@ hem_name = ['cortex_left','cortex_right']
 def extract_hcp_suit(ses_id='ses-s1', type='CondHalf', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
     hcp_dataset.extract_all_suit(ses_id,type,atlas)
+
+
+def show_hcp_group(ses_id='ses-s1', type='CondRun', atlas='MNISymC3', cond=0, info_column='names', savefig=True):
+    if (atlas == 'MNISymC3'):
+        mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
+    suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
+
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+    C = nb.load(hcp_dataset.data_dir.split('/{0}')[0] +
+                f'/group/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
+    D = pd.read_csv(hcp_dataset.data_dir.split('/{0}')[0] +
+                    f'/group/group_{ses_id}_info-{type}.tsv', sep='\t')
+    X = C.get_fdata()
+
+    if cond == 'all':
+        conditions = D[info_column]
+        # -- each in seperate figures --
+        dest_dir = hcp_dataset.data_dir.split('/{0}')[0] + f'/group/figures/'
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+        for i, c in enumerate(conditions):
+            Nifti = suit_atlas.data_to_nifti(X[i, :])
+            surf_data = suit.flatmap.vol_to_surf(Nifti, atlas[:-1])
+            fig = suit.flatmap.plot(
+                surf_data, render='matplotlib', new_figure=True)
+            fig.set_title(c)
+            # save figure
+            if savefig:
+                plt.savefig(dest_dir + f'group_{ses_id}_{c}.png')
+            plt.clf()
+            pass
+
+    else:
+        Nifti = suit_atlas.data_to_nifti(X[cond, :])
+        surf_data = suit.flatmap.vol_to_surf(Nifti)
+        fig = suit.flatmap.plot(surf_data, render='plotly')
+        fig.show()
+        print(f'Showing {D.cond_name[cond]}')
+        pass
 
 def extract_hcp_data(res=162):
     # Make the atlas object
@@ -181,9 +220,17 @@ def indv_hcp_pscalar(res=162, index=range(0,100), refix=False):
         print(f"-Saved scalar file for subject {s}, ReFIX={refix}")
 
 if __name__ == "__main__":
-    extract_hcp_suit(ses_id='ses-s1', type='CondAll', atlas='MNISymC3')
-    extract_hcp_suit(ses_id='ses-s2', type='CondAll', atlas='MNISymC3')
+    # extract_hcp_suit(ses_id='ses-s1', type='All', atlas='MNISymC3')
+    # extract_hcp_suit(ses_id='ses-s2', type='All', atlas='MNISymC3')
     # extract_hcp_data()
     # avrg_hcp_dpconn()
     # C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
     # nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
+    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
+    # data_hcp1, info_hcp1 = hcp_dataset.get_data(space = 'MNISymC3', ses_id = 'ses-s1', type='Run')
+    hcp_dataset.group_average_data(
+        ses_id='ses-s1', type='CondRun', atlas='MNISymC3')
+    show_hcp_group(ses_id='ses-s1', type='CondRun',
+                   atlas='MNISymC3', cond='all', info_column='names', savefig=True)
+    pass
+    

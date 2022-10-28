@@ -338,7 +338,7 @@ class DataSet:
         if subj is None:
             subj = np.arange(T.shape[0])
         # Loop over the different subjects
-        for i,s in enumerate (T.participant_id.iloc[subj]):
+        for i,s in enumerate (T.participant_id.iloc[:50]):
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
@@ -370,8 +370,8 @@ class DataSet:
             info_column (str, optional): Column of info tsv file for which each average should be calculated. Defaults to 'task_name'
         """
 
-        data, info = self.get_data(space='MNISymC3', ses_id=ses_id,
-                                   type='CondHalf')
+        data, info = self.get_data(space=atlas, ses_id=ses_id,
+                                   type=type)
         # average across participants
         X = np.nanmean(data,axis=0)
         # make output cifti
@@ -380,10 +380,12 @@ class DataSet:
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
         C = nb.Cifti2Image(dataobj=X, header=C.header)
         # save output
-        dest_dir = op.join(self.data_dir.format(s).split('sub-')[0], 'group')
+        dest_dir = op.join(self.data_dir.format(s).split('derivatives')[0], 'derivatives/group')
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir +
                 f'/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
+        info.drop(columns=['sn']).to_csv(dest_dir +
+            f'/group_{ses_id}_info-{type}.tsv', sep='\t')
 
 class DataSetMDTB(DataSet):
     def __init__(self, dir):
@@ -500,7 +502,7 @@ class DataSetHcpResting(DataSet):
         self.derivative_dir = self.base_dir + '/derivatives'
         self.sessions=['ses-01','ses-02']
         self.hem_name = ['cortex_left', 'cortex_right']
-        self.default_type = 'CondHalf'
+        self.default_type = 'All'
         self.cond_ind = 'region_num'
         self.part_ind = 'half'
 
@@ -518,7 +520,7 @@ class DataSetHcpResting(DataSet):
 
         return fnames
 
-    def extract_all_suit(self, ses_id='ses-s1', type='CondAll', atlas='SUIT3', res=162):
+    def extract_all_suit(self, ses_id='ses-s1', type='All', atlas='SUIT3', res=162):
         """ MDTB extraction of atlasmap locations
         from nii files - and filterting or averaring
         as specified.
@@ -528,9 +530,9 @@ class DataSetHcpResting(DataSet):
             atlas_maps (list): List of atlasmaps
             ses_id (str): Name of session
             type (str): Type of extraction:
-                'CondAll': Conditions with single estimate per session
-                'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'CondAll'.
+                'All': Single estimate per session
+                'Run': Seperate estimates per run
+                    Defaults to 'All'.
 
         Returns:
             Y (list of np.ndarray):
@@ -567,7 +569,7 @@ class DataSetHcpResting(DataSet):
 
             coef = self.get_cereb_connectivity(s, atlas_map, surf_parcel, runs=runs)
             bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
-            if type == 'CondAll':  # Average across runs
+            if type == 'All':  # Average across runs
                 coef = np.nanmean(coef, axis=0)
 
                 # Make info structure
@@ -580,7 +582,7 @@ class DataSetHcpResting(DataSet):
                                      'region_name': reg_names,
                                      'names': reg_names})
 
-            elif type == 'CondRun': # Concatenate over runs
+            elif type == 'Run': # Concatenate over runs
                 coef = np.concatenate(coef, axis=0)
 
                 # Make info structure
