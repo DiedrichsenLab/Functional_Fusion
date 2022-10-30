@@ -546,7 +546,7 @@ class DataSetHcpResting(DataSet):
         self.sessions=['ses-s1','ses-s2']
         self.hem_name = ['cortex_left', 'cortex_right']
         self.default_type = 'All'
-        self.cond_ind = 'region_num'
+        self.cond_ind = 'reg_id'
         self.part_ind = 'half'
 
     def get_data_fnames(self, participant_id):
