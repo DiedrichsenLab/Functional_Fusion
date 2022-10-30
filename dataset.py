@@ -545,7 +545,7 @@ class DataSetHcpResting(DataSet):
         self.derivative_dir = self.base_dir + '/derivatives'
         self.sessions=['ses-s1','ses-s2']
         self.hem_name = ['cortex_left', 'cortex_right']
-        self.default_type = 'All'
+        self.default_type = 'NetRun'
         self.cond_ind = 'reg_id'
         self.part_ind = 'half'
 
@@ -655,14 +655,14 @@ class DataSetHcpResting(DataSet):
                 info = pd.DataFrame({'sn': [s] * coef.shape[0],
                                     'sess': [ses_id] * coef.shape[0],
                                     'run': run_ids,
-                                    'half': 2 - (run_ids < (len(np.unique(run_ids)) / 2 + 1)),
+                                     'half': 2 - (run_ids < run_ids[-1]),
                                     'reg_id': reg_ids,
                                      'region_name': list(seed_names) * 2,
                                     'names': names})
                 
                 # update brain parcel axis (repeat names)
                 # bpa = bpa + bpa
-
+            
             
             # --- Save cerebellar data as dscalar CIFTI-file and write info to tsv ---
             C = am.data_to_cifti(coef, [atlas_map], info.names)
