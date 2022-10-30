@@ -546,7 +546,7 @@ class DataSetHcpResting(DataSet):
         self.sessions=['ses-s1','ses-s2']
         self.hem_name = ['cortex_left', 'cortex_right']
         self.default_type = 'All'
-        self.cond_ind = 'region_num'
+        self.cond_ind = 'reg_id'
         self.part_ind = 'half'
 
     def get_data_fnames(self, participant_id):
@@ -608,7 +608,7 @@ class DataSetHcpResting(DataSet):
         elif type[0:3] == 'Net':
             surf_parcel = None
             # Get the networks
-            networkdir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/HCP/group_ica/dim_25/'
+            networkdir = self.base_dir + '/group_ica/dim_25/'
             networkimg = nb.load(networkdir +
                 'melodic_IC.nii.gz')
             networks = networkimg.get_fdata()
