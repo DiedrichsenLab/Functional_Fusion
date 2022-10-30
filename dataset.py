@@ -608,7 +608,7 @@ class DataSetHcpResting(DataSet):
         elif type[0:3] == 'Net':
             surf_parcel = None
             # Get the networks
-            networkdir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/HCP/group_ica/dim_25/'
+            networkdir = self.base_dir + '/group_ica/dim_25/'
             networkimg = nb.load(networkdir +
                 'melodic_IC.nii.gz')
             networks = networkimg.get_fdata()

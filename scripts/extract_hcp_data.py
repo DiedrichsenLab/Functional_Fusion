@@ -232,7 +232,7 @@ if __name__ == "__main__":
     #     ses_id='ses-s1', type='Run', atlas='MNISymC3')
     # hcp_dataset.group_average_data(
     #     ses_id='ses-s2', type='Run', atlas='MNISymC3')
-    show_hcp_group(ses_id='ses-s2', type='Run',
+    show_hcp_group(ses_id='ses-s2', type='NetAll',
                    atlas='MNISymC3', cond='all', info_column='names', savefig=True)
     pass
     
