@@ -42,9 +42,10 @@ def show_hcp_group(ses_id='ses-s1', type='Run', atlas='MNISymC3', cond=0, info_c
                     f'/group/group_{ses_id}_info-{type}.tsv', sep='\t')
     X = C.get_fdata()
     limits = [X.max(), X.min()]
+    conditions = D[info_column]
 
     if cond == 'all':
-        conditions = D[info_column]
+        
         # -- each in seperate figures --
         dest_dir = hcp_dataset.data_dir.split('/{0}')[0] + f'/group/figures/'
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
@@ -239,8 +240,8 @@ if __name__ == "__main__":
     # hcp_dataset.group_average_data(
     #     ses_id='ses-s2', type='NetRun', atlas='MNISymC3')
     show_hcp_group(ses_id='ses-s1', type='NetAll',
-                   atlas='MNISymC3', cond='all', info_column='names', savefig=True)
+                   atlas='MNISymC3', cond='separate', info_column='names', savefig=True)
     show_hcp_group(ses_id='ses-s2', type='NetAll',
-                   atlas='MNISymC3', cond='all', info_column='names', savefig=True)
+                   atlas='MNISymC3', cond='separate', info_column='names', savefig=True)
     pass
     
