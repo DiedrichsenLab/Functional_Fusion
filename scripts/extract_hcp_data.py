@@ -11,7 +11,7 @@ import SUITPy as suit
 import os
 import sys
 import matplotlib.pyplot as plt
-from ProbabilisticParcellation.util import plot_multi_flat
+from ProbabilisticParcellation.util import plot_multi_flat, plot_data_flat
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -43,11 +43,9 @@ def show_hcp_group(ses_id='ses-s1', type='Run', atlas='MNISymC3', cond=0, info_c
     X = C.get_fdata()
     limits = [X.max(), X.min()]
     conditions = D[info_column]
-
+    dest_dir = hcp_dataset.data_dir.split('/{0}')[0] + f'/group/figures/'
     if cond == 'all':
-        
-        # -- each in seperate figures --
-        dest_dir = hcp_dataset.data_dir.split('/{0}')[0] + f'/group/figures/'
+        # -- plot all in one figure --
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
         plot_multi_flat(X, atlas,
@@ -61,13 +59,13 @@ def show_hcp_group(ses_id='ses-s1', type='Run', atlas='MNISymC3', cond=0, info_c
         plt.clf()
         
     elif cond == 'separate':
+        # -- each in seperate figures --
         for i, c in enumerate(conditions):
-            plot_multi_flat(X[i, :], atlas,
-                                  grid=(1, 1),
+            plot_data_flat(X[i, :], atlas,
                                   dtype='func',
                                   cscale=limits,
-                                  colorbar=False,
-                                  titles=c)
+                                  colorbar=False)
+            plt.title(c)
             # save figure
             if savefig:
                 plt.savefig(dest_dir + f'group_{ses_id}_{type}_{c}.png')
