@@ -213,7 +213,7 @@ def reliability_maps(base_dir,dataset_name,atlas = 'MNISymC3'):
     for i,s in enumerate(dataset.sessions):
         indx = info.sess==s
         r = reliability_within_subj(data[:,indx,:],
-                    part_vec=info.half[indx],
+                    part_vec=info[dataset.part_ind][indx],
                     cond_vec=info[dataset.cond_ind][indx],
                     voxel_wise=True)
         Rel[i,:] = np.nanmean(np.nanmean(r,axis=0),axis=0)
@@ -381,7 +381,7 @@ class DataSet:
         if subj is None:
             subj = np.arange(T.shape[0])
         # Loop over the different subjects
-        for i,s in enumerate (T.participant_id.iloc[:50]):
+        for i,s in enumerate (T.participant_id.iloc):
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
