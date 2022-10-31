@@ -31,17 +31,13 @@ def extract_hcp_suit(ses_id='ses-s1', type='IcoRun', atlas='MNISymC3'):
 
 
 def show_hcp_group(ses_id='ses-s1', type='Run', atlas='MNISymC3', cond=0, info_column='names', savefig=True):
-    if (atlas == 'MNISymC3'):
-        mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
-
     hcp_dataset = DataSetHcpResting(hcp_dir)
     C = nb.load(hcp_dataset.data_dir.split('/{0}')[0] +
                 f'/group/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
     D = pd.read_csv(hcp_dataset.data_dir.split('/{0}')[0] +
                     f'/group/group_{ses_id}_info-{type}.tsv', sep='\t')
     X = C.get_fdata()
-    limits = [X.max(), X.min()]
+    limits = [X.min(), X.max()]
     conditions = D[info_column]
     dest_dir = hcp_dataset.data_dir.split('/{0}')[0] + f'/group/figures/'
     if cond == 'all':
