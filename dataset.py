@@ -23,10 +23,12 @@ from numpy import eye,zeros,ones,empty,nansum, sqrt
 from numpy.linalg import pinv,solve
 
 def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
-    # Get defaults for each dataset 
+    # Get defaults for each dataset
     if dataset.casefold() == 'MDTB'.casefold():
         my_dataset = DataSetMDTB(base_dir + '/MDTB')
         fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
+        if type=='CondRun':
+            fiel = fiel+['run']
         # Extract all sessions
     elif dataset.casefold() == 'Pontine'.casefold():
         my_dataset = DataSetPontine(base_dir + '/Pontine')
@@ -49,7 +51,7 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     if type is None:
         type = my_dataset.default_type
 
-    # Load all data and concatenate 
+    # Load all data and concatenate
     # across sessions
     info_l = []
     data_l = []
@@ -138,8 +140,8 @@ def reliability_within_subj(X,part_vec,cond_vec,voxel_wise=False):
     n_part = partitions.shape[0]
     n_subj = X.shape[0]
     if voxel_wise:
-        r = np.zeros((n_subj,n_part,X.shape[2]))    
-    else: 
+        r = np.zeros((n_subj,n_part,X.shape[2]))
+    else:
         r = np.zeros((n_subj,n_part))
     Z = matrix.indicator(cond_vec)
     for s in np.arange(n_subj):
@@ -195,12 +197,12 @@ def reliability_between_subj(X,cond_vec=None,voxel_wise=False):
             r[i] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
     return r
 
-def reliability_maps(base_dir,dataset_name,atlas = 'MNISymC3'): 
+def reliability_maps(base_dir,dataset_name,atlas = 'MNISymC3'):
     """    Calculates the average within subject reliability maps across sessions for a single data
 
     Args:
         base_dir (str / path): Base directory
-        dataset_name (str): Name of data set 
+        dataset_name (str): Name of data set
         atlas (str): _description_. Defaults to 'MNISymC3'.
 
     Returns:
@@ -241,8 +243,8 @@ class DataSet:
         # assume that the common atlas directory is on the level before
         self.atlas_dir = os.path.join(os.path.dirname(base_dir),'Atlases')
         # Some information that a standard data set should have
-        self.sessions = [None] 
-        self.default_type = None 
+        self.sessions = [None]
+        self.default_type = None
         self.cond_ind = None  # Condition Indicator (field in tsv file )
         self.part_ind = None  # Partition Indicator (field in tsv file )
 
@@ -631,7 +633,7 @@ class DataSetHcpResting(DataSet):
 
             coef = self.get_cereb_connectivity(
                 s, atlas_map, runs=runs, type=type, cortical_atlas_parcels=surf_parcel, networks=networks)
-            
+
             if type[3:7] == 'All':  # Average across runs
                 coef = np.nanmean(coef, axis=0)
 
@@ -659,11 +661,11 @@ class DataSetHcpResting(DataSet):
                                     'reg_id': reg_ids,
                                      'region_name': list(seed_names) * 2,
                                     'names': names})
-                
+
                 # update brain parcel axis (repeat names)
                 # bpa = bpa + bpa
-            
-            
+
+
             # --- Save cerebellar data as dscalar CIFTI-file and write info to tsv ---
             C = am.data_to_cifti(coef, [atlas_map], info.names)
             dest_dir = self.data_dir.format(s)
@@ -672,7 +674,7 @@ class DataSetHcpResting(DataSet):
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
-            
+
             # --- Build a connectivity CIFTI-file and save ---
             # bmc = suit_atlas.get_brain_model_axis()
             # header = nb.Cifti2Header.from_axes((bpa, bmc))
@@ -772,11 +774,11 @@ class DataSetHcpResting(DataSet):
         """
         Uses the original CIFTI files to produce cerebellar connectivity
         file
-        
+
         """
         if type[0:3] == 'Ico':
             hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
-        
+
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id)
         coef = None
@@ -808,7 +810,7 @@ class DataSetHcpResting(DataSet):
                 ts = ts_vol.get_fdata()
                 ts_seed = self.get_network_timecourse(networks, ts)
                 ts_seed = ts_seed.T
-                
+
 
             # Standardize the time series for easier calculation
             ts_cerebellum = util.zstandarize_ts(ts_cerebellum)
@@ -1212,7 +1214,7 @@ class DataSetIBC(DataSet):
         self.cond_ind = 'cond_num_uni'
         self.part_ind = 'half'
 
-                        #   Not using 'ses-self' for now, as we need to deal with different numbers of regressors per subject 
+                        #   Not using 'ses-self' for now, as we need to deal with different numbers of regressors per subject
 
     def get_participants(self):
         """ returns a data frame with all participants complete participants
