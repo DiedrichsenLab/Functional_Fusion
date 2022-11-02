@@ -245,6 +245,7 @@ class DataSet:
         self.default_type = None 
         self.cond_ind = None  # Condition Indicator (field in tsv file )
         self.part_ind = None  # Partition Indicator (field in tsv file )
+        self.cond_name = None  # Partition Indicator (field in tsv file )
 
     def get_participants(self):
         """ returns a data frame with all participants
@@ -437,6 +438,7 @@ class DataSetMDTB(DataSet):
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num_uni'
         self.part_ind = 'half'
+        self.cond_name = 'cond_name'
 
     def extract_data(self,participant_id,
                      atlas_maps,
@@ -547,6 +549,7 @@ class DataSetHcpResting(DataSet):
         self.hem_name = ['cortex_left', 'cortex_right']
         self.default_type = 'NetRun'
         self.cond_ind = 'reg_id'
+        self.cond_name = 'names'
         self.part_ind = 'half'
 
     def get_data_fnames(self, participant_id):
@@ -986,6 +989,7 @@ class DataSetPontine(DataSet):
         self.sessions=['ses-01']
         self.default_type = 'TaskHalf'
         self.cond_ind = 'task_num'
+        self.cond_name = 'task_name'
         self.part_ind = 'half'
 
     def extract_data(self, participant_id,
@@ -1101,6 +1105,7 @@ class DataSetNishi(DataSet):
         self.sessions=['ses-01','ses-02']
         self.default_type = 'CondHalf'
         self.cond_ind = 'reg_id'
+        self.cond_name = 'task_name'
         self.part_ind = 'half'
 
     def extract_data(self,participant_id,
@@ -1210,6 +1215,7 @@ class DataSetIBC(DataSet):
                          'ses-tom']
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num_uni'
+        self.cond_name = 'cond_name'
         self.part_ind = 'half'
 
                         #   Not using 'ses-self' for now, as we need to deal with different numbers of regressors per subject 
