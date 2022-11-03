@@ -123,7 +123,9 @@ def optimal_contrast(data,C,X,reg_in=None,baseline=None):
         data_new.append(d)
     return data_new
 
-def reliability_within_subj(X,part_vec,cond_vec,voxel_wise=False):
+def reliability_within_subj(X,part_vec,cond_vec,
+                            voxel_wise=False,
+                            subtract_mean=True):
     """ Calculates the within-subject reliability of a data set
     Data (X) is grouped by condition vector, and the
     partition vector indicates the independent measurements
@@ -132,7 +134,8 @@ def reliability_within_subj(X,part_vec,cond_vec,voxel_wise=False):
         X (ndarray): num_subj x num_trials x num_voxel tensor of data
         part_vec (ndarray): num_trials partition vector
         cond_vec (ndarray): num_trials condition vector
-
+        voxel_wise (bool): Return the results as map or overall? 
+        subtract_mean (bool): Remove the mean per voxel before correlation calc?
     Returns:
         r (ndarray)L: num_subj x num_partition matrix of correlations
     """
@@ -150,8 +153,9 @@ def reliability_within_subj(X,part_vec,cond_vec,voxel_wise=False):
             X1= pinv(Z[i1,:]) @ X[s,i1,:]
             i2 = part_vec!=part
             X2 = pinv(Z[i2,:]) @ X[s,i2,:]
-            X1 -= X1.mean(axis=0)
-            X2 -= X2.mean(axis=0)
+            if subtract_mean:
+                X1 -= X1.mean(axis=0)
+                X2 -= X2.mean(axis=0)
             if voxel_wise:
                 r[s,pn,:] = nansum(X1*X2,axis=0)/ \
                     sqrt(nansum(X1*X1,axis=0)
@@ -160,7 +164,9 @@ def reliability_within_subj(X,part_vec,cond_vec,voxel_wise=False):
                 r[s,pn] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
     return r
 
-def reliability_between_subj(X,cond_vec=None,voxel_wise=False):
+def reliability_between_subj(X,cond_vec=None,
+                            voxel_wise=False,
+                            subtract_mean=True):
     """ Calculates the between-subject reliability of a data set
     If cond_vec is given, the data is averaged across multiple measurem
     first.
@@ -168,6 +174,8 @@ def reliability_between_subj(X,cond_vec=None,voxel_wise=False):
     Args:
         X (ndarray): num_subj x num_trials x num_voxel tensor of data
         part_vec (ndarray): num_trials partition vector
+        voxel_wise (bool): Return the results as map or overall? 
+        subtract_mean (bool): Remove the mean per voxel before correlation calc?
 
     Returns:
         r (ndarray): num_subj vector of correlations
@@ -187,8 +195,9 @@ def reliability_between_subj(X,cond_vec=None,voxel_wise=False):
         X1= pinv(Z) @ X[s,:,:]
         i2 = subj_vec!=s
         X2 = pinv(Z) @ X[i2,:,:].mean(axis=0)
-        X1 -= X1.mean(axis=0)
-        X2 -= X2.mean(axis=0)
+        if subtract_mean:
+            X1 -= X1.mean(axis=0)
+            X2 -= X2.mean(axis=0)
         if voxel_wise:
             r[i,:] = nansum(X1*X2,axis=0)/ \
                     sqrt(nansum(X1*X1,axis=0)
@@ -197,13 +206,16 @@ def reliability_between_subj(X,cond_vec=None,voxel_wise=False):
             r[i] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
     return r
 
-def reliability_maps(base_dir,dataset_name,atlas = 'MNISymC3'):
+def reliability_maps(base_dir,dataset_name,
+                    atlas = 'MNISymC3',
+                    subtract_mean=True):
     """    Calculates the average within subject reliability maps across sessions for a single data
 
     Args:
         base_dir (str / path): Base directory
         dataset_name (str): Name of data set
         atlas (str): _description_. Defaults to 'MNISymC3'.
+        subtract_mean (bool): Remove the mean per voxel before correlation calc?
 
     Returns:
         _type_: _description_
@@ -217,7 +229,8 @@ def reliability_maps(base_dir,dataset_name,atlas = 'MNISymC3'):
         r = reliability_within_subj(data[:,indx,:],
                     part_vec=info[dataset.part_ind][indx],
                     cond_vec=info[dataset.cond_ind][indx],
-                    voxel_wise=True)
+                    voxel_wise=True,
+                    subtract_mean=subtract_mean)
         Rel[i,:] = np.nanmean(np.nanmean(r,axis=0),axis=0)
     return Rel,dataset.sessions
 
