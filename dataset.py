@@ -685,6 +685,135 @@ class DataSetHcpResting(DataSet):
             # nb.save(cifti_img, dest_dir +
             #         f'/{s}_space-{atlas}_{ses_id}_{type}_{res}.dpconn.nii')
 
+    def extract_all_fs32k(self, ses_id='ses-s1', type='IcoAll', res=162):
+        """ MDTB extraction of atlasmap locations
+        from nii files - and filterting or averaring
+        as specified.
+
+        Args:
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
+                'IcoAll': Single estimate per session,
+                          Correlation with cortical icosahedron parcels
+                'IcoRun': Seperate estimates per run,
+                          Correlation with cortical icosahedron parcels
+                'NetAll': Single estimate per session,
+                          Correlation with cortico-cerebellar resting-state networks
+                'NetRun': Seperate estimates per run,
+                          Correlation with cortico-cerebellar resting-state networks
+                Defaults to 'IcoAll'.
+            res: the resolution of underlying icosahedron. Default 162
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+        # Make the atlas object
+        mask_L = self.atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'
+        mask_R = self.atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii'
+        fs32k_L_atlas = am.AtlasSurface('CORTEX_LEFT', mask_gii=mask_L)
+        fs32k_R_atlas = am.AtlasSurface('CORTEX_RIGHT', mask_gii=mask_R)
+
+        if type[0:3] == 'Ico':
+            networks=None
+            # Get the parcelation
+            surf_parcel = []
+            for i, h in enumerate(['L', 'R']):
+                dir = self.atlas_dir + '/tpl-fs32k'
+                gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
+                mask = dir + f'/tpl-fs32k_hemi-{h}_mask.label.gii'
+                surf_parcel.append(am.AtlasSurfaceParcel(self.hem_name[i], gifti, mask_gii=mask))
+            bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
+            seed_names=list(bpa.name)
+        elif type[0:3] == 'Net':
+            # Get the networks
+            networkdir = self.base_dir + '/group_ica/dim_25/'
+            networkimg = nb.load(networkdir +
+                'melodic_IC.nii.gz')
+            networks = networkimg.get_fdata()
+            net_selected = pd.read_csv(networkdir + 'classified_components.txt',
+                                       sep=', ', skiprows=[0], skipfooter=1,
+                                       engine='python', header=None,
+                                       names=['Network', 'Classification', 'IsNoise'],
+                                       dtype="category")
+            networks = networks[:, :, :, net_selected.Classification == 'Signal']
+            seed_names = [f'Network-{n+1:02}' for n in np.arange(networks.shape[-1])]
+
+        T = self.get_participants()
+        for s in T.participant_id:
+            print(f'Extract {s}, type {type}')
+            if ses_id == 'ses-s1':
+                runs = [0, 1]
+            elif ses_id == 'ses-s2':
+                runs = [2, 3]
+            else:
+                raise ValueError('Unknown session id.')
+
+            coef = self.get_cortical_connectivity(s, surf_parcel, runs=runs,
+                                                  type=type, networks=networks)
+
+            if type[3:7] == 'All':  # Average across runs
+                coef = [np.nanmean(c, axis=0) for c in coef]
+
+                # Make info structure
+                info = []
+                for i, d in enumerate(coef):
+                    reg_ids = np.arange(len(seed_names)) + 1
+                    this_info = pd.DataFrame({'sn': [s] * d.shape[0],
+                                              'hemis': i + 1,
+                                              'sess': [ses_id] * d.shape[0],
+                                              'half': [1] * d.shape[0],
+                                              'reg_id': reg_ids,
+                                              'region_name': seed_names,
+                                              'names': seed_names})
+                    info.append(this_info)
+
+            elif type[3:7] == 'Run':  # Concatenate over runs
+                coef = [np.concatenate(c, axis=0) for c in coef]
+
+                # Make info structure
+                info = []
+                for i, d in enumerate(coef):
+                    run_ids = np.repeat(runs, int(d.shape[0] / len(runs)))
+                    reg_ids = np.tile(np.arange(len(seed_names)), 2) + 1
+                    names = ["{}_run-{}".format(reg_name, run_id)
+                             for reg_name, run_id in zip(list(seed_names) * 2, run_ids)]
+                    this_info = pd.DataFrame({'sn': [s] * d.shape[0],
+                                              'hemis': i + 1,
+                                              'sess': [ses_id] * d.shape[0],
+                                              'run': run_ids,
+                                              'half': 2 - (run_ids < run_ids[-1]),
+                                              'reg_id': reg_ids,
+                                              'region_name': list(seed_names) * 2,
+                                              'names': names})
+                    info.append(this_info)
+                # update brain parcel axis (repeat names)
+                bpa = bpa + bpa
+
+            # --- Save cerebellar data as dscalar CIFTI-file and write info to tsv ---
+            # C = am.data_to_cifti(coef, [atlas_map], info.names)
+            # dest_dir = self.data_dir.format(s)
+            # Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            # nb.save(C, dest_dir +
+            #         f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
+            # info.to_csv(
+            #     dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+
+            # --- Build a connectivity CIFTI-file and save ---
+            bmc = [fs32k_L_atlas.get_brain_model_axis(),
+                   fs32k_R_atlas.get_brain_model_axis()]
+            for h, name in enumerate(['L', 'R']):  # hemisphere-wise
+                header = nb.Cifti2Header.from_axes((bpa, bmc[h]))
+                cifti_img = nb.Cifti2Image(dataobj=coef[h], header=header)
+                dest_dir = self.data_dir.format(s)
+                Path(dest_dir).mkdir(parents=True, exist_ok=True)
+                nb.save(cifti_img, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}_{name}_{res}.dpconn.nii')
+                info[h].to_csv(dest_dir + f'/{s}_space-fs32k_{ses_id}_info-{type}_{name}_{res}.tsv', sep='\t', index=False)
+
     def extract_ts_volume(self,
                 participant_id,
                 atlas_map,
@@ -746,9 +875,7 @@ class DataSetHcpResting(DataSet):
             ts_cortex.append(ts_parcel)
         return ts_cortex  # shape (n_tessl,P)
 
-    def get_network_timecourse(self,
-                                networks,
-                                ts):
+    def get_network_timecourse(self, networks, ts):
         """Regresses the group spatial map into the fMRI run.
         Returns the run-specific network timecourse.
 
@@ -759,24 +886,19 @@ class DataSetHcpResting(DataSet):
                 Has to be in the same space as networks (91 x 109 x 91 x nTimepoints )
         Returns:
             ts_networks (np.ndarray):
-                A numpy array (nTimepoints x nNetworks) with the fMRI timecourse for each resting-state network
+                A numpy array (nTimepoints x nNetworks) with the fMRI timecourse for
+                each resting-state network
         """
-        X = networks.reshape(-1,12)
+        X = networks.reshape(-1,networks.shape[3])
         Y = ts.reshape(-1, ts.shape[3])
-        ts_networks = np.linalg.inv(X.T @ X) @ (X.T @ Y)
-        ts_networks.T
-        pass
-        return ts_networks  # shape (n_tessl,P)
+        ts_networks = np.matmul(np.linalg.pinv(X), Y)
 
+        return ts_networks  # shape (n_tessl, time_course)
 
-
-    def get_cereb_connectivity(self,
-                participant_id,
-                 cereb_atlas_map,
-                runs=[0, 1, 2, 3], type=type, cortical_atlas_parcels=None, networks=None):
-        """
-        Uses the original CIFTI files to produce cerebellar connectivity
-        file
+    def get_cereb_connectivity(self, participant_id, cereb_atlas_map,runs=[0, 1, 2, 3],
+                               type='IcoAll', cortical_atlas_parcels=None, networks=None):
+        """Uses the original CIFTI files to produce cerebellar connectivity
+           file
 
         """
         if type[0:3] == 'Ico':
@@ -809,7 +931,8 @@ class DataSetHcpResting(DataSet):
                 # concatenate them into a single array for correlation calculation
                 ts_seed = np.concatenate(ts_parcel, axis = 1)
             elif type[0:3] == 'Net':
-                # Regress network spatial map into the run's wholebrain data (returns run-specific timecourse for each network)
+                # Regress network spatial map into the run's wholebrain data
+                # (returns run-specific timecourse for each network)
                 ts = ts_vol.get_fdata()
                 ts_seed = self.get_network_timecourse(networks, ts)
                 ts_seed = ts_seed.T
@@ -828,47 +951,78 @@ class DataSetHcpResting(DataSet):
 
         return coef  # shape (n_tessl,P)
 
-    def get_cortical_connectivity(self,
-                 participant_id,
-                 cortical_atlas_parcels,
-                 runs=[0,1,2,3]):
-        """
-        Uses the original CIFTI files to produce cortical connectivity
-        file
+    def get_cortical_connectivity(self, participant_id, cortical_atlas_parcels,
+                                  runs=[0,1,2,3], type='IcoAll', networks=None):
+        """Uses the original CIFTI files to produce cortical connectivity
+           file
+        Args:
+            participant_id (int): participant id
+            cortical_atlas_parcels (object): the cortical atlas object
+            runs: index of runs
+            type: the underlying cortical parcellation and type of extraction
+                'IcoAll': Single estimate per session,
+                          Correlation with cortical icosahedron parcels
+                'IcoRun': Seperate estimates per run,
+                          Correlation with cortical icosahedron parcels
+                'NetAll': Single estimate per session,
+                          Correlation with cortico-cerebellar resting-state networks
+                'NetRun': Seperate estimates per run,
+                          Correlation with cortico-cerebellar resting-state networks
+                Defaults to 'IcoAll'.
+            networks: group ICA networks
+        Returns:
+            [coef_1,coef_2]: List of cortical functional connectivity.
+                             [left hemisphere, right hemisphere]
         """
         hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
+
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id)
         coef_1, coef_2 = None, None
-        for r in runs:
+        for r,run in enumerate(runs):
             # load the cifti
-            ts_cifti = nb.load(fnames[r])
+            ts_cifti = nb.load(fnames[run])
 
             # get the ts in surface for corticals
-            ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
+            ts_32k = util.surf_from_cifti(ts_cifti, hem_name, mask_gii=[cp.mask_gii for cp in
+                                                                        cortical_atlas_parcels])
+
+            if type[0:3] == 'Ico':
+                assert cortical_atlas_parcels is not None, \
+                    "cortical_atlas_parcels must be given if extraction type is `Ico`!"
+                ts_parcel = []
+                for hem in range(2):
+                    # get the average within parcels
+                    ts_parcel.append(cortical_atlas_parcels[hem].agg_data(ts_32k[hem]))
+
+                # concatenate them into a single array for correlation calculation
+                ts_parcel = np.concatenate(ts_parcel, axis=1)
+            elif type[0:3] == 'Net':
+                assert networks is not None, \
+                    "networks must be given if extraction type is `Net`!"
+                # Regress network spatial map into the run's wholebrain data
+                # (returns run-specific timecourse for each network)
+                ts_vol = util.volume_from_cifti(ts_cifti)
+                ts = ts_vol.get_fdata()
+                ts_parcel = self.get_network_timecourse(networks, ts)
+                ts_parcel = ts_parcel.T
 
             # Standardize the time series for easier calculation
-            ts_cortex = [util.zstandarize_ts(ts) for ts in ts_32k]
-
-            ts_parcel = []
-            for hem in range(2):
-                # get the average within parcels for this hemis
-                this_ts_parcel = cortical_atlas_parcels[hem].agg_data(ts_32k[hem])
-                this_ts_parcel = util.zstandarize_ts(this_ts_parcel)
-                ts_parcel.append(this_ts_parcel)
+            ts_cortex = [util.zstandarize_ts(timeseries) for timeseries in ts_32k]
+            ts_parcel = util.zstandarize_ts(ts_parcel)
 
             # Correlation calculation
             if coef_1 is None:
-                coef_1 = np.empty((len(runs),ts_parcel[0].shape[1],
+                coef_1 = np.empty((len(runs),ts_parcel.shape[1],
                                    ts_cortex[0].shape[1])) # (runs, parcels, vertices)
             if coef_2 is None:
-                coef_2 = np.empty((len(runs),ts_parcel[1].shape[1],
+                coef_2 = np.empty((len(runs),ts_parcel.shape[1],
                                    ts_cortex[1].shape[1])) # (runs, parcels, vertices)
 
             N1 = ts_cortex[0].shape[0]
             N2 = ts_cortex[1].shape[0]
-            coef_1[r,:,:] = ts_parcel[0].T @ ts_cortex[0] / N1
-            coef_2[r,:,:] = ts_parcel[1].T @ ts_cortex[1] / N2
+            coef_1[r,:,:] = ts_parcel.T @ ts_cortex[0] / N1
+            coef_2[r,:,:] = ts_parcel.T @ ts_cortex[1] / N2
 
         return [coef_1,coef_2]  # shape (n_tessl,P)
 

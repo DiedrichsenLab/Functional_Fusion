@@ -29,6 +29,9 @@ def extract_hcp_suit(ses_id='ses-s1', type='IcoRun', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
     hcp_dataset.extract_all_suit(ses_id,type,atlas)
 
+def extract_hcp_fs32k(ses_id='ses-s1', type='IcoRun'):
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+    hcp_dataset.extract_all_fs32k(ses_id,type)
 
 def show_hcp_group(ses_id='ses-s1', type='Run', atlas='MNISymC3', cond=0, info_column='names', savefig=True):
     hcp_dataset = DataSetHcpResting(hcp_dir)
@@ -223,6 +226,7 @@ def indv_hcp_pscalar(res=162, index=range(0,100), refix=False):
 if __name__ == "__main__":
     # extract_hcp_suit(ses_id='ses-s1', type='NetRun', atlas='MNISymC3')
     # extract_hcp_suit(ses_id='ses-s2', type='NetRun', atlas='MNISymC3')
+    extract_hcp_fs32k(ses_id='ses-s1', type='IcoRun')
     # extract_hcp_data()
     # avrg_hcp_dpconn()
     # C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
@@ -233,9 +237,9 @@ if __name__ == "__main__":
     #     ses_id='ses-s1', type='NetRun', atlas='MNISymC3')
     # hcp_dataset.group_average_data(
     #     ses_id='ses-s2', type='NetRun', atlas='MNISymC3')
-    show_hcp_group(ses_id='ses-s1', type='NetAll',
-                   atlas='MNISymC3', cond='separate', info_column='names', savefig=True)
-    show_hcp_group(ses_id='ses-s2', type='NetAll',
-                   atlas='MNISymC3', cond='separate', info_column='names', savefig=True)
+    # show_hcp_group(ses_id='ses-s1', type='NetAll',
+    #                atlas='MNISymC3', cond='separate', info_column='names', savefig=True)
+    # show_hcp_group(ses_id='ses-s2', type='NetAll',
+    #                atlas='MNISymC3', cond='separate', info_column='names', savefig=True)
     pass
     
