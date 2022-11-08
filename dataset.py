@@ -717,6 +717,10 @@ class DataSetHcpResting(DataSet):
         mask_R = self.atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii'
         fs32k_L_atlas = am.AtlasSurface('CORTEX_LEFT', mask_gii=mask_L)
         fs32k_R_atlas = am.AtlasSurface('CORTEX_RIGHT', mask_gii=mask_R)
+        cortex_mask = [mask_L, mask_R]
+        bmc = [fs32k_L_atlas.get_brain_model_axis(),
+               fs32k_R_atlas.get_brain_model_axis()]
+        seed_names=[]
 
         if type[0:3] == 'Ico':
             networks=None
@@ -730,10 +734,10 @@ class DataSetHcpResting(DataSet):
             bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
             seed_names=list(bpa.name)
         elif type[0:3] == 'Net':
+            surf_parcel = None
             # Get the networks
             networkdir = self.base_dir + '/group_ica/dim_25/'
-            networkimg = nb.load(networkdir +
-                'melodic_IC.nii.gz')
+            networkimg = nb.load(networkdir + 'melodic_IC.nii.gz')
             networks = networkimg.get_fdata()
             net_selected = pd.read_csv(networkdir + 'classified_components.txt',
                                        sep=', ', skiprows=[0], skipfooter=1,
@@ -742,6 +746,10 @@ class DataSetHcpResting(DataSet):
                                        dtype="category")
             networks = networks[:, :, :, net_selected.Classification == 'Signal']
             seed_names = [f'Network-{n+1:02}' for n in np.arange(networks.shape[-1])]
+        else:
+            raise NameError("type must start with either 'Ico' or 'Net'!")
+        # Making cifti2 axis for these network name
+        bpa = nb.cifti2.ScalarAxis(seed_names)
 
         T = self.get_participants()
         for s in T.participant_id:
@@ -753,8 +761,9 @@ class DataSetHcpResting(DataSet):
             else:
                 raise ValueError('Unknown session id.')
 
-            coef = self.get_cortical_connectivity(s, surf_parcel, runs=runs,
-                                                  type=type, networks=networks)
+            coef = self.get_cortical_connectivity(s, cortex_mask=cortex_mask, runs=runs, type=type,
+                                                  cortical_atlas_parcels=surf_parcel,
+                                                  networks=networks)
 
             if type[3:7] == 'All':  # Average across runs
                 coef = [np.nanmean(c, axis=0) for c in coef]
@@ -804,15 +813,16 @@ class DataSetHcpResting(DataSet):
             #     dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
             # --- Build a connectivity CIFTI-file and save ---
-            bmc = [fs32k_L_atlas.get_brain_model_axis(),
-                   fs32k_R_atlas.get_brain_model_axis()]
             for h, name in enumerate(['L', 'R']):  # hemisphere-wise
+                print(f'Writing {s}, type {type}, hemis {name} ...')
                 header = nb.Cifti2Header.from_axes((bpa, bmc[h]))
                 cifti_img = nb.Cifti2Image(dataobj=coef[h], header=header)
                 dest_dir = self.data_dir.format(s)
                 Path(dest_dir).mkdir(parents=True, exist_ok=True)
-                nb.save(cifti_img, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}_{name}_{res}.dpconn.nii')
-                info[h].to_csv(dest_dir + f'/{s}_space-fs32k_{ses_id}_info-{type}_{name}_{res}.tsv', sep='\t', index=False)
+                nb.save(cifti_img, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}_{name}_'
+                                              f'{res}.dscalar.nii')
+                info[h].to_csv(dest_dir + f'/{s}_space-fs32k_{ses_id}_info-{type}_{name}_{res}.tsv',
+                               sep='\t', index=False)
 
     def extract_ts_volume(self,
                 participant_id,
@@ -951,13 +961,15 @@ class DataSetHcpResting(DataSet):
 
         return coef  # shape (n_tessl,P)
 
-    def get_cortical_connectivity(self, participant_id, cortical_atlas_parcels,
-                                  runs=[0,1,2,3], type='IcoAll', networks=None):
+    def get_cortical_connectivity(self, participant_id, cortex_mask=None,
+                                  runs=[0,1,2,3], type='IcoAll',
+                                  cortical_atlas_parcels=None,
+                                  networks=None):
         """Uses the original CIFTI files to produce cortical connectivity
            file
         Args:
             participant_id (int): participant id
-            cortical_atlas_parcels (object): the cortical atlas object
+            cortex_mask (list): the list of L and R hemis cortex mask
             runs: index of runs
             type: the underlying cortical parcellation and type of extraction
                 'IcoAll': Single estimate per session,
@@ -969,6 +981,7 @@ class DataSetHcpResting(DataSet):
                 'NetRun': Seperate estimates per run,
                           Correlation with cortico-cerebellar resting-state networks
                 Defaults to 'IcoAll'.
+            cortical_atlas_parcels: cortical random tessellation parcel object
             networks: group ICA networks
         Returns:
             [coef_1,coef_2]: List of cortical functional connectivity.
@@ -984,8 +997,7 @@ class DataSetHcpResting(DataSet):
             ts_cifti = nb.load(fnames[run])
 
             # get the ts in surface for corticals
-            ts_32k = util.surf_from_cifti(ts_cifti, hem_name, mask_gii=[cp.mask_gii for cp in
-                                                                        cortical_atlas_parcels])
+            ts_32k = util.surf_from_cifti(ts_cifti, hem_name, mask_gii=cortex_mask)
 
             if type[0:3] == 'Ico':
                 assert cortical_atlas_parcels is not None, \

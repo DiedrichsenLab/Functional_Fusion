@@ -53,8 +53,11 @@ def surf_from_cifti(ts_cifti,
         Args:
             ts_cifti (cifti obj) - cifti object of time series
             struct_names (list): the struct name of left and right cortex
-            mask_gii (list of Obj.): the mask gifti object for each hemisphere
+            mask_gii: (list of Obj.) the mask gifti object for each hemisphere
                                      if given. Default is None,
+                                     indicating no mask for return.
+                      (list of str.) the file path of mask gifti for each
+                                     hemisphere if given. Default is None,
                                      indicating no mask for return.
         Returns:
             cii (cifti object) - contains the time series for the cortex
@@ -72,9 +75,14 @@ def surf_from_cifti(ts_cifti,
                 # get the values corresponding to the brain model
                 values[:,bm.vertex] = ts_array[:, slc]
                 if mask_gii is not None:
-                    # Note: this is ok because the left/right cortex
-                    # always the first two index in cifti structure
-                    Xmask = mask_gii[idx].agg_data()
+                    Xmask = mask_gii[struct_names.index(nam)]
+                    if isinstance(Xmask, str):
+                        Xmask = nb.load(Xmask).agg_data()
+                    elif isinstance(Xmask, object):
+                        Xmask = Xmask.agg_data()
+                    else:
+                        raise ValueError("The input mask_gii must be either a string of path"
+                                         "or a nibabel gii image object!")
                     values = values[:, np.where(Xmask>0)[0]]
                 ts_list.append(values)
             else:
