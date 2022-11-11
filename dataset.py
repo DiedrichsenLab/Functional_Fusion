@@ -824,7 +824,7 @@ class DataSetHcpResting(DataSet):
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(cifti_img, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}_'
-                                          f'{res}_test.dscalar.nii')
+                                          f'{res}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_space-fs32k_{ses_id}_info-{type}_{res}.tsv',
                            sep='\t', index=False)
 
