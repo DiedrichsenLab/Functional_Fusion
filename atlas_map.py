@@ -185,7 +185,8 @@ class AtlasSurface(Atlas):
 
         Args:
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
-            mask_gii (str): gifti file name of mask image defining atlas locations
+            mask_gii (list): gifti file name of mask image defining atlas locations
+            structure (list): [cortex_left, gifti file name of mask image defining atlas locations
         """
         super().__init__(name)
         self.mask_gii = nb.load(mask_gii)
@@ -207,6 +208,7 @@ class AtlasSurface(Atlas):
         X[self.vox[0],self.vox[1],self.vox[2]]=data
         mapped = nb.Nifti1Image(X,self.mask_img.affine)
         return mapped
+
 
     def get_brain_model_axis(self):
         """ Returns brain model axis
