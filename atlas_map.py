@@ -238,6 +238,22 @@ class AtlasSurface(Atlas):
         mapped = nb.Nifti1Image(X,self.mask_img.affine)
         return mapped
 
+    def data_to_cifti(self, data, row_axis=None):
+        """Maps data back into a cifti image
+        Args:
+            data (ndarray): 1-d Numpy array of the size (P,)
+        Returns:
+            Cifti2Image: Cifti2Image object
+        """
+        if row_axis is None:
+            names = [f'row {r:03}' for r in range(data.shape[0])]
+            row_axis = nb.cifti2.ScalarAxis(names)
+
+        bm = self.get_brain_model_axis()
+        header = nb.Cifti2Header.from_axes((row_axis, bm))
+        cifti_img = nb.Cifti2Image(dataobj=data, header=header)
+
+        return cifti_img
 
     def get_brain_model_axis(self):
         """ Returns brain model axis
