@@ -728,10 +728,10 @@ class DataSetHcpResting(DataSet):
         # Make the atlas object
         mask_L = self.atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'
         mask_R = self.atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii'
-        fs32k_L_atlas = am.AtlasSurface('CORTEX_LEFT', mask_gii=mask_L)
-        fs32k_R_atlas = am.AtlasSurface('CORTEX_RIGHT', mask_gii=mask_R)
+        atlas = am.AtlasSurface('fs32k', mask_gii=[mask_L, mask_R],
+                                   structure=['CORTEX_LEFT', 'CORTEX_RIGHT'])
         cortex_mask = [mask_L, mask_R]
-        bmc = fs32k_L_atlas.get_brain_model_axis() + fs32k_R_atlas.get_brain_model_axis()
+        bmc = atlas.get_brain_model_axis()
         seed_names=[]
 
         if type[0:3] == 'Ico':
@@ -824,7 +824,7 @@ class DataSetHcpResting(DataSet):
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(cifti_img, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}_'
-                                          f'{res}.dscalar.nii')
+                                          f'{res}_test.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_space-fs32k_{ses_id}_info-{type}_{res}.tsv',
                            sep='\t', index=False)
 

@@ -199,19 +199,29 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
 class AtlasSurface(Atlas):
     """Surface-based altas space
     """
-    def __init__(self,name,mask_gii):
+    def __init__(self, name, mask_gii, structure):
         """Atlas Surface class constructor
-
         Args:
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_gii (list): gifti file name of mask image defining atlas locations
-            structure (list): [cortex_left, gifti file name of mask image defining atlas locations
+            structure (list): [cortex_left, cortex_right] gifti file name of mask image defining
+            atlas locations
+        Notes:
+            Since this class is called 'AtlasSurface', I think we should
+            only integrate surface datas in cifti brain structures so that
+            the volume data shouldn't be in.   -- dzhi
         """
         super().__init__(name)
-        self.mask_gii = nb.load(mask_gii)
-        Xmask = self.mask_gii.agg_data()
-        self.vertex_mask = (Xmask>0)
-        self.vertex = np.nonzero(Xmask>0)[0]
+
+        assert len(mask_gii) == len(structure), \
+            "The length of mask and brain structure should be matched!"
+
+        self.structure = structure
+        self.mask_gii = [nb.load(mg) for mg in mask_gii]
+
+        Xmask = [mg.agg_data() for mg in self.mask_gii]
+        self.vertex_mask = [(X>0) for X in Xmask]
+        self.vertex = np.nonzero(np.hstack(Xmask)>0)[0]
         self.P = self.vertex.shape[0]
 
     def map_data(self,data):
@@ -235,8 +245,15 @@ class AtlasSurface(Atlas):
         Returns:
             bm (cifti2.BrainModelAxis)
         """
-        bm = nb.cifti2.BrainModelAxis.from_mask(self.vertex_mask,
-                                            name=self.name)
+        # Make the brain Structure models
+        for i, name in enumerate(self.structure):
+            if i == 0:
+                bm = nb.cifti2.BrainModelAxis.from_mask(self.vertex_mask[i],
+                                                        name=name)
+            else:
+                bm = bm + nb.cifti2.BrainModelAxis.from_mask(self.vertex_mask[i],
+                                                             name=name)
+
         return bm
 
 class AtlasVolumeParcel(Atlas):
