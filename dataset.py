@@ -718,8 +718,7 @@ class DataSetHcpResting(DataSet):
         fs32k_L_atlas = am.AtlasSurface('CORTEX_LEFT', mask_gii=mask_L)
         fs32k_R_atlas = am.AtlasSurface('CORTEX_RIGHT', mask_gii=mask_R)
         cortex_mask = [mask_L, mask_R]
-        bmc = [fs32k_L_atlas.get_brain_model_axis(),
-               fs32k_R_atlas.get_brain_model_axis()]
+        bmc = fs32k_L_atlas.get_brain_model_axis() + fs32k_R_atlas.get_brain_model_axis()
         seed_names=[]
 
         if type[0:3] == 'Ico':
@@ -803,26 +802,18 @@ class DataSetHcpResting(DataSet):
                 # update brain parcel axis (repeat names)
                 bpa = bpa + bpa
 
-            # --- Save cerebellar data as dscalar CIFTI-file and write info to tsv ---
-            # C = am.data_to_cifti(coef, [atlas_map], info.names)
-            # dest_dir = self.data_dir.format(s)
-            # Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            # nb.save(C, dest_dir +
-            #         f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
-            # info.to_csv(
-            #     dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+            info = pd.concat([info[0], info[1]])
 
             # --- Build a connectivity CIFTI-file and save ---
-            for h, name in enumerate(['L', 'R']):  # hemisphere-wise
-                print(f'Writing {s}, type {type}, hemis {name} ...')
-                header = nb.Cifti2Header.from_axes((bpa, bmc[h]))
-                cifti_img = nb.Cifti2Image(dataobj=coef[h], header=header)
-                dest_dir = self.data_dir.format(s)
-                Path(dest_dir).mkdir(parents=True, exist_ok=True)
-                nb.save(cifti_img, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}_{name}_'
-                                              f'{res}.dscalar.nii')
-                info[h].to_csv(dest_dir + f'/{s}_space-fs32k_{ses_id}_info-{type}_{name}_{res}.tsv',
-                               sep='\t', index=False)
+            print(f'Writing {s}, type {type} ...')
+            header = nb.Cifti2Header.from_axes((bpa, bmc))
+            cifti_img = nb.Cifti2Image(dataobj=np.c_[coef[0], coef[1]], header=header)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(cifti_img, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}_'
+                                          f'{res}.dscalar.nii')
+            info.to_csv(dest_dir + f'/{s}_space-fs32k_{ses_id}_info-{type}_{res}.tsv',
+                           sep='\t', index=False)
 
     def extract_ts_volume(self,
                 participant_id,

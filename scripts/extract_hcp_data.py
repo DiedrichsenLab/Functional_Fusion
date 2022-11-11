@@ -226,7 +226,7 @@ def indv_hcp_pscalar(res=162, index=range(0,100), refix=False):
 if __name__ == "__main__":
     # extract_hcp_suit(ses_id='ses-s1', type='NetRun', atlas='MNISymC3')
     # extract_hcp_suit(ses_id='ses-s2', type='NetRun', atlas='MNISymC3')
-    extract_hcp_fs32k(ses_id='ses-s1', type='NetAll')
+    extract_hcp_fs32k(ses_id='ses-s1', type='NetRun')
     # extract_hcp_data()
     # avrg_hcp_dpconn()
     # C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
