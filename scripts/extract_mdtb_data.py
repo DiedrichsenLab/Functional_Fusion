@@ -14,7 +14,9 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 if not Path(base_dir).exists():
-    print('diedrichsen data server not mounted')
+    base_dir = 'Y:\data\FunctionalFusion'
+if not Path(base_dir).exists():
+    raise(NameError('Could not find base_dir'))
 
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
@@ -143,14 +145,16 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
 
 if __name__ == "__main__":
     # parcel_mdtb_fs32k()
-    extract_mdtb_suit(ses_id='ses-s1',type='CondRun',atlas='MNISymC3')
-    extract_mdtb_suit(ses_id='ses-s2',type='CondRun',atlas='MNISymC3')
+    # extract_mdtb_suit(ses_id='ses-s1',type='CondRun',atlas='MNISymC3')
+    # extract_mdtb_suit(ses_id='ses-s2',type='CondRun',atlas='MNISymC3')
     # extract_mdtb_group(ses_id='ses-s1', type='CondHalf', atlas='SUIT3')
     # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
     # extract_mdtb_suit(ses_id='ses-s1',type='CondAll')
     # extract_mdtb_suit(ses_id='ses-s2',type='CondAll')
     # extract_mdtb_fs32k(ses_id='ses-s1',type='CondAll')
     # extract_mdtb_fs32k(ses_id='ses-s2',type='condHalf')
+    extract_mdtb_fs32k(ses_id='ses-s1', type='CondRun')
+    extract_mdtb_fs32k(ses_id='ses-s2', type='CondRun')
     # show_mdtb_suit('all',1,0)
     pass
 

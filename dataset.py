@@ -349,7 +349,7 @@ class DataSet:
         bm_name = ['cortex_left','cortex_right']
         for i,hem in enumerate(['L','R']):
             mask = self.atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
-            atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
+            atlas.append(am.AtlasSurface(f'fs32k_{hem}', mask_gii=[mask], structure=[bm_name[i]]))
 
         # create and calculate the atlas map for each participant
         T = self.get_participants()
