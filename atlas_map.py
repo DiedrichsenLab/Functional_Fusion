@@ -11,6 +11,7 @@ import numpy as np
 from numpy.linalg import inv
 import nibabel as nb
 import os
+import warnings
 
 import Functional_Fusion.matrix as matrix
 import SUITPy as suit
@@ -231,9 +232,7 @@ class AtlasSurface(Atlas):
             "The length of mask and brain structure should be matched!"
 
         self.structure = structure
-        self.mask_gii = [nb.load(mg) for mg in mask_gii]
-
-        Xmask = [mg.agg_data() for mg in self.mask_gii]
+        Xmask = [nb.load(mg).agg_data() for mg in mask_gii]
         self.vertex_mask = [(X>0) for X in Xmask]
         self.vertex = [np.nonzero(X)[0] for X in self.vertex_mask]
         self.P = sum([v.shape[0] for v in self.vertex])
@@ -293,16 +292,45 @@ class AtlasSurface(Atlas):
 
         return cifti_img
 
-    def cifti_to_data(self,cifti):
-        """Gets the data from a CIFTI file, checking the 
-        structure name and vertex information in the cifti file. If it doesn't match the vertex information in the atlas object, it gives a warning, but corrects for it by extracting the available data. 
+    def cifti_to_data(self, cifti):
+        """Gets the data from a CIFTI file, checking the structure name
+           and vertex information in the cifti file. If it doesn't match
+           the vertex information in the atlas object, it gives a warning,
+           but corrects for it by extracting the available data.
 
         Args:
             cifti (ciftiimage or filename): Cifti file to be used
         Returns: 
             np.ndarray: NxP in single np-array
         """
-        pass
+        # First check the input is a cifti image object
+        if isinstance(cifti, str):
+            cifti = nb.load(cifti)
+
+        data = cifti.get_fdata()
+        # Second check if the data has the same vertices index or
+        # the number of vertices with the current atlasMap
+        col_axis = cifti.get_header().get_axis(1)
+        if np.array_equal(np.hstack(self.vertex), col_axis.vertex):
+            pass
+        else:
+            warnings.warn('The input cifti image does not match the current '
+                          'atlas_map. The atlas map attributes will be changed to'
+                          'align the input Cifti2Image.')
+            names, idx = np.unique(col_axis.name, return_index=True)
+            self.structure = names
+            self.vertex = np.split(col_axis.vertex, idx[1:])
+
+            # Align self.vertex_mask to the cifti image
+            self.vertex_mask = []
+            for i, stru_nam in enumerate(self.structure):
+                mask = np.full((col_axis.nvertices[stru_nam],), False, dtype=bool)
+                mask[self.vertex[i]] = True
+                self.vertex_mask.append(mask)
+
+            self.P = col_axis.size
+
+        return data
 
     def get_brain_model_axis(self):
         """ Returns brain model axis
