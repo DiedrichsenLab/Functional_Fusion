@@ -273,10 +273,12 @@ class AtlasSurface(Atlas):
         if row_axis is None:
             row_axis = [f'row {r:03}' for r in range(data.shape[0])]
             row_axis = nb.cifti2.ScalarAxis(row_axis)
-        elif hasattr(row_axis, __len__):
+        elif hasattr(row_axis, '__iter__'):
             assert data.shape[0] == len(row_axis), \
                 "The length of row_axis should match the data!"
             row_axis = nb.cifti2.ScalarAxis(row_axis)
+        elif isinstance(row_axis, nb.cifti2.ScalarAxis):
+            pass
         else:
             raise ValueError('The input row_axis instance type does not meet the requirement!')
 
