@@ -361,7 +361,7 @@ class DataSet:
                 pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
                 white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
                 mask = edir + f'/{ses_id}/{s}_{ses_id}_mask.nii'
-                atlas_maps.append(am.AtlasMapSurf(self, 
+                atlas_maps.append(am.AtlasMapSurf(self,
                             atlas.structure[i],
                             atlas.vertex[i],
                             s,white,pial, mask))
@@ -370,7 +370,7 @@ class DataSet:
             data,info = self.extract_data(s,atlas_maps,
                                                 ses_id=ses_id,
                                                 type=type)
-            C=atlas.data_to_cifti(data,data_names = info.names)
+            C=atlas.data_to_cifti(data, row_axis=info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')

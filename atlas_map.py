@@ -238,21 +238,47 @@ class AtlasSurface(Atlas):
         self.vertex = [np.nonzero(X)[0] for X in self.vertex_mask]
         self.P = sum([v.shape[0] for v in self.vertex])
 
-    def data_to_cifti(self, data, row_axis=None, data_names = None):
+    def data_to_cifti(self, data, row_axis=None):
         """Maps data back into a cifti image
         Args:
             data (ndarray): 1-d Numpy array of the size (P,)
+            row_axis: label for row axis in cifti file, it can be
+                (list) -
+                (object) -
+                (cifti2.ScalarAxis) -
+                None -
         Returns:
             Cifti2Image: Cifti2Image object
         """
-        # If list is passed, horizontal stack them. 
-        # Da: here we could do a few safety checks if the data sizes passed are compatible with the atlas. 
-        if isinstance(data,list):
+        if isinstance(data, list):
+            # Check #1: the passing data is a list, then it should match
+            # the number of brain structures in current atlasMap, and the
+            # number of vertices in each structure should be aligned.
+            assert len(data) == len(self.structure), \
+                "The length of data and brain structure should be matched!"
+            for i, dat in enumerate(data):
+                assert dat.shape[1] == self.vertex[i].shape[0], \
+                    f"The number of vertices doesn't match in {self.structure[i]}"
+
+            # If list is passed, horizontal stack them.
             data = np.hstack(data)
+        elif isinstance(data, np.ndarray):
+            # Check #2: the passing data is np.ndarray, then check the
+            # number of vertices whether is matched with data
+            assert data.shape[1] == self.P, \
+                "The length of data and brain structure should be matched!"
+        else:
+            raise ValueError('The input data must be a np.ndarray or a list of np.ndarray')
+
         if row_axis is None:
-            if data_names is None:
-                data_names = [f'row {r:03}' for r in range(data.shape[0])]
-            row_axis = nb.cifti2.ScalarAxis(data_names)
+            row_axis = [f'row {r:03}' for r in range(data.shape[0])]
+            row_axis = nb.cifti2.ScalarAxis(row_axis)
+        elif hasattr(row_axis, __len__):
+            assert data.shape[0] == len(row_axis), \
+                "The length of row_axis should match the data!"
+            row_axis = nb.cifti2.ScalarAxis(row_axis)
+        else:
+            raise ValueError('The input row_axis instance type does not meet the requirement!')
 
         bm = self.get_brain_model_axis()
         header = nb.Cifti2Header.from_axes((row_axis, bm))
@@ -557,7 +583,7 @@ class AtlasMapDeform(AtlasMap):
         pass
 
 class AtlasMapSurf(AtlasMap):
-    def __init__(self, name, dataset, vertex, participant_id,
+    def __init__(self, dataset, name, vertex, participant_id,
                 white_surf,pial_surf,mask_img):
         """AtlasMapSurf stores the mapping rules for a freesurfer-style surface (pial + white surface pair)
         Args:
