@@ -323,7 +323,10 @@ class DataSet:
                 xfm_name = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
                 deform = [xfm_name,deform]
             mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-            atlas_map = am.AtlasMapDeform(self, suit_atlas, s,deform, mask)
+            atlas_map = am.AtlasMapDeform(self, 
+                    suit_atlas.name,
+                    suit_atlas.world, 
+                    s,deform, mask)
             atlas_map.build(smooth=2.0)
             print(f'Extract {s}')
             data,info = self.extract_data(s,[atlas_map],
@@ -346,11 +349,7 @@ class DataSet:
         """
         # Make the atlas object
         mask = []
-        bm_name = ['cortex_left','cortex_right']
-        for i,hem in enumerate(['L','R']):
-            mask.append(self.atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii')
-        atlas = am.AtlasSurface('fs32k', mask_gii=mask, structure=bm_name[i])
-
+        atlas = am.get_atlas('fs32k',self.atlas_dir)
         # create and calculate the atlas map for each participant
         T = self.get_participants()
         for s in T.participant_id:
@@ -362,14 +361,16 @@ class DataSet:
                 pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
                 white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
                 mask = edir + f'/{ses_id}/{s}_{ses_id}_mask.nii'
-                atlas_maps.append(am.AtlasMapSurf(self, atlas[i],
+                atlas_maps.append(am.AtlasMapSurf(self, 
+                            atlas.structure[i],
+                            atlas.vertex[i],
                             s,white,pial, mask))
                 atlas_maps[i].build()
             print(f'Extract {s}')
             data,info = self.extract_data(s,atlas_maps,
                                                 ses_id=ses_id,
                                                 type=type)
-            C=am.data_to_cifti(data,atlas_maps,info.names)
+            C=atlas.data_to_cifti(data,data_names = info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')

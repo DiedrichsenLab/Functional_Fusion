@@ -37,6 +37,20 @@ def get_atlas(atlas_str,atlas_dir):
     elif (atlas_str =='MNISymC2'):
         mask = atlas_dir + '/tpl-MNI152NLin2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
         atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+    elif atlas_str == 'fs32k':
+        bm_name = ['cortex_left','cortex_right']
+        mask = []
+        for i,hem in enumerate(['L','R']):
+            mask.append(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii')
+        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
+    elif atlas_str == 'fs32k_L':
+        bm_name = ['cortex_left']
+        mask = [atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii']
+        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
+    elif atlas_str == 'fs32k_R':
+        bm_name = ['cortex_right']
+        mask = [atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii']
+        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
     else:
         raise(NameError(f'Unknown atlas string:{atlas_str}'))
     return atlas
@@ -221,39 +235,41 @@ class AtlasSurface(Atlas):
 
         Xmask = [mg.agg_data() for mg in self.mask_gii]
         self.vertex_mask = [(X>0) for X in Xmask]
-        self.vertex = np.nonzero(np.hstack(Xmask)>0)[0]
-        self.P = self.vertex.shape[0]
+        self.vertex = [np.nonzero(X)[0] for X in self.vertex_mask]
+        self.P = sum([v.shape[0] for v in self.vertex])
 
-    def map_data(self,data):
-        """Maps data back into a full nifti
-
-        Args:
-            data (ndarray): 1-d Numpy array of the size (P,)
-
-        Returns:
-            mapped_image (Nifti1Image): Image containing mapped results
-        """
-        X=np.zeros(self.mask_img.shape)
-        X[self.vox[0],self.vox[1],self.vox[2]]=data
-        mapped = nb.Nifti1Image(X,self.mask_img.affine)
-        return mapped
-
-    def data_to_cifti(self, data, row_axis=None):
+    def data_to_cifti(self, data, row_axis=None, data_names = None):
         """Maps data back into a cifti image
         Args:
             data (ndarray): 1-d Numpy array of the size (P,)
         Returns:
             Cifti2Image: Cifti2Image object
         """
+        # If list is passed, horizontal stack them. 
+        # Da: here we could do a few safety checks if the data sizes passed are compatible with the atlas. 
+        if isinstance(data,list):
+            data = np.hstack(data)
         if row_axis is None:
-            names = [f'row {r:03}' for r in range(data.shape[0])]
-            row_axis = nb.cifti2.ScalarAxis(names)
+            if data_names is None:
+                data_names = [f'row {r:03}' for r in range(data.shape[0])]
+            row_axis = nb.cifti2.ScalarAxis(data_names)
 
         bm = self.get_brain_model_axis()
         header = nb.Cifti2Header.from_axes((row_axis, bm))
         cifti_img = nb.Cifti2Image(dataobj=data, header=header)
 
         return cifti_img
+
+    def cifti_to_data(self,cifti):
+        """Gets the data from a CIFTI file, checking the 
+        structure name and vertex information in the cifti file. If it doesn't match the vertex information in the atlas object, it gives a warning, but corrects for it by extracting the available data. 
+
+        Args:
+            cifti (ciftiimage or filename): Cifti file to be used
+        Returns: 
+            np.ndarray: NxP in single np-array
+        """
+        pass
 
     def get_brain_model_axis(self):
         """ Returns brain model axis
@@ -264,12 +280,13 @@ class AtlasSurface(Atlas):
         # Make the brain Structure models
         for i, name in enumerate(self.structure):
             if i == 0:
-                bm = nb.cifti2.BrainModelAxis.from_mask(self.vertex_mask[i],
-                                                        name=name)
+                bm = nb.cifti2.BrainModelAxis.from_mask(
+                    self.vertex_mask[i],
+                    name=self.structure[i])
             else:
-                bm = bm + nb.cifti2.BrainModelAxis.from_mask(self.vertex_mask[i],
-                                                             name=name)
-
+                bm = bm + nb.cifti2.BrainModelAxis.from_mask(
+                    self.vertex_mask[i],
+                    name=self.structure[i])
         return bm
 
 class AtlasVolumeParcel(Atlas):
@@ -413,17 +430,16 @@ class AtlasSurfaceParcel(Atlas):
         return self.parcels
 
 class AtlasMap():
-    def __init__(self, dataset, atlas, participant_id):
+    def __init__(self, dataset, name, P , participant_id):
         """AtlasMap stores the mapping rules from a specific data set (and participant) to the desired atlas space in form of a voxel list
         Args:
             dataset_id (string): name of
             participant_id (string): Participant name
         """
-        self.P = atlas.P       #  Number of brain locations
-        self.name = atlas.name
-        self.atlas = atlas
-        self.participant_id = participant_id
         self.dataset = dataset # Reference to corresponding data set
+        self.name = name
+        self.P = P       #  Number of brain locations
+        self.participant_id = participant_id
 
     def build(self):
         """
@@ -448,17 +464,20 @@ class AtlasMap():
         pass
 
 class AtlasMapDeform(AtlasMap):
-    def __init__(self, dataset, atlas, participant_id, deform_img,mask_img):
+    def __init__(self, dataset, name, world, participant_id, deform_img,mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
         to the desired atlas space in form of a voxel list
         Args:
             dataset_id (str): name of
+            name (str): Name of atlas map
+            worlds (ndarray): 3xP ND array of world locations
             participant_id (str): Participant name
             deform_img (str/list): Name of deformation map image(s)
             mask_img (str): Name of masking image that defines the functional data space.
         """
-        super().__init__(dataset,atlas,participant_id)
-        self.world = atlas.world
+        P = world.shape[1]
+        super().__init__(dataset,name,P,participant_id)
+        self.world = world
         if type(deform_img) is not list:
             deform_img = [deform_img]
         self.deform_img = []
@@ -538,7 +557,7 @@ class AtlasMapDeform(AtlasMap):
         pass
 
 class AtlasMapSurf(AtlasMap):
-    def __init__(self, dataset, atlas, participant_id,
+    def __init__(self, name, dataset, vertex, participant_id,
                 white_surf,pial_surf,mask_img):
         """AtlasMapSurf stores the mapping rules for a freesurfer-style surface (pial + white surface pair)
         Args:
@@ -548,12 +567,12 @@ class AtlasMapSurf(AtlasMap):
             pial_surf (str): Name for pial surface
             mask_img (str): Name of masking image that defines the functional data space.
         """
-        super().__init__(dataset,atlas,participant_id)
-        self.vertex = atlas.vertex
+        P = len(vertex)
+        super().__init__(dataset,name,P,participant_id)
+        self.vertex = vertex
         self.white_surf = nb.load(white_surf)
         self.pial_surf = nb.load(pial_surf)
         self.mask_img = nb.load(mask_img)
-        self.atlas = atlas
 
     def build(self,smooth = None, depths=[0,0.2,0.4,0.6,0.8,1.0]):
         """

@@ -153,8 +153,8 @@ if __name__ == "__main__":
     # extract_mdtb_suit(ses_id='ses-s2',type='CondAll')
     # extract_mdtb_fs32k(ses_id='ses-s1',type='CondAll')
     # extract_mdtb_fs32k(ses_id='ses-s2',type='condHalf')
-    extract_mdtb_fs32k(ses_id='ses-s1', type='CondRun')
-    extract_mdtb_fs32k(ses_id='ses-s2', type='CondRun')
+    extract_mdtb_fs32k(ses_id='ses-s1', type='CondHalf')
+    extract_mdtb_fs32k(ses_id='ses-s2', type='CondHalf')
     # show_mdtb_suit('all',1,0)
     pass
 
