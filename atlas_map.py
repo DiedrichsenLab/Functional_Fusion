@@ -241,12 +241,17 @@ class AtlasSurface(Atlas):
     def data_to_cifti(self, data, row_axis=None):
         """Maps data back into a cifti image
         Args:
-            data (ndarray): 1-d Numpy array of the size (P,)
+            data: the input data to be mapped
+                (ndarray) - 1-d Numpy array of the size (P,)
+                (list) - list of ndarray
             row_axis: label for row axis in cifti file, it can be
-                (list) -
-                (object) -
-                (cifti2.ScalarAxis) -
-                None -
+                (list) - a list of colum names
+                (object) - a pandas framework object of the colum names
+                (cifti2.Axis) - a cifti2 Axis object that can be directly
+                                used to write header. (e.g. ScalarAxis,
+                                SeriesAxis, ...)
+                None - default to generate a list of column names that
+                       matches the input data
         Returns:
             Cifti2Image: Cifti2Image object
         """
@@ -277,7 +282,7 @@ class AtlasSurface(Atlas):
             assert data.shape[0] == len(row_axis), \
                 "The length of row_axis should match the data!"
             row_axis = nb.cifti2.ScalarAxis(row_axis)
-        elif isinstance(row_axis, nb.cifti2.ScalarAxis):
+        elif isinstance(row_axis, nb.cifti2.cifti2_axes.Axis):
             pass
         else:
             raise ValueError('The input row_axis instance type does not meet the requirement!')
