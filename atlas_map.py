@@ -21,8 +21,8 @@ def get_atlas(atlas_str,atlas_dir):
     """ returns an atlas from a code
 
     Args:
-        atlas_str (str): Name of the atlas 
-        atlas_dir (str): directory name for the atlas  
+        atlas_str (str): Name of the atlas
+        atlas_dir (str): directory name for the atlas
     """
     # Make the atlas object
     if (atlas_str=='SUIT3'):
@@ -126,8 +126,8 @@ class AtlasVolumetric(Atlas):
         return img
 
     def sample_nifti(self,img,interpolation):
-        """ Samples a img at the atlas locations 
-        The image needs to be in atlas space. 
+        """ Samples a img at the atlas locations
+        The image needs to be in atlas space.
 
         Args:
             img (str or NiftiImage): Nifti to be sampled
@@ -489,14 +489,14 @@ class AtlasMapDeform(AtlasMap):
         atlas_ind = xyz
         N = atlas_ind.shape[1] # Number of locations in atlas
 
-        # Determine which voxels are available in functional space 
-        # and apply additional mask if given  
+        # Determine which voxels are available in functional space
+        # and apply additional mask if given
         M = self.mask_img.get_fdata()
         i,j,k=np.where(M>0)
         vox = np.vstack((i,j,k))
         world_vox = nt.affine_transform_mat(vox,self.mask_img.affine) # available voxels in world coordiantes
         if additional_mask is not None:
-            # If file name, load the nifti image 
+            # If file name, load the nifti image
             if isinstance(additional_mask,str):
                 additional_mask = nb.load(additional_mask)
             add_mask = nt.sample_image(additional_mask,

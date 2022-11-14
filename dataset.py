@@ -134,7 +134,7 @@ def reliability_within_subj(X,part_vec,cond_vec,
         X (ndarray): num_subj x num_trials x num_voxel tensor of data
         part_vec (ndarray): num_trials partition vector
         cond_vec (ndarray): num_trials condition vector
-        voxel_wise (bool): Return the results as map or overall? 
+        voxel_wise (bool): Return the results as map or overall?
         subtract_mean (bool): Remove the mean per voxel before correlation calc?
     Returns:
         r (ndarray)L: num_subj x num_partition matrix of correlations
@@ -174,7 +174,7 @@ def reliability_between_subj(X,cond_vec=None,
     Args:
         X (ndarray): num_subj x num_trials x num_voxel tensor of data
         part_vec (ndarray): num_trials partition vector
-        voxel_wise (bool): Return the results as map or overall? 
+        voxel_wise (bool): Return the results as map or overall?
         subtract_mean (bool): Remove the mean per voxel before correlation calc?
 
     Returns:
@@ -345,11 +345,11 @@ class DataSet:
             type (str, optional): _description_. Defaults to 'CondHalf'.
         """
         # Make the atlas object
-        atlas =[]
+        mask = []
         bm_name = ['cortex_left','cortex_right']
         for i,hem in enumerate(['L','R']):
-            mask = self.atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
-            atlas.append(am.AtlasSurface(f'fs32k_{hem}', mask_gii=[mask], structure=[bm_name[i]]))
+            mask.append(self.atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii')
+        atlas = am.AtlasSurface('fs32k', mask_gii=mask, structure=bm_name[i])
 
         # create and calculate the atlas map for each participant
         T = self.get_participants()
