@@ -37,6 +37,9 @@ def get_atlas(atlas_str,atlas_dir):
     elif (atlas_str =='MNISymC2'):
         mask = atlas_dir + '/tpl-MNI152NLin2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
         atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+    elif (atlas_str == 'MNISymC1'):
+        mask = atlas_dir + '/tpl-MNI152NLin2000cSymC/tpl-MNISymC_res-1_gmcmask.nii'
+        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
     elif atlas_str == 'fs32k':
         bm_name = ['cortex_left','cortex_right']
         mask = []
