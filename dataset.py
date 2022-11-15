@@ -332,7 +332,7 @@ class DataSet:
             data,info = self.extract_data(s,[atlas_map],
                                           ses_id=ses_id,
                                           type=type)
-            C=am.data_to_cifti(data,[atlas_map],info.names)
+            C=suit_atlas.data_to_cifti(data[0],info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
