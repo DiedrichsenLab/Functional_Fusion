@@ -1315,7 +1315,7 @@ class DataSetNishi(DataSet):
         if type == 'CondHalf':
             # Make new data frame for the information of the new regressors
             info_gb = info.groupby(['sn','sess','half','reg_id','task_name'])
-            data_info = info_gb.agg({'n_rep':np.sum}).reset_index(drop=True)
+            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
             data_info['names']=[f'{d.task_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest

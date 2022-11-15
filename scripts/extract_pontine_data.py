@@ -95,15 +95,15 @@ def show_pontine_suit(subj,sess,cond):
     pass
 
 if __name__ == "__main__":
-    extract_pontine_group(type='TaskHalf', atlas='MNISymC3')
-    # extract_pontine_fs32k(ses_id='ses-01',type='TaskHalf')
-    # extract_mdtb_suit(ses_id='ses-s1', type='CondHalf', atlas='MNISymC3')
+    # extract_pontine_group(type='TaskHalf', atlas='MNISymC3')
+    #  extract_pontine_fs32k(ses_id='ses-01',type='TaskHalf')
+    extract_pontine_suit(ses_id='ses-s1', type='CondHalf', atlas='MNISymC2')
     # extract_mdtb_suit(ses_id='ses-s2', type='CondHalf', atlas='MNISymC3')
     # extract_mdtb_suit(ses_id='ses-s1',type='CondAll')
     # extract_mdtb_suit(ses_id='ses-s2',type='CondAll')
     # extract_mdtb_fs32k(ses_id='ses-s1',type='CondAll')
     # extract_mdtb_fs32k(ses_id='ses-s2',type='condHalf')
     # show_mdtb_suit('all',1,0)
-    show_pontine_group(type='TaskHalf', atlas='SUIT3',
-                       cond='all', savefig=True)
+    # show_pontine_group(type='TaskHalf', atlas='SUIT3',
+    #                    cond='all', savefig=True)
     pass
