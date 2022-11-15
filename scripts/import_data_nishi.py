@@ -6,6 +6,7 @@ import mat73
 import numpy as np
 import scipy.io as sio
 import os
+import import_data as im
 
 
 def import_suit(source_dir,dest_dir,anat_name,participant_id):
@@ -66,27 +67,6 @@ def import_anat(source_dir,dest_dir,anat_name,participant_id):
         except:
             print('skipping ' + src[i])
 
-def import_freesurfer(source_dir,dest_dir,old_id,new_id):
-    Path(dest_dir).mkdir(parents=True, exist_ok=True)
-    src=[]
-    dest =[]
-    src.append(f'/{old_id}.L.pial.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-L_pial.surf.gii')
-    src.append(f'/{old_id}.L.white.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-L_white.surf.gii')
-    src.append(f'/{old_id}.R.pial.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-R_pial.surf.gii')
-    src.append(f'/{old_id}.R.pial.32k.surf.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-R_white.surf.gii')
-    src.append(f'/{old_id}.L.sulc.32k.shape.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-L_sulc.shape.gii')
-    src.append(f'/{old_id}.R.sulc.32k.shape.gii')
-    dest.append(f'/{new_id}_space-32k_hemi-R_sulc.shape.gii')
-    for i in range(len(src)):
-        try:
-            shutil.copyfile(source_dir+src[i],dest_dir+dest[i])
-        except:
-            print('skipping ' + src[i])
 
 def import_spm_glm(source_dir,dest_dir,sub_id,sess_id):
     """Imports the output of the SPM GLM with an SPM_info.mat
@@ -175,8 +155,7 @@ if __name__ == "__main__":
 
 
     for sub in subj_list:
-        for ss in [1, 2]:
-            
+        
             # # --- Import GLM data ---
             # source_dir = os.path.join(base_source_dir, sub, 'estimates', 'glm01', f'ses-{ss:02d}')
             # dest_dir = os.path.join(base_dest_dir,  sub, 'estimates', f"ses-{ss:02d}")
