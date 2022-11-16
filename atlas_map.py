@@ -329,8 +329,7 @@ class AtlasSurface(Atlas):
         if np.array_equal(np.hstack(self.vertex), col_axis.vertex):
             return data
         else:
-            warnings.warn('The input cifti image does not match the current '
-                          'atlas_map!')
+            warnings.warn('The input cifti image does not match the atlas!')
 
             return_data = []
             img_stru, idx = np.unique(col_axis.name, return_index=True)
