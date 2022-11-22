@@ -125,6 +125,25 @@ class AtlasVolumetric(Atlas):
         img = nb.Nifti1Image(X,self.mask_img.affine)
         return img
 
+    def sample_nifti(self,img,interpolation):
+        """ Samples a img at the atlas locations 
+        The image needs to be in atlas space. 
+
+        Args:
+            img (str or NiftiImage): Nifti to be sampled
+
+        Returns:
+            np.array: Data sample at the atlas position
+        """
+        if isinstance(img,str):
+            img = nb.load(img)
+        data = nt.sample_image(img,
+                            self.world[0],
+                            self.world[1],
+                            self.world[2],
+                            interpolation)
+        return data
+
 class AtlasVolumeSymmetric(AtlasVolumetric):
     """ Volumetric atlas with left-right symmetry
     The atlas behaves like AtlasVolumetrc, but provides
@@ -185,7 +204,8 @@ class AtlasSurface(Atlas):
 
         Args:
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
-            mask_gii (str): gifti file name of mask image defining atlas locations
+            mask_gii (list): gifti file name of mask image defining atlas locations
+            structure (list): [cortex_left, gifti file name of mask image defining atlas locations
         """
         super().__init__(name)
         self.mask_gii = nb.load(mask_gii)
@@ -207,6 +227,7 @@ class AtlasSurface(Atlas):
         X[self.vox[0],self.vox[1],self.vox[2]]=data
         mapped = nb.Nifti1Image(X,self.mask_img.affine)
         return mapped
+
 
     def get_brain_model_axis(self):
         """ Returns brain model axis
