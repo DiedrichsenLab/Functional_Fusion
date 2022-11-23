@@ -44,6 +44,13 @@ def get_atlas(atlas_str,atlas_dir):
         for i,hem in enumerate(['L','R']):
             mask.append(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii')
         atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
+    elif atlas_str == 'fs32k_Asym':
+        bm_name = ['cortex_left','cortex_right']
+        mask = []
+        for i,hem in enumerate(['L','R']):
+            mask.append(atlas_dir + f'/tpl-fs32k/Asym/'
+                                    f'tpl-fs32k_desc-asym_hemi-{hem}_mask.label.gii')
+        atlas = AtlasSurface('fs32k_Asym', mask_gii=mask, structure=bm_name)
     elif atlas_str == 'fs32k_L':
         bm_name = ['cortex_left']
         mask = [atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii']
@@ -51,6 +58,14 @@ def get_atlas(atlas_str,atlas_dir):
     elif atlas_str == 'fs32k_R':
         bm_name = ['cortex_right']
         mask = [atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii']
+        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
+    elif atlas_str == 'fs32k_L_Asym':
+        bm_name = ['cortex_left']
+        mask = [atlas_dir + f'/tpl-fs32k/Asym/tpl-fs32k_desc-asym_hemi-L_mask.label.gii']
+        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
+    elif atlas_str == 'fs32k_R_Asym':
+        bm_name = ['cortex_right']
+        mask = [atlas_dir + f'/tpl-fs32k/Asym/tpl-fs32k_desc-asym_hemi-R_mask.label.gii']
         atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
     else:
         raise(NameError(f'Unknown atlas string:{atlas_str}'))
@@ -331,25 +346,36 @@ class AtlasSurface(Atlas):
         # the number of vertices with the current atlasMap
         col_axis = cifti.get_header().get_axis(1)
         if np.array_equal(np.hstack(self.vertex), col_axis.vertex):
-            pass
+            return data
         else:
-            warnings.warn('The input cifti image does not match the current '
-                          'atlas_map. The atlas map attributes will be changed to'
-                          'align the input Cifti2Image.')
-            names, idx = np.unique(col_axis.name, return_index=True)
-            self.structure = names
-            self.vertex = np.split(col_axis.vertex, idx[1:])
+            warnings.warn('The input cifti image does not match the atlas!')
 
-            # Align self.vertex_mask to the cifti image
-            self.vertex_mask = []
-            for i, stru_nam in enumerate(self.structure):
-                mask = np.full((col_axis.nvertices[stru_nam],), False, dtype=bool)
-                mask[self.vertex[i]] = True
-                self.vertex_mask.append(mask)
+            return_data = []
+            img_stru, idx = np.unique(col_axis.name, return_index=True)
+            img_vertex = np.split(col_axis.vertex, idx[1:])
+            for i, stru in enumerate(self.structure):
+                # Align the structure name to cifti file
+                if not stru.startswith('CIFTI_STRUCTURE_'):
+                    stru = 'CIFTI_STRUCTURE_' + stru.upper()
 
-            self.P = col_axis.size
+                this_idx = np.where(col_axis.name == stru)[0]
+                try:
+                    # if the input image has this brain structure
+                    part_ind = img_stru.tolist().index(stru)
 
-        return data
+                    # Restore the full data for this structure
+                    this_full_data = np.full((data.shape[0], col_axis.nvertices[stru]), np.nan)
+                    this_full_data[:,img_vertex[part_ind]] = data[:, this_idx]
+                    this_data = this_full_data[:, self.vertex[i]]
+                except:
+                    print(f'The input image does not contain {stru}! (Fill with NaN)')
+                    # if the input image doesn't have current brain structure
+                    # we then fill these vertices with NaN value
+                    this_data = np.full((data.shape[0], self.vertex[i].shape[0]), np.nan)
+
+                return_data.append(this_data)
+
+            return np.hstack(return_data)
 
     def get_brain_model_axis(self):
         """ Returns brain model axis
@@ -368,6 +394,54 @@ class AtlasSurface(Atlas):
                     self.vertex_mask[i],
                     name=self.structure[i])
         return bm
+
+class AtlasSurfaceSymmetric(AtlasSurface):
+    """ Surface atlas with left-right symmetry
+        The atlas behaves like AtlasSurface, but provides
+        mapping indices from a full representation to
+        a reduced (symmetric) representation of size Psym.
+    """
+    def __init__(self, name, mask_gii, structure):
+        """AtlasSurfaceSymmeytric class constructor: Generates members
+        indx_full, indx_reduced, indx_flip.
+        Assume you have a
+            Full: N x P array
+            Left: N x Psym array
+            Right: N x Psym array
+        then:
+            Left = Full[:,index_full[0]]
+            Right = Full[:,index_full[1]]
+            Avrg = (Left + Right)/2
+            Full = Avrg[:,index_reduced]
+        To Flip:
+            flippedFull = Full[:,index_flip]
+        Args:
+            name (str): Name of the brain structure (cortex_left,
+                        cortex_right, cerebellum)
+            mask_gii (list): gifti file name of mask image defining
+                        atlas locations
+            structure (list): [cortex_left, cortex_right] gifti file
+                              name of mask image defining atlas locations
+        """
+        super().__init__(name, mask_gii, structure)
+        assert np.array_equal(self.vertex[0], self.vertex[1]), \
+            "The left and right hemisphere must be symmetric!"
+
+        # Initialize indices
+        self.Psym = int(self.P / 2)
+        self.indx_full = np.zeros((2,self.Psym),dtype=int)
+        n_vertex = self.vertex[0].shape[0]
+
+        # Generate full/reduce index
+        self.indx_full[0, :] = np.arange(n_vertex)
+        self.indx_full[1, :] = np.arange(n_vertex) + n_vertex
+        self.indx_reduced = np.tile(np.arange(n_vertex), 2)
+
+        # Generate flipping index
+        indx_orig = np.arange(self.P, dtype=int)
+        self.indx_flip = np.zeros((self.P,), dtype=int)
+        self.indx_flip[self.indx_full[0]] = indx_orig[self.indx_full[1]]
+        self.indx_flip[self.indx_full[1]] = indx_orig[self.indx_full[0]]
 
 class AtlasVolumeParcel(Atlas):
     """ Volume-based atlas that is based on
