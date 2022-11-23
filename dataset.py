@@ -260,7 +260,7 @@ class DataSet:
         self.default_type = None
         self.cond_ind = None  # Condition Indicator (field in tsv file )
         self.part_ind = None  # Partition Indicator (field in tsv file )
-        self.cond_name = None  # Partition Indicator (field in tsv file )
+        self.cond_name = None  # Condition Names (field in tsv file )
 
     def get_participants(self):
         """ returns a data frame with all participants
@@ -565,7 +565,7 @@ class DataSetHcpResting(DataSet):
         self.hem_name = ['cortex_left', 'cortex_right']
         self.default_type = 'NetRun'
         self.cond_ind = 'reg_id'
-        self.cond_name = 'names'
+        self.cond_name = 'region_name'
         self.part_ind = 'half'
 
     def get_data_fnames(self, participant_id):
