@@ -5,7 +5,7 @@ Guide on how to check data quality.
 
 CRN, 2022
 
-## Surface checks
+## Surfaces
 Surfaces are located in folder anat:
 
     derivatives/
@@ -50,3 +50,28 @@ Focus on the white matter surface going into the coronal T1 slice, not the saggi
 
 
 
+## Functional Data
+
+### Group Averaged Functional Data
+
+To check whether your functional data makes sense, extract the group average (use function ```group_average()```) and open the group averaged data in the workbench viewer (```wb_view```). Depending on which space you the data is extracted in, you will first have to load the space defining file. For example, if you want to insepct data on the fs32k surfaces, you will first have to load the .spec file for the fs32k space. Afterwards, you can load in the group average cifti file.
+
+Group averaged functional data is located in folder data:
+
+    derivatives/
+            └───group/
+            │       group_ses-<label>_space-32k_<type>.dscalar.nii      # Group averaged functional estimates in 32K 
+
+Look at some contrasts you are familiar with and where you know what to expect. For example, a left hand movement task should give you high activation in the right M1 hand area:
+
+<img src="../docs/left_hand.png" alt="LeftHandActivation" width="300"/>
+
+And the right hand movement task should give you left M1 hand area activation.
+
+<img src="../docs/right_hand.png" alt="RightHandActivation" width="300"/>
+
+You can also check visual tasks, where you would expect activation in the visual cortex:
+
+<img src="../docs/visual_task.png" alt="VisualTaskActivation" width="300"/>
+
+These inspections should confirm that on average, you are seeing activity in the areas that you would expect for the different tasks.
