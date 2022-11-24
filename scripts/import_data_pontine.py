@@ -46,4 +46,3 @@ if __name__ == '__main__':
         #import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
 
 
-# /Volumes/diedrichsen_data$/data/Cerebellum/Pontine/GLM_firstlevel_2/S01/beta_0048.nii
