@@ -3,19 +3,19 @@ Diedrichsen Lab, Western University
 
 Guide on how to check data quality.
 
+CRN, 2022
+
 ## Surface checks
 Surfaces are located in folder anat:
 
-derivatives/
-        └───sub-<label>/
-        │       └───anat/
-        │       │       sub-<id>_T1w.nii                # Native space T1w (space defining)
-        │       │       sub-<id>_label-CSF_probseg.nii               # probabilistic segmentation (CSF)
-        │       │       sub-<id>_label-GM_probseg.nii                # probabilistic segmentation (GM)
-        │       │       sub-<id>_label-WM_probseg.nii                # probabilistic segmentation (WM)
-        │       │       sub-<id>_space-32k_hemi-L_white.surf.gii     # 32K white matter surface
-        │       │       sub-<id>_space-32k_hemi-L_pial.surf.gii      # 32K pial surfaceces
-        |       |       sub-<id>_desc-brain_mask.nii                 # Mask of within brain tissue
+    derivatives/
+            └───sub-<label>/
+            │       └───anat/
+            │       │       sub-<id>_T1w.nii                # Native space T1w (space defining)
+            │       │       sub-<id>_space-32k_hemi-L_white.surf.gii     # 32K white matter surface
+            │       │       sub-<id>_space-32k_hemi-L_pial.surf.gii      # 32K pial surfaceces
+
+
 
 To check that surfaces were reconstructed correctly and match the T1, pull up workbench:
 
@@ -43,7 +43,7 @@ And here is a perfect match between pial surface and T1 image:
 
 Remove the pial surface and add the white matter surface reconstruction. Make sure you removed the pial surface from you viewer, otherwise you won't see the white matter surface under the pial surface. Follow the same process as for the pial surface check, click on ```All``` and rotate the image to see how T1 and the white matter surface align. Mismatches for the white matter surface should be easy to spot since the white matter surface at the cortex should neatly fit into the grey matter on the T1 like below.
 
-<img src="../docs/surface_check_4.png" alt="WMSurface_Match" width="400"/>
+<img src="../docs/surface_check_4.png" alt="WMSurface_Match" width="600"/>
 
 
 Focus on the white matter sorface going into the coronal T1 slice, not the saggital slice. Since the white matter connects the hemispheres only at the corpus callosum, which is hidden behind the rest of the white matter in this view, it's hard to spot mismatches to the saggital T1 slice. Instead, look at where the white matter surface enters the coronal slice and the axial slice.
