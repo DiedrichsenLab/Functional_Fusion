@@ -69,7 +69,8 @@ def extract_all(atlas='MNISym3'):
         else:
             ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas=atlas)
 
-def group_average():
+
+def group_average(atlas='MNISymC3'):
     type = 'CondHalf'
     ibc_dataset = DataSetIBC(data_dir)
     # ---- Extract all data 
@@ -78,7 +79,7 @@ def group_average():
     # --- Get group average ---
     for ses in ibc_dataset.sessions:
         ibc_dataset.group_average_data(
-            ses_id=ses, type=type, atlas='MNISymC3')
+            ses_id=ses, type=type, atlas=atlas)
         # write session tsv file for group average
         s = ibc_dataset.get_participants().participant_id[0]
         D = pd.read_csv(Path(ibc_dataset.data_dir.format(s)) /
@@ -87,16 +88,18 @@ def group_average():
         D.to_csv(ibc_dataset.data_dir.split('/{0}')[0] +
                         f'/group/group_{ses}_info-{type}.tsv', sep='\t')
 
-    def show_group_average():
-        ibc_dataset = DataSetIBC(data_dir)
-        for ses in ibc_dataset.sessions:
-            show_ibc_group(ses_id=ses, type='CondHalf',
-                    atlas='MNISymC3', cond='all', savefig=True)
-    
-        pass
+
+def show_group_average(atlas='MNISymC3'):
+    ibc_dataset = DataSetIBC(data_dir)
+    for ses in ibc_dataset.sessions:
+        show_ibc_group(ses_id=ses, type='CondHalf',
+                atlas=atlas, cond='all', savefig=True)
+
+    pass
 
 if __name__ == "__main__":
-    extract_all('fs32k')
+    # extract_all('fs32k')
+    group_average(atlas='fs32k')
 
     # parcel_mdtb_fs32k()
     # 
