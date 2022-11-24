@@ -46,7 +46,7 @@ Remove the pial surface and add the white matter surface reconstruction. Make su
 <img src="../docs/surface_check_4.png" alt="WMSurface_Match" width="600"/>
 
 
-Focus on the white matter sorface going into the coronal T1 slice, not the saggital slice. Since the white matter connects the hemispheres only at the corpus callosum, which is hidden behind the rest of the white matter in this view, it's hard to spot mismatches to the saggital T1 slice. Instead, look at where the white matter surface enters the coronal slice and the axial slice.
+Focus on the white matter surface going into the coronal T1 slice, not the saggital slice. Since the white matter connects the hemispheres only at the corpus callosum, which is hidden behind the rest of the white matter in this view, it's hard to spot mismatches to the saggital T1 slice. Instead, look at where the white matter surface enters the coronal slice and the axial slice.
 
 
 
