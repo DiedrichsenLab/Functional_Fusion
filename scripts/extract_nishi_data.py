@@ -131,7 +131,7 @@ def parcel_nishi_fs32k(res=162,ses_id='ses-01',type='condHalf'):
 
 if __name__ == "__main__":
     # extract_nishi_group(type='CondHalf', atlas='SUIT3')
-    show_nishimoto_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
+    # show_nishimoto_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
     # parcel_nishi_fs32k(res=162,ses_id='ses-01',type='condHalf')
     # parcel_nishi_fs32k(res=362,ses_id='ses-01',type='condHalf')
     # parcel_nishi_fs32k(res=642,ses_id='ses-01',type='condHalf')
@@ -140,6 +140,6 @@ if __name__ == "__main__":
     # parcel_nishi_fs32k(res=642,ses_id='ses-02',type='condHalf')
     # extract_nishi_suit(ses_id='ses-01',type='CondHalf',atlas='MNISymC3')
     # extract_nishi_suit(ses_id='ses-02',type='CondHalf',atlas='MNISymC3')
-    # extract_nishi_fs32k(ses_id='ses-01',type='CondHalf')
-    # extract_nishi_fs32k(ses_id='ses-02',type='CondHalf')
+    extract_nishi_fs32k(ses_id='ses-01',type='CondHalf')
+    extract_nishi_fs32k(ses_id='ses-02',type='CondHalf')
     pass

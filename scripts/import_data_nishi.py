@@ -6,10 +6,7 @@ import mat73
 import numpy as np
 import scipy.io as sio
 import os
-from import_data import *
-
-
-
+import import_data as im
 
 
 
@@ -91,7 +88,7 @@ if __name__ == "__main__":
             base_dest_dir, sub)
         old_id = 'S{}'.format(sub)
         new_id = 'sub-{}'.format(sub)
-        import_freesurfer(source_dir, dest_dir, old_id=sub, new_id=sub)
+        im.import_freesurfer(source_dir, dest_dir, old_id=sub, new_id=sub)
 
 
         # for ss in [1, 2]:
@@ -108,3 +105,4 @@ if __name__ == "__main__":
         #     dest_dir = os.path.join(
         #         base_dest_dir, sub, 'suit')
         #     import_suit(source_dir, dest_dir, f'{sub}_T1w_lpi', sub)
+

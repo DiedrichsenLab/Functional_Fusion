@@ -134,7 +134,7 @@ def reliability_within_subj(X,part_vec,cond_vec,
         X (ndarray): num_subj x num_trials x num_voxel tensor of data
         part_vec (ndarray): num_trials partition vector
         cond_vec (ndarray): num_trials condition vector
-        voxel_wise (bool): Return the results as map or overall? 
+        voxel_wise (bool): Return the results as map or overall?
         subtract_mean (bool): Remove the mean per voxel before correlation calc?
     Returns:
         r (ndarray)L: num_subj x num_partition matrix of correlations
@@ -174,7 +174,7 @@ def reliability_between_subj(X,cond_vec=None,
     Args:
         X (ndarray): num_subj x num_trials x num_voxel tensor of data
         part_vec (ndarray): num_trials partition vector
-        voxel_wise (bool): Return the results as map or overall? 
+        voxel_wise (bool): Return the results as map or overall?
         subtract_mean (bool): Remove the mean per voxel before correlation calc?
 
     Returns:
@@ -323,7 +323,10 @@ class DataSet:
                 xfm_name = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
                 deform = [xfm_name,deform]
             mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-            atlas_map = am.AtlasMapDeform(self, suit_atlas, s,deform, mask)
+            atlas_map = am.AtlasMapDeform(self, 
+                    suit_atlas.name,
+                    suit_atlas.world, 
+                    s,deform, mask)
             atlas_map.build(smooth=2.0)
             print(f'Extract {s}')
             data,info = self.extract_data(s,[atlas_map],
@@ -345,12 +348,8 @@ class DataSet:
             type (str, optional): _description_. Defaults to 'CondHalf'.
         """
         # Make the atlas object
-        atlas =[]
-        bm_name = ['cortex_left','cortex_right']
-        for i,hem in enumerate(['L','R']):
-            mask = self.atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii'
-            atlas.append(am.AtlasSurface(bm_name[i],mask_gii=mask))
-
+        mask = []
+        atlas = am.get_atlas('fs32k',self.atlas_dir)
         # create and calculate the atlas map for each participant
         T = self.get_participants()
         for s in T.participant_id:
@@ -362,14 +361,16 @@ class DataSet:
                 pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
                 white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
                 mask = edir + f'/{ses_id}/{s}_{ses_id}_mask.nii'
-                atlas_maps.append(am.AtlasMapSurf(self, atlas[i],
+                atlas_maps.append(am.AtlasMapSurf(self,
+                            atlas.structure[i],
+                            atlas.vertex[i],
                             s,white,pial, mask))
                 atlas_maps[i].build()
             print(f'Extract {s}')
             data,info = self.extract_data(s,atlas_maps,
                                                 ses_id=ses_id,
                                                 type=type)
-            C=am.data_to_cifti(data,atlas_maps,info.names)
+            C=atlas.data_to_cifti(data, row_axis=info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
@@ -728,10 +729,10 @@ class DataSetHcpResting(DataSet):
         # Make the atlas object
         mask_L = self.atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'
         mask_R = self.atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii'
-        fs32k_L_atlas = am.AtlasSurface('CORTEX_LEFT', mask_gii=mask_L)
-        fs32k_R_atlas = am.AtlasSurface('CORTEX_RIGHT', mask_gii=mask_R)
+        atlas = am.AtlasSurface('fs32k', mask_gii=[mask_L, mask_R],
+                                   structure=['CORTEX_LEFT', 'CORTEX_RIGHT'])
         cortex_mask = [mask_L, mask_R]
-        bmc = fs32k_L_atlas.get_brain_model_axis() + fs32k_R_atlas.get_brain_model_axis()
+        bmc = atlas.get_brain_model_axis()
         seed_names=[]
 
         if type[0:3] == 'Ico':
@@ -1314,7 +1315,7 @@ class DataSetNishi(DataSet):
         if type == 'CondHalf':
             # Make new data frame for the information of the new regressors
             info_gb = info.groupby(['sn','sess','half','reg_id','task_name'])
-            data_info = info_gb.agg({'n_rep':np.sum}).reset_index(drop=True)
+            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
             data_info['names']=[f'{d.task_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest

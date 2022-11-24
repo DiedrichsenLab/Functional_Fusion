@@ -59,18 +59,17 @@ def show_ibc_group(ses_id='ses-hcp1', type='CondHalf', atlas='MNISymC3', cond=0,
         print(f'Showing {D.cond_name[cond]}')
         pass
 
-def extract_all():
+def extract_all(atlas='MNISym3'):
     ibc_dataset = DataSetIBC(data_dir)
     info = ibc_dataset.get_participants()
     for ses in ibc_dataset.sessions:
         print(f'extracting {ses}')
-        ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas='MNISymC3')
+        if atlas == 'fs32k':
+            ibc_dataset.extract_all_fs32k(ses,type='CondHalf')
+        else:
+            ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas=atlas)
 
-if __name__ == "__main__":
-    # extract_all()
-
-    # parcel_mdtb_fs32k()
-    # 
+def group_average():
     type = 'CondHalf'
     ibc_dataset = DataSetIBC(data_dir)
     # ---- Extract all data 
@@ -88,23 +87,17 @@ if __name__ == "__main__":
         D.to_csv(ibc_dataset.data_dir.split('/{0}')[0] +
                         f'/group/group_{ses}_info-{type}.tsv', sep='\t')
 
-    
-    # pass
-
-    # dataset = DataSetIBC(base_dir + '/IBC')
-    # Specify the fields you want to have / check 
-    # data,info = dataset.get_data('MNISymC3',dataset.sessions[0],'CondHalf')
-    # rw = reliability_within_subj(data,part_vec=info.half,cond_vec=info.reg_num)
-    # rb = reliability_between_subj(data,cond_vec=info.reg_num)
-    # R = np.c_[rw.mean(axis=1),rb]
-    # pass
-    
-    ibc_dataset = DataSetIBC(data_dir)
-    for ses in ibc_dataset.sessions:
-        show_ibc_group(ses_id=ses, type='CondHalf',
+    def show_group_average():
+        ibc_dataset = DataSetIBC(data_dir)
+        for ses in ibc_dataset.sessions:
+            show_ibc_group(ses_id=ses, type='CondHalf',
                     atlas='MNISymC3', cond='all', savefig=True)
     
-    pass
-    # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
-    # for s in T.participant_id:
-    #     pass
+        pass
+
+if __name__ == "__main__":
+    extract_all('fs32k')
+
+    # parcel_mdtb_fs32k()
+    # 
+ 
