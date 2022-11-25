@@ -16,7 +16,7 @@ from import_data import *
 if __name__ == '__main__':
     src_base_dir = '/Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/'
     dest_base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Pontine/'
-    for participant_id in [ '98']:
+    for participant_id in ['01', '03', '04', '07', '95', '96', '97', '98']:
         # '01', '03', '04', '07', '95', '96', '97',
 
         # # # --- Importing SUIT ---
