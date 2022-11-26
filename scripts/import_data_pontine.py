@@ -13,9 +13,13 @@ import numpy as np
 import scipy.io as sio
 from import_data import *
 
+base_dir = '/Volumes/diedrichsen_data$/data'
+if not Path(base_dir).exists():
+    base_dir = '/srv/diedrichsen/data'
+
 if __name__ == '__main__':
-    src_base_dir = '/Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/'
-    dest_base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Pontine/'
+    src_base_dir = base_dir + '/Cerebellum/Pontine7T/'
+    dest_base_dir = base_dir + '/FunctionalFusion/Pontine/'
     for participant_id in ['01', '03', '04', '07', '95', '96', '97', '98']:
         # '01', '03', '04', '07', '95', '96', '97',
 

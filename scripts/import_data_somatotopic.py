@@ -19,6 +19,10 @@ from fsl.wrappers.flirt import applyxfm
 from fsl.utils.platform import platform
 from fsl.transform.flirt import readFlirt
 
+base_dir = '/Volumes/diedrichsen_data$/data'
+if not Path(base_dir).exists():
+    base_dir = '/srv/diedrichsen/data'
+
 
 def norm_anat(source_dir, dest_dir, anat_name, participant_id):
     """
@@ -86,8 +90,8 @@ def resample_anat(source_dir, dest_dir, anat_name, participant_id):
 
 
 if __name__ == '__main__':
-    src_base_dir = '/Volumes/diedrichsen_data$/data/Cerebellum/Somatotopic'
-    dest_base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Somatotopic'
+    src_base_dir = base_dir + '/Cerebellum//Somatotopic'
+    dest_base_dir = base_dir + '/FunctionalFusion/Somatotopic'
     for participant_id in [ '02']:
         # '01', '03', '04', '07', '95', '96', '97',
 
