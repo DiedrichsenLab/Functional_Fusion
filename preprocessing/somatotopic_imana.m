@@ -66,9 +66,150 @@ subj_id_old = {'S2'};
 subj_id  = [1];
 
 ses_str = {'ses-01'};
+
+% AC coordinates
+loc_AC = {[-90, -128, -69],...       %sub-02
+        };
+
 % =========================================================================
 
 switch what
+
+    case 'ANAT:reslice_lpi'  % reslice anatomical to LPI
+        % Example usage:somatotopic_imana('ANAT:reslice_lpi')
+        sn = subj_id;
+        
+        vararginoptions(varargin, {'sn'});
+        for s = sn
+            fprintf('- Reslicing %s anatomical to LPI\n', subj_str{s});
+            
+            % Get the directory of subjects anatomical
+            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            
+            % Get the name of the anatpmical image
+            anat_name = sprintf('%s_T1w', subj_str{s});
+            
+            % Reslice anatomical image to set it within LPI co-ordinate frames
+            source  = fullfile(subj_dir, sprintf('%s.nii', anat_name));
+            dest    = fullfile(subj_dir, sprintf('%s_lpi.nii', anat_name));
+            if ~isfile(source) && isfile(sprintf('%s.gz', source))  % unzip file
+                gunzip(sprintf('%s.gz', source));
+            end
+            spmj_reslice_LPI(source,'name', dest);
+            
+            % In the resliced image, set translation to zero
+            V               = spm_vol(dest);
+            dat             = spm_read_vols(V);
+            V.mat(1:3,4)    = [0 0 0];
+            spm_write_vol(V,dat);
+        end % sn (subjects)
+    case 'ANAT:center_ac'    % recenter to AC (manually retrieve coordinates)
+        % Example usage: somatotopic_imana('ANAT:center_ac')
+        % run spm display to get the AC coordinates
+        fprintf('MANUALLY RETRIEVE AC COORDINATES')
+        sn = subj_id;
+        
+        vararginoptions(varargin, {'sn'});
+        
+        for s = sn
+            fprintf('- Centre AC for %s\n', subj_str{s});
+            
+            % Get the directory of subjects anatomical
+            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            
+            % Get the name of the anatomical image
+            anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s});
+            
+            img             = fullfile(subj_dir, anat_name);
+            V               = spm_vol(img);
+            dat             = spm_read_vols(V);
+            %%oldOrig         = V.mat(1:3,4);
+            %%V.mat(1:3,4)    = oldOrig-loc_AC{sn(s)};
+            V.mat(1:3,4)    = loc_AC{s};
+            spm_write_vol(V,dat);
+        end % s (subjects)
+    case 'SUIT:normalise_dartel'   % SUIT normalization using dartel
+        % LAUNCH SPM FMRI BEFORE RUNNING!!!!!
+        % example usage: somatotopic_imana('SUIT:normalise_dartel')
+        sn = subj_id; %subjNum
+        vararginoptions(varargin, 'sn');
+        
+        for s = sn
+            suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
+            mkdir(suit_subj_dir)
+            
+            cd(suit_subj_dir)
+            job.subjND.gray       = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
+            job.subjND.white      = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg2.nii', subj_str{s}))};
+            job.subjND.isolation  = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_pcereb_corr.nii', subj_str{s}))};
+            suit_normalize_dartel(job);
+        end % s (subjects)    
+
+    case 'SUIT:save_dartel_def'    
+        % Saves the dartel flow field as a deformation file. 
+        % example usage: somatotopic_imana('SUIT:save_dartel_def')
+        sn = subj_id; %subjNum
+        vararginoptions(varargin, 'sn');
+
+        for s = sn
+            suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit', 'anat');
+
+            cd(suit_subj_dir);
+            anat_name = sprintf('%s_T1w_lpi', subj_str{s});
+            suit_save_darteldef(anat_name);
+        end % s (subjects)
+
+    case 'SUIT:reslice'            % Reslice stuff into suit space 
+        % run the case with 'anatomical' to check the suit normalization
+        % Example usage: somatotopic_imana('SUIT:reslice','type','ResMS', 'mask', 'pcereb_corr')
+        % make sure that you reslice into 2mm^3 resolution
+        
+        sn   = subj_id;
+        type = 'anatomical';  % 'betas' or 'con' or 'ResMS' or 'cerebellarGrey' or 'anatomical'
+        mask = 'pcereb_corr'; % 'cereb_prob_corr_grey' or 'cereb_prob_corr' or 'dentate_mask' or 'pcereb'
+        glm  = 1;             % glm number. Used for reslicing betas and contrasts 
+        
+        vararginoptions(varargin, {'sn', 'type', 'mask', 'glm'})
+        
+        for s = sn
+            suit_dir = fullfile(base_dir, subj_str{s}, 'suit', 'anat');
+            switch type
+                case 'anatomical'
+                    subj_dir = suit_dir;
+                    % Get the name of the anatpmical image
+                    files2map = sprintf('%s_T1w_lpi.nii', subj_str{s});
+                    
+                    job.subj.resample = {sprintf('%s,1', files2map)};                 
+                case 'con'
+                    subj_dir     = fullfile(base_dir, subj_str{s}, 'estimates', sprintf('glm%02d', glm), 'ses-01');
+                    out_dir      = fullfile(base_dir, subj_str{s}, 'suit',sprintf('glm%02d',glm));
+                    files2map    = dir(fullfile(subj_dir,sprintf('*con*'))); % find images to be resliced
+                    
+                    job.subj.resample     = {files2map.name};
+                case 'ResMS'
+                    subj_dir     = fullfile(base_dir, subj_str{s}, 'estimates', sprintf('glm%02d', glm), 'ses-01');
+                    out_dir      = fullfile(base_dir, subj_str{s}, 'suit',sprintf('glm%02d',glm));
+                    files2map    = dir(fullfile(subj_dir,sprintf('*ResMS*'))); % find images to be resliced
+                    
+                    job.subj.resample     = {files2map.name};
+                    
+            end
+            
+            cd(subj_dir);
+            job.subj.affineTr  = {fullfile(suit_dir,sprintf('Affine_c_%s_T1w_lpi_seg1.mat', subj_str{s}))};
+            job.subj.flowfield = {fullfile(suit_dir,sprintf('u_a_c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
+            job.subj.mask      = {fullfile(suit_dir, sprintf('c_%s_T1w_lpi_%s.nii', subj_str{s}, mask))};
+            job.vox            = [2 2 2];
+            suit_reslice_dartel(job);
+            
+            if ~strcmp(type,'anatomical')
+                source=fullfile(subj_dir, '*wd*');
+                dircheck(fullfile(out_dir));
+                movefile(source,out_dir);
+            end
+            fprintf('- Resliced %s %s to SUIT\n', subj_str{s}, type);
+        end % s (subject)
+
     case 'SURF:reconall'       % Freesurfer reconall routine
         % Calls recon-all, which performs, all of the
         % FreeSurfer cortical reconstruction process
