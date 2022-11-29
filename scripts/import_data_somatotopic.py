@@ -44,7 +44,7 @@ def norm_anat(source_dir, dest_dir, anat_name, participant_id):
     outnonlin = Path(source_dir) / f'sub-{participant_id}_T1w_mni_fnirt'
     mat = f'{outlin}.mat'
     mni = Path(platform.fsldir) / 'data' / \
-        'standard' / 'MNI152_T1_1mm_brain.nii.gz'
+        'standard' / 'MNI152_T1_1mm.nii.gz'
     # get initial linear transform
     flirt(anat, mni, out=outlin, omat=mat)
     # get nonlinear transform with initial linear transform
