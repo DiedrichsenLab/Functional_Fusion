@@ -33,11 +33,14 @@ def get_atlas(atlas_str,atlas_dir):
         mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
         atlas = AtlasVolumetric('SUIT2',mask_img=mask,structure='cerebellum')
     elif (atlas_str=='MNISymC3'):
-        mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
-        atlas = AtlasVolumetric('MNISymC3',mask_img=mask,structure='cerebellum')
+        mask = atlas_dir + '/tpl-MNI152NLIn2009cSymC/tpl-MNISymC_res-3_gmcmask.nii'
+        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
     elif (atlas_str =='MNISymC2'):
-        mask = atlas_dir + '/tpl-MNI152NLin2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
-        atlas = AtlasVolumetric('MNISymC2',mask_img=mask,structure='cerebellum')
+        mask = atlas_dir + '/tpl-MNI152NLin2009cSymC/tpl-MNISymC_res-2_gmcmask.nii'
+        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+    elif (atlas_str == 'MNISymC1'):
+        mask = atlas_dir + '/tpl-MNI152NLin2009cSymC/tpl-MNISymC_res-1_gmcmask.nii'
+        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
     elif atlas_str == 'fs32k':
         bm_name = ['cortex_left','cortex_right']
         mask = []

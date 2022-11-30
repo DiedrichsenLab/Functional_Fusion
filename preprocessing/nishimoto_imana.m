@@ -32,7 +32,7 @@ suit_defaults;
 %========================================================================================================================
 global base_dir
 
-base_dir = sprintf('%s/FunctionalFusion/Nishimoto/raw',workdir);
+base_dir = sprintf('%s/Cerebellum/Nishimoto/raw',workdir);
 % base_dir = '/Users/ladan/Documents/DATA/nishimoto';
 
 %%% Freesurfer stuff

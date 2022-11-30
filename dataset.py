@@ -260,7 +260,7 @@ class DataSet:
         self.default_type = None
         self.cond_ind = None  # Condition Indicator (field in tsv file )
         self.part_ind = None  # Partition Indicator (field in tsv file )
-        self.cond_name = None  # Partition Indicator (field in tsv file )
+        self.cond_name = None  # Condition Names (field in tsv file )
 
     def get_participants(self):
         """ returns a data frame with all participants
@@ -320,7 +320,8 @@ class DataSet:
             print(f'Atlasmap {s}')
             deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
             if atlas[0:7]=='MNISymC':
-                xfm_name = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
+                xfm_name = self.atlas_dir + \
+                           '/tpl-MNI152NLIn2009cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
                 deform = [xfm_name,deform]
             mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
             atlas_map = am.AtlasMapDeform(self, 
@@ -565,7 +566,7 @@ class DataSetHcpResting(DataSet):
         self.hem_name = ['cortex_left', 'cortex_right']
         self.default_type = 'NetRun'
         self.cond_ind = 'reg_id'
-        self.cond_name = 'names'
+        self.cond_name = 'region_name'
         self.part_ind = 'half'
 
     def get_data_fnames(self, participant_id):
@@ -1061,9 +1062,9 @@ class DataSetLanguage(DataSet):
         if (atlas == 'SUIT2'):
             mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
         if (atlas == 'MNISymC3'):
-            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
+            mask = self.atlas_dir + '/tpl-MNI152NLIn2009cSymC/tpl-MNISymC_res-3_gmcmask.nii'
         if (atlas == 'MNISymC2'):
-            mask = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-2_gmcmask.nii'
+            mask = self.atlas_dir + '/tpl-MNI152NLIn2009cSymC/tpl-MNISymC_res-2_gmcmask.nii'
         suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
 
         # Because data is in MNI space, get one atlas map for all subjects
@@ -1075,7 +1076,7 @@ class DataSetLanguage(DataSet):
         deform = mni_atlas + '/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
         if atlas[0:7] == 'MNISymC':
             xfm_name = self.atlas_dir + \
-                '/tpl-MNI152NLIn2000cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
+                '/tpl-MNI152NLIn2009cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
             deform = [xfm_name, deform]
         mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
         atlas_map = am.AtlasMapDeform(
@@ -1465,7 +1466,8 @@ class DataSetIBC(DataSet):
             print(f'Atlasmap {s}')
             deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
             if atlas[0:7]=='MNISymC':
-                xfm_name = self.atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
+                xfm_name = self.atlas_dir + \
+                           '/tpl-MNI152NLIn2009cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
                 deform = [xfm_name,deform]
             mask = self.estimates_dir.format(s) + f'/{ses_id}/{s}_{ses_id}_mask.nii'
             add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
