@@ -70,7 +70,29 @@ ses_str = {'ses-01'};
 % =========================================================================
 
 switch what
-     
+    case 'ANAT:rename'    % Rename anatomical image to match script convention
+        % Example usage: somatotopic_imana('ANAT:rename', 'sn', 1);
+        
+        sn = subj_id;
+        
+        vararginoptions(varargin, {'sn'});
+        
+        for s = sn
+            
+            % Get the directory of subjects anatomical
+            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            % Get the name of the anatpmical image
+            anat_name = sprintf('%s_anat_mni_underlay_defaced.nii.gz', subj_id_old{s});
+
+            suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
+            dircheck(suit_subj_dir);
+            
+            source = fullfile(subj_dir, anat_name);
+            dest   = fullfile(suit_subj_dir, sprintf('%s_T1w.nii',subj_str{s}));
+            
+            copyfile(source,dest);
+            
+        end % s (sn)
     case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
         % Example usage: somatotopic_imana('SUIT:isolate_segment', 'sn', 1);
         
@@ -85,7 +107,7 @@ switch what
             % Get the directory of subjects anatomical
             subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
             % Get the name of the anatpmical image
-            anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s});
+            anat_name = sprintf('%s_T1w.nii', subj_str{s});
 
             suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
             dircheck(suit_subj_dir);
@@ -112,9 +134,9 @@ switch what
             mkdir(suit_subj_dir)
             
             cd(suit_subj_dir)
-            job.subjND.gray       = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
-            job.subjND.white      = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_seg2.nii', subj_str{s}))};
-            job.subjND.isolation  = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_lpi_pcereb_corr.nii', subj_str{s}))};
+            job.subjND.gray       = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_seg1.nii', subj_str{s}))};
+            job.subjND.white      = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_seg2.nii', subj_str{s}))};
+            job.subjND.isolation  = {fullfile(suit_subj_dir, sprintf('c_%s_T1w_pcereb_corr.nii', subj_str{s}))};
             suit_normalize_dartel(job);
         end % s (subjects)    
 
@@ -128,7 +150,7 @@ switch what
             suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit', 'anat');
 
             cd(suit_subj_dir);
-            anat_name = sprintf('%s_T1w_lpi', subj_str{s});
+            anat_name = sprintf('%s_T1w', subj_str{s});
             suit_save_darteldef(anat_name);
         end % s (subjects)
 
@@ -150,7 +172,7 @@ switch what
                 case 'anatomical'
                     subj_dir = suit_dir;
                     % Get the name of the anatpmical image
-                    files2map = sprintf('%s_T1w_lpi.nii', subj_str{s});
+                    files2map = sprintf('%s_T1w.nii', subj_str{s});
                     
                     job.subj.resample = {sprintf('%s,1', files2map)};                 
                 case 'con'
@@ -169,9 +191,9 @@ switch what
             end
             
             cd(subj_dir);
-            job.subj.affineTr  = {fullfile(suit_dir,sprintf('Affine_c_%s_T1w_lpi_seg1.mat', subj_str{s}))};
-            job.subj.flowfield = {fullfile(suit_dir,sprintf('u_a_c_%s_T1w_lpi_seg1.nii', subj_str{s}))};
-            job.subj.mask      = {fullfile(suit_dir, sprintf('c_%s_T1w_lpi_%s.nii', subj_str{s}, mask))};
+            job.subj.affineTr  = {fullfile(suit_dir,sprintf('Affine_c_%s_T1w_seg1.mat', subj_str{s}))};
+            job.subj.flowfield = {fullfile(suit_dir,sprintf('u_a_c_%s_T1w_seg1.nii', subj_str{s}))};
+            job.subj.mask      = {fullfile(suit_dir, sprintf('c_%s_T1w_%s.nii', subj_str{s}, mask))};
             job.vox            = [2 2 2];
             suit_reslice_dartel(job);
             
