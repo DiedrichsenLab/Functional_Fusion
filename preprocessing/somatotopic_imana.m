@@ -61,7 +61,7 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-subj_id_new = {'sub-02'};
+subj_str = {'sub-02'};
 subj_id_old = {'S2'};
 subj_id  = [1];
 
@@ -72,7 +72,7 @@ ses_str = {'ses-01'};
 switch what
      
     case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
-        % Example usage: nishimoto_bids_imana('SUIT:isolate_segment', 'sn', 1);
+        % Example usage: somatotopic_imana('SUIT:isolate_segment', 'sn', 1);
         
         sn = subj_id;
         
@@ -100,7 +100,7 @@ switch what
             suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w.nii', subj_str{s}))}, 'keeptempfiles', 1);
 %             suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w.nii', subj_str{s}))}, 'keeptempfiles', 1);
         end % s (sn)
-        
+
     case 'SUIT:normalise_dartel'   % SUIT normalization using dartel
         % LAUNCH SPM FMRI BEFORE RUNNING!!!!!
         % example usage: somatotopic_imana('SUIT:normalise_dartel')
@@ -195,9 +195,9 @@ switch what
         subj_fs_dir = fullfile(base_dir, fs_dir);
         
         for s = sn
-            fprintf('- recon-all %s\n', subj_id_new{s});
-            subj_dir = fullfile(base_dir, subj_id_new{s}, anat_dir);
-            freesurfer_reconall(subj_fs_dir, subj_id_new{s}, ...
+            fprintf('- recon-all %s\n', subj_str{s});
+            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            freesurfer_reconall(subj_fs_dir, subj_str{s}, ...
                                 fullfile(subj_dir,sprintf('%s_anat_mni_underlay_defaced.nii.gz', subj_id_old{s})));
         end % s (sn)
     case 'SURF:fs2wb'          % Resampling subject from freesurfer fsaverage to fs_LR
@@ -213,9 +213,9 @@ switch what
         fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
         
         for s = sn 
-            fprintf('- fs2wb %s\n', subj_id_new{s});
-            wb_subj_dir  = fullfile(base_dir, wb_dir, 'data', subj_id_new{s});
-            surf_resliceFS2WB(subj_id_new{s}, fs_dir, wb_subj_dir, 'hemisphere', hemi, 'resolution', sprintf('%dk', res))
+            fprintf('- fs2wb %s\n', subj_str{s});
+            wb_subj_dir  = fullfile(base_dir, wb_dir, 'data', subj_str{s});
+            surf_resliceFS2WB(subj_str{s}, fs_dir, wb_subj_dir, 'hemisphere', hemi, 'resolution', sprintf('%dk', res))
         end % s (sn)
     case 'SURF:run_all'        % Pipeline running all of surface preprocessing routines
         % Example usage: somatotopic_imana('SURF:run_all')
