@@ -87,6 +87,12 @@ switch what
             
             source = fullfile(subj_dir, anat_name);
             dest   = fullfile(subj_dir, sprintf('%s_T1w.nii',subj_str{s}));
+
+            [filepath,name,ext] = fileparts(source)
+            if strcmp(ext,'.gz')
+                gunzip(source)
+                source = fullfile(filepath,name)
+            end
             
             copyfile(source,dest);
             
