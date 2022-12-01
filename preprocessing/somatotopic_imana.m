@@ -84,11 +84,9 @@ switch what
             % Get the name of the anatpmical image
             anat_name = sprintf('%s_anat_mni_underlay_defaced.nii.gz', subj_id_old{s});
 
-            suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
-            dircheck(suit_subj_dir);
             
             source = fullfile(subj_dir, anat_name);
-            dest   = fullfile(suit_subj_dir, sprintf('%s_T1w.nii',subj_str{s}));
+            dest   = fullfile(subj_dir, sprintf('%s_T1w.nii',subj_str{s}));
             
             copyfile(source,dest);
             
