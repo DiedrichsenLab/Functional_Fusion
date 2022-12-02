@@ -67,6 +67,9 @@ subj_id  = [1];
 
 ses_str = {'ses-01'};
 
+% AC coordinates
+ loc_AC = {[-90, -128, -69],...       %sub-02
+         };
 % =========================================================================
 
 switch what
@@ -97,6 +100,59 @@ switch what
             copyfile(source,dest);
             
         end % s (sn)
+    case 'ANAT:reslice_lpi'  % reslice anatomical to LPI
+        % Example usage:somatotopic_imana('ANAT:reslice_lpi')
+        sn = subj_id;
+        
+        vararginoptions(varargin, {'sn'});
+        for s = sn
+            fprintf('- Reslicing %s anatomical to LPI\n', subj_str{s});
+            
+            % Get the directory of subjects anatomical
+            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            
+            % Get the name of the anatpmical image
+            anat_name = sprintf('%s_T1w', subj_str{s});
+            
+            % Reslice anatomical image to set it within LPI co-ordinate frames
+            source  = fullfile(subj_dir, sprintf('%s.nii', anat_name));
+            dest    = fullfile(subj_dir, sprintf('%s_lpi.nii', anat_name));
+            if ~isfile(source) && isfile(sprintf('%s.gz', source))  % unzip file
+                gunzip(sprintf('%s.gz', source));
+            end
+            spmj_reslice_LPI(source,'name', dest);
+            
+            % In the resliced image, set translation to zero
+            V               = spm_vol(dest);
+            dat             = spm_read_vols(V);
+            V.mat(1:3,4)    = [0 0 0];
+            spm_write_vol(V,dat);
+        end % sn (subjects)
+    case 'ANAT:center_ac'    % recenter to AC (manually retrieve coordinates)
+        % Example usage: somatotopic_imana('ANAT:center_ac')
+        % run spm display to get the AC coordinates
+        fprintf('MANUALLY RETRIEVE AC COORDINATES')
+        sn = subj_id;
+        
+        vararginoptions(varargin, {'sn'});
+        
+        for s = sn
+            fprintf('- Centre AC for %s\n', subj_str{s});
+            
+            % Get the directory of subjects anatomical
+            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            
+            % Get the name of the anatomical image
+            anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s});
+            
+            img             = fullfile(subj_dir, anat_name);
+            V               = spm_vol(img);
+            dat             = spm_read_vols(V);
+            %%oldOrig         = V.mat(1:3,4);
+            %%V.mat(1:3,4)    = oldOrig-loc_AC{sn(s)};
+            V.mat(1:3,4)    = loc_AC{s};
+            spm_write_vol(V,dat);
+        end % s (subjects)
     case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
         % Example usage: somatotopic_imana('SUIT:isolate_segment', 'sn', 1);
         
@@ -110,21 +166,21 @@ switch what
             
             % Get the directory of subjects anatomical
             subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
-            % Get the name of the anatpmical image
-            anat_name = sprintf('%s_T1w.nii', subj_str{s});
+            % Get the name of the anatomical image
+            anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s});
 
             suit_subj_dir = fullfile(base_dir, subj_str{s}, 'suit');
             dircheck(suit_subj_dir);
             
             source = fullfile(subj_dir, anat_name);
-            dest   = fullfile(suit_subj_dir, sprintf('%s_T1w.nii',subj_str{s}));
+            dest   = fullfile(suit_subj_dir, sprintf('%s_T1w_lpi.nii',subj_str{s}));
             
             copyfile(source,dest);
             
             % go to subject directory for suit and isolate segment
             cd(fullfile(suit_subj_dir));
-            suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w.nii', subj_str{s}))}, 'keeptempfiles', 1);
-%             suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w.nii', subj_str{s}))}, 'keeptempfiles', 1);
+            suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w_lpi.nii', subj_str{s}))}, 'keeptempfiles', 1);
+%             suit_isolate_seg({fullfile(suit_subj_dir, sprintf('%s_T1w_lpi.nii', subj_str{s}))}, 'keeptempfiles', 1);
         end % s (sn)
 
     case 'SUIT:normalise_dartel'   % SUIT normalization using dartel
@@ -176,7 +232,7 @@ switch what
                 case 'anatomical'
                     subj_dir = suit_dir;
                     % Get the name of the anatpmical image
-                    files2map = sprintf('%s_T1w.nii', subj_str{s});
+                    files2map = sprintf('%s_T1w_lpi.nii', subj_str{s});
                     
                     job.subj.resample = {sprintf('%s,1', files2map)};                 
                 case 'con'
