@@ -70,7 +70,7 @@ And the right hand movement task should give you left M1 hand area activation.
 
 <img src="../docs/right_hand.png" alt="RightHandActivation" width="300"/>
 
-You can also check visual tasks, where you would expect activation in the visual cortex:
+You can also check visual tasks, where you would expect activation in the visual cortices:
 
 <img src="../docs/visual_task.png" alt="VisualTaskActivation" width="300"/>
 
