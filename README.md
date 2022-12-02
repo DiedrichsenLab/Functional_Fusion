@@ -53,6 +53,7 @@ The Data Set class `DataSet` is designed to be the entry of getting the data in 
 
 The folder structure of derivatives
 
+    
     derivatives/
         │   README.md
         │
@@ -61,42 +62,38 @@ The folder structure of derivatives
         │       ...
         │
         └───sub-<label>/
-        │       └───anat/
-        │       │       sub-<id>_T1w.nii                # Native space T1w (space defining)
-        │       │       sub-<id>_label-CSF_probseg.nii               # probabilistic segmentation (CSF)
-        │       │       sub-<id>_label-GM_probseg.nii                # probabilistic segmentation (GM)
-        │       │       sub-<id>_label-WM_probseg.nii                # probabilistic segmentation (WM)
-        │       │       sub-<id>_space-32k_hemi-L_white.surf.gii     # 32K white matter surface
-        │       │       sub-<id>_space-32k_hemi-L_pial.surf.gii      # 32K pial surfaceces
-        |       |       sub-<id>_desc-brain_mask.nii                 # Mask of within brain tissue
-        │       └───suit/
-        │       │       sub-<id>_label-GMc_probseg.nii                # probabilistic segmentation (GM-cereb)
-        │       │       sub-<id>_label-WMc_probseg.nii                # probabilistic segmentation (WM-cereb)
-        │       │       sub-<id>_label-GMb_probseg.nii                # probabilistic segmentation (GM-rest)
-        │       │       sub-<id>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
-        │       │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask in functional space
-        |       | 		sub-<id>_space-SUIT_xfm.nii 				  #	coordinate transformation file into native
-        │       └───func/
-          								sess-s1/
-        |				| 					Minimally preprocessed fMRI data, ideally in the subjects original space
-        │       │       		sub-<label>_ses-<label>_run-<label>_bold.nii[.gz]
-        |				|
-        |				|						Information of different characteristics of runs (phase-encoding direction, etc)
-        |				|						should be stored in a separate json or tsv file....
-        │       │
-        │       └───estimates/
-          								sess-s1/
-    			    │               beta_info.tsv: Information on regression estimate values structure
-    			    									TSV-file with obligatory columns
-    			    										run: run number (reflected in file name)
-    			    										reg_id: regressor id (reflected in file name)
-    			    										reg_num: column number of regressor in design matrix
-    			    								sub-<label>_ses-<label>_matrix.npy: Design matrix used for estimation
-        │                     sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii
-        │                     sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii
-        │                     sub-<label>_ses-<label>_mask.nii
-        │                     sub-<label>_ses-<label>_resms.nii
-
+                └───anat/
+                │       sub-<id>_T1w.nii                             # Native space T1w (space defining)
+                │       sub-<id>_label-CSF_probseg.nii               # probabilistic segmentation (CSF)
+                │       sub-<id>_label-GM_probseg.nii                # probabilistic segmentation (GM)
+                │       sub-<id>_label-WM_probseg.nii                # probabilistic segmentation (WM)
+                │       sub-<id>_space-32k_hemi-L_white.surf.gii     # 32K white matter surface
+                │       sub-<id>_space-32k_hemi-L_pial.surf.gii      # 32K pial surfaceces
+                |       sub-<id>_desc-brain_mask.nii                 # Mask of within brain tissue
+                └───suit/
+                │       sub-<id>_label-GMc_probseg.nii                # probabilistic segmentation (GM-cereb)
+                │       sub-<id>_label-WMc_probseg.nii                # probabilistic segmentation (WM-cereb)
+                │       sub-<id>_label-GMb_probseg.nii                # probabilistic segmentation (GM-rest)
+                │       sub-<id>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
+                │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask in functional space               
+                |       sub-<id>_space-SUIT_xfm.nii                   # coordinate transformation file into native
+                └───estimates/
+        			└───ses-s1/
+                            sub-<label>_ses-<label>_designmatrix.npy                    # Design matrix used for estimation
+                            sub-<label>_ses-<label>_mask.nii                            # Brain mask in functional space
+                            sub-<label>_ses-<label>_reginfo.tsv                         # Information on regression estimate values structure
+                                                                                        # TSV-file with obligatory columns
+                                                                                        #      run: run number (reflected in file name)
+                                                                                        #      reg_id: regressor id (reflected in file name)
+                                                                                        #      reg_num: column number of regressor in design matrix
+                            sub-<label>_ses-<label>_resms.nii                           # Model Variance (ResMS.nii in SPM, sigmasquareds.nii.gz in FSL)
+                            sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii    # Parameter estimates (beta_0001.nii in SPM, pe1.nii.gz in FSL)
+    raw
+    └───sub-<label>/
+        └───func/
+            └───sess-s1/
+                sub-<label>_ses-<label>_run-<label>_bold.nii[.gz]    # Minimally preprocessed fMRI data, ideally in the subjects original space
+                sub-<label>_ses-<label>_run-<label>_bold.json[/.tsv] # Information of different characteristics of runs (phase-encoding direction, etc) as a tsv or json file
 
 ### AtlasMap structure
 
