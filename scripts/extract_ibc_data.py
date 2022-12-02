@@ -137,8 +137,41 @@ def copy_currentAsOld():
 
     pass
 
+def correct_condHalf():
+    """This function corrects the Cond 'half' to be either
+    1 or 2, instead of multiple numbers in IBC
+
+    Returns:
+        None
+    Notes:
+        The reason of not integrating this function in the
+        copy_currentAsOld() is that we may want to have another
+        ways of dealing with this multiple `half`. Right now,
+        it just assign all odd number as 1, evens as 2 which not
+        sure is the ideal solution.         --dzhi
+    """
+    ibc_dataset = DataSetIBC(base_dir + '/IBC')
+    sess = ibc_dataset.sessions
+    T = ibc_dataset.get_participants()
+    for sub in T.participant_id:
+        for s in sess:
+            print(f'Correcting {sub} {s} ...')
+            dirw = ibc_dataset.estimates_dir.format(sub) + f'/{s}'
+            df = pd.read_csv(dirw + f'/{sub}_{s}_reginfo.tsv', delimiter='\t')
+
+            # change all odd value in `half` to be 1, all even to be 2
+            df.loc[df['half'] % 2 == 1, 'half'] = 1
+            df.loc[df['half'] % 2 == 0, 'half'] = 2
+
+            # Save the new file
+            df.to_csv(dirw + f'/{sub}_{s}_reginfo.tsv', sep='\t', index=False)
+            del df
+
+    pass
+
 if __name__ == "__main__":
     # copy_currentAsOld()
+    # correct_condHalf()
     # extract_all('fs32k')
     group_average(atlas='fs32k')
 
