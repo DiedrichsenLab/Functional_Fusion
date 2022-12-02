@@ -16,7 +16,9 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 if not Path(base_dir).exists():
-    print('diedrichsen data server not mounted')
+    base_dir = 'Y:\data\FunctionalFusion'
+if not Path(base_dir).exists():
+    raise (NameError('Could not find base_dir'))
 
 data_dir = base_dir + '/IBC'
 atlas_dir = base_dir + '/Atlases'
@@ -97,7 +99,46 @@ def show_group_average(atlas='MNISymC3'):
 
     pass
 
+def copy_currentAsOld():
+    """This function copies the regressor info file as "_old.tsv"
+    and creat a new one with correct format in the current name.
+
+    Returns:
+        None
+    Notes:
+        I'm not sure what "ses-self" does, so I just correct all
+        separate sessions reginfo file. Ana, if you want to correct
+        the file in ses-self, you can easily modify this function
+        to do so.           --dzhi
+    """
+    ibc_dataset = DataSetIBC(base_dir + '/IBC')
+    sess = ibc_dataset.sessions
+    T = ibc_dataset.get_participants()
+    for sub in T.participant_id:
+        for s in sess:
+            print(f'Correcting {sub} {s} ...')
+            dirw = ibc_dataset.estimates_dir.format(sub) + f'/{s}'
+            df = pd.read_csv(dirw + f'/{sub}_{s}_reginfo.tsv', delimiter='\t')
+
+            # 1. Save an old copy
+            df.to_csv(dirw + f'/{sub}_{s}_reginfo_old.tsv' ,sep='\t', index=False)
+
+            # 2. convert all values to int (As there are float
+            # values in old file, we don't want that)
+            df = df.astype({'reg_id': 'int', 'reg_num': 'int',
+                            'half': 'int', 'cond_num_uni': 'int'})
+
+            # 4. Switch the column name `reg_id` and `reg_num`
+            df.rename(columns={'reg_id': 'reg_num', 'reg_num': 'reg_id'}, inplace=True)
+
+            # Save the new file
+            df.to_csv(dirw + f'/{sub}_{s}_reginfo.tsv' ,sep='\t', index=False)
+            del df
+
+    pass
+
 if __name__ == "__main__":
+    # copy_currentAsOld()
     # extract_all('fs32k')
     group_average(atlas='fs32k')
 
