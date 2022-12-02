@@ -1,0 +1,6 @@
+# Functional Atlas Explorer
+## Brainhack Western 2022 Project Pitch
+
+“What does the inferior frontal gyrus do?” Googling this question returns 93,400,000 results. A skim read of paper abstracts will give you some ideas about its functions. But wouldn’t it be useful to have an interactive map where you can explore these functions in the brain? Imagine clicking on a brain region and getting a word cloud of functions that this region is highly involved in. That’s what we will build!
+
+We will create an interactive tool, useful for anyone wanting to explore their own functional data or openly available functional datasets. Together with our functional fusion toolbox (in-house & soon to be released), it lets you integrate information from many different openly available datasets (Human Connectome Project, etc). During the project you will be able to use our existing toolbox to explore these large datasets - as well as your own data! In addition, this interactive map will provide a side by side view of your desired brain regions and their connections with other brain regions. Click on a region  and you get a map of its functional connectivity to all other regions in the brain. The tool will help synthesize findings across studies (think Neurosynth, but directly based on fMRI data) and aid interpretation of results as well as planning of future experiments.
