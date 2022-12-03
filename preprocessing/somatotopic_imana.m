@@ -61,45 +61,40 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-subj_str = {'sub-02'};
-subj_id_old = {'S2'};
-subj_id  = [1];
+subj_str = {'sub-01',...
+             'sub-02',...
+             'sub-03',...
+             'sub-04',...
+             'sub-05',...
+             'sub-06',...
+             'sub-07',...
+             'sub-08'};
+subj_id_old = {'S1',...
+             'S2',...
+             'S3',...
+             'S4',...
+             'S5',...
+             'S6',...
+             'S7',...
+             'S8'};
+subj_id  = [1, 2, 3, 4, 5, 6, 7, 8];
 
 ses_str = {'ses-01'};
 
 % AC coordinates
- loc_AC = {[-90, -128, -69],...       %sub-02
+ loc_AC = {
+    [-90.0, -130.5, 70.1],...       %sub-01
+    [-92.2, -129.2, 69.3],...       %sub-02
+    [-93.7, -129.2, 68.6],...       %sub-03
+    [-92.2, -129.9, 67.8],...       %sub-04
+    [-93.0, -129.2, 68.6],...       %sub-05
+    [-92.2, -128.5, 68.6],...       %sub-06
+    [-93.0, -129.9, 69.3],...       %sub-07
+    [-92.2, -128.5, 69.3],...       %sub-08
          };
 % =========================================================================
 
 switch what
-    case 'ANAT:rename'    % Rename anatomical image to match script convention
-        % Example usage: somatotopic_imana('ANAT:rename', 'sn', 1);
-        
-        sn = subj_id;
-        
-        vararginoptions(varargin, {'sn'});
-        
-        for s = sn
-            
-            % Get the directory of subjects anatomical
-            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
-            % Get the name of the anatpmical image
-            anat_name = sprintf('%s_anat_mni_underlay_defaced.nii.gz', subj_id_old{s});
-
-            
-            source = fullfile(subj_dir, anat_name);
-            dest   = fullfile(subj_dir, sprintf('%s_T1w.nii',subj_str{s}));
-
-            [filepath,name,ext] = fileparts(source)
-            if strcmp(ext,'.gz')
-                gunzip(source)
-                source = fullfile(filepath,name)
-            end
-            
-            copyfile(source,dest);
-            
-        end % s (sn)
     case 'ANAT:reslice_lpi'  % reslice anatomical to LPI
         % Example usage:somatotopic_imana('ANAT:reslice_lpi')
         sn = subj_id;
@@ -131,28 +126,12 @@ switch what
     case 'ANAT:center_ac'    % recenter to AC (manually retrieve coordinates)
         % Example usage: somatotopic_imana('ANAT:center_ac')
         % run spm display to get the AC coordinates
-        fprintf('MANUALLY RETRIEVE AC COORDINATES')
-        sn = subj_id;
-        
-        vararginoptions(varargin, {'sn'});
-        
-        for s = sn
-            fprintf('- Centre AC for %s\n', subj_str{s});
-            
-            % Get the directory of subjects anatomical
-            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
-            
-            % Get the name of the anatomical image
-            anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s});
-            
-            img             = fullfile(subj_dir, anat_name);
-            V               = spm_vol(img);
-            dat             = spm_read_vols(V);
-            %%oldOrig         = V.mat(1:3,4);
-            %%V.mat(1:3,4)    = oldOrig-loc_AC{sn(s)};
-            V.mat(1:3,4)    = loc_AC{s};
-            spm_write_vol(V,dat);
-        end % s (subjects)
+        spm fmri
+        % Set origin according to this tutorial: https://www.youtube.com/watch?v=AwNJAUKLhqY
+        % In brief, run spm fmri, click 'Display', select lpi image, put crosshair on anterior commissure (AC),
+        % put the inverse value of mm coordinates into origin fields (negative for positive and vice versa),
+        % click enter, check that origin is set to AC, click 'Reorient Image', select lpi image.
+        % To check that origin has successfully been set to AC, reload image and go to origin (put 0 0 0 into coordinates field)
     case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
         % Example usage: somatotopic_imana('SUIT:isolate_segment', 'sn', 1);
         
