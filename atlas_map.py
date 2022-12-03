@@ -28,10 +28,10 @@ def get_atlas(atlas_str,atlas_dir):
     # Make the atlas object
     if (atlas_str=='SUIT3'):
         mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+        atlas = AtlasVolumetric('SUIT3',mask_img=mask,structure='cerebellum')
     elif (atlas_str=='SUIT2'):
         mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
-        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+        atlas = AtlasVolumetric('SUIT2',mask_img=mask,structure='cerebellum')
     elif (atlas_str=='MNISymC3'):
         mask = atlas_dir + '/tpl-MNI152NLIn2009cSymC/tpl-MNISymC_res-3_gmcmask.nii'
         atlas = AtlasVolumetric('cerebellum',mask_img=mask)
@@ -84,21 +84,16 @@ class Atlas():
         self.name = name
         self.P = np.nan # Number of locations in this atlas
 
-    def map_data(self,data):
-        """Maps data back into some atlas form.
-        Args:
-            data (numpy.ndarray): P or N x P array
-        """
-
 class AtlasVolumetric(Atlas):
     """ Volumetric atlas with specific 3d-locations
     """
-    def __init__(self,name,mask_img):
+    def __init__(self,name,mask_img,structure='cerebellum'):
         """Atlas Volumetric class constructor
 
         Args:
-            name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            name (str): Name of atlas (atlas string)
             mask_img (str): file name of mask image defining atlas location
+            structure (str): the brain structure name for Cifti (thalamus, cerebellum)
         """
         super().__init__(name)
         self.mask_img = nb.load(mask_img)
@@ -108,20 +103,7 @@ class AtlasVolumetric(Atlas):
         self.vox = np.vstack((i,j,k))
         self.world = nt.affine_transform_mat(self.vox,self.mask_img.affine)
         self.P = self.world.shape[1]
-
-    def map_data(self,data):
-        """Maps data back into a full nifti
-
-        Args:
-            data (ndarray): 1-d Numpy array of the size (P,)
-
-        Returns:
-            mapped_image (Nifti1Image): Image containing mapped results
-        """
-        X=np.zeros(self.mask_img.shape)
-        X[self.vox[0],self.vox[1],self.vox[2]]=data
-        mapped = nb.Nifti1Image(X,self.mask_img.affine)
-        return mapped
+        self.structure = structure
 
     def get_brain_model_axis(self):
         """ Returns brain model axis
@@ -130,9 +112,45 @@ class AtlasVolumetric(Atlas):
             bm (cifti2.BrainModelAxis)
         """
         bm = nb.cifti2.BrainModelAxis.from_mask(self.mask_img.get_data(),
-                                            name=self.name,
+                                            name=self.structure,
                                             affine = self.mask_img.affine)
         return bm
+
+    def data_to_cifti(self, data, row_axis=None):
+        """ Transforms data into a cifti image
+        Args:
+            data: the input data to be mapped
+                (ndarray) - 1-d Numpy array of the size (P,)
+            row_axis: label for row axis in cifti file, it can be
+                (list) - a list of row names
+                (object) - a pandas framework object of the row names
+                (cifti2.Axis) - a cifti2 Axis object that can be directly
+                                used to write header. (e.g. ScalarAxis,
+                                SeriesAxis, ...)
+                None - default to generate a list of row names that
+                       matches the input data
+        Returns:
+            Cifti2Image: Cifti2Image object
+        """
+        assert data.shape[1] == self.P, \
+                "The length of data and brain structure should be matched!"
+
+        if row_axis is None:
+            row_axis = [f'row {r:03}' for r in range(data.shape[0])]
+            row_axis = nb.cifti2.ScalarAxis(row_axis)
+        elif hasattr(row_axis, '__iter__'):
+            assert data.shape[0] == len(row_axis), \
+                "The length of row_axis should match the data!"
+            row_axis = nb.cifti2.ScalarAxis(row_axis)
+        elif isinstance(row_axis, nb.cifti2.cifti2_axes.Axis):
+            pass
+        else:
+            raise ValueError('The input row_axis instance type does not meet the requirement!')
+
+        bm = self.get_brain_model_axis()
+        header = nb.Cifti2Header.from_axes((row_axis, bm))
+        cifti_img = nb.Cifti2Image(dataobj=data, header=header)
+        return cifti_img
 
     def data_to_nifti(self,data):
         """Transforms data in atlas space into
@@ -157,6 +175,7 @@ class AtlasVolumetric(Atlas):
             X[self.vox[0],self.vox[1],self.vox[2]]=data
         img = nb.Nifti1Image(X,self.mask_img.affine)
         return img
+
 
     def sample_nifti(self,img,interpolation):
         """ Samples a img at the atlas locations
@@ -806,44 +825,4 @@ def get_data4D(vol_4D,atlas_maps):
             d[np.nansum(at.vox_weight,axis=1)==0]=np.nan
             data[i][j,:]=d
     return data
-
-
-def data_to_cifti(data,atlas_maps,names=None):
-    """Transforms a list of data sets and list of atlas maps
-    into a cifti2image
-
-    Args:
-        data (list):
-            List / array of data arrays - need to have all same shape[0]
-            and a shape[1] that matches the corresponding atlas map
-        atlas_maps (list):
-            List / array of atlas maps
-        names (list of str):
-            Names for the scalar axis
-    Returns:
-        img: nibabel.cifti2image
-            Can be saved as (*.dscalar.nii) file
-    """
-    # Check is a single is given
-    if type(data) is not list:
-        data = [data]
-    if type(atlas_maps) is not list:
-        atlas_maps = [atlas_maps]
-
-    # Make the brain Structure models
-    for i,atm in enumerate(atlas_maps):
-        if i == 0:
-            bm = atm.atlas.get_brain_model_axis()
-            D = data[i]
-        else:
-            bm = bm+atm.atlas.get_brain_model_axis()
-            D = np.c_[D,data[i]]
-
-    # row_axis = nb.cifti2.SeriesAxis(start=0,step=1,size=D.shape[0])
-    if names is None:
-        names = [f'row {r:02}' for r in range(D.shape[0])]
-    row_axis = nb.cifti2.ScalarAxis(names)
-    header = nb.Cifti2Header.from_axes((row_axis,bm))
-    cifti_img = nb.Cifti2Image(dataobj=D,header=header)
-    return cifti_img
 
