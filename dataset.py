@@ -1443,11 +1443,11 @@ class DataSetIBC(DataSet):
 
         # Depending on the type, make a new contrast
         n_cond = np.max(info.reg_id)
-
+        info['n_rep']=np.ones((info.shape[0],))
         if type == 'CondHalf':
-            info_gb = info.groupby(['sn','sess','cond_name','reg_id','half','cond_num_uni'])
-            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
-            data_info['names']=[f'{d.task_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
+            info_gb = info.groupby(['sn','sess','half','reg_id','cond_name','cond_num_uni'])
+            data_info = info_gb.agg({'n_rep':'count'}).reset_index()
+            data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
             # Contrast for the regressors of interest
             reg = (info.half-1)*n_cond + info.reg_id
@@ -1479,13 +1479,15 @@ class DataSetIBC(DataSet):
                 deform = [xfm_name,deform]
             mask = self.estimates_dir.format(s) + f'/{ses_id}/{s}_{ses_id}_mask.nii'
             add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-            atlas_map = am.AtlasMapDeform(self, suit_atlas, s,deform, mask)
+            atlas_map = am.AtlasMapDeform(self, 
+                            suit_atlas.name,
+                            suit_atlas.world, s,deform, mask)
             atlas_map.build(smooth=2.0,additional_mask = add_mask)
             print(f'Extract {s}')
             data,info = self.extract_data(s,[atlas_map],
                                           ses_id=ses_id,
                                           type=type)
-            C=am.data_to_cifti(data,[atlas_map],info.names)
+            C=suit_atlas.data_to_cifti(data[0],info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
