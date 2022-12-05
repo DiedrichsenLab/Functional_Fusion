@@ -64,7 +64,7 @@ def show_ibc_group(ses_id='ses-hcp1', type='CondHalf', atlas='MNISymC3', cond=0,
 def extract_all(atlas='MNISym3'):
     ibc_dataset = DataSetIBC(data_dir)
     info = ibc_dataset.get_participants()
-    for ses in ibc_dataset.sessions:
+    for ses in ibc_dataset.sessions[1:]:
         print(f'extracting {ses}')
         if atlas == 'fs32k':
             ibc_dataset.extract_all_fs32k(ses,type='CondHalf')
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     # copy_currentAsOld()
     # correct_condHalf()
     # extract_all('fs32k')
-    group_average(atlas='fs32k')
+    group_average(atlas='MNISymC3')
 
     # parcel_mdtb_fs32k()
     # 

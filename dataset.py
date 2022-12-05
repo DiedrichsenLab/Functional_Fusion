@@ -1414,7 +1414,7 @@ class DataSetIBC(DataSet):
         """
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
         T=pd.read_csv(dirw+f'/{participant_id}_{session_id}_reginfo.tsv',sep='\t')
-        fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_num:02}_beta.nii' for i,t in T.iterrows()]
+        fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i,t in T.iterrows()]
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
@@ -1442,18 +1442,26 @@ class DataSetIBC(DataSet):
         # data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
 
         # Depending on the type, make a new contrast
-        n_cond = np.max(info.reg_num)
+        n_cond = np.max(info.reg_id)
 
         if type == 'CondHalf':
-            # Make new data frame for the information of the new regressors
-            info['names']=[f'{d.task_name.strip()}-{d.cond_name.strip()}-half{int(d.half)}' for i,d in info.iterrows()]
+            info_gb = info.groupby(['sn','sess','cond_name','reg_id','half','cond_num_uni'])
+            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
+            data_info['names']=[f'{d.task_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
+            # Contrast for the regressors of interest
+            reg = (info.half-1)*n_cond + info.reg_id
+            C = matrix.indicator(reg,positive=True)
+
+    
         # Prewhiten the data
-        data_n = prewhiten_data(data)
-        return data_n, info
+        data_n = pinv(C) @ prewhiten_data(data)
+
+        return data_n, data_info
 
     def extract_all_suit(self,ses_id='ses-archi',type='CondHalf',atlas='SUIT3'):
-        """Extracts data in SUIT space - we need to overload this from the standard, as the voxel-orientation (and therefore the atlasmap) is different from session to session in IBC.
+        """Extracts data in SUIT space - we need to overload this from the standard, 
+        as the voxel-orientation (and therefore the atlasmap) is different from session to session in IBC.
         Args:
             ses_id (str, optional): Session. Defaults to 'ses-s1'.
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
