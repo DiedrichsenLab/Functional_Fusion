@@ -123,15 +123,38 @@ switch what
             V.mat(1:3,4)    = [0 0 0];
             spm_write_vol(V,dat);
         end % sn (subjects)
-    case 'ANAT:center_ac'    % recenter to AC (manually retrieve coordinates)
+   
+    case 'ANAT:center_ac' % recenter to AC (manually retrieve coordinates)
         % Example usage: somatotopic_imana('ANAT:center_ac')
         % run spm display to get the AC coordinates
-        spm fmri
         % Set origin according to this tutorial: https://www.youtube.com/watch?v=AwNJAUKLhqY
         % In brief, run spm fmri, click 'Display', select lpi image, put crosshair on anterior commissure (AC),
         % put the inverse value of mm coordinates into origin fields (negative for positive and vice versa),
         % click enter, check that origin is set to AC, click 'Reorient Image', select lpi image.
         % To check that origin has successfully been set to AC, reload image and go to origin (put 0 0 0 into coordinates field)
+
+        fprintf('MANUALLY RETRIEVE AC COORDINATES')
+        sn = subj_id;
+        
+        vararginoptions(varargin, {'sn'});
+        
+        for s = sn
+            fprintf('- Centre AC for %s\n', subj_str{s});
+            
+            % Get the directory of subjects anatomical
+            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            
+            % Get the name of the anatomical image
+            anat_name = sprintf('%s_T1w_lpi.nii', subj_str{s});
+            
+            img             = fullfile(subj_dir, anat_name);
+            V               = spm_vol(img);
+            dat             = spm_read_vols(V);
+            oldOrig         = V.mat(1:3,4);
+            V.mat(1:3,4)    = oldOrig-loc_AC{s}.';
+            % V.mat(1:3,4)    = loc_AC{s}.';
+            spm_write_vol(V,dat);
+        end % s (subjects)
     case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
         % Example usage: somatotopic_imana('SUIT:isolate_segment', 'sn', 1);
         
