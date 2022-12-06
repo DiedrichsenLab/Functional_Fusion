@@ -1415,8 +1415,6 @@ class DataSetIBC(DataSet):
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
 
-                        #   Not using 'ses-self' for now, as we need to deal with different numbers of regressors per subject
-
     def get_participants(self):
         """ returns a data frame with all participants complete participants
         Returns:
@@ -1518,3 +1516,11 @@ class DataSetIBC(DataSet):
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
 
 
+class DataSetDemand(DataSet):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.sessions = ['ses-01']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'cond_num_uni'
+        self.cond_name = 'cond_name'
+        self.part_ind = 'half'
