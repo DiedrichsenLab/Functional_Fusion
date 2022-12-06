@@ -172,8 +172,8 @@ def correct_condHalf():
 if __name__ == "__main__":
     # copy_currentAsOld()
     # correct_condHalf()
-    extract_all('MNISymC3')
-    extract_all('fs32k')
+    # extract_all('MNISymC3')
+    # extract_all('fs32k')
     extract_all('MNISymC2')
     # group_average(atlas='MNISymC3')
 

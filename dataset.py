@@ -1455,8 +1455,9 @@ class DataSetIBC(DataSet):
 
     
         # Prewhiten the data
-        data_n = pinv(C) @ prewhiten_data(data)
-
+        data_n = prewhiten_data(data)
+        for i in range(len(data_n)):
+            data_n[i]=pinv(C) @ data_n[i] 
         return data_n, data_info
 
     def extract_all_suit(self,ses_id='ses-archi',type='CondHalf',atlas='SUIT3'):
