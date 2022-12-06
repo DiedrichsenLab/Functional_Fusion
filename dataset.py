@@ -21,6 +21,7 @@ import nibabel as nb
 import nitools as nt
 from numpy import eye,zeros,ones,empty,nansum, sqrt
 from numpy.linalg import pinv,solve
+import warnings
 
 def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     # Get defaults for each dataset
@@ -377,8 +378,8 @@ class DataSet:
             nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
             pass
 
-    def get_data(self,space='SUIT3',ses_id='ses-s1',
-                      type='CondHalf',subj=None,fields=None):
+    def get_data(self, space='SUIT3', ses_id='ses-s1',
+                 type='CondHalf', subj=None, fields=None):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -398,29 +399,51 @@ class DataSet:
         # Deal with subset of subject option
         if subj is None:
             subj = np.arange(T.shape[0])
-        # Loop over the different subjects
-        for i,s in enumerate (T.participant_id.iloc):
+
+        max = 0
+
+        # Loop over the different subjects to find the most complete info
+        for i, s in enumerate(T.participant_id.iloc):
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
-                                   + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t')
+                                   + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            # Reduce tsv file when fields are given 
             if fields is not None:
-                if i==0:
-                    info = info_raw[fields]
-                else:
-                    if not info.equals(info_raw[fields]):
-                        raise(NameError('Info structure different for subject' + f'{s}. All info structures need to match'
-                        + 'on the fields'))
+                info = info_raw[fields]
             else:
-                info=info_raw
+                info = info_raw
+            
+            # Keep the most complete info
+            if info.shape[0] > max:
+                info_com = info
+                max = info.shape[0]
 
+        # Loop again to assemble the data
+        for i, s in enumerate(T.participant_id.iloc):
             # Load the data
-            C = nb.load(self.data_dir.format(s) + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
+            C = nb.load(self.data_dir.format(s)
+                        + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
+            this_data = C.get_fdata()
+
+            # Check if this subject data in incomplete
+            if this_data.shape[0] != info_com.shape[0]:
+                this_info = pd.read_csv(self.data_dir.format(s)
+                                        + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                base = np.asarray(info_com['names'])
+                incomplete = np.asarray(this_info['names'])
+                for j in range(base.shape[0]):
+                    if base[j] != incomplete[j]:
+                        warnings.warn(f'{s}, {ses_id}, {type} - missing data {base[j]}')
+                        incomplete = np.insert(np.asarray(incomplete), j, np.nan)
+                        this_data = np.insert(this_data, j, np.nan, axis=0)
+
             if Data is None:
-                Data = np.zeros((len(subj),C.shape[0],C.shape[1]))
-            Data[i,:,:] = C.get_fdata()
+                Data = np.zeros((len(subj), C.shape[0], C.shape[1]))
+            Data[i, :, :] = this_data
+
         # Ensure that infinite values (from div / 0) show up as NaNs
-        Data[np.isinf(Data)]=np.nan
-        return Data, info
+        Data[np.isinf(Data)] = np.nan
+        return Data, info_com
 
     def group_average_data(self, ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
         """Loads group data in SUIT space from a standard experiment structure
