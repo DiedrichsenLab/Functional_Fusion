@@ -21,6 +21,7 @@ import nibabel as nb
 import nitools as nt
 from numpy import eye,zeros,ones,empty,nansum, sqrt
 from numpy.linalg import pinv,solve
+import warnings
 
 def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     # Get defaults for each dataset
@@ -400,28 +401,24 @@ class DataSet:
             subj = np.arange(T.shape[0])
 
         max = 0
+
         # Loop over the different subjects to find the most complete info
         for i, s in enumerate(T.participant_id.iloc):
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            # Reduce tsv file when fields are given 
             if fields is not None:
-                if i == 0:
-                    info = info_raw[fields]
-                else:
-                    if not info.equals(info_raw[fields]):
-                        raise (NameError(
-                            'Info structure different for subject' + f'{s}. All info structures need to match'
-                            + 'on the fields'))
+                info = info_raw[fields]
             else:
                 info = info_raw
-
+            
             # Keep the most complete info
             if info.shape[0] > max:
                 info_com = info
                 max = info.shape[0]
 
-        # Loop again to assumble the data
+        # Loop again to assemble the data
         for i, s in enumerate(T.participant_id.iloc):
             # Load the data
             C = nb.load(self.data_dir.format(s)
@@ -436,7 +433,6 @@ class DataSet:
                 incomplete = np.asarray(this_info['names'])
                 for j in range(base.shape[0]):
                     if base[j] != incomplete[j]:
-                        import warnings
                         warnings.warn(f'{s}, {ses_id}, {type} - missing data {base[j]}')
                         incomplete = np.insert(np.asarray(incomplete), j, np.nan)
                         this_data = np.insert(this_data, j, np.nan, axis=0)
