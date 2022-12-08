@@ -34,13 +34,13 @@ def get_atlas(atlas_str,atlas_dir):
         atlas = AtlasVolumetric('SUIT2',mask_img=mask,structure='cerebellum')
     elif (atlas_str=='MNISymC3'):
         mask = atlas_dir + '/tpl-MNI152NLIn2009cSymC/tpl-MNISymC_res-3_gmcmask.nii'
-        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+        atlas = AtlasVolumetric('MNISymC3',mask_img=mask,structure='cerebellum')
     elif (atlas_str =='MNISymC2'):
         mask = atlas_dir + '/tpl-MNI152NLin2009cSymC/tpl-MNISymC_res-2_gmcmask.nii'
-        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+        atlas = AtlasVolumetric('MNISymC2',mask_img=mask,structure='cerebellum')
     elif (atlas_str == 'MNISymC1'):
         mask = atlas_dir + '/tpl-MNI152NLin2009cSymC/tpl-MNISymC_res-1_gmcmask.nii'
-        atlas = AtlasVolumetric('cerebellum',mask_img=mask)
+        atlas = AtlasVolumetric('MNISymC1',mask_img=mask,structure='cerebellum')
     elif atlas_str == 'fs32k':
         bm_name = ['cortex_left','cortex_right']
         mask = []
@@ -175,7 +175,6 @@ class AtlasVolumetric(Atlas):
             X[self.vox[0],self.vox[1],self.vox[2]]=data
         img = nb.Nifti1Image(X,self.mask_img.affine)
         return img
-
 
     def sample_nifti(self,img,interpolation):
         """ Samples a img at the atlas locations
@@ -586,54 +585,16 @@ class AtlasSurfaceParcel(Atlas):
 
         return self.parcels
 
-class AtlasMap():
-    def __init__(self, dataset, name, P , participant_id):
-        """AtlasMap stores the mapping rules from a specific data set (and participant) to the desired atlas space in form of a voxel list
-        Args:
-            dataset_id (string): name of
-            participant_id (string): Participant name
-        """
-        self.dataset = dataset # Reference to corresponding data set
-        self.name = name
-        self.P = P       #  Number of brain locations
-        self.participant_id = participant_id
-
-    def build(self):
-        """
-        Using the dataset, build creates a list of voxel indices of
-        For each of the locations, it
-        """
-        pass
-
-    def save(self, file_name):
-        """serializes a atlas map to a file
-        Args:
-            file_name (string): full filepath and name
-        """
-        pass
-
-    def load(self, file_name):
-        """loads a build atlas map from file
-
-        Args:
-            file_name (string): full filepath and name
-        """
-        pass
-
-class AtlasMapDeform(AtlasMap):
-    def __init__(self, dataset, name, world, participant_id, deform_img,mask_img):
+class AtlasMapDeform():
+    def __init__(self, world, deform_img,mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
         to the desired atlas space in form of a voxel list
         Args:
-            dataset_id (str): name of
-            name (str): Name of atlas map
             worlds (ndarray): 3xP ND array of world locations
-            participant_id (str): Participant name
             deform_img (str/list): Name of deformation map image(s)
             mask_img (str): Name of masking image that defines the functional data space.
         """
-        P = world.shape[1]
-        super().__init__(dataset,name,P,participant_id)
+        self.P = world.shape[1]
         self.world = world
         if type(deform_img) is not list:
             deform_img = [deform_img]
@@ -713,19 +674,16 @@ class AtlasMapDeform(AtlasMap):
             self.vox_weight = self.vox_weight / mw
         pass
 
-class AtlasMapSurf(AtlasMap):
-    def __init__(self, dataset, name, vertex, participant_id,
-                white_surf,pial_surf,mask_img):
+class AtlasMapSurf():
+    def __init__(self, vertex, white_surf,pial_surf,mask_img):
         """AtlasMapSurf stores the mapping rules for a freesurfer-style surface (pial + white surface pair)
         Args:
-            dataset_id (str): name of
-            participant_id (str): Participant name
+            vertex (ndarray): Array of vertices included in the atlas map
             white_surf (str): Name for white matter surface
             pial_surf (str): Name for pial surface
             mask_img (str): Name of masking image that defines the functional data space.
         """
-        P = len(vertex)
-        super().__init__(dataset,name,P,participant_id)
+        self.P = len(vertex)
         self.vertex = vertex
         self.white_surf = nb.load(white_surf)
         self.pial_surf = nb.load(pial_surf)

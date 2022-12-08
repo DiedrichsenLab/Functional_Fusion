@@ -30,7 +30,7 @@ def make_mdtb_suit():
     for s in T.participant_id:
         deform = mdtb_dataset.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
         mask = mdtb_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-        atlas_map = am.AtlasMapDeform(mdtb_dataset, suit_atlas, s,deform, mask)
+        atlas_map = am.AtlasMapDeform(suit_atlas.world,deform, mask)
         atlas_map.build(smooth=2.0)
         data,info,str = mdtb_dataset.get_data(s,[atlas_map],'ses-s1')
         #a=mdtb_dataset.get_data_fnames(s,'ses-s1')
@@ -56,8 +56,8 @@ def make_mdtb_fs32k():
             pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
             white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
             mask = adir + f'/{s}_desc-brain_mask.nii'
-            atlas_maps.append(am.AtlasMapSurf(mdtb_dataset, atlas[i],
-                            s,white,pial, mask))
+            atlas_maps.append(am.AtlasMapSurf(atlas[i].vertices,
+                            white,pial, mask))
             atlas_maps[i].build()
             # data = mdtb_dataset.get_data(s,[A])
             # data_files=mdtb_dataset.get_data_fnames(s,'ses-s1')
@@ -82,7 +82,7 @@ def make_hcp_suit():
 
     for s in T.participant_id.values:
         # create a mapping based on atlas deformation
-        atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
+        atlas_map = am.AtlasMapDeform(suit_atlas.world,deform, mask)
         # print(f"building atlas map")
         atlas_map.build(smooth=2.0) # smoothing level?
         # print(f"building atlas map is done")

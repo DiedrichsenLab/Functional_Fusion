@@ -461,10 +461,7 @@ class DataSetNative(DataSet):
                            '/tpl-MNI152NLIn2009cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
                 deform = [xfm_name,deform]
             mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-            atlas_map = am.AtlasMapDeform(self, 
-                    suit_atlas.name,
-                    suit_atlas.world, 
-                    s,deform, mask)
+            atlas_map = am.AtlasMapDeform(suit_atlas.world,deform, mask)
             atlas_map.build(smooth=2.0)
             print(f'Extract {s}')
             data,info = self.extract_data(s,[atlas_map],
@@ -499,10 +496,8 @@ class DataSetNative(DataSet):
                 pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
                 white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
                 mask = edir + f'/{ses_id}/{s}_{ses_id}_mask.nii'
-                atlas_maps.append(am.AtlasMapSurf(self,
-                            atlas.structure[i],
-                            atlas.vertex[i],
-                            s,white,pial, mask))
+                atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
+                            white,pial, mask))
                 atlas_maps[i].build()
             print(f'Extract {s}')
             data,info = self.extract_data(s,atlas_maps,
@@ -544,10 +539,8 @@ class DataSetCifti(DataSet):
         # create and calculate the atlas map for each participant
         T = self.get_participants()
         deform = atlas.get_deform(source='MNIAsymC')
-        atlas_map = am.AtlasMapDeform(self, 
-                    atlas.name,
-                    atlas.world, 
-                    None,deform)
+        atlas_map = am.AtlasMapDeform(atlas.world,
+                deform,None)
         atlas_map.build(smooth=2.0)
         for s in T.participant_id:
             print(f'Extract {s}')
@@ -583,10 +576,8 @@ class DataSetCifti(DataSet):
                 pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
                 white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
                 mask = edir + f'/{ses_id}/{s}_{ses_id}_mask.nii'
-                atlas_maps.append(am.AtlasMapSurf(self,
-                            atlas.structure[i],
-                            atlas.vertex[i],
-                            s,white,pial, mask))
+                atlas_maps.append(am.AtlasMapSurf(
+                            atlas.vertex[i],white,pial, mask))
                 atlas_maps[i].build()
             print(f'Extract {s}')
             data,info = self.extract_data(s,atlas_maps,
@@ -761,7 +752,7 @@ class DataSetHcpResting(DataSetCifti):
         mni_atlas = self.atlas_dir + '/tpl-MNI152NLin6AsymC'
         deform = mni_atlas + '/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
         mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
-        atlas_map = am.AtlasMapDeform(self, suit_atlas, 'group', deform, mask)
+        atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
         atlas_map.build(smooth=2.0)
 
         if type[0:3] == 'Ico':
@@ -1206,19 +1197,7 @@ class DataSetLanguage(DataSetNative):
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
         # Make the atlas object
-        if (atlas == 'SUIT3'):
-            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-        if (atlas == 'SUIT2'):
-            mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
-        if (atlas == 'MNISymC3'):
-            mask = self.atlas_dir + '/tpl-MNI152NLIn2009cSymC/tpl-MNISymC_res-3_gmcmask.nii'
-        if (atlas == 'MNISymC2'):
-            mask = self.atlas_dir + '/tpl-MNI152NLIn2009cSymC/tpl-MNISymC_res-2_gmcmask.nii'
-        suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
-
-        # Because data is in MNI space, get one atlas map for all subjects
-        mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-        suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
+        suit_atlas = am.get_atlas(atlas,self,atlas_dir)
 
         # Get the deformation map from MNI to SUIT
         mni_atlas = self.atlas_dir + '/tpl-MNI152NLin6AsymC'
@@ -1228,8 +1207,7 @@ class DataSetLanguage(DataSetNative):
                 '/tpl-MNI152NLIn2009cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
             deform = [xfm_name, deform]
         mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
-        atlas_map = am.AtlasMapDeform(
-            self, suit_atlas, 'group', deform, mask)
+        atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
         atlas_map.build(smooth=2.0)
 
         # create and calculate the atlas map for each participant
@@ -1627,9 +1605,7 @@ class DataSetIBC(DataSetNative):
                 deform = [xfm_name,deform]
             mask = self.estimates_dir.format(s) + f'/{ses_id}/{s}_{ses_id}_mask.nii'
             add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-            atlas_map = am.AtlasMapDeform(self, 
-                            suit_atlas.name,
-                            suit_atlas.world, s,deform, mask)
+            atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
             atlas_map.build(smooth=2.0,additional_mask = add_mask)
             print(f'Extract {s}')
             data,info = self.extract_data(s,[atlas_map],
