@@ -24,7 +24,19 @@ from numpy.linalg import pinv,solve
 import warnings
 
 def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
-    # Get defaults for each dataset
+    """get_dataset
+
+    Args:
+        base_dir (str): Basis directory for the Functional Fusion repro
+        dataset (str): Data set indicator 
+        atlas (str): Atlas indicator. Defaults to 'SUIT3'.
+        sess (str or list): Sessiions. Defaults to 'all'.
+        type (str): 'CondHalf','CondRun', etc....
+
+    Returns:
+        _type_: _description_
+    """
+    fiel = None
     if dataset.casefold() == 'MDTB'.casefold():
         my_dataset = DataSetMDTB(base_dir + '/MDTB')
         fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
@@ -38,11 +50,11 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
         my_dataset = DataSetNishi(base_dir + '/Nishimoto')
         fiel = ['task_name','reg_id','half']
     elif dataset.casefold() == 'IBC'.casefold():
-        fiel = None
         my_dataset = DataSetIBC(base_dir + '/IBC')
     elif dataset.casefold() == 'HCP'.casefold():
-        fiel = None
         my_dataset = DataSetHcpResting(base_dir + '/HCP')
+    elif dataset.casefold() == 'Demand'.casefold():
+        my_dataset = DataSetDemand(base_dir + '/Demand')
     else:
         raise(NameError('Unknown data set'))
 
@@ -274,6 +286,105 @@ class DataSet:
         self.part_info = pd.read_csv(self.base_dir + '/participants.tsv',delimiter='\t')
         return self.part_info
 
+    def get_data(self, space='SUIT3', ses_id='ses-s1',
+                 type='CondHalf', subj=None, fields=None):
+        """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
+
+        Args:
+            space (str): Atlas space (Defaults to 'SUIT3').
+            ses_id (str): Session ID (Defaults to 'ses-s1').
+            type (str): Type of data (Defaults to 'CondHalf').
+            subj (ndarray): Subject numbers to get - by default all
+            fields (list): Column names of info stucture that are returned
+                these are also be tested to be equivalent across subjects
+        Returns:
+            Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
+            info (DataFramw): Data frame with common descriptor
+        """
+        T = self.get_participants()
+        # Assemble the data
+        Data = None
+        # Deal with subset of subject option
+        if subj is None:
+            subj = np.arange(T.shape[0])
+
+        max = 0
+
+        # Loop over the different subjects to find the most complete info
+        for i, s in enumerate(T.participant_id.iloc):
+            # Get an check the information
+            info_raw = pd.read_csv(self.data_dir.format(s)
+                                   + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            # Reduce tsv file when fields are given 
+            if fields is not None:
+                info = info_raw[fields]
+            else:
+                info = info_raw
+            
+            # Keep the most complete info
+            if info.shape[0] > max:
+                info_com = info
+                max = info.shape[0]
+
+        # Loop again to assemble the data
+        for i, s in enumerate(T.participant_id.iloc):
+            # Load the data
+            C = nb.load(self.data_dir.format(s)
+                        + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
+            this_data = C.get_fdata()
+
+            # Check if this subject data in incomplete
+            if this_data.shape[0] != info_com.shape[0]:
+                this_info = pd.read_csv(self.data_dir.format(s)
+                                        + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                base = np.asarray(info_com['names'])
+                incomplete = np.asarray(this_info['names'])
+                for j in range(base.shape[0]):
+                    if base[j] != incomplete[j]:
+                        warnings.warn(f'{s}, {ses_id}, {type} - missing data {base[j]}')
+                        incomplete = np.insert(np.asarray(incomplete), j, np.nan)
+                        this_data = np.insert(this_data, j, np.nan, axis=0)
+
+            if Data is None:
+                Data = np.zeros((len(subj), C.shape[0], C.shape[1]))
+            Data[i, :, :] = this_data
+
+        # Ensure that infinite values (from div / 0) show up as NaNs
+        Data[np.isinf(Data)] = np.nan
+        return Data, info_com
+
+    def group_average_data(self, ses_id='ses-s1', 
+                                 type='CondHalf', 
+                                 atlas='SUIT3'):
+        """Loads group data in SUIT space from a standard experiment structure
+        averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
+        Args:
+            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
+            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+            info_column (str, optional): Column of info tsv file for which each average should be calculated. Defaults to 'task_name'
+        """
+
+        data, info = self.get_data(space=atlas, ses_id=ses_id,
+                                   type=type)
+        # average across participants
+        X = np.nanmean(data,axis=0)
+        # make output cifti
+        s = self.get_participants().participant_id[0]
+        C = nb.load(self.data_dir.format(s) +
+                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+        C = nb.Cifti2Image(dataobj=X, header=C.header)
+        # save output
+        dest_dir = op.join(self.data_dir.format(s).split('derivatives')[0], 'derivatives/group')
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+        nb.save(C, dest_dir +
+                f'/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
+        info.drop(columns=['sn']).to_csv(dest_dir +
+            f'/group_{ses_id}_info-{type}.tsv', sep='\t')
+
+class DataSetNative(DataSet):
+    """Data set with estimates data stored as 
+    nifti-files in Native space. 
+    """
     def get_data_fnames(self,participant_id,session_id=None):
         """ Gets all raw data files
 
@@ -289,22 +400,6 @@ class DataSet:
         fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i,t in T.iterrows()]
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
-
-
-    def extract_data(self, participant_id, atlas_maps,ses_id=None,type=None):
-        """Extracts the processed data in a specific altas space
-        Args:
-            participant_id: standard participant_id
-            atlas_maps: List of atlasmaps to find the voxels
-            ses_id: Session ID
-            type: Type string
-        Returns:
-            data (np.ndarray):
-                A numatlasses list with N x P numpy array of data
-            T (pd.DataFrame):
-                A data frame with information about the N numbers provide
-        """
-        return None,None
 
     def extract_all_suit(self,ses_id='ses-s1',type='CondHalf',atlas='SUIT3'):
         """Extracts data in SUIT space from a standard experiment structure
@@ -378,100 +473,91 @@ class DataSet:
             nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
             pass
 
-    def get_data(self, space='SUIT3', ses_id='ses-s1',
-                 type='CondHalf', subj=None, fields=None):
-        """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
+class DataSetCifti(DataSet):
+    """Data set that comes in HCP-format in already pre-extracted cifti files. 
+    """
+    def get_data_fnames(self,participant_id,session_id=None):
+        """ Gets all raw data files
 
         Args:
-            space (str): Atlas space (Defaults to 'SUIT3').
-            ses_id (str): Session ID (Defaults to 'ses-s1').
-            type (str): Type of data (Defaults to 'CondHalf').
-            subj (ndarray): Subject numbers to get - by default all
-            fields (list): Column names of info stucture that are returned
-                these are also be tested to be equivalent across subjects
+            participant_id (str): Subject
+            session_id (str): Session ID. Defaults to None.
         Returns:
-            Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
-            info (DataFramw): Data frame with common descriptor
+            fnames (list): List of fnames, last one is the resMS image
+            T (pd.DataFrame): Info structure for regressors (reginfo)
         """
-        T = self.get_participants()
-        # Assemble the data
-        Data = None
-        # Deal with subset of subject option
-        if subj is None:
-            subj = np.arange(T.shape[0])
+        dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
+        T=pd.read_csv(dirw+f'/{participant_id}_{session_id}_reginfo.tsv',sep='\t')
+        fnames = [f'{dirw}/{participant_id}_{session_id}_beta.dscalar.nii']
+        fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.descalar.nii')
+        return fnames, T
 
-        max = 0
-
-        # Loop over the different subjects to find the most complete info
-        for i, s in enumerate(T.participant_id.iloc):
-            # Get an check the information
-            info_raw = pd.read_csv(self.data_dir.format(s)
-                                   + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
-            # Reduce tsv file when fields are given 
-            if fields is not None:
-                info = info_raw[fields]
-            else:
-                info = info_raw
-            
-            # Keep the most complete info
-            if info.shape[0] > max:
-                info_com = info
-                max = info.shape[0]
-
-        # Loop again to assemble the data
-        for i, s in enumerate(T.participant_id.iloc):
-            # Load the data
-            C = nb.load(self.data_dir.format(s)
-                        + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
-            this_data = C.get_fdata()
-
-            # Check if this subject data in incomplete
-            if this_data.shape[0] != info_com.shape[0]:
-                this_info = pd.read_csv(self.data_dir.format(s)
-                                        + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
-                base = np.asarray(info_com['names'])
-                incomplete = np.asarray(this_info['names'])
-                for j in range(base.shape[0]):
-                    if base[j] != incomplete[j]:
-                        warnings.warn(f'{s}, {ses_id}, {type} - missing data {base[j]}')
-                        incomplete = np.insert(np.asarray(incomplete), j, np.nan)
-                        this_data = np.insert(this_data, j, np.nan, axis=0)
-
-            if Data is None:
-                Data = np.zeros((len(subj), C.shape[0], C.shape[1]))
-            Data[i, :, :] = this_data
-
-        # Ensure that infinite values (from div / 0) show up as NaNs
-        Data[np.isinf(Data)] = np.nan
-        return Data, info_com
-
-    def group_average_data(self, ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
-        """Loads group data in SUIT space from a standard experiment structure
-        averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
+    def extract_all_suit(self,ses_id='ses-s1',type='CondHalf',atlas='SUIT3'):
+        """Extracts cerebellar data. Saves the results as CIFTI files in the data directory.
         Args:
+            ses_id (str, optional): Session. Defaults to 'ses-s1'.
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
-            info_column (str, optional): Column of info tsv file for which each average should be calculated. Defaults to 'task_name'
         """
+        atlas = am.get_atlas(atlas,self.atlas_dir)
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        deform = atlas.get_deform(source='MNIAsymC')
+        atlas_map = am.AtlasMapDeform(self, 
+                    atlas.name,
+                    atlas.world, 
+                    None,deform)
+        atlas_map.build(smooth=2.0)
+        for s in T.participant_id:
+            print(f'Extract {s}')
+            data,info = self.extract_data(s,[atlas_map],
+                                          ses_id=ses_id,
+                                          type=type)
+            C=atlas.data_to_cifti(data[0],info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
 
-        data, info = self.get_data(space=atlas, ses_id=ses_id,
-                                   type=type)
-        # average across participants
-        X = np.nanmean(data,axis=0)
-        # make output cifti
-        s = self.get_participants().participant_id[0]
-        C = nb.load(self.data_dir.format(s) +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-        C = nb.Cifti2Image(dataobj=X, header=C.header)
-        # save output
-        dest_dir = op.join(self.data_dir.format(s).split('derivatives')[0], 'derivatives/group')
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        nb.save(C, dest_dir +
-                f'/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
-        info.drop(columns=['sn']).to_csv(dest_dir +
-            f'/group_{ses_id}_info-{type}.tsv', sep='\t')
 
-class DataSetMDTB(DataSet):
+    def extract_all_fs32k(self,ses_id='ses-s1',type='CondHalf'):
+        """Extracts data in fs32K space from a standard experiment structure
+        across all subjects. Saves the results as CIFTI files in the data directory.
+
+        Args:
+            ses_id (str, optional): _description_. Defaults to 'ses-s1'.
+            type (str, optional): _description_. Defaults to 'CondHalf'.
+        """
+        # Make the atlas object
+        mask = []
+        atlas = am.get_atlas('fs32k',self.atlas_dir)
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        for s in T.participant_id:
+            atlas_maps = []
+            data = []
+            for i,hem in enumerate(['L','R']):
+                adir = self.anatomical_dir.format(s)
+                edir = self.estimates_dir.format(s)
+                pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
+                white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
+                mask = edir + f'/{ses_id}/{s}_{ses_id}_mask.nii'
+                atlas_maps.append(am.AtlasMapSurf(self,
+                            atlas.structure[i],
+                            atlas.vertex[i],
+                            s,white,pial, mask))
+                atlas_maps[i].build()
+            print(f'Extract {s}')
+            data,info = self.extract_data(s,atlas_maps,
+                                                ses_id=ses_id,
+                                                type=type)
+            C=atlas.data_to_cifti(data, row_axis=info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
+            pass
+
+class DataSetMDTB(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
         self.sessions=['ses-s1','ses-s2']
@@ -580,7 +666,7 @@ class DataSetMDTB(DataSet):
 
         return data_new, data_info
 
-class DataSetHcpResting(DataSet):
+class DataSetHcpResting(DataSetCifti):
     def __init__(self, dir):
         super(DataSetHcpResting, self).__init__(base_dir=dir)
         # self.func_dir = self.base_dir + '/{0}/estimates'
@@ -603,7 +689,6 @@ class DataSetHcpResting(DataSet):
         fnames = []
         for r in range(4):
             fnames.append(f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
-
         return fnames
 
     def extract_all_suit(self, ses_id='ses-s1', type='IcoAll', atlas='SUIT3', res=162):
@@ -873,7 +958,7 @@ class DataSetHcpResting(DataSet):
             ts_cifti = nb.load(fnames[r])
 
             # get the ts in volume for subcorticals
-            ts_vol = util.volume_from_cifti(ts_cifti)
+            ts_vol = nt.volume_from_cifti(ts_cifti)
             # transfer to suit space applying the deformation
             ts_vol = am.get_data4D(ts_vol, [atlas_map])
             ts_volume.append(ts_vol[0])
@@ -1067,7 +1152,7 @@ class DataSetHcpResting(DataSet):
 
         return [coef_1,coef_2]  # shape (n_tessl,P)
 
-class DataSetLanguage(DataSet):
+class DataSetLanguage(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
 
@@ -1180,7 +1265,7 @@ class DataSetLanguage(DataSet):
 
         return data_new, data_info
 
-class DataSetPontine(DataSet):
+class DataSetPontine(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
         self.sessions=['ses-01']
@@ -1296,7 +1381,7 @@ class DataSetPontine(DataSet):
 
         return data_new, data_info
 
-class DataSetNishi(DataSet):
+class DataSetNishi(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
         self.sessions=['ses-01','ses-02']
@@ -1396,7 +1481,7 @@ class DataSetNishi(DataSet):
 
         return data_new, data_info
 
-class DataSetIBC(DataSet):
+class DataSetIBC(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
         self.sessions = ['ses-archi',
@@ -1516,11 +1601,107 @@ class DataSetIBC(DataSet):
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
 
 
-class DataSetDemand(DataSet):
+class DataSetDemand(DataSetCifti):
     def __init__(self, dir):
         super().__init__(dir)
         self.sessions = ['ses-01']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'cond_num_uni'
+        self.cond_ind = 'cond_num'
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
+    
+    def extract_data(self,participant_id,
+                     atlas,
+                     ses_id,
+                     type='CondHalf'):
+        """ Extract data in a specific atlas space
+        Args:
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+        fnames,info = self.get_data_fnames(participant_id,ses_id)
+        data = am.get_data_from_cifti(fnames,atlas)
+
+        # Depending on the type, make a new contrast
+        info['half']=info.run
+        info['n_rep']=np.ones((info.shape[0]))
+        n_cond = np.max(info.cond_num)
+        if type == 'CondHalf':
+
+            # Make new data frame for the information of the new regressors
+            fields = info.columns
+            fields.remove(['run'])
+            info_gb = info.groupby(fields)
+            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
+            data_info['names']=[f'{d.task_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
+
+            # Contrast for the regressors of interest
+            reg = (info.half-1)*n_cond + info.reg_id
+            C = matrix.indicator(reg,positive=True)
+
+            reg_in = np.arange(n_cond*2,dtype=int)
+
+            # Baseline substraction
+            B = matrix.indicator(data_info.half,positive=True)
+
+        elif type == 'CondRun':
+
+            # Subset of info sutructure
+            ii = (info.cond_num>0)
+            data_info = info[ii].copy().reset_index(drop=True)
+            data_info['names']=[f'{d.cond_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
+
+            reg = (info.run-1)*n_cond + info.cond_num
+            reg[info.instruction==1] = 0
+            # Contrast for the regressors of interst
+            C = matrix.indicator(reg,positive=True) # Drop the instructions
+
+            # contrast for all instructions
+            CI = matrix.indicator(info.run*info.instruction,positive=True)
+            C = np.c_[C,CI]
+            reg_in = np.arange(n_cond*16,dtype=int)
+
+            # Baseline substraction
+            B = matrix.indicator(data_info.run,positive=True)
+        elif type == 'CondAll':
+
+            # Make new data frame for the information of the new regressors
+            ii = (info.run == 1)  & (info.cond_num>0)
+            data_info = info[ii].copy().reset_index(drop=True)
+            data_info['names']=[f'{d.cond_name}' for i,d in data_info.iterrows()]
+
+            # Contrast for the regressors of interest
+            reg = info.cond_num.copy()
+            reg[info.instruction==1] = 0
+            C = matrix.indicator(reg,positive=True) # Drop the instructions
+
+            # contrast for all instructions
+            CI = matrix.indicator(info.instruction,positive=True)
+            C = np.c_[C,CI]
+            reg_in = np.arange(n_cond,dtype=int)
+
+            # Baseline substraction
+            B = matrix.indicator(data_info.run,positive=True)
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Load the designmatrix and perform optimal contrast
+        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
+        data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
+
+        return data_new, data_info
+

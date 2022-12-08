@@ -32,7 +32,7 @@ def import_data():
         row_axis=nb.cifti2.ScalarAxis(info.cond_name)
         header = nb.Cifti2Header.from_axes((row_axis,bm))
         cifti_img = nb.Cifti2Image(dataobj=np.concatenate(data),header=header)
-        outname = dirw + f'/{sid}_ses-01_pe.dscalar.nii'
+        outname = dirw + f'/{sid}_ses-01_beta.dscalar.nii'
         nb.save(cifti_img,outname)
 
         # Now add the sigma-square images into a seperate file
@@ -47,7 +47,7 @@ def import_data():
         row_axis=nb.cifti2.ScalarAxis(names)
         header = nb.Cifti2Header.from_axes((row_axis,bm))
         cifti_img = nb.Cifti2Image(dataobj=np.concatenate(data),header=header)
-        outname = dirw + f'/{sid}_ses-01_sigmasquared.dscalar.nii'
+        outname = dirw + f'/{sid}_ses-01_resms.dscalar.nii'
         nb.save(cifti_img,outname)
 
 
