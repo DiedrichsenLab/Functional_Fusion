@@ -96,6 +96,47 @@ def prewhiten_data(data):
         data_n[i] = data_n[i] / np.sqrt(resms)
     return data_n
 
+def agg_data(info,by,over):
+    """ Aggregates data safely by sorting them by the fields in "by"
+    while integrating out "over". 
+    Adds a n_rep field to count how many instances are of each 
+    Returns condensed data frame + Contrast matrix. 
+
+    Args:
+        info (DataFrame): Original DataFrame
+        by (list): Fields that define the index of the new data 
+        over (list): Fields to ignore / integrate over. All other fields
+            will be pulled through. 
+    Return 
+        data_info (DataFrame): Reduced data frame
+        C (ndarray): Contrast matrix defining the mapping from full to reduced
+    """
+    # Generate n_rep field if not present 
+    info_n = info.copy()
+    if 'n_rep' not in info.columns:
+        info_n['n_rep']=np.ones((info_n.shape[0],))
+    
+    # Other contains the fields to remain constant
+    other = info.columns
+    for ov in over+by:
+        other.remove(ov)
+
+    # Define operations on data 
+    operations = {'n_rep':np.sum}
+    for o in other:
+        operations[o]=max
+    
+    # Group the new data frame 
+    info_gb = info_n.groupby(by)
+    data_info = info_gb.agg(operations).reset_index()
+    
+    # Build contrast matrix for averaging
+    C = np.zeros(data_info.shape[0],info.shape[0])
+    for i,k,v in info_gb.indices.iteritems():
+        C[i,v]=1
+    
+    return data_info,C
+
 def optimal_contrast(data,C,X,reg_in=None,baseline=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
 
@@ -1637,71 +1678,20 @@ class DataSetDemand(DataSetCifti):
 
         # Depending on the type, make a new contrast
         info['half']=info.run
-        info['n_rep']=np.ones((info.shape[0]))
         n_cond = np.max(info.cond_num)
         if type == 'CondHalf':
-
-            # Make new data frame for the information of the new regressors
-            fields = info.columns
-            fields.remove(['run'])
-            info_gb = info.groupby(fields)
-            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
-            data_info['names']=[f'{d.task_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
-
-            # Contrast for the regressors of interest
-            reg = (info.half-1)*n_cond + info.reg_id
-            C = matrix.indicator(reg,positive=True)
-
-            reg_in = np.arange(n_cond*2,dtype=int)
-
-            # Baseline substraction
-            B = matrix.indicator(data_info.half,positive=True)
-
-        elif type == 'CondRun':
-
-            # Subset of info sutructure
-            ii = (info.cond_num>0)
-            data_info = info[ii].copy().reset_index(drop=True)
-            data_info['names']=[f'{d.cond_name}-run{d.run:02d}' for i,d in data_info.iterrows()]
-
-            reg = (info.run-1)*n_cond + info.cond_num
-            reg[info.instruction==1] = 0
-            # Contrast for the regressors of interst
-            C = matrix.indicator(reg,positive=True) # Drop the instructions
-
-            # contrast for all instructions
-            CI = matrix.indicator(info.run*info.instruction,positive=True)
-            C = np.c_[C,CI]
-            reg_in = np.arange(n_cond*16,dtype=int)
-
-            # Baseline substraction
-            B = matrix.indicator(data_info.run,positive=True)
+            data_info,C=agg_data(info,['half','reg_id'],['run'])
+            data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' 
+                    for i,d in data_info.iterrows()]
         elif type == 'CondAll':
-
-            # Make new data frame for the information of the new regressors
-            ii = (info.run == 1)  & (info.cond_num>0)
-            data_info = info[ii].copy().reset_index(drop=True)
-            data_info['names']=[f'{d.cond_name}' for i,d in data_info.iterrows()]
-
-            # Contrast for the regressors of interest
-            reg = info.cond_num.copy()
-            reg[info.instruction==1] = 0
-            C = matrix.indicator(reg,positive=True) # Drop the instructions
-
-            # contrast for all instructions
-            CI = matrix.indicator(info.instruction,positive=True)
-            C = np.c_[C,CI]
-            reg_in = np.arange(n_cond,dtype=int)
-
-            # Baseline substraction
-            B = matrix.indicator(data_info.run,positive=True)
+            data_info,C=agg_data(info,['reg_id'],['half','run'])
+            data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' 
+                    for i,d in data_info.iterrows()]
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
 
-        # Load the designmatrix and perform optimal contrast
-        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
-        data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
-
-        return data_new, data_info
-
+        # Combine with contrast
+        for i in range(len(data_n)):
+            data_n[i]=pinv(C) @ data_n[i] 
+        return data_n, data_info
