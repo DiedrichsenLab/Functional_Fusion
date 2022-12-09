@@ -145,7 +145,7 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
 
 if __name__ == "__main__":
     # parcel_mdtb_fs32k()
-    # extract_mdtb_suit(ses_id='ses-s1',type='CondRun',atlas='MNISymC3')
+    extract_mdtb_suit(ses_id='ses-s1',type='CondHalf',atlas='MNISymC2')
     # extract_mdtb_suit(ses_id='ses-s2',type='CondRun',atlas='MNISymC3')
     # extract_mdtb_group(ses_id='ses-s1', type='CondHalf', atlas='SUIT3')
     # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
@@ -153,8 +153,8 @@ if __name__ == "__main__":
     # extract_mdtb_suit(ses_id='ses-s2',type='CondAll')
     # extract_mdtb_fs32k(ses_id='ses-s1',type='CondAll')
     # extract_mdtb_fs32k(ses_id='ses-s2',type='condHalf')
-    extract_mdtb_fs32k(ses_id='ses-s1', type='CondHalf')
-    extract_mdtb_fs32k(ses_id='ses-s2', type='CondHalf')
+    # extract_mdtb_fs32k(ses_id='ses-s1', type='CondHalf')
+    # extract_mdtb_fs32k(ses_id='ses-s2', type='CondHalf')
     # show_mdtb_suit('all',1,0)
     pass
 
