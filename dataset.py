@@ -519,7 +519,7 @@ class DataSetCifti(DataSet):
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
         T=pd.read_csv(dirw+f'/{participant_id}_{session_id}_reginfo.tsv',sep='\t')
         fnames = [f'{dirw}/{participant_id}_{session_id}_beta.dscalar.nii']
-        fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.descalar.nii')
+        fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.dscalar.nii')
         return fnames, T
 
     def extract_all(self,ses_id='ses-s1',type='CondHalf',atlas='SUIT3'):
@@ -529,19 +529,27 @@ class DataSetCifti(DataSet):
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        atlas = am.get_atlas(atlas,self.atlas_dir)
-        # create and calculate the atlas map for each participant
+        myatlas = am.get_atlas(atlas,self.atlas_dir)
+        # Get the correct map into CIFTI-format 
+        if isinstance(myatlas,am.AtlasVolumetric):
+            deform,mask = am.get_deform(self.atlas_dir,
+                target=myatlas,
+                source='MNIAsymC2')
+            atlas_map = am.AtlasMapDeform(myatlas.world,
+                deform,mask)
+            atlas_map.build(smooth=2.0)
+        elif isinstance(myatlas,am.AtlasSurface):
+            atlas_map = myatlas
+        # Extract the data for each participant 
         T = self.get_participants()
-        deform = atlas.get_deform(source='MNIAsymC')
-        atlas_map = am.AtlasMapDeform(atlas.world,
-                deform,None)
-        atlas_map.build(smooth=2.0)
         for s in T.participant_id:
             print(f'Extract {s}')
-            data,info = self.extract_data(s,[atlas_map],
-                                          ses_id=ses_id,
-                                          type=type)
-            C=atlas.data_to_cifti(data[0],info.names)
+            fnames,info = self.get_data_fnames(s,ses_id)
+            data = am.get_data_cifti(fnames,[atlas_map])
+
+            data,info = self.condense_data(data,info,type,
+                    participant_id=s,ses_id=ses_id)
+            C=myatlas.data_to_cifti(data,info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
@@ -1535,10 +1543,10 @@ class DataSetDemand(DataSetCifti):
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
 
-    def extract_data(self,participant_id,
-                     atlas,
-                     ses_id,
-                     type='CondHalf'):
+    def condense_data(self,data,info,
+                type='CondHalf',
+                participant_id=None,
+                ses_id=None):
         """ Extract data in a specific atlas space
         Args:
             participant_id (str): ID of participant
@@ -1556,13 +1564,9 @@ class DataSetDemand(DataSetCifti):
                 A data frame with information about the N numbers provide
             names: Names for CIFTI-file per row
         """
-        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-        fnames,info = self.get_data_fnames(participant_id,ses_id)
-        data = am.get_data_from_cifti(fnames,atlas)
-
         # Depending on the type, make a new contrast
-        info['half']=info.run
-        n_cond = np.max(info.cond_num)
+        info['half']=(info.run%2)+1
+        n_cond = np.max(info.reg_id)
         if type == 'CondHalf':
             data_info,C=agg_data(info,['half','reg_id'],['run'])
             data_info['names']=[f'{d.cond_name.strip()}-half{d.half}'

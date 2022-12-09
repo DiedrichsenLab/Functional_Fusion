@@ -47,22 +47,22 @@ def get_deform(atlas_dir,target,source='MNIAsym2'):
     """ Get name of group deformation map between two volumetric atlas spaces
     Args:
         atlas_dir (str): Atlas Directory
-        target (str): Target space
+        target (str/atlas): Target space
         source (str): Source space
         smooth (float): Defaults to None.
     Returns:
         deform: Name of deformation map
         mask: Mask for the source space
     """
-    if target is str:
-        get_atlas()
+    if isinstance(target,str):
+        target = get_atlas()
     with open(atlas_dir + '/atlas_description.json') as file:
         atlases = json.load(file)
-    if target not in atlases:
-        raise(NameError(f'Unknown Atlas: {target}'))
+    if target.name not in atlases:
+        raise(NameError(f'Unknown Atlas: {target.name}'))
     if source not in atlases:
         raise(NameError(f'Unknown Atlas: {source}'))
-    tar = atlases[target]
+    tar = atlases[target.name]
     src = atlases[source]
     deform = f"{atlas_dir}/{src['dir']}/tpl-{src['space']}_space-{tar['space']}_xfm.nii"
     mask = f"{atlas_dir}/{src['dir']}/{src['mask']}"
@@ -734,11 +734,11 @@ def get_data_nifti(fnames,atlas_maps):
         else:
             V = f
         if (V.ndim>3):
-            vols.append(nb.funcs.four_to_three(V))
+            vols = vols + nb.funcs.four_to_three(V)
         else:
             vols.append(V)
 
-    n_vols = len(fnames)
+    n_vols = len(vols)
     data = []
     # Make the empty data structures
     for at in atlas_maps:
@@ -754,7 +754,7 @@ def get_data_nifti(fnames,atlas_maps):
     return data
 
 def get_data_cifti(fnames,atlases):
-    """Extracts the data for a list of fnames
+    """ Extracts the data for a list of fnames
     for a list of atlas_maps. This is usually called by DataSet.get_data()
     to extract the required raw data before processing it further
 
@@ -764,7 +764,6 @@ def get_data_cifti(fnames,atlases):
     returns:
         data (list): List of NxP_k 2-d array data matrices (np)
     """
-
     n_atlas = len(atlases)
     data = [[]]*n_atlas
     # Make the empty data structures
@@ -773,11 +772,14 @@ def get_data_cifti(fnames,atlases):
         cifti = nb.load(f)
         for i,at in enumerate(atlases):
             if isinstance(at,AtlasMapDeform):
-                V = nt.volume_from_cifti(cifti)
-                data[i].append(get_data_nifti(V))
+                V = nt.volume_from_cifti(cifti,['cerebellum'])
+                data[i].append(get_data_nifti([V],[at])[0])
             elif isinstance(at,AtlasVolumetric):
-                V = nt.volume_from_cifti(cifti)
-                data[i].append(nt.sample_image(V,at.world[0,:],at.world[1,:],at.world[2,:],0))
+                V = nt.volume_from_cifti(cifti,[at.structure])
+                data[i].append(nt.sample_image(V,
+                    at.world[0,:],
+                    at.world[1,:],
+                    at.world[2,:],0))
             elif isinstance(at,AtlasSurface):
                 data[i].append(at.cifti_to_data(cifti))
     for i in range(n_atlas):

@@ -24,5 +24,5 @@ def extract_demand(ses_id='ses-01',type='CondHalf',atlas='MNISymC3'):
     de_dataset.extract_all(ses_id,type,atlas)
 
 if __name__ == "__main__":
-    extract_demand(ses_id='ses-01', type='CondHalf', atlas='MNISymC3')
+    extract_demand(ses_id='ses-01', type='CondHalf', atlas='SUIT3')
     pass
