@@ -17,6 +17,7 @@ import Functional_Fusion.matrix as matrix
 import SUITPy as suit
 import surfAnalysisPy as surf
 import nitools as nt
+import json
 
 def get_atlas(atlas_str,atlas_dir):
     """ returns an atlas from a code
@@ -25,55 +26,50 @@ def get_atlas(atlas_str,atlas_dir):
         atlas_str (str): Name of the atlas
         atlas_dir (str): directory name for the atlas
     """
+    with open(atlas_dir + 'atlas_description.json') as file:
+        atlases = json.load(file)
+    if atlas_str not in atlases:
+        raise(NameError(f'Unknown Atlas: {atlas_str}'))
+    ainf = atlases[atlas_str]
+
     # Make the atlas object
-    if (atlas_str=='SUIT3'):
-        mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-        atlas = AtlasVolumetric('SUIT3',mask_img=mask,structure='cerebellum')
-    elif (atlas_str=='SUIT2'):
-        mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-2_gmcmask.nii'
-        atlas = AtlasVolumetric('SUIT2',mask_img=mask,structure='cerebellum')
-    elif (atlas_str=='MNISymC3'):
-        mask = atlas_dir + '/tpl-MNI152NLIn2009cSymC/tpl-MNISymC_res-3_gmcmask.nii'
-        atlas = AtlasVolumetric('MNISymC3',mask_img=mask,structure='cerebellum')
-    elif (atlas_str =='MNISymC2'):
-        mask = atlas_dir + '/tpl-MNI152NLin2009cSymC/tpl-MNISymC_res-2_gmcmask.nii'
-        atlas = AtlasVolumetric('MNISymC2',mask_img=mask,structure='cerebellum')
-    elif (atlas_str == 'MNISymC1'):
-        mask = atlas_dir + '/tpl-MNI152NLin2009cSymC/tpl-MNISymC_res-1_gmcmask.nii'
-        atlas = AtlasVolumetric('MNISymC1',mask_img=mask,structure='cerebellum')
-    elif atlas_str == 'fs32k':
-        bm_name = ['cortex_left','cortex_right']
+    if ainf['type']=="AtlasVolumetric":
+        mask = atlas_dir + '/' + ainf['dir'] + '/' + ainf['mask']
+        atlas = AtlasVolumetric(atlas_str,mask_img=mask,structure=ainf['structure'])
+    elif atlas['type']=="AtlasSurface":
         mask = []
-        for i,hem in enumerate(['L','R']):
-            mask.append(atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-{hem}_mask.label.gii')
-        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
-    elif atlas_str == 'fs32k_Asym':
-        bm_name = ['cortex_left','cortex_right']
-        mask = []
-        for i,hem in enumerate(['L','R']):
-            mask.append(atlas_dir + f'/tpl-fs32k/Asym/'
-                                    f'tpl-fs32k_desc-asym_hemi-{hem}_mask.label.gii')
-        atlas = AtlasSurface('fs32k_Asym', mask_gii=mask, structure=bm_name)
-    elif atlas_str == 'fs32k_L':
-        bm_name = ['cortex_left']
-        mask = [atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii']
-        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
-    elif atlas_str == 'fs32k_R':
-        bm_name = ['cortex_right']
-        mask = [atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii']
-        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
-    elif atlas_str == 'fs32k_L_Asym':
-        bm_name = ['cortex_left']
-        mask = [atlas_dir + f'/tpl-fs32k/Asym/tpl-fs32k_desc-asym_hemi-L_mask.label.gii']
-        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
-    elif atlas_str == 'fs32k_R_Asym':
-        bm_name = ['cortex_right']
-        mask = [atlas_dir + f'/tpl-fs32k/Asym/tpl-fs32k_desc-asym_hemi-R_mask.label.gii']
-        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=bm_name)
-    else:
-        raise(NameError(f'Unknown atlas string:{atlas_str}'))
+        for i,m in enumerate(atlas['mask']):
+            mask.append(atlas_dir + f'/{ainf['dir']}/{m}')
+        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=ainf['structure'])
     return atlas
 
+def get_deform(atlas_dir,target,source='MNIAsym2',smooth=None):
+    """ Get group deformation between two volumetric atlas spaces
+
+    Args:
+        atlas_dir (str): Atlas Directory
+        target (Atlas): Target space
+        source (str): Source space
+        smooth (float): Defaults to None.
+    Returns:
+        atlasmap: Atlasmap from one to the other
+    """
+    if target is str:
+        get_atlas()
+    with open(atlas_dir + '/atlas_description.json') as file:
+        atlases = json.load(file)
+    if target not in atlases:
+        raise(NameError(f'Unknown Atlas: {target}'))
+    if source not in atlases:
+        raise(NameError(f'Unknown Atlas: {source}'))
+    tar = atlases[target.name]
+    src = atlases[source]
+
+    deform = f"{atlas_dir}/{tar['dir']}/tpl-{tar['space']}_space-{src['space']}_xfm.nii"
+    mask = f"{atlas_dir}/{src['dir']}/{src['mask']}"
+    atlas_map = AtlasMapDeform(tar.world, deform, mask)
+    atlas_map.build(smooth=2.0)
+    return atlas_map
 
 class Atlas():
     """The Atlas class implements the general atlas functions
@@ -336,7 +332,7 @@ class AtlasSurface(Atlas):
 
         Args:
             cifti (ciftiimage or filename): Cifti file to be used
-        Returns: 
+        Returns:
             np.ndarray: NxP in single np-array
         """
         # First check the input is a cifti image object
@@ -719,31 +715,37 @@ class AtlasMapSurf():
         self.vox_list = self.vox_list.T
         self.vox_weight = self.vox_weight.T
 
-def get_data3D(fnames,atlas_maps):
+def get_data_nifti(fnames,atlas_maps):
     """Extracts the data for a list of fnames
     for a list of atlas_maps. This is usually called by DataSet.get_data()
     to extract the required raw data before processing it further
 
     Args:
-        fnames (list): list of N file names to be sampled
-        atlas_maps (list): list of K built atlas-map objects
+        fnames (list): List of file names to be sampled
+        atlas_maps (list): List of K atlas-map or atlas objects
     returns:
         data (list): List of NxP_k 2-d array data matrices (np)
     """
-
     n_atlas = len(atlas_maps)
-    n_files = len(fnames)
+
+    # Deal with 4-d vs. 3d-nifti
+    vols = []
+    for j,f in enumerate(fnames):
+        if f is str:
+            V = nb.load(f)
+        else:
+            V = f
+        if (V.ndim>3):
+            vols.append(nb.funcs.four_to_three(V))
+        else:
+            vols.append(V)
+
+    n_vols = len(fnames)
     data = []
     # Make the empty data structures
     for at in atlas_maps:
-        data.append(np.full((n_files,at.vox_list.shape[0]),np.nan))
-    for j,f in enumerate(fnames):
-        V = nb.load(f)
+        data.append(np.full((n_vols,at.P),np.nan))
         X = V.get_fdata()
-
-        if (X.ndim>3):
-            raise(NameError('use get_data4D for 4D data'))
-        # Map this file into the data structures
         X = X.ravel()
         for i,at in enumerate(atlas_maps):
             d=X[at.vox_list] * at.vox_weight  # Expanded data
@@ -752,35 +754,33 @@ def get_data3D(fnames,atlas_maps):
             data[i][j,:]=d
     return data
 
-def get_data4D(vol_4D,atlas_maps):
+def get_data_cifti(fnames,atlases):
     """Extracts the data for a list of fnames
     for a list of atlas_maps. This is usually called by DataSet.get_data()
     to extract the required raw data before processing it further
 
     Args:
         fnames (list): list of file names to be sampled
-        atlas_maps (list): list of built atlas-map objects
+        atlas_maps (list): list of K built atlas-map objects
+    returns:
+        data (list): List of NxP_k 2-d array data matrices (np)
     """
 
-    # temp code:
-    # convert 4D to 3D
-    vol_3D_list = nb.funcs.four_to_three(vol_4D)
-
-    n_atlas = len(atlas_maps)
-    n_files = len(vol_3D_list)
-    data = []
+    n_atlas = len(atlases)
+    data = [[]]*n_atlas
     # Make the empty data structures
-    for at in atlas_maps:
-        data.append(np.full((n_files,at.vox_list.shape[0]),np.nan))
-    for j in range(len(vol_3D_list)):
-        V = vol_3D_list[j]
-        X = V.get_fdata()
-        # Map this file into the data structures
-        X = X.ravel()
-        for i,at in enumerate(atlas_maps):
-            d=X[at.vox_list] * at.vox_weight  # Expanded data
-            d = np.nansum(d,axis=1)
-            d[np.nansum(at.vox_weight,axis=1)==0]=np.nan
-            data[i][j,:]=d
+    # Loop over files
+    for j,f in enumerate(fnames):
+        cifti = nb.load(f)
+        for i,at in enumerate(atlases):
+            if isinstance(at,AtlasMapDeform):
+                V = nt.volume_from_cifti(cifti)
+                data[i].append(get_data_nifti(V))
+            elif isinstance(at,AtlasVolumetric):
+                V = nt.volume_from_cifti(cifti)
+                data[i].append(nt.sample_image(V,at.world[0,:],at.world[1,:],at.world[2,:],0))
+            elif isinstance(at,AtlasSurface):
+                data[i].append(at.cifti_to_data(cifti))
+    for i in range(n_atlas):
+        data[i]=np.vstack(data[i])
     return data
-
