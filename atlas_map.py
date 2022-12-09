@@ -26,7 +26,7 @@ def get_atlas(atlas_str,atlas_dir):
         atlas_str (str): Name of the atlas
         atlas_dir (str): directory name for the atlas
     """
-    with open(atlas_dir + 'atlas_description.json') as file:
+    with open(atlas_dir + '/atlas_description.json') as file:
         atlases = json.load(file)
     if atlas_str not in atlases:
         raise(NameError(f'Unknown Atlas: {atlas_str}'))
@@ -34,25 +34,25 @@ def get_atlas(atlas_str,atlas_dir):
 
     # Make the atlas object
     if ainf['type']=="AtlasVolumetric":
-        mask = atlas_dir + '/' + ainf['dir'] + '/' + ainf['mask']
+        mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
         atlas = AtlasVolumetric(atlas_str,mask_img=mask,structure=ainf['structure'])
     elif atlas['type']=="AtlasSurface":
         mask = []
         for i,m in enumerate(atlas['mask']):
-            mask.append(atlas_dir + f'/{ainf['dir']}/{m}')
+            mask.append(atlas_dir + f"/{ainf['dir']}/{m}")
         atlas = AtlasSurface('fs32k', mask_gii=mask, structure=ainf['structure'])
     return atlas
 
-def get_deform(atlas_dir,target,source='MNIAsym2',smooth=None):
-    """ Get group deformation between two volumetric atlas spaces
-
+def get_deform(atlas_dir,target,source='MNIAsym2'):
+    """ Get name of group deformation map between two volumetric atlas spaces
     Args:
         atlas_dir (str): Atlas Directory
-        target (Atlas): Target space
+        target (str): Target space
         source (str): Source space
         smooth (float): Defaults to None.
     Returns:
-        atlasmap: Atlasmap from one to the other
+        deform: Name of deformation map
+        mask: Mask for the source space
     """
     if target is str:
         get_atlas()
@@ -62,14 +62,11 @@ def get_deform(atlas_dir,target,source='MNIAsym2',smooth=None):
         raise(NameError(f'Unknown Atlas: {target}'))
     if source not in atlases:
         raise(NameError(f'Unknown Atlas: {source}'))
-    tar = atlases[target.name]
+    tar = atlases[target]
     src = atlases[source]
-
     deform = f"{atlas_dir}/{tar['dir']}/tpl-{tar['space']}_space-{src['space']}_xfm.nii"
     mask = f"{atlas_dir}/{src['dir']}/{src['mask']}"
-    atlas_map = AtlasMapDeform(tar.world, deform, mask)
-    atlas_map.build(smooth=2.0)
-    return atlas_map
+    return deform, mask
 
 class Atlas():
     """The Atlas class implements the general atlas functions
@@ -116,7 +113,7 @@ class AtlasVolumetric(Atlas):
         """ Transforms data into a cifti image
         Args:
             data: the input data to be mapped
-                (ndarray) - 1-d Numpy array of the size (P,)
+                (ndarray/list) - 1-d Numpy array of the size (P,)
             row_axis: label for row axis in cifti file, it can be
                 (list) - a list of row names
                 (object) - a pandas framework object of the row names
@@ -128,9 +125,10 @@ class AtlasVolumetric(Atlas):
         Returns:
             Cifti2Image: Cifti2Image object
         """
+        if isinstance(data,list):
+            data = data[0]
         assert data.shape[1] == self.P, \
                 "The length of data and brain structure should be matched!"
-
         if row_axis is None:
             row_axis = [f'row {r:03}' for r in range(data.shape[0])]
             row_axis = nb.cifti2.ScalarAxis(row_axis)
@@ -731,7 +729,7 @@ def get_data_nifti(fnames,atlas_maps):
     # Deal with 4-d vs. 3d-nifti
     vols = []
     for j,f in enumerate(fnames):
-        if f is str:
+        if isinstance(f,str):
             V = nb.load(f)
         else:
             V = f
@@ -745,6 +743,7 @@ def get_data_nifti(fnames,atlas_maps):
     # Make the empty data structures
     for at in atlas_maps:
         data.append(np.full((n_vols,at.P),np.nan))
+    for j,V in enumerate(vols):
         X = V.get_fdata()
         X = X.ravel()
         for i,at in enumerate(atlas_maps):

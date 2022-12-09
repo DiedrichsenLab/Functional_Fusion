@@ -118,7 +118,7 @@ def agg_data(info,by,over,subset=None):
     if subset is None:
         indx = np.arange(info.shape[0])
     else:
-        indx = np.notzero(subset)
+        indx = np.nonzero(subset.values)[0]
         info_n = info_n[subset]
 
     # Generate n_rep field if not present
@@ -126,7 +126,7 @@ def agg_data(info,by,over,subset=None):
         info_n['n_rep']=np.ones((info_n.shape[0],))
 
     # Other contains the fields to remain constant
-    other = info.columns
+    other = list(info.columns.values)
     for ov in over+by:
         other.remove(ov)
 
@@ -140,10 +140,9 @@ def agg_data(info,by,over,subset=None):
     data_info = info_gb.agg(operations).reset_index()
 
     # Build contrast matrix for averaging
-    C = np.zeros(data_info.shape[0],info.shape[0])
-    for i,k,v in info_gb.indices.iteritems():
-        C[i,indx[v]]=1
-
+    C = np.zeros((info.shape[0],data_info.shape[0]))
+    for i,(k,v) in enumerate(info_gb.indices.items()):
+        C[indx[v],i]=1
     return data_info,C
 
 def optimal_contrast(data,C,X,reg_in=None,baseline=None):
@@ -451,17 +450,14 @@ class DataSetNative(DataSet):
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
-    def get_indiv_atlasmaps(self,atlas,sub,ses_id,smooth):
+    def get_indiv_atlasmaps(self,atlas,sub,ses_id,smooth=None):
         atlas_maps=[]
         if atlas.structure=='cerebellum':
-            deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
-            if atlas.name[0:7]=='MNISymC':
-                xfm_name = self.atlas_dir + \
-                        '/tpl-MNI152NLIn2009cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
-                deform = [xfm_name,deform]
-                mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-            else:
-                raise(NameError(f'Can extract in {atlas.name} space yet'))
+            deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
+            if atlas.name[0:4]!='SUIT':
+                deform1,m = am.get_deform(self.atlas_dir,atlas.name,'SUIT2') 
+                deform = [deform1, deform]
+            mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world,deform, mask))
             atlas_maps[0].build(smooth=smooth)
         elif atlas.name=='fs32k':
@@ -475,7 +471,6 @@ class DataSetNative(DataSet):
                             white,pial, mask))
                 atlas_maps[i].build()
         return atlas_maps
-
 
     def extract_all(self,
             ses_id='ses-s1',
@@ -494,15 +489,15 @@ class DataSetNative(DataSet):
         for s in T.participant_id:
 
             print(f'Atlasmap {s}')
-            atlas_maps = self.get_indiv_atlasmap(atlas,s,ses_id)
-
+            atlas_maps = self.get_indiv_atlasmaps(myatlas,s,ses_id,
+                            smooth=smooth)
             print(f'Extract {s}')
             fnames,info = self.get_data_fnames(s,ses_id)
-            data = am.get_data3D(fnames,atlas_maps)
-            data,info,C = self.condense_data(data,info,type,subj=s,ses_id=ses_id)
-
+            data = am.get_data_nifti(fnames,atlas_maps)
+            data,info = self.condense_data(data,info,type,
+                    participant_id=s,ses_id=ses_id)
             # Write out data as CIFTI file
-            C=atlas.data_to_cifti(data[0],info.names)
+            C=myatlas.data_to_cifti(data,info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
@@ -590,7 +585,7 @@ class DataSetMDTB(DataSetNative):
         if type == 'CondHalf':
             data_info,C = agg_data(info,
                         ['half','cond_num'],
-                        ['run'],
+                        ['run','reg_num'],
                         subset=(info.instruction==0))
             data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
             # Baseline substraction
@@ -609,7 +604,7 @@ class DataSetMDTB(DataSetNative):
 
             data_info,C = agg_data(info,
                         ['cond_num'],
-                        ['run','half'],
+                        ['run','half','reg_num'],
                         subset=(info.instruction==0))
             data_info['names']=[f'{d.cond_name}' for i,d in data_info.iterrows()]
 

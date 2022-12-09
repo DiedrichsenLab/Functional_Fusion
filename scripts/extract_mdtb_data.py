@@ -22,17 +22,13 @@ data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
 
-def extract_mdtb_group(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
+def group_mtdb(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
     mdtb_dataset = DataSetMDTB(data_dir)
     mdtb_dataset.group_average_data(ses_id,type, atlas)
 
-def extract_mdtb_suit(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
+def extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
     mdtb_dataset = DataSetMDTB(data_dir)
-    mdtb_dataset.extract_all_suit(ses_id,type,atlas)
-
-def extract_mdtb_fs32k(ses_id='ses-s1', type='CondHalf'):
-    mdtb_dataset = DataSetMDTB(data_dir)
-    mdtb_dataset.extract_all_fs32k(ses_id,type)
+    mdtb_dataset.extract_all(ses_id,type,atlas)
 
 def show_mdtb_suit(subj,sess,cond):
     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
@@ -144,21 +140,7 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
 
 
 if __name__ == "__main__":
-    # parcel_mdtb_fs32k()
-    # extract_mdtb_suit(ses_id='ses-s1',type='CondRun',atlas='MNISymC3')
-    # extract_mdtb_suit(ses_id='ses-s2',type='CondRun',atlas='MNISymC3')
-    # extract_mdtb_group(ses_id='ses-s1', type='CondHalf', atlas='SUIT3')
-    # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
-    # extract_mdtb_suit(ses_id='ses-s1',type='CondAll')
-    # extract_mdtb_suit(ses_id='ses-s2',type='CondAll')
-    # extract_mdtb_fs32k(ses_id='ses-s1',type='CondAll')
-    # extract_mdtb_fs32k(ses_id='ses-s2',type='condHalf')
-    extract_mdtb_fs32k(ses_id='ses-s1', type='CondHalf')
-    extract_mdtb_fs32k(ses_id='ses-s2', type='CondHalf')
-    # show_mdtb_suit('all',1,0)
+    extract_mdtb(ses_id='ses-s1', type='CondHalf',atlas='MNISymC2')
     pass
 
 
-    # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
-    # for s in T.participant_id:
-    #     pass
