@@ -28,7 +28,7 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
 
     Args:
         base_dir (str): Basis directory for the Functional Fusion repro
-        dataset (str): Data set indicator 
+        dataset (str): Data set indicator
         atlas (str): Atlas indicator. Defaults to 'SUIT3'.
         sess (str or list): Sessiions. Defaults to 'all'.
         type (str): 'CondHalf','CondRun', etc....
@@ -98,33 +98,33 @@ def prewhiten_data(data):
 
 def agg_data(info,by,over,subset=None):
     """ Aggregates data safely by sorting them by the fields in "by"
-    while integrating out "over". 
-    Adds a n_rep field to count how many instances are of each 
-    Returns condensed data frame + Contrast matrix. 
+    while integrating out "over".
+    Adds a n_rep field to count how many instances are of each
+    Returns condensed data frame + Contrast matrix.
 
     Args:
         info (DataFrame): Original DataFrame
-        by (list): Fields that define the index of the new data 
+        by (list): Fields that define the index of the new data
         over (list): Fields to ignore / integrate over. All other fields
             will be pulled through.
         subset (bool array): If given, ignores certain rows from the
             original data frame
-    Return 
+    Return
         data_info (DataFrame): Reduced data frame
         C (ndarray): Contrast matrix defining the mapping from full to reduced
     """
-    # Subset original data frame as needed 
+    # Subset original data frame as needed
     info_n = info.copy()
-    if subset is None: 
+    if subset is None:
         indx = np.arange(info.shape[0])
     else:
         indx = np.notzero(subset)
         info_n = info_n[subset]
 
-    # Generate n_rep field if not present 
+    # Generate n_rep field if not present
     if 'n_rep' not in info.columns:
         info_n['n_rep']=np.ones((info_n.shape[0],))
-    
+
     # Other contains the fields to remain constant
     other = info.columns
     for ov in over+by:
@@ -134,16 +134,16 @@ def agg_data(info,by,over,subset=None):
     operations = {'n_rep':np.sum}
     for o in other:
         operations[o]=max
-    
-    # Group the new data frame 
+
+    # Group the new data frame
     info_gb = info_n.groupby(by)
     data_info = info_gb.agg(operations).reset_index()
-    
+
     # Build contrast matrix for averaging
     C = np.zeros(data_info.shape[0],info.shape[0])
     for i,k,v in info_gb.indices.iteritems():
         C[i,indx[v]]=1
-    
+
     return data_info,C
 
 def optimal_contrast(data,C,X,reg_in=None,baseline=None):
@@ -365,12 +365,12 @@ class DataSet:
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
-            # Reduce tsv file when fields are given 
+            # Reduce tsv file when fields are given
             if fields is not None:
                 info = info_raw[fields]
             else:
                 info = info_raw
-            
+
             # Keep the most complete info
             if info.shape[0] > max:
                 info_com = info
@@ -403,8 +403,8 @@ class DataSet:
         Data[np.isinf(Data)] = np.nan
         return Data, info_com
 
-    def group_average_data(self, ses_id='ses-s1', 
-                                 type='CondHalf', 
+    def group_average_data(self, ses_id='ses-s1',
+                                 type='CondHalf',
                                  atlas='SUIT3'):
         """Loads group data in SUIT space from a standard experiment structure
         averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
@@ -432,8 +432,8 @@ class DataSet:
             f'/group_{ses_id}_info-{type}.tsv', sep='\t')
 
 class DataSetNative(DataSet):
-    """Data set with estimates data stored as 
-    nifti-files in Native space. 
+    """Data set with estimates data stored as
+    nifti-files in Native space.
     """
     def get_data_fnames(self,participant_id,session_id=None):
         """ Gets all raw data files
@@ -450,7 +450,7 @@ class DataSetNative(DataSet):
         fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i,t in T.iterrows()]
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
-    
+
     def get_indiv_atlasmaps(self,atlas,sub,ses_id,smooth):
         atlas_maps=[]
         if atlas.structure=='cerebellum':
@@ -509,7 +509,7 @@ class DataSetNative(DataSet):
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
 
 class DataSetCifti(DataSet):
-    """Data set that comes in HCP-format in already pre-extracted cifti files. 
+    """Data set that comes in HCP-format in already pre-extracted cifti files.
     """
     def get_data_fnames(self,participant_id,session_id=None):
         """ Gets all raw data files
@@ -527,7 +527,7 @@ class DataSetCifti(DataSet):
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.descalar.nii')
         return fnames, T
 
-    def extract_all_suit(self,ses_id='ses-s1',type='CondHalf',atlas='SUIT3'):
+    def extract_all(self,ses_id='ses-s1',type='CondHalf',atlas='SUIT3'):
         """Extracts cerebellar data. Saves the results as CIFTI files in the data directory.
         Args:
             ses_id (str, optional): Session. Defaults to 'ses-s1'.
@@ -615,7 +615,6 @@ class DataSetMDTB(DataSetNative):
 
             # Baseline substraction
             B = np.ones((data_info.shape[0],))
-
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
@@ -927,7 +926,6 @@ class DataSetHcpResting(DataSetCifti):
             # transfer to suit space applying the deformation
             ts_vol = am.get_data4D(ts_vol, [atlas_map])
             ts_volume.append(ts_vol[0])
-
         return ts_volume
 
     def extract_ts_surface(self,
@@ -1132,16 +1130,6 @@ class DataSetLanguage(DataSetNative):
         # Make the atlas object
         suit_atlas = am.get_atlas(atlas,self,atlas_dir)
 
-        # Get the deformation map from MNI to SUIT
-        mni_atlas = self.atlas_dir + '/tpl-MNI152NLin6AsymC'
-        deform = mni_atlas + '/tpl-MNI152NLin6AsymC_space-SUIT_xfm.nii'
-        if atlas[0:7] == 'MNISymC':
-            xfm_name = self.atlas_dir + \
-                '/tpl-MNI152NLIn2009cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
-            deform = [xfm_name, deform]
-        mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
-        atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
-        atlas_map.build(smooth=2.0)
 
         # create and calculate the atlas map for each participant
         T = self.get_participants()
@@ -1230,7 +1218,7 @@ class DataSetPontine(DataSetNative):
         type='TaskHalf',
         participant_id=None,
         ses_id=None):
-        """ Condense the data from the pontine project after extraction 
+        """ Condense the data from the pontine project after extraction
 
         Args:
             data (list of ndarray)
@@ -1503,15 +1491,15 @@ class DataSetIBC(DataSetNative):
             reg = (info.half-1)*n_cond + info.reg_id
             C = matrix.indicator(reg,positive=True)
 
-    
+
         # Prewhiten the data
         data_n = prewhiten_data(data)
         for i in range(len(data_n)):
-            data_n[i]=pinv(C) @ data_n[i] 
+            data_n[i]=pinv(C) @ data_n[i]
         return data_n, data_info
 
     def extract_all_suit(self,ses_id='ses-archi',type='CondHalf',atlas='SUIT3'):
-        """Extracts data in SUIT space - we need to overload this from the standard, 
+        """Extracts data in SUIT space - we need to overload this from the standard,
         as the voxel-orientation (and therefore the atlasmap) is different from session to session in IBC.
         Args:
             ses_id (str, optional): Session. Defaults to 'ses-s1'.
@@ -1551,7 +1539,7 @@ class DataSetDemand(DataSetCifti):
         self.cond_ind = 'cond_num'
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
-    
+
     def extract_data(self,participant_id,
                      atlas,
                      ses_id,
@@ -1582,11 +1570,11 @@ class DataSetDemand(DataSetCifti):
         n_cond = np.max(info.cond_num)
         if type == 'CondHalf':
             data_info,C=agg_data(info,['half','reg_id'],['run'])
-            data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' 
+            data_info['names']=[f'{d.cond_name.strip()}-half{d.half}'
                     for i,d in data_info.iterrows()]
         elif type == 'CondAll':
             data_info,C=agg_data(info,['reg_id'],['half','run'])
-            data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' 
+            data_info['names']=[f'{d.cond_name.strip()}-half{d.half}'
                     for i,d in data_info.iterrows()]
 
         # Prewhiten the data
@@ -1594,5 +1582,5 @@ class DataSetDemand(DataSetCifti):
 
         # Combine with contrast
         for i in range(len(data_n)):
-            data_n[i]=pinv(C) @ data_n[i] 
+            data_n[i]=pinv(C) @ data_n[i]
         return data_n, data_info
