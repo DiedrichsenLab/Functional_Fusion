@@ -549,7 +549,7 @@ class DataSetCifti(DataSet):
 
             data,info = self.condense_data(data,info,type,
                     participant_id=s,ses_id=ses_id)
-            C=myatlas.data_to_cifti(data,info.names)
+            C=myatlas.data_to_cifti(data[0],info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')

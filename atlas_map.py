@@ -36,11 +36,11 @@ def get_atlas(atlas_str,atlas_dir):
     if ainf['type']=="AtlasVolumetric":
         mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
         atlas = AtlasVolumetric(atlas_str,mask_img=mask,structure=ainf['structure'])
-    elif atlas['type']=="AtlasSurface":
+    elif ainf['type']=="AtlasSurface":
         mask = []
-        for i,m in enumerate(atlas['mask']):
+        for i,m in enumerate(ainf['mask']):
             mask.append(atlas_dir + f"/{ainf['dir']}/{m}")
-        atlas = AtlasSurface('fs32k', mask_gii=mask, structure=ainf['structure'])
+        atlas = AtlasSurface(atlas_str, mask_gii=mask, structure=ainf['structure'])
     return atlas
 
 def get_deform(atlas_dir,target,source='MNIAsym2'):
@@ -341,37 +341,32 @@ class AtlasSurface(Atlas):
         # Second check if the data has the same vertices index or
         # the number of vertices with the current atlasMap
         col_axis = cifti.get_header().get_axis(1)
-        if np.array_equal(np.hstack(self.vertex), col_axis.vertex):
-            return data
-        else:
-            warnings.warn('The input cifti image does not match the atlas!')
 
-            return_data = []
-            img_stru, idx = np.unique(col_axis.name, return_index=True)
-            img_vertex = np.split(col_axis.vertex, idx[1:])
-            for i, stru in enumerate(self.structure):
-                # Align the structure name to cifti file
-                if not stru.startswith('CIFTI_STRUCTURE_'):
-                    stru = 'CIFTI_STRUCTURE_' + stru.upper()
+        return_data = []
+        img_stru = list(col_axis.iter_structures())
+        img_names = [n[0] for n in img_stru]
+        for i, stru in enumerate(self.structure):
+            # Align the structure name to cifti file
+            stru = nb.cifti2.BrainModelAxis.to_cifti_brain_structure_name(stru)
+            
+            if stru not in img_names:
+                print(f'The input image does not contain {stru}! (Fill with NaN)')
+                # if the input image doesn't have current brain structure
+                # we then fill these vertices with NaN value
+                this_data = np.full((data.shape[0], self.vertex[i].shape[0]), np.nan)
+            else:
+                idx = img_names.index(stru)
+                data_idx = img_stru[idx][1]
+                bm = img_stru[idx][2]
 
-                this_idx = np.where(col_axis.name == stru)[0]
-                try:
-                    # if the input image has this brain structure
-                    part_ind = img_stru.tolist().index(stru)
+                # Restore the full data for this structure
+                this_full_data = np.full((data.shape[0], bm.nvertices[stru]), np.nan)
+                this_full_data[:,bm.vertex] = data[:, data_idx]
+                this_data = this_full_data[:, self.vertex[i]]
+ 
+            return_data.append(this_data)
 
-                    # Restore the full data for this structure
-                    this_full_data = np.full((data.shape[0], col_axis.nvertices[stru]), np.nan)
-                    this_full_data[:,img_vertex[part_ind]] = data[:, this_idx]
-                    this_data = this_full_data[:, self.vertex[i]]
-                except:
-                    print(f'The input image does not contain {stru}! (Fill with NaN)')
-                    # if the input image doesn't have current brain structure
-                    # we then fill these vertices with NaN value
-                    this_data = np.full((data.shape[0], self.vertex[i].shape[0]), np.nan)
-
-                return_data.append(this_data)
-
-            return np.hstack(return_data)
+        return np.hstack(return_data)
 
     def get_brain_model_axis(self):
         """ Returns brain model axis
