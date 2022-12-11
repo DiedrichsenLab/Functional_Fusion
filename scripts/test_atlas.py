@@ -10,6 +10,7 @@ from dataset import DataSetHcpResting
 import nibabel as nb
 from matrix import indicator
 import sys
+import os
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if sys.platform == "win32":  # for windows user
@@ -218,9 +219,55 @@ def test_atlas_sym():
     assert(np.all(Flipped == sym_atlas.world))
     pass
 
+def test_atlas_parcelVol():
+
+    data_file = os.path.join(base_dir, 'WMFS', 'derivatives', 'sub-01', 'data', 'sub-01_space-SUIT3_ses-02_CondHalf.dscalar.nii')
+    mask_img = os.path.join(atlas_dir, 'tpl-SUIT', 'tpl-SUIT_res-3_gmcmask.nii')
+    label_img = os.path.join(atlas_dir, 'tpl-SUIT', 'atl-MDTB10_space-SUIT_dseg.nii')
+    MDTB_parcel = am.AtlasVolumeParcel('cerebellum',label_img,mask_img)
+
+    data_img = nb.load(data_file)
+    data = data_img.get_fdata()
+
+    data_parcel = MDTB_parcel.agg_data(data)
+
+
+    return data_parcel
+
+def test_atlas_parcelSurf():
+
+    data_file = os.path.join(base_dir, 'WMFS', 'derivatives', 'sub-01', 'data', 'sub-01_space-fs32k_ses-02_CondHalf.dscalar.nii')
+    
+    # load left and right data in one file
+    data_img = nb.cifti2.load(data_file)
+    hemi = ['L', 'R']
+    data = data_img.get_fdata()
+    # get brain models
+    bmf = data_img.header.get_axis(1)
+    data_list = []
+    for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
+        # get the data corresponding to the brain structure
+        data_hemi = data[:, slc]
+
+        # get name to be passed on to the AtlasSurfaceParcel object
+        name = nam[16:].lower()
+
+        # create atlas parcel object
+        # label_img = os.path.join(atlas_dir, 'tpl-fs32k', f'Icosahedron-642_Sym.32k.{hemi[idx]}.label.gii')
+        label_img = os.path.join(atlas_dir, 'tpl-fs32k', f'ROI.32k.{hemi[idx]}.label.gii')
+        mask_img = os.path.join(atlas_dir, 'tpl-fs32k', f'tpl-fs32k_hemi-{hemi[idx]}_mask.label.gii')
+        MDTB_parcel = am.AtlasSurfaceParcel(name,label_img,mask_img)
+        data_list.append(MDTB_parcel.agg_data(data_hemi))
+
+    # concatenate into a single array
+    data_parcel = np.concatenate(data_list, axis = 1)
+    print(data_parcel.shape)
+
+    return data_parcel
 
 if __name__ == "__main__":
     # make_mdtb_suit()
-    test_atlas_sym()
+    # test_atlas_sym()
+    test_atlas_parcelSurf()
     pass
 

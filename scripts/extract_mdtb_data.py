@@ -141,6 +141,7 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
 
 if __name__ == "__main__":
     extract_mdtb(ses_id='ses-s1', type='CondHalf',atlas='MNISymC2')
+    # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
     pass
 
 
