@@ -571,13 +571,14 @@ class DataSetMDTB(DataSetNative):
                 ses_id=None):
         """ Condense the data in a certain way optimally
         Args:
-            participant_id (str): ID of participant
-            atlas_maps (list): List of atlasmaps
-            ses_id (str): Name of session
+            data (list): List of extracted datasets
+            info (DataFrame): Data Frame with description of data - row-wise
             type (str): Type of extraction:
                 'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
                 'CondRun': Conditions with seperate estimates per run
                     Defaults to 'CondHalf'.
+            participant_id (str): ID of participant
+            ses_id (str): Name of session
 
         Returns:
             Y (list of np.ndarray):
@@ -1131,7 +1132,7 @@ class DataSetLanguage(DataSetNative):
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
         # Make the atlas object
-        suit_atlas = am.get_atlas(atlas,self,atlas_dir)
+        suit_atlas = am.get_atlas(atlas,self.atlas_dir)
 
 
         # create and calculate the atlas map for each participant
@@ -1149,7 +1150,7 @@ class DataSetLanguage(DataSetNative):
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
-    def extract_data(self, participant_id,
+    def condense_data(self, participant_id,
                      atlas_maps,
                      ses_id,
                      type='TaskAll'):
@@ -1244,74 +1245,44 @@ class DataSetPontine(DataSetNative):
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 9)
         n_cond = np.max(info.reg_id)
+
         if type == 'TaskHalf':
-
-            # Make new data frame for the information of the new regressors
-            ii = ((info.run == 1) | (info.run == 9)) & (info.reg_id > 0)
-            data_info = info[ii].copy().reset_index(drop=True)
-            data_info['names'] = [
-                f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
-
-            # Contrast for the regressors of interest
-            reg = (info.half - 1) * n_cond + info.reg_id
-            reg[info.instruction == 1] = 0
-            C = matrix.indicator(reg, positive=True)  # Drop the instructions
-
-            # contrast for all instructions
-
+            data_info,C = agg_data(info,
+                        ['half','reg_id'],
+                        ['run','reg_num'],
+                        subset=(info.reg_id>0))
+            data_info['names']=[f'{d.task_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half,positive=True)
 
         elif type == 'TaskRun':
 
-            # Subset of info sutructure
-            ii = (info.reg_id > 0)
-            data_info = info[ii].copy().reset_index(drop=True)
-            data_info['names'] = [
-                f'{d.task_name.strip()}-run{d.run:02d}' for i, d in data_info.iterrows()]
-
-            reg = (info.run - 1) * n_cond + info.reg_id
-            reg[info.instruction == 1] = 0
-            reg = (info.run-1)*n_cond + info.cond_num
-            reg[info.instruction==1] = 0
-            # Contrast for the regressors of interst
-            C = matrix.indicator(reg,positive=True) # Drop the instructions
-
-            # contrast for all instructions
-            CI = matrix.indicator(info.run*info.instruction,positive=True)
-            C = np.c_[C,CI]
-            reg_in = np.arange(n_cond*16,dtype=int)
-
+            data_info,C = agg_data(info,
+                        ['run','reg_id'],
+                        ['reg_num'],
+                        subset=(info.reg_id>0))
+            data_info['names']=[f'{d.task_name.strip()}-run{d.run}' for i,d in data_info.iterrows()]
             # Baseline substraction
-            B = matrix.indicator(data_info.run,positive=True)
+            B = matrix.indicator(data_info.half,positive=True)
 
         elif type == 'TaskAll':
-
-            # Make new data frame for the information of the new regressors
-            ii = (info.run == 1) & (info.reg_id > 0)
-            data_info = info[ii].copy().reset_index(drop=True)
-            data_info['names'] = [
-                f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
-
-           # Contrast for the regressors of interest
-            reg = info.cond_num.copy()
-            reg[info.instruction==1] = 0
-            C = matrix.indicator(reg,positive=True) # Drop the instructions
-
-            # contrast for all instructions
-            CI = matrix.indicator(info.instruction,positive=True)
-            C = np.c_[C,CI]
-            reg_in = np.arange(n_cond,dtype=int)
-
+            data_info,C = agg_data(info,
+                        ['reg_id'],
+                        ['run','half','reg_num'],
+                        subset=(info.reg_id>0))
+            data_info['names']=[f'{d.task_name.strip()}' for i,d in data_info.iterrows()]
             # Baseline substraction
-            B = matrix.indicator(data_info.run,positive=True)
-
+            B = matrix.indicator(data_info.half,positive=True)
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
         X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+        reg_in = np.arange(C.shape[1],dtype=int)
+        CI = matrix.indicator(info.run*info.instruction,positive=True)
+        C = np.c_[C,CI]
+
         data_new = optimal_contrast(data_n, C, X, reg_in)
 
         return data_new, data_info
@@ -1325,21 +1296,22 @@ class DataSetNishi(DataSetNative):
         self.cond_name = 'task_name'
         self.part_ind = 'half'
 
-    def extract_data(self,participant_id,
-                    atlas_maps,
-                    ses_id,
-                    type='CondHalf'):
-        """ Nishimoto extraction of atlasmap locations
-        from nii files - and filterting or averaring
-        as specified.
+    def condense_data(self, data,info,
+        type='TaskHalf',
+        participant_id=None,
+        ses_id=None):
+        """ Condense the data from the pontine project after extraction
+
         Args:
-            participant_id (str): ID of participant
-            atlas_maps (list): List of atlasmaps
-            ses_id (str): Name of session
+            data (list of ndarray)
+            info (dataframe)
             type (str): Type of extraction:
-                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
-                'CondRun': Conditions with seperate estimates per run
+                'TaskHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'TaskRun': Conditions with seperate estimates per run
                     Defaults to 'CondHalf'.
+            participant_id (str): ID of participant
+            ses_id (str): Name of session
+
         Returns:
             Y (list of np.ndarray):
                 A list (len = numatlas) with N x P_i numpy array of prewhitened data
@@ -1347,71 +1319,41 @@ class DataSetNishi(DataSetNative):
                 A data frame with information about the N numbers provide
             names: Names for CIFTI-file per row
         """
-        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-        fnames,info = self.get_data_fnames(participant_id,ses_id)
-        data = am.get_data3D(fnames,atlas_maps)
-        # For debugging: data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
-
         # Depending on the type, make a new contrast
         info['half']=2-(info.run< (len(np.unique(info.run))/2+1))
         n_cond = np.max(info.reg_id)
 
         if type == 'CondHalf':
-            # Make new data frame for the information of the new regressors
-            info_gb = info.groupby(['sn','sess','half','reg_id','task_name'])
-            data_info = info_gb.agg({'n_rep':np.sum}).reset_index()
-            data_info['names']=[f'{d.task_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
+            data_info,C = agg_data(info,
+                        ['half','cond_num'],
+                        ['run','reg_num'])
+            data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
-            # Contrast for the regressors of interest
-            reg = (info.half-1)*n_cond + info.reg_id
-            C = matrix.indicator(reg,positive=True)
-
-            reg_in = np.arange(n_cond*2,dtype=int)
 
             # Baseline substraction
             B = matrix.indicator(data_info.half,positive=True)
 
         elif type == 'CondRun':
+            data_info,C = agg_data(info,
+                        ['run','cond_num'],
+                        [])
 
-            # Subset of info sutructure
-            # ii = (info.cond_num>0)
-            data_info = info.copy().reset_index(drop=True)
-            data_info['names']=[f'{d.task_name.strip()}-run{d.run:02d}' for i,d in data_info.iterrows()]
-
-            reg = (info.run-1)*n_cond + info.reg_id
-            # reg[info.instruction==1] = 0
-            # Contrast for the regressors of interst
-            C = matrix.indicator(reg,positive=True) # Drop the instructions
-
-            reg_in = np.arange(n_cond*len(np.unique(info.run)),dtype=int)
-
+            data_info['names']=[f'{d.cond_name.strip()}-run{d.run:02d}' for i,d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.run,positive=True)
         elif type == 'CondAll':
-
-            # Make new data frame for the information of the new regressors
-            info_gb = info.groupby(['sn','sess','reg_id','task_name'])
-            data_info = info_gb.agg({'n_rep':np.sum}).reset_index(drop=True)
-            data_info['names']=[f'{d.task_name.strip()}' for i,d in data_info.iterrows()]
-
-            # Contrast for the regressors of interest
-            reg = info.creg_id
-            # reg[info.instruction==1] = 0
-            C = matrix.indicator(reg,positive=True) # Drop the instructions
-
-            # contrast for all instructions
-            # CI = matrix.indicator(info.instruction,positive=True)
-            # C = np.c_[C,CI]
-            # reg_in = np.arange(n_cond-1,dtype=int)
-
+            data_info,C = agg_data(info,
+                        ['cond_num'],
+                        ['run','half','reg_num'])
             # Baseline substraction
-            B = matrix.indicator(data_info.run,positive=True)
+            B = np.ones((data_info.shape[0],))
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
         X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
+        reg_in = np.arange(C.shape[1],dtype=int)
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=B)
 
         return data_new, data_info
@@ -1459,17 +1401,21 @@ class DataSetIBC(DataSetNative):
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
-    def extract_data(self,participant_id,
-                    atlas_maps,
-                    ses_id,
-                    type='CondHalf'):
-        """ IBC extract data
+    def condense_data(self,data,info,
+                type='CondHalf',
+                participant_id=None,
+                ses_id=None):
+        """ Condense the data in a certain way optimally
         Args:
-            participant_id (str): ID of participant
-            atlas_maps (list): List of atlasmaps
-            ses_id (str): Name of session
+            data (list): List of extracted datasets
+            info (DataFrame): Data Frame with description of data - row-wise
             type (str): Type of extraction:
                 'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
+            participant_id (str): ID of participant
+            ses_id (str): Name of session
+
         Returns:
             Y (list of np.ndarray):
                 A list (len = numatlas) with N x P_i numpy array of prewhitened data
@@ -1477,23 +1423,13 @@ class DataSetIBC(DataSetNative):
                 A data frame with information about the N numbers provide
             names: Names for CIFTI-file per row
         """
-        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-        fnames,info = self.get_data_fnames(participant_id,ses_id)
-        data = am.get_data3D(fnames,atlas_maps)
-        # data = [np.random.normal(0,1,(len(fnames),atlas_maps[0].P))]
-
-        # Depending on the type, make a new contrast
         n_cond = np.max(info.reg_id)
         info['n_rep']=np.ones((info.shape[0],))
         if type == 'CondHalf':
-            info_gb = info.groupby(['sn','sess','half','reg_id','cond_name','cond_num_uni'])
-            data_info = info_gb.agg({'n_rep':'count'}).reset_index()
+            data_info,C = agg_data(info,
+                        ['half','cond_num'],
+                        ['run','reg_num'])
             data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
-
-            # Contrast for the regressors of interest
-            reg = (info.half-1)*n_cond + info.reg_id
-            C = matrix.indicator(reg,positive=True)
-
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
