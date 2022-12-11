@@ -24,5 +24,9 @@ def extract_demand(ses_id='ses-01',type='CondHalf',atlas='MNISymC3'):
     de_dataset.extract_all(ses_id,type,atlas)
 
 if __name__ == "__main__":
-    extract_demand(ses_id='ses-01', type='CondHalf', atlas='MNISymC2')
+    # extract_demand(ses_id='ses-01', type='CondHalf', atlas='MNISymC2')
+    de_dataset = DataSetDemand(data_dir)
+    de_dataset.group_average_data(ses_id='ses-01',type='CondHalf',atlas='MNISymC2')
+    de_dataset.group_average_data(ses_id='ses-01',type='CondHalf',atlas='MNISymC3')
+    de_dataset.group_average_data(ses_id='ses-01',type='CondHalf',atlas='fs32k')
     pass
