@@ -423,12 +423,12 @@ class DataSet:
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
         C = nb.Cifti2Image(dataobj=X, header=C.header)
         # save output
-        dest_dir = op.join(self.data_dir.format(s).split('derivatives')[0], 'derivatives/group')
+        dest_dir = op.join(self.data_dir.format('group'))
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir +
                 f'/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
         info.drop(columns=['sn']).to_csv(dest_dir +
-            f'/group_{ses_id}_info-{type}.tsv', sep='\t')
+            f'/group_{ses_id}_info-{type}.tsv', sep='\t',index=False)
 
 class DataSetNative(DataSet):
     """Data set with estimates data stored as

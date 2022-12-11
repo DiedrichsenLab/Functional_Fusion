@@ -67,7 +67,7 @@ def show_nishimoto_group(type='CondHalf', atlas='SUIT3', cond=0, info_column='ta
 
 def extract_nishi_group(type='CondHalf', atlas='SUIT3', info_column='task_name'):
     nishi_dataset = DataSetNishi(data_dir)
-    nishi_dataset.group_average_suit(type, atlas, info_column)
+    nishi_dataset.group_average_data(type, atlas, info_column)
 
 def extract_nishi_suit(ses_id='ses-01',type='CondHalf', atlas= 'SUIT3'):
     nishi_dataset = DataSetNishi(data_dir)

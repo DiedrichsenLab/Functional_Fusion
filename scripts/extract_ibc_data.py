@@ -82,14 +82,6 @@ def group_average(atlas='MNISymC3'):
     for ses in ibc_dataset.sessions:
         ibc_dataset.group_average_data(
             ses_id=ses, type=type, atlas=atlas)
-        # write session tsv file for group average
-        s = ibc_dataset.get_participants().participant_id[0]
-        D = pd.read_csv(Path(ibc_dataset.data_dir.format(s)) /
-                        f'{s}_{ses}_info-{type}.tsv', sep='\t')
-        D = D.drop(columns=['sn', 'sess', 'run']).drop_duplicates(keep='first')
-        D.to_csv(ibc_dataset.data_dir.split('/{0}')[0] +
-                        f'/group/group_{ses}_info-{type}.tsv', sep='\t')
-
 
 def show_group_average(atlas='MNISymC3'):
     ibc_dataset = DataSetIBC(data_dir)
