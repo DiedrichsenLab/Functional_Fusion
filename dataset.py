@@ -1519,3 +1519,74 @@ class DataSetDemand(DataSetCifti):
         for i in range(len(data_n)):
             data_n[i]=pinv(C) @ data_n[i]
         return data_n, data_info
+
+class DataSetWMFS(DataSetNative):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.sessions=['ses-01','ses-02']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'reg_id'
+        self.cond_name = 'cond_name'
+        self.part_ind = 'half'
+
+    def condense_data(self,data,info,
+                type='CondHalf',
+                participant_id=None,
+                ses_id=None):
+        """ Condense the data in a certain way optimally
+        Args:
+            data (list): List of extracted datasets
+            info (DataFrame): Data Frame with description of data - row-wise
+            type (str): Type of extraction:
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
+            participant_id (str): ID of participant
+            ses_id (str): Name of session
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+
+        # Depending on the type, make a new contrast
+        info['half']=2-(info.run<3)
+        n_cond = np.max(info.loc[info.error == 0].reg_id)
+
+        if type == 'CondHalf':
+            # Make new data frame for the information of the new regressors
+
+            data_info,C = agg_data(info,
+                        ['half','cond_num'],
+                        ['run','reg_num'],
+                        subset=(info.error==0))
+            data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
+        elif type == 'CondRun':
+
+            # Subset of info sutructure
+            data_info,C = agg_data(info,
+                        ['run','cond_num'],
+                        ['reg_num'],
+                        subset=(info.error==0))
+            data_info['names']=[f'{d.cond_name.strip()}-run{d.run:02d}' for i,d in data_info.iterrows()]
+        elif type == 'CondAll':
+            data_info,C = agg_data(info,
+                        ['cond_num'],
+                        ['run','half','reg_num'],
+                        subset=(info.error==0))
+            # data_info = info_gb.agg({'n_rep':np.sum}).reset_index(drop=True)
+            data_info['names']=[f'{d.cond_name.strip()}' for i,d in data_info.iterrows()]
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Load the designmatrix and perform optimal contrast
+        X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
+        reg_in = np.arange(C.shape[1],dtype=int)
+        data_new = optimal_contrast(data_n,C,X,reg_in,baseline=None)
+
+        return data_new, data_info
+
