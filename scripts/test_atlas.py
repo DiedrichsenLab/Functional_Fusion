@@ -10,6 +10,7 @@ from dataset import DataSetHcpResting
 import nibabel as nb
 from matrix import indicator
 import sys
+import os
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if sys.platform == "win32":  # for windows user
@@ -30,7 +31,7 @@ def make_mdtb_suit():
     for s in T.participant_id:
         deform = mdtb_dataset.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
         mask = mdtb_dataset.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-        atlas_map = am.AtlasMapDeform(mdtb_dataset, suit_atlas, s,deform, mask)
+        atlas_map = am.AtlasMapDeform(suit_atlas.world,deform, mask)
         atlas_map.build(smooth=2.0)
         data,info,str = mdtb_dataset.get_data(s,[atlas_map],'ses-s1')
         #a=mdtb_dataset.get_data_fnames(s,'ses-s1')
@@ -56,8 +57,8 @@ def make_mdtb_fs32k():
             pial = adir + f'/{s}_space-32k_hemi-{hem}_pial.surf.gii'
             white = adir + f'/{s}_space-32k_hemi-{hem}_white.surf.gii'
             mask = adir + f'/{s}_desc-brain_mask.nii'
-            atlas_maps.append(am.AtlasMapSurf(mdtb_dataset, atlas[i],
-                            s,white,pial, mask))
+            atlas_maps.append(am.AtlasMapSurf(atlas[i].vertices,
+                            white,pial, mask))
             atlas_maps[i].build()
             # data = mdtb_dataset.get_data(s,[A])
             # data_files=mdtb_dataset.get_data_fnames(s,'ses-s1')
@@ -82,7 +83,7 @@ def make_hcp_suit():
 
     for s in T.participant_id.values:
         # create a mapping based on atlas deformation
-        atlas_map = am.AtlasMapDeform(hcp_dataset, suit_atlas, s,deform, mask)
+        atlas_map = am.AtlasMapDeform(suit_atlas.world,deform, mask)
         # print(f"building atlas map")
         atlas_map.build(smooth=2.0) # smoothing level?
         # print(f"building atlas map is done")
@@ -218,9 +219,55 @@ def test_atlas_sym():
     assert(np.all(Flipped == sym_atlas.world))
     pass
 
+def test_atlas_parcelVol():
+
+    data_file = os.path.join(base_dir, 'WMFS', 'derivatives', 'sub-01', 'data', 'sub-01_space-SUIT3_ses-02_CondHalf.dscalar.nii')
+    mask_img = os.path.join(atlas_dir, 'tpl-SUIT', 'tpl-SUIT_res-3_gmcmask.nii')
+    label_img = os.path.join(atlas_dir, 'tpl-SUIT', 'atl-MDTB10_space-SUIT_dseg.nii')
+    MDTB_parcel = am.AtlasVolumeParcel('cerebellum',label_img,mask_img)
+
+    data_img = nb.load(data_file)
+    data = data_img.get_fdata()
+
+    data_parcel = MDTB_parcel.agg_data(data)
+
+
+    return data_parcel
+
+def test_atlas_parcelSurf():
+
+    data_file = os.path.join(base_dir, 'WMFS', 'derivatives', 'sub-01', 'data', 'sub-01_space-fs32k_ses-02_CondHalf.dscalar.nii')
+    
+    # load left and right data in one file
+    data_img = nb.cifti2.load(data_file)
+    hemi = ['L', 'R']
+    data = data_img.get_fdata()
+    # get brain models
+    bmf = data_img.header.get_axis(1)
+    data_list = []
+    for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
+        # get the data corresponding to the brain structure
+        data_hemi = data[:, slc]
+
+        # get name to be passed on to the AtlasSurfaceParcel object
+        name = nam[16:].lower()
+
+        # create atlas parcel object
+        # label_img = os.path.join(atlas_dir, 'tpl-fs32k', f'Icosahedron-642_Sym.32k.{hemi[idx]}.label.gii')
+        label_img = os.path.join(atlas_dir, 'tpl-fs32k', f'ROI.32k.{hemi[idx]}.label.gii')
+        mask_img = os.path.join(atlas_dir, 'tpl-fs32k', f'tpl-fs32k_hemi-{hemi[idx]}_mask.label.gii')
+        MDTB_parcel = am.AtlasSurfaceParcel(name,label_img,mask_img)
+        data_list.append(MDTB_parcel.agg_data(data_hemi))
+
+    # concatenate into a single array
+    data_parcel = np.concatenate(data_list, axis = 1)
+    print(data_parcel.shape)
+
+    return data_parcel
 
 if __name__ == "__main__":
     # make_mdtb_suit()
-    test_atlas_sym()
+    # test_atlas_sym()
+    test_atlas_parcelSurf()
     pass
 

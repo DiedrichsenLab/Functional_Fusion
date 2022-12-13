@@ -67,7 +67,7 @@ def show_pontine_group(type='TaskHalf', atlas='SUIT3', cond=0, info_column='task
 
 def extract_pontine_group(type='TaskHalf', atlas='SUIT3', info_column='task_name'):
     p7_dataset = DataSetPontine(data_dir)
-    p7_dataset.group_average_suit(type, atlas, info_column)
+    p7_dataset.group_average_data(type, atlas, info_column)
 
 def extract_pontine_suit(ses_id='ses-01',type='TaskHalf',atlas='SUIT3'):
     p7_dataset = DataSetPontine(data_dir)

@@ -31,19 +31,23 @@ export PYTHONPATH
 ### Overall structure
 ![ScreenShot](docs/data_flow.png)
 
-
-
 #### 1. Data Set class
 As can be seen in above diagram, the integration across data sets is achieved through  `DataSet` objects, with each data set being an instantiation of that type. The `DataSet` has access to the subject list and the individual preprocessed imaging data. The main function of the Data set class is the  `get_data()` function, which provides the
 processed data `Y` in desired format `(N * P)` where `N` is the number of measurements (tasks, etc) `P` is the number of brain locations for a specific subject.
 
+### 2. Altas class
+The Atlas class defines the group-atlas that the data is analyzed in. Subclasses are `AtlasVolumetric`, and `AtlasSurface`. The altases is in a specific space, but also has a mask that defines the `P` locations (vertices or voxels) that are being sampled for the analysis. Atlases are indicated by short strings that indicate the Atlas. You can get an atlas by calling `atlas_map.get_atlas(string)`. Defined altlasses so far:
+
+* `SUIT3`:  Cerebellum in SUIT space (3mm voxels)
+* `SUIT2`:  Cerebellum in SUIT space (2mm voxels)
+* `SUIT1`:  Cerebellum in SUIT space (1mm voxels)
+* `MNISymC3`: Cerebellum in MNI152NLin2009cSym space (3mm voxels)
+* `MNISymC2`: Cerebellum in MNI152NLin2009cSym space (2mm voxels)
+* `fs32k`: Left and Right hemisphere, using identical Medial wall mask 
+* `fs32k_Asym`: Left and Right hemisphere, using asymmetric medial wall mask from HCP. 
+
 ### 2. Atlas map class
-
-To read out different data sets in a consistent anatomical location, we need to
-decide an `Atlas` to be used. For each subejct, we need to have an `AtlasMap`, which provides the mapping function from the raw data space (per subject) to the common atlas space. We will have subclasses `AtlasMapMNI`, `AtlasMapFS32K`, and `AtlasMapSUIT3`. For each subject (and hence Dataset), there will be a seperate Instantiation (Object) of this class. If two dataset share the same raw data space for the same subject, they can rely on the same AtlasMap.
-
-### 3. Altas
-Each group atlas also has some subject / study independent behaviors that will be implemented in the `Atlas` Class. Atlas are paired with a specific `Atlas Map` and have the information that it takes to map the `P` locations back into brain space. Subclasses indicates the brain areas to be studied with a structural template (i.e MNI 152).
+To read out different data sets into consistent anatomical locations, an `AtlasMap` object provides the mapping function from the data space to the common atlas space. The data space can be either the volumetric native space of the subject (`DataSetNative`), or already predefined CIFTI files that contain surface data and Volume data (`DataSetCifti`). 
 
 ## Directory structure for derivatives
 =======
@@ -51,9 +55,8 @@ The Data Set class `DataSet` is designed to be the entry of getting the data in 
 
 ### Derivatives structure
 
-The folder structure of derivatives
+The folder structure of derivatives (example for DataSetNative)
 
-    
     derivatives/
         │   README.md
         │
@@ -88,16 +91,6 @@ The folder structure of derivatives
                                                                                         #      reg_num: column number of regressor in design matrix
                             sub-<label>_ses-<label>_resms.nii                           # Model Variance (ResMS.nii in SPM, sigmasquareds.nii.gz in FSL)
                             sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii    # Parameter estimates (beta_0001.nii in SPM, pe1.nii.gz in FSL)
-    raw
-    └───sub-<label>/
-        └───func/
-            └───sess-s1/
-                sub-<label>_ses-<label>_run-<label>_bold.nii[.gz]    # Minimally preprocessed fMRI data, ideally in the subjects original space
-                sub-<label>_ses-<label>_run-<label>_bold.json[/.tsv] # Information of different characteristics of runs (phase-encoding direction, etc) as a tsv or json file
-
-### AtlasMap structure
-
-Need to be discussed later.
 
 
 ## Import data to the Functional Fusion framework
