@@ -503,6 +503,84 @@ class DataSetNative(DataSet):
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
 
+
+class DataSetMNIVol(DataSet):
+    """Data set with estimates data stored as
+    nifti-files in MNI space.
+    """
+
+    def get_data_fnames(self, participant_id, session_id=None):
+        """ Gets all raw data files
+
+        Args:
+            participant_id (str): Subject
+            session_id (str): Session ID. Defaults to None.
+        Returns:
+            fnames (list): List of fnames, last one is the resMS image
+            T (pd.DataFrame): Info structure for regressors (reginfo)
+        """
+        dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
+        T = pd.read_csv(
+            dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+        fnames = [
+            f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
+        fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
+        return fnames, T
+
+    def get_group_atlasmaps(self, sub, atlas, smooth=None):
+        atlas_maps = []
+        if atlas.structure == 'cerebellum':
+            deform = self.atlas_dir + f'/{self.group_space}_space-SUIT_xfm.nii'
+            if atlas.name[0:4] != 'SUIT':
+                deform1, m = am.get_deform(self.atlas_dir, atlas.name, 'SUIT2')
+                deform = [deform1, deform]
+            mask = self.atlas_dir + f'/{self.group_space}_desc-cereb_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        elif atlas.name == 'fs32k':
+            for i, hem in enumerate(['L', 'R']):
+                adir = self.anatomical_dir.format(sub)
+                edir = self.estimates_dir.format(sub)
+                pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
+                white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
+                mask = edir + f'/{sub}_mask.nii'
+                atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
+                                                  white, pial, mask))
+                atlas_maps[i].build()
+        return atlas_maps
+
+    def extract_all(self,
+                    ses_id='ses-s1',
+                    type='CondHalf',
+                    atlas='SUIT3',
+                    smooth=2.0):
+        """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
+        Args:
+            type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
+            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+        """
+        myatlas = am.get_atlas(atlas, self.atlas_dir)
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        for s in T.participant_id:
+
+            print(f'Atlasmap {s}')
+            atlas_maps = self.get_group_atlasmaps(myatlas, s,
+                                                  smooth=smooth)
+            print(f'Extract {s}')
+            fnames, info = self.get_data_fnames(s, ses_id)
+            data = am.get_data_nifti(fnames, atlas_maps)
+            data, info = self.condense_data(data, info, type,
+                                            participant_id=s, ses_id=ses_id)
+            # Write out data as CIFTI file
+            C = myatlas.data_to_cifti(data, info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir +
+                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(
+                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+
 class DataSetCifti(DataSet):
     """Data set that comes in HCP-format in already pre-extracted cifti files.
     """
@@ -1590,3 +1668,54 @@ class DataSetWMFS(DataSetNative):
 
         return data_new, data_info
 
+
+class DataSetSomatotopic(DataSetMNIVol):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.group_space = 'tpl-MNI152NLin6Asym'
+        self.sessions = ['ses-01']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'cond_num'
+        self.cond_name = 'cond_name'
+        self.part_ind = 'half'
+
+    def condense_data(self, data, info,
+                      type='CondHalf',
+                      participant_id=None,
+                      ses_id=None):
+        """ Extract data in a specific atlas space
+        Args:
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+        # Depending on the type, make a new contrast
+        info['half'] = (info.run % 2) + 1
+        n_cond = np.max(info.reg_id)
+        if type == 'CondHalf':
+            data_info, C = agg_data(info, ['half', 'reg_id'], ['run'])
+            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
+                                  for i, d in data_info.iterrows()]
+        elif type == 'CondAll':
+            data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
+            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
+                                  for i, d in data_info.iterrows()]
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Combine with contrast
+        for i in range(len(data_n)):
+            data_n[i] = pinv(C) @ data_n[i]
+        return data_n, data_info
