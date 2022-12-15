@@ -20,6 +20,7 @@ def fix_sc2_reginfo():
         for ses in [1,2]:
             info = target_dir + f'/derivatives/{s}/estimates/ses-s{ses}/{s}_ses-s{ses}_reginfo.tsv'
             T1 = pd.read_csv(info,delimiter='\t')
+            T1=T1[['run','instruction','task_name','cond_name','task_num','cond_num','reg_num','reg_id','study']]
             T1['task_num']=T1['task_num'].astype(int)
             T1['cond_num']=T1['cond_num'].astype(int)
             T1['instruction']=T1['instruction'].astype(int)
@@ -39,13 +40,13 @@ def fix_sc2_reginfo():
                 shc = D1.overlap.to_numpy()
                 T1.task_num_uni[T1.task_num==i+1]=tnu[indx]
                 T1.common[T1.task_num==i+1]=shc[indx]
-            T1.to_csv(info,sep='\t')
+            T1.to_csv(info,sep='\t',index=False)
 
 if __name__ == "__main__":
-    # fix_sc2_reginfo()
-    T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
-    for s in T.participant_id[0:1]:
-        old_id = s.replace('sub-','s',1)
+    fix_sc2_reginfo()
+    # T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
+    # for s in T.participant_id[0:1]:
+    #     old_id = s.replace('sub-','s',1)
         # dir1 = orig_dir + f'/sc1/suit/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/suit'
         # id.import_suit(dir1,dir2,'anatomical',s)
@@ -62,7 +63,7 @@ if __name__ == "__main__":
         #           'CN':'cond_name',
         #           'task':'task_num',
         #           'cond':'cond_num'}
-        dir1 = orig_dir + f'/sc1/GLM_firstlevel_7/{old_id}'
-        dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s1'
+        #dir1 = orig_dir + f'/sc1/GLM_firstlevel_7/{old_id}'
+        #dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s1'
         # id.import_spm_glm(dir1,dir2,s,'ses-s2',info_dict)
-        id.import_spm_designmatrix(dir1,dir2,s,'ses-s1')
+        # id.import_spm_designmatrix(dir1,dir2,s,'ses-s1')

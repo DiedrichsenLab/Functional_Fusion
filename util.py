@@ -64,6 +64,7 @@ def volume_from_cifti(ts_cifti, struct_names=None):
         #     nb.save(nii_vol,ts_nifti)
         return nii_vol_4d
 
+
 def surf_from_cifti(ts_cifti,
                     struct_names=['CIFTI_STRUCTURE_CORTEX_LEFT',
                                   'CIFTI_STRUCTURE_CORTEX_RIGHT'],
