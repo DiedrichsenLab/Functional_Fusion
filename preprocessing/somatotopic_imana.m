@@ -99,7 +99,7 @@ switch what
             fprintf('- recon-all %s\n', subj_str{s});
             subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
             freesurfer_reconall(subj_fs_dir, subj_str{s}, ...
-                                fullfile(subj_dir,sprintf('%s_T1w.nii.gz', subj_id_old{s})));
+                                fullfile(subj_dir,sprintf('%s_T1w.nii.gz', subj_str{s})));
         end % s (sn)
     case 'SURF:fs2wb'          % Resampling subject from freesurfer fsaverage to fs_LR
         % Example usage: somatotopic_imana('SURF:fs2wb', 'sn', [1], 'res', 32)
