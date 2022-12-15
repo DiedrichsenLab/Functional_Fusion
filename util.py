@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.linalg import inv
+from numpy.linalg import inv, pinv
 import nibabel as nb
 
 
@@ -7,6 +7,26 @@ def sq_eucl_distances(coordA,coordB):
     D = coordA.reshape(3,-1,1)-coordB.reshape(3,1,-1)
     D = np.sum(D**2,axis=0)
     return D
+
+def nan_linear_model(X,Y,unknowns_to_nan = True):
+    """ Calculates the Nansafe estimates of the regression model Y on design matrix X
+    Y = X @ B
+    If an entire row in Y is missing, the B-estimate will skip that observation
+    If this there is no information in the data about that B anymore, the B's are set to NaN
+
+    Args:
+        X (ndarray): N x Q Design matrix
+        Y (ndarray): N x P data matrix
+        unknowns_to_nan (bool): Set regression coefficients without information to Nan (instead of to zero)
+    Returns:
+        B (ndarray): Q x P regression weights - non-estimable weights are set to NaN
+    """
+    indx = np.logical_not(np.isnan(Y).all(axis=1))
+    B = pinv(X[indx,:]) @ Y[indx,:]
+    if unknowns_to_nan:
+        unknown = np.abs(X[indx,:]).sum(axis=0)==0
+        B[unknown,:]=np.nan
+    return B
 
 
 def volume_from_cifti(ts_cifti, struct_names=None):

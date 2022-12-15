@@ -152,16 +152,9 @@ def reliability_within_subj(X,part_vec,cond_vec,
         for pn, part in enumerate(partitions):
             i1 = part_vec == part
             i2 = part_vec != part
+            X1 = util.nan_linear_model(Z[i1,:],X[s,i1,:])
+            X2 = util.nan_linear_model(Z[i2,:],X[s,i2,:])
             # Check if this partition contains nan row
-            this_idx_1 = np.argwhere(np.isnan(X[s, i1, :]).all(axis=1))
-            this_Z1 = np.delete(Z[i1, :], this_idx_1, axis=0)
-            this_X1 = np.delete(X[s, i1, :], this_idx_1, axis=0)
-            this_idx_2 = np.argwhere(np.isnan(X[s, i2, :]).all(axis=1))
-            this_Z2 = np.delete(Z[i2, :], this_idx_2, axis=0)
-            this_X2 = np.delete(X[s, i2, :], this_idx_2, axis=0)
-
-            X1 = pinv(this_Z1) @ this_X1
-            X2 = pinv(this_Z2) @ this_X2
             if subtract_mean:
                 X1 -= np.nanmean(X1, axis=0)
                 X2 -= np.nanmean(X2, axis=0)
@@ -332,9 +325,9 @@ class DataSet:
                            '/tpl-MNI152NLIn2009cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
                 deform = [xfm_name,deform]
             mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-            atlas_map = am.AtlasMapDeform(self, 
+            atlas_map = am.AtlasMapDeform(self,
                     suit_atlas.name,
-                    suit_atlas.world, 
+                    suit_atlas.world,
                     s,deform, mask)
             atlas_map.build(smooth=2.0)
             print(f'Extract {s}')
@@ -414,12 +407,12 @@ class DataSet:
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
-            # Reduce tsv file when fields are given 
+            # Reduce tsv file when fields are given
             if fields is not None:
                 info = info_raw[fields]
             else:
                 info = info_raw
-            
+
             # Keep the most complete info
             if info.shape[0] > max:
                 info_com = info
@@ -1483,15 +1476,15 @@ class DataSetIBC(DataSet):
             reg = (info.half-1)*n_cond + info.reg_id
             C = matrix.indicator(reg,positive=True)
 
-    
+
         # Prewhiten the data
         data_n = prewhiten_data(data)
         for i in range(len(data_n)):
-            data_n[i]=pinv(C) @ data_n[i] 
+            data_n[i]=pinv(C) @ data_n[i]
         return data_n, data_info
 
     def extract_all_suit(self,ses_id='ses-archi',type='CondHalf',atlas='SUIT3'):
-        """Extracts data in SUIT space - we need to overload this from the standard, 
+        """Extracts data in SUIT space - we need to overload this from the standard,
         as the voxel-orientation (and therefore the atlasmap) is different from session to session in IBC.
         Args:
             ses_id (str, optional): Session. Defaults to 'ses-s1'.
@@ -1510,7 +1503,7 @@ class DataSetIBC(DataSet):
                 deform = [xfm_name,deform]
             mask = self.estimates_dir.format(s) + f'/{ses_id}/{s}_{ses_id}_mask.nii'
             add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-            atlas_map = am.AtlasMapDeform(self, 
+            atlas_map = am.AtlasMapDeform(self,
                             suit_atlas.name,
                             suit_atlas.world, s,deform, mask)
             atlas_map.build(smooth=2.0,additional_mask = add_mask)
@@ -1523,5 +1516,6 @@ class DataSetIBC(DataSet):
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
+
 
 
