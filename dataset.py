@@ -527,30 +527,32 @@ class DataSetMNIVol(DataSet):
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
-    def get_group_atlasmaps(self, sub, atlas, smooth=None):
+    def get_group_atlasmaps(self, atlas, smooth=None):
         atlas_maps = []
         if atlas.structure == 'cerebellum':
-            deform = self.atlas_dir + f'/{self.group_space}_space-SUIT_xfm.nii'
+            deform = self.atlas_dir + \
+                f'/{self.group_space}/{self.group_space}_space-SUIT_xfm.nii'
             if atlas.name[0:4] != 'SUIT':
                 deform1, m = am.get_deform(self.atlas_dir, atlas.name, 'SUIT2')
                 deform = [deform1, deform]
-            mask = self.atlas_dir + f'/{self.group_space}_desc-cereb_mask.nii'
+            mask = self.atlas_dir + \
+                f'/{self.group_space}/{self.group_space}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
-        elif atlas.name == 'fs32k':
-            for i, hem in enumerate(['L', 'R']):
-                adir = self.anatomical_dir.format(sub)
-                edir = self.estimates_dir.format(sub)
-                pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
-                white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
-                mask = edir + f'/{sub}_mask.nii'
-                atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
-                                                  white, pial, mask))
-                atlas_maps[i].build()
+        # elif atlas.name == 'fs32k':
+        #     for i, hem in enumerate(['L', 'R']):
+        #         adir = self.anatomical_dir.format(sub)
+        #         edir = self.estimates_dir.format(sub)
+        #         pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
+        #         white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
+        #         mask = edir + f'/{sub}_mask.nii'
+        #         atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
+        #                                           white, pial, mask))
+        #         atlas_maps[i].build()
         return atlas_maps
 
     def extract_all(self,
-                    ses_id='ses-s1',
+                    ses_id='ses-01',
                     type='CondHalf',
                     atlas='SUIT3',
                     smooth=2.0):
@@ -560,13 +562,15 @@ class DataSetMNIVol(DataSet):
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
         myatlas = am.get_atlas(atlas, self.atlas_dir)
-        # create and calculate the atlas map for each participant
+        
+        print(f'Atlasmap group')
+        atlas_maps = self.get_group_atlasmaps(myatlas,
+                                              smooth=smooth)
+        
+        # extract and save data for each participant
         T = self.get_participants()
         for s in T.participant_id:
 
-            print(f'Atlasmap {s}')
-            atlas_maps = self.get_group_atlasmaps(myatlas, s,
-                                                  smooth=smooth)
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id)
             data = am.get_data_nifti(fnames, atlas_maps)
@@ -1675,7 +1679,7 @@ class DataSetSomatotopic(DataSetMNIVol):
         self.group_space = 'tpl-MNI152NLin6Asym'
         self.sessions = ['ses-01']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'cond_num'
+        self.cond_ind = 'reg_id'
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
 
@@ -1709,8 +1713,13 @@ class DataSetSomatotopic(DataSetMNIVol):
                                   for i, d in data_info.iterrows()]
         elif type == 'CondAll':
             data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
-            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
+            data_info['names'] = [
+                f'{d.cond_name}' for i, d in data_info.iterrows()]
+        elif type == 'CondRun':
+            data_info, C = agg_data(info, ['run', 'half', 'reg_id'], [])
+            data_info['names'] = [f'{d.cond_name.strip()}-run{d.run}'
                                   for i, d in data_info.iterrows()]
+
 
         # Prewhiten the data
         data_n = prewhiten_data(data)

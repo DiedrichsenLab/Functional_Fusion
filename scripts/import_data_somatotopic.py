@@ -19,26 +19,26 @@ if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data'
 
 
+src_base_dir = base_dir + '/Cerebellum//Somatotopic'
+dest_base_dir = base_dir + '/FunctionalFusion/Somatotopic'
 
+
+def import_data():
+    dataset = DataSetSomatotopic(dest_base_dir)
+    T = dataset.get_participants()
+    for p, participant_id in enumerate(T.participant_id):
+        fnames, reginfo = dataset.get_data_fnames(
+            participant_id, session_id='ses-01')
+        pass
 
 if __name__ == '__main__':
     
-    src_base_dir = base_dir + '/Cerebellum//Somatotopic'
-    dest_base_dir = base_dir + '/FunctionalFusion/Somatotopic'
+    # --- Importing Estimates ---
+    import_data()
 
+    # --- Importing Estimates ---
     dataset = DataSetSomatotopic(dest_base_dir)
     T = dataset.get_participants()
-
-
-    for p, participant_id in enumerate(T.participant_id):
-        print(dataset.get_data_fnames(participant_id))
-        # '01', '03', '04', '07', '95', '96', '97',
-
-        # --- Importing Estimates ---
-        #source_dir = '{}/GLM_firstlevel_2/S{}/'.format(src_base_dir, #participant_id)
-        # dest_dir = '{}/derivatives/sub-{}/estimates/ses-01'.format(dest_base_dir, participant_id)
-        #subj_id = 'sub-{}'.format(participant_id)
-        #ses_id = 'ses-01'
-        #import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
+    dataset.extract_all(type='CondAll')
 
 
