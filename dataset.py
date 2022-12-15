@@ -210,14 +210,15 @@ def reliability_within_subj(X,part_vec,cond_vec,
         r = np.zeros((n_subj,n_part))
     Z = matrix.indicator(cond_vec)
     for s in np.arange(n_subj):
-        for pn,part in enumerate(partitions):
-            i1 = part_vec==part
-            X1= pinv(Z[i1,:]) @ X[s,i1,:]
-            i2 = part_vec!=part
-            X2 = pinv(Z[i2,:]) @ X[s,i2,:]
+        for pn, part in enumerate(partitions):
+            i1 = part_vec == part
+            i2 = part_vec != part
+            X1 = util.nan_linear_model(Z[i1,:],X[s,i1,:])
+            X2 = util.nan_linear_model(Z[i2,:],X[s,i2,:])
+            # Check if this partition contains nan row
             if subtract_mean:
-                X1 -= X1.mean(axis=0)
-                X2 -= X2.mean(axis=0)
+                X1 -= np.nanmean(X1, axis=0)
+                X2 -= np.nanmean(X2, axis=0)
             if voxel_wise:
                 r[s,pn,:] = nansum(X1*X2,axis=0)/ \
                     sqrt(nansum(X1*X1,axis=0)
@@ -268,9 +269,8 @@ def reliability_between_subj(X,cond_vec=None,
             r[i] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
     return r
 
-def reliability_maps(base_dir,dataset_name,
-                    atlas = 'MNISymC3',
-                    subtract_mean=True):
+def reliability_maps(base_dir, dataset_name, atlas = 'MNISymC3',
+                     subtract_mean=True, voxel_wise=True):
     """    Calculates the average within subject reliability maps across sessions for a single data
 
     Args:
@@ -291,7 +291,7 @@ def reliability_maps(base_dir,dataset_name,
         r = reliability_within_subj(data[:,indx,:],
                     part_vec=info[dataset.part_ind][indx],
                     cond_vec=info[dataset.cond_ind][indx],
-                    voxel_wise=True,
+                    voxel_wise=voxel_wise,
                     subtract_mean=subtract_mean)
         Rel[i,:] = np.nanmean(np.nanmean(r,axis=0),axis=0)
     return Rel,dataset.sessions
@@ -1431,8 +1431,6 @@ class DataSetIBC(DataSetNative):
                         ['run','reg_num'])
             data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
         for i in range(len(data_n)):
             data_n[i]=pinv(C) @ data_n[i]
         return data_n, data_info
