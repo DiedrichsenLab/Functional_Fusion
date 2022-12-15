@@ -149,14 +149,22 @@ def reliability_within_subj(X,part_vec,cond_vec,
         r = np.zeros((n_subj,n_part))
     Z = matrix.indicator(cond_vec)
     for s in np.arange(n_subj):
-        for pn,part in enumerate(partitions):
-            i1 = part_vec==part
-            X1= pinv(Z[i1,:]) @ X[s,i1,:]
-            i2 = part_vec!=part
-            X2 = pinv(Z[i2,:]) @ X[s,i2,:]
+        for pn, part in enumerate(partitions):
+            i1 = part_vec == part
+            i2 = part_vec != part
+            # Check if this partition contains nan row
+            this_idx_1 = np.argwhere(np.isnan(X[s, i1, :]).all(axis=1))
+            this_Z1 = np.delete(Z[i1, :], this_idx_1, axis=0)
+            this_X1 = np.delete(X[s, i1, :], this_idx_1, axis=0)
+            this_idx_2 = np.argwhere(np.isnan(X[s, i2, :]).all(axis=1))
+            this_Z2 = np.delete(Z[i2, :], this_idx_2, axis=0)
+            this_X2 = np.delete(X[s, i2, :], this_idx_2, axis=0)
+
+            X1 = pinv(this_Z1) @ this_X1
+            X2 = pinv(this_Z2) @ this_X2
             if subtract_mean:
-                X1 -= X1.mean(axis=0)
-                X2 -= X2.mean(axis=0)
+                X1 -= np.nanmean(X1, axis=0)
+                X2 -= np.nanmean(X2, axis=0)
             if voxel_wise:
                 r[s,pn,:] = nansum(X1*X2,axis=0)/ \
                     sqrt(nansum(X1*X1,axis=0)
@@ -207,9 +215,8 @@ def reliability_between_subj(X,cond_vec=None,
             r[i] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
     return r
 
-def reliability_maps(base_dir,dataset_name,
-                    atlas = 'MNISymC3',
-                    subtract_mean=True):
+def reliability_maps(base_dir, dataset_name, atlas = 'MNISymC3',
+                     subtract_mean=True, voxel_wise=True):
     """    Calculates the average within subject reliability maps across sessions for a single data
 
     Args:
@@ -230,7 +237,7 @@ def reliability_maps(base_dir,dataset_name,
         r = reliability_within_subj(data[:,indx,:],
                     part_vec=info[dataset.part_ind][indx],
                     cond_vec=info[dataset.cond_ind][indx],
-                    voxel_wise=True,
+                    voxel_wise=voxel_wise,
                     subtract_mean=subtract_mean)
         Rel[i,:] = np.nanmean(np.nanmean(r,axis=0),axis=0)
     return Rel,dataset.sessions
