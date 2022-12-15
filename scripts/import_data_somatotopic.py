@@ -13,6 +13,8 @@ import numpy as np
 import scipy.io as sio
 from import_data import *
 from Functional_Fusion.dataset import DataSetSomatotopic
+import Functional_Fusion.atlas_map as am
+
 
 base_dir = '/Volumes/diedrichsen_data$/data'
 if not Path(base_dir).exists():
@@ -26,19 +28,14 @@ dest_base_dir = base_dir + '/FunctionalFusion/Somatotopic'
 def import_data():
     dataset = DataSetSomatotopic(dest_base_dir)
     T = dataset.get_participants()
-    for p, participant_id in enumerate(T.participant_id):
-        fnames, reginfo = dataset.get_data_fnames(
-            participant_id, session_id='ses-01')
+    for _, id in T.iterrows():
+        print(id.orig_id, id.participant_id)
         pass
+
 
 if __name__ == '__main__':
     
     # --- Importing Estimates ---
     import_data()
-
-    # --- Importing Estimates ---
-    dataset = DataSetSomatotopic(dest_base_dir)
-    T = dataset.get_participants()
-    dataset.extract_all(type='CondAll')
 
 
