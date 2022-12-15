@@ -83,7 +83,7 @@ ses_str = {'ses-01'};
 
 % =========================================================================
 
-
+switch what
     case 'SURF:reconall'       % Freesurfer reconall routine
         % Calls recon-all, which performs, all of the
         % FreeSurfer cortical reconstruction process
