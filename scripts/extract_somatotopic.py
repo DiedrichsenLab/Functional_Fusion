@@ -61,16 +61,16 @@ def show_group(type='CondHalf', atlas='SUIT3', cond=0, info_column='cond_name', 
 
 if __name__ == "__main__":
     # --- Extracting Estimates ---
-    extract_somatotopic(ses_id='ses-01', type='CondHalf', atlas='SUIT3')
-    extract_somatotopic(ses_id='ses-02', type='CondHalf', atlas='SUIT3')
-    extract_somatotopic(ses_id='ses-03', type='CondHalf', atlas='SUIT3')
-    # extract_somatotopic(ses_id='ses-04', type='CondHalf', atlas='SUIT3')
+    extract_somatotopic(ses_id='ses-01', type='CondHalf', atlas='MNISymC3')
+    extract_somatotopic(ses_id='ses-02', type='CondHalf', atlas='MNISymC3')
+    extract_somatotopic(ses_id='ses-03', type='CondHalf', atlas='MNISymC3')
+    extract_somatotopic(ses_id='ses-04', type='CondHalf', atlas='MNISymC3')
 
     # --- Group Average ---
-    dataset = DataSetSomatotopic(data_dir)
-    dataset.group_average_data(ses_id='ses-01', type='CondHalf', atlas='SUIT3')
-    dataset.group_average_data(ses_id='ses-02', type='CondHalf', atlas='SUIT3')
-    dataset.group_average_data(ses_id='ses-03', type='CondHalf', atlas='SUIT3')
+    # dataset = DataSetSomatotopic(data_dir)
+    # dataset.group_average_data(ses_id='ses-01', type='CondHalf', atlas='SUIT3')
+    # dataset.group_average_data(ses_id='ses-02', type='CondHalf', atlas='SUIT3')
+    # dataset.group_average_data(ses_id='ses-03', type='CondHalf', atlas='SUIT3')
     # dataset.group_average_data(ses_id='ses-04', type='CondHalf', atlas='SUIT3')
     
     # --- Show group average ---
