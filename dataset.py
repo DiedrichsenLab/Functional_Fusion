@@ -528,6 +528,16 @@ class DataSetMNIVol(DataSet):
         return fnames, T
 
     def get_group_atlasmaps(self, atlas, smooth=None):
+        """ Gets group atlasmaps.
+        Assumes that all scans are in the same space (self.group_space)
+
+        Args:
+            participant_id (str): Subject
+            session_id (str): Session ID. Defaults to None.
+        Returns:
+            fnames (list): List of fnames, last one is the resMS image
+            T (pd.DataFrame): Info structure for regressors (reginfo)
+        """
         atlas_maps = []
         if atlas.structure == 'cerebellum':
             deform = self.atlas_dir + \
@@ -549,7 +559,7 @@ class DataSetMNIVol(DataSet):
         #         atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
         #                                           white, pial, mask))
         #         atlas_maps[i].build()
-        return atlas_maps
+        # return atlas_maps
 
     def extract_all(self,
                     ses_id='ses-01',
