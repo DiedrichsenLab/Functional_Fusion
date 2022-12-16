@@ -559,7 +559,7 @@ class DataSetMNIVol(DataSet):
         #         atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
         #                                           white, pial, mask))
         #         atlas_maps[i].build()
-        # return atlas_maps
+        return atlas_maps
 
     def extract_all(self,
                     ses_id='ses-01',
