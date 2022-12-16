@@ -47,6 +47,9 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     # Get defaults sessions from dataset itself
     if sess=='all':
         sess=my_dataset.sessions
+    elif not isinstance(sess,(list,np.ndarray)):
+        sess = [sess]
+    # Empty default type (Future change: define per file?)
     if type is None:
         type = my_dataset.default_type
 
@@ -241,12 +244,12 @@ def reliability_between_subj(X,cond_vec=None,
     else:
         r = np.zeros((n_subj,))
     for s,i in enumerate(subj_vec):
-        X1= pinv(Z) @ X[s,:,:]
+        X1 = util.nan_linear_model(Z,X[s,:,:])
         i2 = subj_vec!=s
-        X2 = pinv(Z) @ X[i2,:,:].mean(axis=0)
+        X2 = util.nan_linear_model(Z,np.nanmean(X[i2,:,:],axis=0))
         if subtract_mean:
-            X1 -= X1.mean(axis=0)
-            X2 -= X2.mean(axis=0)
+            X1 -= np.nanmean(X1,axis=0)
+            X2 -= np.nanmean(X2,axis=0)
         if voxel_wise:
             r[i,:] = nansum(X1*X2,axis=0)/ \
                     sqrt(nansum(X1*X1,axis=0)
