@@ -24,7 +24,7 @@ def import_data():
            os.makedirs(dirw)
         info = pd.read_csv(data_dir+f'/ses-01_reginfo.tsv',sep='\t')
         # get the correct pe files and concatenate them into a dscalar
-        data =[];
+        data =[]
         old_sid = T.orig_id[j]
         for i,row in info.iterrows():
             print(i)

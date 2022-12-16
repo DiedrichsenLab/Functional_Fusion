@@ -12,115 +12,118 @@ import mat73
 import numpy as np
 import scipy.io as sio
 from import_data import *
-from fsl.wrappers import fnirt
-from fsl.wrappers import flirt
-# from fsl.wrappers.fnirt import applywarp
-from fsl.wrappers.flirt import applyxfm
-from fsl.utils.platform import platform
-from fsl.transform.flirt import readFlirt
+from Functional_Fusion.dataset import DataSetSomatotopic
+import Functional_Fusion.atlas_map as am
+import shutil
+import nibabel as nb
+from copy import deepcopy
+import subprocess
 
 base_dir = '/Volumes/diedrichsen_data$/data'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data'
 
 
-def norm_anat(source_dir, dest_dir, anat_name, participant_id):
-    """
-    Prepares the anatomicals for reconstruction by resampling T1w to MNI.
-    If functional data has been analyzed in MNI space, we need to resamle
-    T1w anatomicals to MNI space and then reconstruct cortical surfaces
-    on the MNI-resampled T1w images.
+src_base_dir = Path(base_dir + '/Cerebellum//Somatotopic')
+dest_base_dir = Path(base_dir + '/FunctionalFusion/Somatotopic')
 
-    Args:
-        source_dir (_type_): Directory of the anatomical
-        dest_dir (_type_): Destination directory for the anatomical
-        anat_name (_type_): Name of anatomical
-        old_id (_type_): Old name of the subject
-        new_id (_type_): New name for the subject
 
-    """
-    anat = Path(source_dir) / anat_name
-    outlin = Path(source_dir) / f'sub-{participant_id}_T1w_mni_flirt'
-    outnonlin = Path(source_dir) / f'sub-{participant_id}_T1w_mni_fnirt'
-    mat = f'{outlin}.mat'
-    mni = Path(platform.fsldir) / 'data' / \
-        'standard' / 'MNI152_T1_1mm.nii.gz'
-    # get initial linear transform
-    flirt(anat, mni, out=outlin, omat=mat)
-    # get nonlinear transform with initial linear transform
-    fnirt(src=anat, ref=mni, aff=mat, iout=outnonlin, cout=f'{outnonlin}_warp')
-    pass
+def create_reginfo(log_message=False):
+    dataset = DataSetSomatotopic(str(dest_base_dir))
 
+    # Import general info
+    info = pd.read_csv(dest_base_dir / 'ses-all_reginfo.tsv', sep='\t')
+
+    # Import scan-specific info (missing runs)
+    missing_scans = pd.read_csv(src_base_dir / 'missing_scans.txt', names=['scan'], header=None)
+    missing_scans[['orig_id', 'session', 'run']] = missing_scans.scan.str.split(
+        "_", expand=True)
     
-    
-    
-    
+    T = dataset.get_participants()
+    for _, id in T.iterrows():
+        print(f'Creating reginfo for {id.participant_id}')
+        
+        # Ammend the reginfo.tsv file from the general file
+        reginfo = deepcopy(info)
+        reginfo.insert(loc=0, column='sn', value=[
+            id.participant_id] * info.shape[0])
+        
+        for session in np.arange(1,5):
+            missing = (id.orig_id == missing_scans.orig_id) & (
+                f'sess{session:02d}' == missing_scans.session)
+            if np.any(missing):
+                for _, miss in missing_scans[missing].iterrows():
+                    run = int(miss.run.split('MOTOR')[1])
+                    if log_message:
+                        print(f'Missing scan {reginfo[reginfo.run == run]} removed from reginfo')
+                    reginfo = reginfo.drop(reginfo[reginfo.run == run].index)
+                
+
+            # Save reginfo.tsv file
+            reginfo.to_csv(dest_base_dir /
+                           f'derivatives/{id.participant_id}/estimates/ses-{session:02d}/{id.participant_id}_ses-{session:02d}_reginfo.tsv', sep='\t', index=False)
+
+def import_data(log_message=False):
+    dataset = DataSetSomatotopic(str(dest_base_dir))
+    T = dataset.get_participants()
+
+    for _, id in T.iterrows():
+        print(f'Importing {id.participant_id}')
+
+        for session in np.arange(1,5):
+            # Load reginfo.tsv file
+            reginfo = pd.read_csv(dest_base_dir /
+                        f'derivatives/{id.participant_id}/estimates/ses-{session:02d}/{id.participant_id}_ses-{session:02d}_reginfo.tsv', sep='\t')
+            
+            resms = []
+            for _, info in reginfo.iterrows():
+                if log_message:
+                    print(
+                    f'Session {session:02d} Run {info.run:02d} Beta {info.reg_num:02d}')
+                src = src_base_dir / \
+                    f'raw/Functional/{id.orig_id}/{id.orig_id}_sess{session:02d}_MOTOR{info.run}/pe{info.pe_id}.nii.gz'
+                dest = dest_base_dir / \
+                    f'derivatives/{id.participant_id}/estimates/ses-{session:02d}/{id.participant_id}_ses-{session:02d}_run-{info.run:02d}_reg-{info.reg_num:02d}_beta.nii.gz'
+                
+                # Make folder
+                dest.parent.mkdir(parents=True, exist_ok=True)
+
+                # Copy func file to destination folder and rename
+                if  ~dest.exists():
+                    try:
+                        shutil.copyfile(src,
+                                dest)
+                    except:
+                        print('skipping ' + str(src))
+                
+                # Unzip because file name ends in .nii.gz
+                subprocess.call(
+                    ['gunzip', '-f', dest])
+
+                
+                src = src_base_dir / \
+                    f'raw/Functional/{id.orig_id}/{id.orig_id}_sess{session:02d}_MOTOR{info.run}/sigmasquareds.nii.gz'
+                resms_img = nb.load(src)
+                resms.append(resms_img.get_fdata())
+
+            resms = np.mean(resms,axis=0)
+            nifti_img = nb.Nifti1Image(dataobj=resms, affine=resms_img.affine)
+            outname = dest_base_dir / \
+                f'derivatives/{id.participant_id}/estimates/ses-{session:02d}/{id.participant_id}_ses-{session:02d}_resms.nii'
+            nb.save(nifti_img, outname)
+            
 
 
-    pass
 
-def resample_anat(source_dir, dest_dir, anat_name, participant_id):
-    """
-    Prepares the anatomicals for reconstruction by resampling T1w to MNI.
-    If functional data has been analyzed in MNI space, we need to resamle
-    T1w anatomicals to MNI space and then reconstruct cortical surfaces
-    on the MNI-resampled T1w images.
+        
 
-    Args:
-        source_dir (_type_): Directory of the anatomical
-        dest_dir (_type_): Destination directory for the anatomical
-        anat_name (_type_): Name of anatomical
-        old_id (_type_): Old name of the subject
-        new_id (_type_): New name for the subject
-
-    """
-    anat = Path(source_dir) / anat_name
-    out = Path(source_dir) / f'sub-{participant_id}_T1w_mni'
-    # warp = Path(source_dir) / \
-    #     '{}to_mni_FNIRT.mat.nii.gz'.format(anat_name.split('reorient')[0])
-    mat = Path(source_dir) / \
-        '{}brain_to_mni.mat'.format(anat_name.split('reorient')[0])
-    mni = Path(platform.fsldir) / 'data' / \
-        'standard' / 'MNI152_T1_1mm_brain.nii.gz'
-    # applywarp(anat, mni, out, warp=warp)
-    applyxfm(anat, mni, mat, out)
-    
-
-    pass
 
 
 if __name__ == '__main__':
-    src_base_dir = base_dir + '/Cerebellum//Somatotopic'
-    dest_base_dir = base_dir + '/FunctionalFusion/Somatotopic'
-    for participant_id in [ '02']:
-        # '01', '03', '04', '07', '95', '96', '97',
-
-        # # # --- Importing SUIT ---
-        # source_dir = '{}/suit/anatomicals/S{}'.format(src_base_dir, participant_id)
-        # dest_dir = '{}/derivatives/sub-{}/suit'.format(dest_base_dir, participant_id)
-        # anat_name = 'anatomical'
-        # import_suit(source_dir,dest_dir,anat_name,'sub-' + participant_id)
-
-        # --- Importing ANAT ---
-        source_dir = '{}/raw/sub-{}/anat'.format(src_base_dir, participant_id)
-        dest_dir = '{}/derivatives/sub-{}/anat'.format(dest_base_dir, participant_id)
-        anat_name = 'S{:01d}_mpr_reorient_defaced.nii.gz'.format(int(participant_id))
-        norm_anat(source_dir, dest_dir, anat_name, participant_id)
-        resample_anat(source_dir, dest_dir, anat_name, participant_id)
-        import_anat(source_dir,dest_dir,anat_name,participant_id)
-
-        # # --- Importing Freesurfer ---
-        # source_dir = '{}/surfaceWB/data/S{}/'.format(src_base_dir, participant_id)
-        # dest_dir = '{}/derivatives/sub-{}/anat'.format(dest_base_dir, participant_id)
-        # old_id = 'S{}'.format(participant_id)
-        # new_id = 'sub-{}'.format(participant_id)
-        # import_freesurfer(source_dir,dest_dir,old_id,new_id)
-
-        # --- Importing Estimates ---
-        #source_dir = '{}/GLM_firstlevel_2/S{}/'.format(src_base_dir, #participant_id)
-        # dest_dir = '{}/derivatives/sub-{}/estimates/ses-01'.format(dest_base_dir, participant_id)
-        #subj_id = 'sub-{}'.format(participant_id)
-        #ses_id = 'ses-01'
-        #import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
+    # --- Create reginfo ---
+    # create_reginfo()
+    
+    # --- Importing Estimates ---
+    import_data()
 
 
