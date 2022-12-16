@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import os
 import os.path as op
-import glob
+import sys
 import Functional_Fusion.util as util
 import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
@@ -36,27 +36,13 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     Returns:
         _type_: _description_
     """
-    fiel = None
-    if dataset.casefold() == 'MDTB'.casefold():
-        my_dataset = DataSetMDTB(base_dir + '/MDTB')
-        fiel = ['study','half','common','cond_name','cond_num','cond_num_uni','common']
-        if type=='CondRun':
-            fiel = fiel+['run']
-        # Extract all sessions
-    elif dataset.casefold() == 'Pontine'.casefold():
-        my_dataset = DataSetPontine(base_dir + '/Pontine')
-        fiel = ['task_name','task_num','half']
-    elif dataset.casefold() == 'Nishimoto'.casefold():
-        my_dataset = DataSetNishi(base_dir + '/Nishimoto')
-        fiel = ['task_name','reg_id','half']
-    elif dataset.casefold() == 'IBC'.casefold():
-        my_dataset = DataSetIBC(base_dir + '/IBC')
-    elif dataset.casefold() == 'HCP'.casefold():
-        my_dataset = DataSetHcpResting(base_dir + '/HCP')
-    elif dataset.casefold() == 'Demand'.casefold():
-        my_dataset = DataSetDemand(base_dir + '/Demand')
-    else:
-        raise(NameError('Unknown data set'))
+    T = pd.read_csv(base_dir + '/dataset_description.tsv',sep='\t')
+    i = np.where(dataset == T.name)[0]
+    if len(i)==0:
+        raise(NameError(f'Unknown dataset: {dataset}'))
+    dsclass = getattr(sys.modules[__name__],T.class_name[int(i)])
+    dir_name = base_dir + '/' + T.dir_name[int(i)]
+    my_dataset = dsclass(dir_name)
 
     # Get defaults sessions from dataset itself
     if sess=='all':
@@ -69,7 +55,7 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     info_l = []
     data_l = []
     for s in sess:
-        dat,inf = my_dataset.get_data(atlas,s,type,fields=fiel)
+        dat,inf = my_dataset.get_data(atlas,s,type)
         data_l.append(dat)
         inf['sess']=[s]*inf.shape[0]
         info_l.append(inf)
