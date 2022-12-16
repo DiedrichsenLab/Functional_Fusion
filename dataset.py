@@ -1685,7 +1685,7 @@ class DataSetSomatotopic(DataSetMNIVol):
     def __init__(self, dir):
         super().__init__(dir)
         self.group_space = 'tpl-MNI152NLin6Asym'
-        self.sessions = ['ses-01', 'ses-02', 'ses-03', 'ses-04']
+        self.sessions = ['ses-motor']
         self.default_type = 'CondHalf'
         self.cond_ind = 'reg_id'
         self.cond_name = 'cond_name'
