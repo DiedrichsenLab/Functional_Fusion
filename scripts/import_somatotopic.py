@@ -84,7 +84,7 @@ def import_data(log_message=False):
             src = src_base_dir / \
                 f'raw/Functional/{id.orig_id}/{id.orig_id}_sess{info.orig_ses:02d}_MOTOR{info.orig_run}/pe{info.orig_reg}.nii.gz'
             dest = dest_base_dir / \
-                f'derivatives/{id.participant_id}/estimates/ses-motor/{id.participant_id}_ses-motor_run-{info.run:02d}_reg-{info.reg_num:02d}_beta.nii.gz'
+                f'derivatives/{id.participant_id}/estimates/ses-motor/{id.participant_id}_ses-motor_run-{info.run:02d}_reg-{info.reg_id:02d}_beta.nii.gz'
             
 
             # Copy func file to destination folder and rename

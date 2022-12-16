@@ -64,8 +64,8 @@ if __name__ == "__main__":
     extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
     extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
 
-    extract_somatotopic(ses_id='ses-motor', type='CondRun', atlas='SUIT3')
-    extract_somatotopic(ses_id='ses-motor', type='CondRun', atlas='MNISymC3')
+    # extract_somatotopic(ses_id='ses-motor', type='CondRun', atlas='SUIT3')
+    # extract_somatotopic(ses_id='ses-motor', type='CondRun', atlas='MNISymC3')
 
     # --- Group Average ---
     dataset = DataSetSomatotopic(data_dir)
