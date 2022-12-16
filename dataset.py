@@ -1684,9 +1684,7 @@ class DataSetSomatotopic(DataSetMNIVol):
         self.part_ind = 'half'
 
     def condense_data(self, data, info,
-                      type='CondHalf',
-                      participant_id=None,
-                      ses_id=None):
+                      type='CondHalf'):
         """ Extract data in a specific atlas space
         Args:
             participant_id (str): ID of participant
@@ -1703,6 +1701,9 @@ class DataSetSomatotopic(DataSetMNIVol):
             T (pd.DataFrame):
                 A data frame with information about the N numbers provide
             names: Names for CIFTI-file per row
+        
+        N.B.: Because some runs are missing for session 1-3, CondRun can only be run for session 04 (which has all runs for all subjects).
+        Missing runs are: S3_sess03_MOTOR6, S3_sess01_MOTOR3, S3_sess01_MOTOR4, S3_sess01_MOTOR5, S4_sess01_MOTOR6, S4_sess02_MOTOR6 & S6_sess02_MOTOR2
         """
         # Depending on the type, make a new contrast
         info['half'] = (info.run % 2) + 1
@@ -1715,10 +1716,6 @@ class DataSetSomatotopic(DataSetMNIVol):
             data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
             data_info['names'] = [
                 f'{d.cond_name}' for i, d in data_info.iterrows()]
-        elif type == 'CondRun':
-            data_info, C = agg_data(info, ['run', 'half', 'reg_id'], [])
-            data_info['names'] = [f'{d.cond_name.strip()}-run{d.run}'
-                                  for i, d in data_info.iterrows()]
 
 
         # Prewhiten the data
