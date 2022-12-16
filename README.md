@@ -47,7 +47,7 @@ The Atlas class defines the group-atlas that the data is analyzed in. Subclasses
 * `fs32k_Asym`: Left and Right hemisphere, using asymmetric medial wall mask from HCP. 
 
 ### 2. Atlas map class
-To read out different data sets into consistent anatomical locations, an `AtlasMap` object provides the mapping function from the data space to the common atlas space. The data space can be either the volumetric native space of the subject (`DataSetNative`), or already predefined CIFTI files that contain surface data and Volume data (`DataSetCifti`). 
+To read out different data sets into consistent anatomical locations, an `AtlasMap` object provides the mapping function from the data space to the common atlas space. The data space can be either the volumetric native space of the subject (`DataSetNative`), already predefined CIFTI files that contain surface data and Volume data (`DataSetCifti`), or the volumetric MNI space (`DataSetMNIVol`). 
 
 ## Directory structure for derivatives
 =======

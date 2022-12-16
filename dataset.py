@@ -210,14 +210,15 @@ def reliability_within_subj(X,part_vec,cond_vec,
         r = np.zeros((n_subj,n_part))
     Z = matrix.indicator(cond_vec)
     for s in np.arange(n_subj):
-        for pn,part in enumerate(partitions):
-            i1 = part_vec==part
-            X1= pinv(Z[i1,:]) @ X[s,i1,:]
-            i2 = part_vec!=part
-            X2 = pinv(Z[i2,:]) @ X[s,i2,:]
+        for pn, part in enumerate(partitions):
+            i1 = part_vec == part
+            i2 = part_vec != part
+            X1 = util.nan_linear_model(Z[i1,:],X[s,i1,:])
+            X2 = util.nan_linear_model(Z[i2,:],X[s,i2,:])
+            # Check if this partition contains nan row
             if subtract_mean:
-                X1 -= X1.mean(axis=0)
-                X2 -= X2.mean(axis=0)
+                X1 -= np.nanmean(X1, axis=0)
+                X2 -= np.nanmean(X2, axis=0)
             if voxel_wise:
                 r[s,pn,:] = nansum(X1*X2,axis=0)/ \
                     sqrt(nansum(X1*X1,axis=0)
@@ -268,9 +269,8 @@ def reliability_between_subj(X,cond_vec=None,
             r[i] = nansum(X1*X2)/sqrt(nansum(X1*X1)*nansum(X2*X2))
     return r
 
-def reliability_maps(base_dir,dataset_name,
-                    atlas = 'MNISymC3',
-                    subtract_mean=True):
+def reliability_maps(base_dir, dataset_name, atlas = 'MNISymC3',
+                     subtract_mean=True, voxel_wise=True):
     """    Calculates the average within subject reliability maps across sessions for a single data
 
     Args:
@@ -291,7 +291,7 @@ def reliability_maps(base_dir,dataset_name,
         r = reliability_within_subj(data[:,indx,:],
                     part_vec=info[dataset.part_ind][indx],
                     cond_vec=info[dataset.cond_ind][indx],
-                    voxel_wise=True,
+                    voxel_wise=voxel_wise,
                     subtract_mean=subtract_mean)
         Rel[i,:] = np.nanmean(np.nanmean(r,axis=0),axis=0)
     return Rel,dataset.sessions
@@ -502,6 +502,88 @@ class DataSetNative(DataSet):
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir + f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv',sep='\t', index = False)
+
+
+class DataSetMNIVol(DataSet):
+    """Data set with estimates data stored as
+    nifti-files in MNI space.
+    """
+
+    def get_data_fnames(self, participant_id, session_id=None):
+        """ Gets all raw data files
+
+        Args:
+            participant_id (str): Subject
+            session_id (str): Session ID. Defaults to None.
+        Returns:
+            fnames (list): List of fnames, last one is the resMS image
+            T (pd.DataFrame): Info structure for regressors (reginfo)
+        """
+        dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
+        T = pd.read_csv(
+            dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+        fnames = [
+            f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
+        fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
+        return fnames, T
+
+    def get_group_atlasmaps(self, atlas, smooth=None):
+        atlas_maps = []
+        if atlas.structure == 'cerebellum':
+            deform = self.atlas_dir + \
+                f'/{self.group_space}/{self.group_space}_space-SUIT_xfm.nii'
+            if atlas.name[0:4] != 'SUIT':
+                deform1, m = am.get_deform(self.atlas_dir, atlas.name, 'SUIT2')
+                deform = [deform1, deform]
+            mask = self.atlas_dir + \
+                f'/{self.group_space}/{self.group_space}_desc-cereb_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        # elif atlas.name == 'fs32k':
+        #     for i, hem in enumerate(['L', 'R']):
+        #         adir = self.anatomical_dir.format(sub)
+        #         edir = self.estimates_dir.format(sub)
+        #         pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
+        #         white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
+        #         mask = edir + f'/{sub}_mask.nii'
+        #         atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
+        #                                           white, pial, mask))
+        #         atlas_maps[i].build()
+        return atlas_maps
+
+    def extract_all(self,
+                    ses_id='ses-01',
+                    type='CondHalf',
+                    atlas='SUIT3',
+                    smooth=2.0):
+        """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
+        Args:
+            type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
+            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+        """
+        myatlas = am.get_atlas(atlas, self.atlas_dir)
+        
+        print(f'Atlasmap group')
+        atlas_maps = self.get_group_atlasmaps(myatlas,
+                                              smooth=smooth)
+        
+        # extract and save data for each participant
+        T = self.get_participants()
+        for s in T.participant_id:
+
+            print(f'Extract {s}')
+            fnames, info = self.get_data_fnames(s, ses_id)
+            data = am.get_data_nifti(fnames, atlas_maps)
+            data, info = self.condense_data(data, info, type,
+                                            participant_id=s, ses_id=ses_id)
+            # Write out data as CIFTI file
+            C = myatlas.data_to_cifti(data, info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir +
+                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(
+                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
 class DataSetCifti(DataSet):
     """Data set that comes in HCP-format in already pre-extracted cifti files.
@@ -1431,8 +1513,6 @@ class DataSetIBC(DataSetNative):
                         ['run','reg_num'])
             data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
         for i in range(len(data_n)):
             data_n[i]=pinv(C) @ data_n[i]
         return data_n, data_info
@@ -1590,3 +1670,56 @@ class DataSetWMFS(DataSetNative):
 
         return data_new, data_info
 
+
+class DataSetSomatotopic(DataSetMNIVol):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.group_space = 'tpl-MNI152NLin6Asym'
+        self.sessions = ['ses-01', 'ses-02', 'ses-03', 'ses-04']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'reg_id'
+        self.cond_name = 'cond_name'
+        self.part_ind = 'half'
+
+    def condense_data(self, data, info,
+                      type='CondHalf'):
+        """ Extract data in a specific atlas space
+        Args:
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        
+        N.B.: Because some runs are missing for session 1-3, CondRun can only be run for session 04 (which has all runs for all subjects).
+        Missing runs are: S3_sess03_MOTOR6, S3_sess01_MOTOR3, S3_sess01_MOTOR4, S3_sess01_MOTOR5, S4_sess01_MOTOR6, S4_sess02_MOTOR6 & S6_sess02_MOTOR2
+        """
+        # Depending on the type, make a new contrast
+        info['half'] = (info.run % 2) + 1
+        n_cond = np.max(info.reg_id)
+        if type == 'CondHalf':
+            data_info, C = agg_data(info, ['half', 'reg_id'], ['run'])
+            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
+                                  for i, d in data_info.iterrows()]
+        elif type == 'CondAll':
+            data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
+            data_info['names'] = [
+                f'{d.cond_name}' for i, d in data_info.iterrows()]
+
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Combine with contrast
+        for i in range(len(data_n)):
+            data_n[i] = pinv(C) @ data_n[i]
+        return data_n, data_info
