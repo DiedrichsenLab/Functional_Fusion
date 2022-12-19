@@ -573,8 +573,7 @@ class DataSetMNIVol(DataSet):
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id)
             data = am.get_data_nifti(fnames, atlas_maps)
-            data, info = self.condense_data(data, info, type,
-                                            participant_id=s, ses_id=ses_id)
+            data, info = self.condense_data(data, info, type)
             # Write out data as CIFTI file
             C = myatlas.data_to_cifti(data, info.names)
             dest_dir = self.data_dir.format(s)
