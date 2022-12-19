@@ -112,56 +112,6 @@ def import_estimates(log_message=False):
         nb.save(nifti_img, outname)
             
 
-def import_anat(log_message=False):
-    dataset = DataSetSomatotopic(str(dest_base_dir))
-    T = dataset.get_participants()
-
-    for _, id in T.iterrows():
-        print(f'Importing {id.participant_id}')
-
-        # Load reginfo.tsv file
-        reginfo = pd.read_csv(dest_base_dir /
-                              f'derivatives/{id.participant_id}/estimates/ses-motor/{id.participant_id}_ses-motor_reginfo.tsv', sep='\t')
-
-        resms = []
-        for _, info in reginfo.iterrows():
-            if log_message:
-                print(
-                    f'Run {info.run:02d} Beta {info.reg_num:02d}')
-            src = src_base_dir / \
-                f'raw/Functional/{id.orig_id}/{id.orig_id}_sess{info.orig_ses:02d}_MOTOR{info.orig_run}/pe{info.orig_reg}.nii.gz'
-            dest = dest_base_dir / \
-                f'derivatives/{id.participant_id}/estimates/ses-motor/{id.participant_id}_ses-motor_run-{info.run:02d}_reg-{info.reg_id:02d}_beta.nii.gz'
-            
-
-            # Copy func file to destination folder and rename
-            if  ~dest.exists():
-                try:
-                    shutil.copyfile(src,
-                            dest)
-                except:
-                    print('skipping ' + str(src))
-            
-            # Unzip because file name ends in .nii.gz
-            subprocess.call(
-                ['gunzip', '-f', dest])
-
-            
-            src = src_base_dir / \
-                f'raw/Functional/{id.orig_id}/{id.orig_id}_sess{info.orig_ses:02d}_MOTOR{info.orig_run}/sigmasquareds.nii.gz'
-            resms_img = nb.load(src)
-            resms.append(resms_img.get_fdata())
-
-        resms = np.mean(resms,axis=0)
-        nifti_img = nb.Nifti1Image(dataobj=resms, affine=resms_img.affine)
-        outname = dest_base_dir / \
-            f'derivatives/{id.participant_id}/estimates/ses-motor/{id.participant_id}_ses-motor_resms.nii'
-        nb.save(nifti_img, outname)
-
-
-        
-
-
 
 if __name__ == '__main__':
     # --- Create reginfo ---
@@ -170,7 +120,16 @@ if __name__ == '__main__':
     # --- Importing Estimates ---
     # import_estimates()
 
-    # --- Importing anat ---
-    import_estimates()
+    # --- Importing Freesurfer ---
+    for participant_id in ['01', '02', '03', '04', '05', '06', '07', '08']:
+
+        source_dir = '{}/raw/surfaceWB/data/sub-{}/'.format(
+            src_base_dir, participant_id)
+        dest_dir = '{}/derivatives/sub-{}/anat'.format(
+            dest_base_dir, participant_id)
+        old_id = 'sub-{}'.format(participant_id)
+        new_id = 'sub-{}'.format(participant_id)
+        import_freesurfer(source_dir, dest_dir, old_id, new_id)
+
 
 
