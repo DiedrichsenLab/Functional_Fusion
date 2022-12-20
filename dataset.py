@@ -1554,7 +1554,7 @@ class DataSetDemand(DataSetCifti):
         super().__init__(dir)
         self.sessions = ['ses-01']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'cond_num'
+        self.cond_ind = 'reg_id'
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
 
