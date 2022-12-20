@@ -1565,6 +1565,9 @@ class DataSetIBC(DataSetNative):
                         ['run','reg_num'])
             data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
         for i in range(len(data_n)):
             data_n[i]=pinv(C) @ data_n[i]
         return data_n, data_info
