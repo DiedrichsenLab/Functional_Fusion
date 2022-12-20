@@ -702,7 +702,7 @@ class AtlasMapSurf():
 
         self.vox_list,good = nt.coords_to_linvidxs(indices,self.mask_img,mask=True)
         all = good.sum(axis=0)
-        print(f'{self.name} has {np.sum(all==0)} vertices without data')
+        # print(f'{self.name} has {np.sum(all==0)} vertices without data')
         all[all==0]=1
         self.vox_weight = good / all
         self.vox_list = self.vox_list.T

@@ -61,7 +61,8 @@ def show_group(type='CondHalf', atlas='SUIT3', cond=0, info_column='cond_name', 
 
 if __name__ == "__main__":
     # --- Extracting Estimates ---
-    extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
+    # extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
+    extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='fs32k')
     extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
 
     extract_somatotopic(ses_id='ses-motor', type='CondRun', atlas='SUIT3')
@@ -70,7 +71,8 @@ if __name__ == "__main__":
     # --- Group Average ---
     dataset = DataSetSomatotopic(data_dir)
     dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
-    dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
+    dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
+    dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='fs32k')
     
     # --- Show group average ---
     show_group()
