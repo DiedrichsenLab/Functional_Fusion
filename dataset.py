@@ -22,6 +22,9 @@ import nitools as nt
 from numpy import eye,zeros,ones,empty,nansum, sqrt
 from numpy.linalg import pinv,solve
 import warnings
+import SUITPy as suit
+import matplotlib.pyplot as plt
+
 
 def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     """get_dataset
@@ -399,7 +402,6 @@ class DataSet:
         Args:
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
-            info_column (str, optional): Column of info tsv file for which each average should be calculated. Defaults to 'task_name'
         """
 
         data, info = self.get_data(space=atlas, ses_id=ses_id,
@@ -418,6 +420,57 @@ class DataSet:
                 f'/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
         info.drop(columns=['sn']).to_csv(dest_dir +
             f'/group_{ses_id}_info-{type}.tsv', sep='\t',index=False)
+
+    def plot_group_cerebellum(self, session=None, type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
+        """Loads group data in SUIT3 space from a standard experiment structure
+        averaged across all subjects and projects to SUIT flatmap. Saves the results as .png figures in the data/group/figures directory.
+        Args:
+            session (str, optional): Session string. Defaults to first session of in session list of dataset.
+            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
+            cond (str): XXX. Defaults to 'all'.
+            savefig (str, optional): XXX. Defaults to 'False'.
+            
+        """
+        if session is None:
+            session = self.sessions[0]
+        if type is None:
+            type=self.default_type
+
+        group_info = self.data_dir.split('/{0}')[0] + f'/group/data/group_{session}_info-{type}.tsv'
+        group_average = self.data_dir.split('/{0}')[0] + f'/group/data/group_{session}_space-SUIT3_{type}.dscalar.nii'
+
+        if not Path(group_average).exists():
+            # Extract group average in SUIT3 space
+            self.group_average_data(ses_id=session, type=type, atlas='SUIT3')
+
+        mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
+        suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
+
+        # Load group average
+        C = nb.load(group_average)
+        D = pd.read_csv(group_info, sep='\t')
+        X = C.get_fdata()
+        limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
+
+        if cond == 'all':
+            conditions = D[self.cond_name]
+
+            # -- each in seperate figures --
+            dest_dir = self.data_dir.split('/{0}')[0] + f'/group/figures/'
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            for i, c in enumerate(conditions):
+                Nifti = suit_atlas.data_to_nifti(X[i, :])
+                surf_data = suit.flatmap.vol_to_surf(Nifti)
+                fig = suit.flatmap.plot(
+                    surf_data, render='matplotlib', new_figure=True, cscale=limes, cmap=cmap, colorbar=colorbar)
+                fig.set_title(c)
+
+                # save figure
+                if savefig:
+                    plt.savefig(dest_dir + f'group_{c}.png')
+                plt.clf()
+                pass
+
 
 class DataSetNative(DataSet):
     """Data set with estimates data stored as
@@ -1554,7 +1607,7 @@ class DataSetDemand(DataSetCifti):
         super().__init__(dir)
         self.sessions = ['ses-01']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'cond_num'
+        self.cond_ind = 'reg_id'
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
 

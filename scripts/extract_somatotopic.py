@@ -24,8 +24,7 @@ def extract_somatotopic(ses_id='ses-01',type='CondHalf',atlas='MNISymC3'):
     dataset.extract_all(ses_id,type,atlas)
 
 
-def show_group(type='CondHalf', atlas='SUIT3', cond=0, info_column='cond_name', savefig=False):
-    
+def show_group(type='CondHalf', atlas='SUIT3', session='motor', cond='all', info_column='cond_name', savefig=False):
     
     dataset = DataSetSomatotopic(data_dir)
 
@@ -36,9 +35,9 @@ def show_group(type='CondHalf', atlas='SUIT3', cond=0, info_column='cond_name', 
 
     # Load group average
     C = nb.load(dataset.data_dir.split('/{0}')[0] +
-                f'/group/group_space-{atlas}_{type}.dscalar.nii')
+                f'/group/data/group_ses-{session}_space-{atlas}_{type}.dscalar.nii')
     D = pd.read_csv(dataset.data_dir.split('/{0}')[0] +
-                    f'/group/group_info-{type}.tsv', sep='\t')
+                    f'/group/data/group_ses-{session}_info-{type}.tsv', sep='\t')
     X = C.get_fdata()
 
     if cond == 'all':
@@ -62,18 +61,19 @@ def show_group(type='CondHalf', atlas='SUIT3', cond=0, info_column='cond_name', 
 if __name__ == "__main__":
     # --- Extracting Estimates ---
     # extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
-    extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='fs32k')
-    extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
+    # extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='fs32k')
+    # extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
+    # extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='MNISymC2')
 
-    extract_somatotopic(ses_id='ses-motor', type='CondRun', atlas='SUIT3')
-    extract_somatotopic(ses_id='ses-motor', type='CondRun', atlas='MNISymC3')
 
     # --- Group Average ---
     dataset = DataSetSomatotopic(data_dir)
-    dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
-    dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
-    dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='fs32k')
+    # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
+    # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
+    # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='fs32k')
+    # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='MNISymC2')
+
     
     # --- Show group average ---
-    show_group()
+    dataset.plot_group_cerebellum(savefig=True, colorbar=True)
     pass
