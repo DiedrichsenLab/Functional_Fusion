@@ -139,3 +139,5 @@ dmypy.json
 .DS_Store
 
 scripts/run_pipeline.py
+ff.code-workspace
+scripts/.vscode/launch.json
