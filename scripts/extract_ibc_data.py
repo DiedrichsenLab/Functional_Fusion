@@ -147,13 +147,14 @@ if __name__ == "__main__":
     # copy_currentAsOld()
     # correct_condHalf()
     extract_all('SUIT3')
-    # extract_all('fs32k')
+    extract_all('MNISymC3')
+    extract_all('MNISymC2')
     # extract_all('MNISymC2')
     # group_average(atlas='MNISymC3')
 
     # parcel_mdtb_fs32k()
     # 
-    dataset = DataSetIBC(data_dir)
-    dataset.plot_group_cerebellum(savefig=True, colorbar=True)
+    # dataset = DataSetIBC(data_dir)
+    # dataset.plot_group_cerebellum(savefig=True, colorbar=True)
 
  
