@@ -72,24 +72,6 @@ def extract_all(atlas='MNISym3'):
             ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas=atlas)
 
 
-def group_average(atlas='MNISymC3'):
-    type = 'CondHalf'
-    ibc_dataset = DataSetIBC(data_dir)
-    # ---- Extract all data 
-    # info = ibc_dataset.get_participants(
-    #     # 
-    # --- Get group average ---
-    for ses in ibc_dataset.sessions:
-        ibc_dataset.group_average_data(
-            ses_id=ses, type=type, atlas=atlas)
-
-def show_group_average(atlas='MNISymC3'):
-    ibc_dataset = DataSetIBC(data_dir)
-    for ses in ibc_dataset.sessions:
-        show_ibc_group(ses_id=ses, type='CondHalf',
-                atlas=atlas, cond='all', savefig=True)
-
-    pass
 
 def copy_currentAsOld():
     """This function copies the regressor info file as "_old.tsv"
@@ -164,11 +146,15 @@ def correct_condHalf():
 if __name__ == "__main__":
     # copy_currentAsOld()
     # correct_condHalf()
-    # extract_all('MNISymC3')
-    # extract_all('fs32k')
+    extract_all('SUIT3')
+    extract_all('MNISymC3')
     extract_all('MNISymC2')
+    # extract_all('MNISymC2')
     # group_average(atlas='MNISymC3')
 
     # parcel_mdtb_fs32k()
     # 
+    # dataset = DataSetIBC(data_dir)
+    # dataset.plot_group_cerebellum(savefig=True, colorbar=True)
+
  
