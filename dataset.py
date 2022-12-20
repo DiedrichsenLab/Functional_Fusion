@@ -467,7 +467,7 @@ class DataSet:
 
                 # save figure
                 if savefig:
-                    plt.savefig(dest_dir + f'group_{c}.png')
+                    plt.savefig(dest_dir + f'group_{session}_{c}.png')
                 plt.clf()
                 pass
 
@@ -1561,7 +1561,7 @@ class DataSetIBC(DataSetNative):
         info['n_rep']=np.ones((info.shape[0],))
         if type == 'CondHalf':
             data_info,C = agg_data(info,
-                        ['half','cond_num'],
+                        ['half','cond_num_uni'],
                         ['run','reg_num'])
             data_info['names']=[f'{d.cond_name.strip()}-half{d.half}' for i,d in data_info.iterrows()]
 
@@ -1594,10 +1594,12 @@ class DataSetIBC(DataSetNative):
             add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
             atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
             atlas_map.build(smooth=2.0,additional_mask = add_mask)
+
             print(f'Extract {s}')
-            data,info = self.extract_data(s,[atlas_map],
-                                          ses_id=ses_id,
-                                          type=type)
+            fnames, info = self.get_data_fnames(s, ses_id)
+            data = am.get_data_nifti(fnames, [atlas_map])
+            data, info = self.condense_data(data, info, type,
+                                            participant_id=s, ses_id=ses_id)
             C=suit_atlas.data_to_cifti(data[0],info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
