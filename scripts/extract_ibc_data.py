@@ -157,6 +157,7 @@ if __name__ == "__main__":
     dataset = DataSetIBC(data_dir)
     dataset.group_average(atlas='MNISymC3')
     dataset.group_average(atlas='SUIT3')
-    dataset.plot_cerebellum(savefig=True, sessions=['ses-clips4', 'ses-enumeration', 'ses-hcp1'], colorbar=True)
+
+    dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)
 
  
