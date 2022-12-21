@@ -461,7 +461,8 @@ class DataSet:
                 C = nb.load(data)
                 D = pd.read_csv(info, sep='\t')
                 X = C.get_fdata()
-                limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
+                # limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
+                limes = [np.percentile(X[np.where(~np.isnan(X))], 5), np.percentile(X[np.where(~np.isnan(X))], 95)]
 
                 if cond == 'all':
                     conditions = D[self.cond_name]
