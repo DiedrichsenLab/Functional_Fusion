@@ -25,6 +25,10 @@ def get_atlas(atlas_str,atlas_dir):
     Args:
         atlas_str (str): Name of the atlas
         atlas_dir (str): directory name for the atlas
+    
+    Returns:
+        atlas (AtlasVolumetric object or AtlasSurface object): Atlas object
+        ainf (dict): Atlas info
     """
     with open(atlas_dir + '/atlas_description.json') as file:
         atlases = json.load(file)
@@ -41,7 +45,7 @@ def get_atlas(atlas_str,atlas_dir):
         for i,m in enumerate(ainf['mask']):
             mask.append(atlas_dir + f"/{ainf['dir']}/{m}")
         atlas = AtlasSurface(atlas_str, mask_gii=mask, structure=ainf['structure'])
-    return atlas
+    return atlas, ainf
 
 def get_deform(atlas_dir,target,source='MNIAsym2'):
     """ Get name of group deformation map between two volumetric atlas spaces
