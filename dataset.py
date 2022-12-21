@@ -421,7 +421,7 @@ class DataSet:
         info.drop(columns=['sn']).to_csv(dest_dir +
             f'/group_{ses_id}_info-{type}.tsv', sep='\t',index=False)
 
-    def plot_group_cerebellum(self, session=None, type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
+    def plot_cerebellum(self, sub='group', sessions=None, atlas='SUIT3', type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
         """Loads group data in SUIT3 space from a standard experiment structure
         averaged across all subjects and projects to SUIT flatmap. Saves the results as .png figures in the data/group/figures directory.
         Args:
@@ -431,45 +431,46 @@ class DataSet:
             savefig (str, optional): XXX. Defaults to 'False'.
             
         """
-        if session is None:
-            session = self.sessions[0]
+        if sessions is None:
+            sessions = self.sessions
         if type is None:
             type=self.default_type
+        if sub == 'all':
+            sub=self.get_participants()
+        
+        atlasmap, atlasinfo = am.get_atlas(atlas, self.atlas_dir)
+        
+        for session in sessions:
+            group_info = self.data_dir.split(
+                '/{0}')[0] + f'/{sub}/data/{sub}_{session}_info-{type}.tsv'
+            group_average = self.data_dir.split(
+                '/{0}')[0] + f'/{sub}/data/{sub}_{session}_space-{atlas}_{type}.dscalar.nii'
 
-        group_info = self.data_dir.split('/{0}')[0] + f'/group/data/group_{session}_info-{type}.tsv'
-        group_average = self.data_dir.split('/{0}')[0] + f'/group/data/group_{session}_space-SUIT3_{type}.dscalar.nii'
 
-        if not Path(group_average).exists():
-            # Extract group average in SUIT3 space
-            self.group_average_data(ses_id=session, type=type, atlas='SUIT3')
+            # Load average
+            C = nb.load(group_average)
+            D = pd.read_csv(group_info, sep='\t')
+            X = C.get_fdata()
+            limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
 
-        mask = self.atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-        suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
+            if cond == 'all':
+                conditions = D[self.cond_name]
 
-        # Load group average
-        C = nb.load(group_average)
-        D = pd.read_csv(group_info, sep='\t')
-        X = C.get_fdata()
-        limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
+                # -- each in seperate figures --
+                dest_dir = self.data_dir.split('/{0}')[0] + f'/{sub}/figures/'
+                Path(dest_dir).mkdir(parents=True, exist_ok=True)
+                for i, c in enumerate(conditions):
+                    Nifti = atlasmap.data_to_nifti(X[i, :])
+                    surf_data = suit.flatmap.vol_to_surf(Nifti,space=atlasinfo['normspace'])
+                    fig = suit.flatmap.plot(
+                        surf_data, render='matplotlib', new_figure=True, cscale=limes, cmap=cmap, colorbar=colorbar)
+                    fig.set_title(c)
 
-        if cond == 'all':
-            conditions = D[self.cond_name]
-
-            # -- each in seperate figures --
-            dest_dir = self.data_dir.split('/{0}')[0] + f'/group/figures/'
-            Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            for i, c in enumerate(conditions):
-                Nifti = suit_atlas.data_to_nifti(X[i, :])
-                surf_data = suit.flatmap.vol_to_surf(Nifti)
-                fig = suit.flatmap.plot(
-                    surf_data, render='matplotlib', new_figure=True, cscale=limes, cmap=cmap, colorbar=colorbar)
-                fig.set_title(c)
-
-                # save figure
-                if savefig:
-                    plt.savefig(dest_dir + f'group_{session}_{c}.png')
-                plt.clf()
-                pass
+                    # save figure
+                    if savefig:
+                        plt.savefig(dest_dir + f'{sub}_{session}_{c}.png')
+                    plt.clf()
+                    pass
 
 
 class DataSetNative(DataSet):
@@ -525,7 +526,7 @@ class DataSetNative(DataSet):
             type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        myatlas = am.get_atlas(atlas,self.atlas_dir)
+        myatlas,_ = am.get_atlas(atlas,self.atlas_dir)
         # create and calculate the atlas map for each participant
         T = self.get_participants()
         for s in T.participant_id:
@@ -612,7 +613,7 @@ class DataSetMNIVol(DataSet):
             type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        myatlas = am.get_atlas(atlas, self.atlas_dir)
+        myatlas,_ = am.get_atlas(atlas, self.atlas_dir)
         
         # extract and save data for each participant
         T = self.get_participants()
@@ -663,7 +664,7 @@ class DataSetCifti(DataSet):
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        myatlas = am.get_atlas(atlas,self.atlas_dir)
+        myatlas,_ = am.get_atlas(atlas,self.atlas_dir)
         # Get the correct map into CIFTI-format 
         if isinstance(myatlas,am.AtlasVolumetric):
             deform,mask = am.get_deform(self.atlas_dir,
@@ -816,7 +817,7 @@ class DataSetHcpResting(DataSetCifti):
                 A data frame with information about the N numbers provide
             names: Names for CIFTI-file per row
         """
-        suit_atlas = am.get_atlas(atlas, self.atlas_dir)
+        suit_atlas,_ = am.get_atlas(atlas, self.atlas_dir)
 
         # Get the deformation map from MNI to SUIT
         mni_atlas = self.atlas_dir + '/tpl-MNI152NLin6AsymC'
@@ -1266,7 +1267,7 @@ class DataSetLanguage(DataSetNative):
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
         # Make the atlas object
-        suit_atlas = am.get_atlas(atlas,self.atlas_dir)
+        suit_atlas,_ = am.get_atlas(atlas,self.atlas_dir)
 
 
         # create and calculate the atlas map for each participant
@@ -1580,7 +1581,7 @@ class DataSetIBC(DataSetNative):
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        suit_atlas = am.get_atlas(atlas,self.atlas_dir)
+        suit_atlas,_ = am.get_atlas(atlas,self.atlas_dir)
         # create and calculate the atlas map for each participant
         T = self.get_participants()
         for s in T.participant_id:
