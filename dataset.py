@@ -421,56 +421,69 @@ class DataSet:
         info.drop(columns=['sn']).to_csv(dest_dir +
             f'/group_{ses_id}_info-{type}.tsv', sep='\t',index=False)
 
-    def plot_cerebellum(self, sub='group', sessions=None, atlas='SUIT3', type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
+    def plot_cerebellum(self, subject='group', sessions=None, atlas='SUIT3', type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
         """Loads group data in SUIT3 space from a standard experiment structure
         averaged across all subjects and projects to SUIT flatmap. Saves the results as .png figures in the data/group/figures directory.
         Args:
+            sub (str, optional): Subject string. Defaults to group to plot data averaged across all subjects.
             session (str, optional): Session string. Defaults to first session of in session list of dataset.
+            atlas (str, optional): Atlas string. Defaults to 'SUIT3'.
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
-            cond (str): XXX. Defaults to 'all'.
-            savefig (str, optional): XXX. Defaults to 'False'.
+            cond (str or list): List of condition indices (e.g. [0,1,2] for the first three conditions) or 'all'. Defaults to 'all'.
+            savefig (str, optional): Boolean indicating whether figure should be saved. Defaults to 'False'.
+            cmap (str, optional): Matplotlib colour map. Defaults to 'hot'.
+            colorbar (str, optional): Boolean indicating whether colourbar should be plotted in figure. Defaults to 'False'.
+            
             
         """
         if sessions is None:
             sessions = self.sessions
         if type is None:
             type=self.default_type
-        if sub == 'all':
-            sub=self.get_participants()
+        if subject == 'all':
+            subjects = self.get_participants().participant_id.tolist()
+        else:
+            subjects = [subject]
         
         atlasmap, atlasinfo = am.get_atlas(atlas, self.atlas_dir)
         
-        for session in sessions:
-            group_info = self.data_dir.split(
-                '/{0}')[0] + f'/{sub}/data/{sub}_{session}_info-{type}.tsv'
-            group_average = self.data_dir.split(
-                '/{0}')[0] + f'/{sub}/data/{sub}_space-{atlas}_{session}_{type}.dscalar.nii'
+        for sub in subjects: 
+            print(f'Plotting {sub}')
+            for session in sessions:
+                info = self.data_dir.split(
+                    '/{0}')[0] + f'/{sub}/data/{sub}_{session}_info-{type}.tsv'
+                data = self.data_dir.split(
+                    '/{0}')[0] + f'/{sub}/data/{sub}_space-{atlas}_{session}_{type}.dscalar.nii'
 
 
-            # Load average
-            C = nb.load(group_average)
-            D = pd.read_csv(group_info, sep='\t')
-            X = C.get_fdata()
-            limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
+                # Load average
+                C = nb.load(data)
+                D = pd.read_csv(info, sep='\t')
+                X = C.get_fdata()
+                limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
 
-            if cond == 'all':
-                conditions = D[self.cond_name]
+                if cond == 'all':
+                    conditions = D[self.cond_name]
+                else:
+                    conditions = D[self.cond_name][cond]
 
-                # -- each in seperate figures --
+                # -- Plot each condition in seperate figures --
                 dest_dir = self.data_dir.split('/{0}')[0] + f'/{sub}/figures/'
                 Path(dest_dir).mkdir(parents=True, exist_ok=True)
                 for i, c in enumerate(conditions):
+                    condition_name = c.strip()
                     Nifti = atlasmap.data_to_nifti(X[i, :])
                     surf_data = suit.flatmap.vol_to_surf(Nifti,space=atlasinfo['normspace'])
                     fig = suit.flatmap.plot(
                         surf_data, render='matplotlib', new_figure=True, cscale=limes, cmap=cmap, colorbar=colorbar)
-                    fig.set_title(c)
+                    fig.set_title(condition_name)
 
                     # save figure
                     if savefig:
-                        plt.savefig(dest_dir + f'{sub}_{session}_{c}.png')
+                        plt.savefig(
+                            dest_dir + f'{sub}_{session}_{condition_name}.png')
                     plt.clf()
-                    pass
+                        
 
 
 class DataSetNative(DataSet):
