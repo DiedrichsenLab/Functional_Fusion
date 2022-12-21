@@ -394,7 +394,7 @@ class DataSet:
         Data[np.isinf(Data)] = np.nan
         return Data, info_com
 
-    def group_average_data(self, ses_id='ses-s1',
+    def group_average_data(self, ses_id=None,
                                  type='CondHalf',
                                  atlas='SUIT3'):
         """Loads group data in SUIT space from a standard experiment structure
@@ -403,7 +403,8 @@ class DataSet:
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-
+        if ses_id is None:
+            ses_id = self.sessions[0]
         data, info = self.get_data(space=atlas, ses_id=ses_id,
                                    type=type)
         # average across participants
