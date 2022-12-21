@@ -40,7 +40,8 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
         _type_: _description_
     """
     T = pd.read_csv(base_dir + '/dataset_description.tsv',sep='\t')
-    i = np.where(dataset == T.name)[0]
+    T.name = [n.casefold() for n in T.name]
+    i = np.where(dataset.casefold() == T.name)[0]
     if len(i)==0:
         raise(NameError(f'Unknown dataset: {dataset}'))
     dsclass = getattr(sys.modules[__name__],T.class_name[int(i)])
