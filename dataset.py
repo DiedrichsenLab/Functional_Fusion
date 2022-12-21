@@ -417,7 +417,7 @@ class DataSet:
         dest_dir = op.join(self.data_dir.format('group'))
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir +
-                f'/group_{ses_id}_space-{atlas}_{type}.dscalar.nii')
+                f'/group_space-{atlas}_{ses_id}_{type}.dscalar.nii')
         info.drop(columns=['sn']).to_csv(dest_dir +
             f'/group_{ses_id}_info-{type}.tsv', sep='\t',index=False)
 
@@ -444,7 +444,7 @@ class DataSet:
             group_info = self.data_dir.split(
                 '/{0}')[0] + f'/{sub}/data/{sub}_{session}_info-{type}.tsv'
             group_average = self.data_dir.split(
-                '/{0}')[0] + f'/{sub}/data/{sub}_{session}_space-{atlas}_{type}.dscalar.nii'
+                '/{0}')[0] + f'/{sub}/data/{sub}_space-{atlas}_{session}_{type}.dscalar.nii'
 
 
             # Load average
