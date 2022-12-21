@@ -1589,13 +1589,15 @@ class DataSetIBC(DataSetNative):
             deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
             if atlas[0:7]=='MNISymC':
                 xfm_name = self.atlas_dir + \
-                           '/tpl-MNI152NLIn2009cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
+                           '/tpl-SUIT/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
                 deform = [xfm_name,deform]
+            
             mask = self.estimates_dir.format(s) + f'/{ses_id}/{s}_{ses_id}_mask.nii'
             add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
             atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
             atlas_map.build(smooth=2.0,additional_mask = add_mask)
 
+            
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id)
             data = am.get_data_nifti(fnames, [atlas_map])
