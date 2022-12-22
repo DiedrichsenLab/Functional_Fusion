@@ -81,6 +81,55 @@ class Atlas():
         self.name = name
         self.P = np.nan # Number of locations in this atlas
 
+    def get_parcel(self, label_img):
+        """
+        creates an array containing labels
+        Args:
+            label_img ('str') - string representing the path to the label image
+        Returns 
+            label_vector (np.ndarray) - numpy array containing label values
+
+        """
+        # load in the label image
+        self.label_img = nb.load(label_img)
+        
+        # get the mask
+        Xmask = self.mask_img.get_data()
+        Xmask = (Xmask>0)
+
+        try:
+            self.label_vector = suit.reslice.sample_image(self.label_img,
+                            self.world[0],
+                            self.world[1],
+                            self.world[2],
+                            0)
+        except:
+            # get the labels into an array
+            self.label_vector = self.label_img.agg_data() # this
+            self.label_vector = np.delete(self.label_vector, Xmask==0)
+
+        # Find the unique of parcels with label > 0
+        self.P = np.unique(self.label_vector[self.label_vector>0]).shape[0]
+
+    def get_parcel_axis(self, label_vector):
+        """ Returns parcel axis
+
+        Returns:
+            bm (cifti2.ParcelAxis)
+        """
+        # loop over labels and create brain models
+        bm_list = []
+        for l in np.unique(label_vector):
+            if l > 0:
+                # Create BrainModelAxis for each label
+                bm = nb.cifti2.BrainModelAxis.from_mask(label_vector == l,
+                                                    name=self.name)
+                # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
+                bm_list.append((f"{self.name}-{l:02}", bm))
+
+        # create parcel axis from the list of brain models created for labels
+        self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+
 class AtlasVolumetric(Atlas):
     """ Volumetric atlas with specific 3d-locations
     """
@@ -438,146 +487,6 @@ class AtlasSurfaceSymmetric(AtlasSurface):
         self.indx_flip[self.indx_full[0]] = indx_orig[self.indx_full[1]]
         self.indx_flip[self.indx_full[1]] = indx_orig[self.indx_full[0]]
 
-class AtlasVolumeParcel(Atlas):
-    """ Volume-based atlas that is based on
-    """
-    def __init__(self,name,label_img,mask_img=None):
-        """AtlasSurfaceParcel class constructor
-
-        Args:
-            name (str):
-                Name of the brain structure (cortex_left, cortex_right, cerebellum)
-            mask_gii (str):
-                gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space
-        """
-        self.name = name
-        self.label_img = nb.load(label_img)
-
-        if mask_img is not None:
-            self.mask_img = nb.load(mask_img)
-        else:
-            self.mask_img = self.label_img
-
-        Xmask = self.mask_img.get_data()
-        i,j,k = np.where(Xmask>0)
-        self.vox = np.vstack((i,j,k))
-        self.world = nt.affine_transform_mat(self.vox,self.mask_img.affine)
-        self.label_vec = suit.reslice.sample_image(self.label_img,
-                    self.world[0],
-                    self.world[1],
-                    self.world[2],
-                    0)
-        # Find the number of parcels with label > 0
-        self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
-
-    def agg_data(self,data,func=np.nanmean):
-        """Aggregate data into the parcels -
-        Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1....
-
-        Args:
-            data (nparray):
-                NxP array of data
-            func (function):
-                Aggregation function - needs to take data,axis=1 as input arguments
-        Returns:
-            Aggregated data:
-        """
-
-        # get the aggregrated data - assumes consequtive labels [1...P]
-        agg_data = np.empty((data.shape[0],self.P))
-        for p in range(self.P):
-            agg_data[:,p]=func(data[:,self.label_vec==p+1],axis=1)
-        return agg_data
-
-
-    def get_parcel_axis(self):
-        """ Returns parcel axis
-
-        Returns:
-            bm (cifti2.ParcelAxis)
-        """
-
-        # loop over labels and create brain models
-        bm_list = []
-        for l in np.unique(self.label_vec):
-            if l > 0:
-                # Create BrainModelAxis for each label
-                bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
-                                                    name=self.name)
-                # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
-                bm_list.append((f"{self.name}-{l:02}", bm))
-
-        # create parcel axis from the list of brain models created for labels
-        self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
-
-        return self.parcels
-
-class AtlasSurfaceParcel(Atlas):
-    def __init__(self,name,label_gii,mask_gii=None):
-        """AtlasSurfaceParcel class constructor
-
-        Args:
-            name (str):
-                Name of the brain structure (cortex_left, cortex_right, cerebellum)
-            mask_gii (str):
-                gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space
-        """
-        self.name = name
-        self.label_gii = nb.load(label_gii)
-
-        # get the labels into an array
-        self.label_vec = self.label_gii.agg_data() # this
-
-        # Use of mask it not tested-treat with care
-        if mask_gii is not None:
-            self.mask_gii = nb.load(mask_gii)
-            Xmask = self.mask_gii.agg_data()
-            self.label_vec = np.delete(self.label_vec, Xmask==0)
-        # Find the number of parcels with label > 0
-        self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
-
-    def agg_data(self,data,func=np.nanmean):
-        """Aggregate data into the parcels -
-        Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1....
-
-        Args:
-            data (nparray):
-                NxP array of data
-            func (function):
-                Aggregation function - needs to take data,axis=1 as input arguments
-        Returns:
-            Aggregated data:
-        """
-
-        # get the aggregrated data - assumes consequtive labels [1..P]
-        agg_data = np.empty((data.shape[0],self.P))
-        for p in range(self.P):
-            agg_data[:,p]=func(data[:,self.label_vec==p+1],axis=1)
-        return agg_data
-
-
-    def get_parcel_axis(self):
-        """ Returns parcel axis
-
-        Returns:
-            bm (cifti2.ParcelAxis)
-        """
-
-        # loop over labels and create brain models
-        bm_list = []
-        for l in np.unique(self.label_vec):
-            if l > 0:
-                # Create BrainModelAxis for each label
-                bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
-                                                    name=self.name)
-                # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
-                bm_list.append((f"{self.name}-{l:02}", bm))
-
-        # create parcel axis from the list of brain models created for labels
-        self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
-
-        return self.parcels
-
 class AtlasMapDeform():
     def __init__(self, world, deform_img,mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
@@ -784,3 +693,144 @@ def get_data_cifti(fnames,atlases):
     for i in range(n_atlas):
         data[i]=np.vstack(data[i])
     return data
+
+# to be depricated?
+# class AtlasVolumeParcel(Atlas):
+#     """ Volume-based atlas that is based on
+#     """
+#     def __init__(self,name,label_img,mask_img=None):
+#         """AtlasSurfaceParcel class constructor
+
+#         Args:
+#             name (str):
+#                 Name of the brain structure (cortex_left, cortex_right, cerebellum)
+#             mask_gii (str):
+#                 gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space
+#         """
+#         self.name = name
+#         self.label_img = nb.load(label_img)
+
+#         if mask_img is not None:
+#             self.mask_img = nb.load(mask_img)
+#         else:
+#             self.mask_img = self.label_img
+
+#         Xmask = self.mask_img.get_data()
+#         i,j,k = np.where(Xmask>0)
+#         self.vox = np.vstack((i,j,k))
+#         self.world = nt.affine_transform_mat(self.vox,self.mask_img.affine)
+#         self.label_vec = suit.reslice.sample_image(self.label_img,
+#                     self.world[0],
+#                     self.world[1],
+#                     self.world[2],
+#                     0)
+#         # Find the number of parcels with label > 0
+#         self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
+
+#     def agg_data(self,data,func=np.nanmean):
+#         """Aggregate data into the parcels -
+#         Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1....
+
+#         Args:
+#             data (nparray):
+#                 NxP array of data
+#             func (function):
+#                 Aggregation function - needs to take data,axis=1 as input arguments
+#         Returns:
+#             Aggregated data:
+#         """
+
+#         # get the aggregrated data - assumes consequtive labels [1...P]
+#         agg_data = np.empty((data.shape[0],self.P))
+#         for p in range(self.P):
+#             agg_data[:,p]=func(data[:,self.label_vec==p+1],axis=1)
+#         return agg_data
+
+
+#     def get_parcel_axis(self):
+#         """ Returns parcel axis
+
+#         Returns:
+#             bm (cifti2.ParcelAxis)
+#         """
+
+#         # loop over labels and create brain models
+#         bm_list = []
+#         for l in np.unique(self.label_vec):
+#             if l > 0:
+#                 # Create BrainModelAxis for each label
+#                 bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
+#                                                     name=self.name)
+#                 # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
+#                 bm_list.append((f"{self.name}-{l:02}", bm))
+
+#         # create parcel axis from the list of brain models created for labels
+#         self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+
+#         return self.parcels
+
+# class AtlasSurfaceParcel(Atlas):
+#     def __init__(self,name,label_gii,mask_gii=None):
+#         """AtlasSurfaceParcel class constructor
+
+#         Args:
+#             name (str):
+#                 Name of the brain structure (cortex_left, cortex_right, cerebellum)
+#             mask_gii (str):
+#                 gifti file name of mask image with the allowed locations - note that the label_vec is still indexing the the original surface space
+#         """
+#         self.name = name
+#         self.label_gii = nb.load(label_gii)
+
+#         # get the labels into an array
+#         self.label_vec = self.label_gii.agg_data() # this
+
+#         # Use of mask it not tested-treat with care
+#         if mask_gii is not None:
+#             self.mask_gii = nb.load(mask_gii)
+#             Xmask = self.mask_gii.agg_data()
+#             self.label_vec = np.delete(self.label_vec, Xmask==0)
+#         # Find the number of parcels with label > 0
+#         self.P = np.unique(self.label_vec[self.label_vec>0]).shape[0]
+
+#     def agg_data(self,data,func=np.nanmean):
+#         """Aggregate data into the parcels -
+#         Note that by convention the lable=0 is reserved for vertices that are being ignored - the first column is label_vec=1....
+
+#         Args:
+#             data (nparray):
+#                 NxP array of data
+#             func (function):
+#                 Aggregation function - needs to take data,axis=1 as input arguments
+#         Returns:
+#             Aggregated data:
+#         """
+
+#         # get the aggregrated data - assumes consequtive labels [1..P]
+#         agg_data = np.empty((data.shape[0],self.P))
+#         for p in range(self.P):
+#             agg_data[:,p]=func(data[:,self.label_vec==p+1],axis=1)
+#         return agg_data
+
+
+#     def get_parcel_axis(self):
+#         """ Returns parcel axis
+
+#         Returns:
+#             bm (cifti2.ParcelAxis)
+#         """
+
+#         # loop over labels and create brain models
+#         bm_list = []
+#         for l in np.unique(self.label_vec):
+#             if l > 0:
+#                 # Create BrainModelAxis for each label
+#                 bm = nb.cifti2.BrainModelAxis.from_mask(self.label_vec == l,
+#                                                     name=self.name)
+#                 # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
+#                 bm_list.append((f"{self.name}-{l:02}", bm))
+
+#         # create parcel axis from the list of brain models created for labels
+#         self.parcels = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+
+#         return self.parcels
