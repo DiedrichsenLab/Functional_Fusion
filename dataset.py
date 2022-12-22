@@ -40,7 +40,8 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
         _type_: _description_
     """
     T = pd.read_csv(base_dir + '/dataset_description.tsv',sep='\t')
-    i = np.where(dataset == T.name)[0]
+    T.name = [n.casefold() for n in T.name]
+    i = np.where(dataset.casefold() == T.name)[0]
     if len(i)==0:
         raise(NameError(f'Unknown dataset: {dataset}'))
     dsclass = getattr(sys.modules[__name__],T.class_name[int(i)])
@@ -328,7 +329,7 @@ class DataSet:
         return self.part_info
 
     def get_data(self, space='SUIT3', ses_id='ses-s1',
-                 type='CondHalf', subj=None, fields=None):
+                 type=None, subj=None, fields=None):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -348,6 +349,9 @@ class DataSet:
         # Deal with subset of subject option
         if subj is None:
             subj = np.arange(T.shape[0])
+        
+        if type is None:
+            type = self.default_type
 
         max = 0
 
@@ -395,7 +399,7 @@ class DataSet:
         return Data, info_com
 
     def group_average_data(self, ses_id=None,
-                                 type='CondHalf',
+                                 type=None,
                                  atlas='SUIT3'):
         """Loads group data in SUIT space from a standard experiment structure
         averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
@@ -405,6 +409,9 @@ class DataSet:
         """
         if ses_id is None:
             ses_id = self.sessions[0]
+        if type is None:
+            type = self.default_type
+
         data, info = self.get_data(space=atlas, ses_id=ses_id,
                                    type=type)
         # average across participants
@@ -419,7 +426,10 @@ class DataSet:
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir +
                 f'/group_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-        info.drop(columns=['sn']).to_csv(dest_dir +
+        if 'sn' in info.columns:
+            info = info.drop(columns=['sn'])
+
+        info.to_csv(dest_dir +
             f'/group_{ses_id}_info-{type}.tsv', sep='\t',index=False)
 
     def plot_cerebellum(self, subject='group', sessions=None, atlas='SUIT3', type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
@@ -461,7 +471,8 @@ class DataSet:
                 C = nb.load(data)
                 D = pd.read_csv(info, sep='\t')
                 X = C.get_fdata()
-                limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
+                # limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
+                limes = [np.percentile(X[np.where(~np.isnan(X))], 5), np.percentile(X[np.where(~np.isnan(X))], 95)]
 
                 if cond == 'all':
                     conditions = D[self.cond_name]
@@ -471,9 +482,10 @@ class DataSet:
                 # -- Plot each condition in seperate figures --
                 dest_dir = self.data_dir.split('/{0}')[0] + f'/{sub}/figures/'
                 Path(dest_dir).mkdir(parents=True, exist_ok=True)
-                for i, c in enumerate(conditions):
+                for c in conditions:
                     condition_name = c.strip()
-                    Nifti = atlasmap.data_to_nifti(X[i, :])
+                    D[D[self.cond_name]==c].index
+                    Nifti = atlasmap.data_to_nifti(X[D[D[self.cond_name]==c].index, :].mean(axis=0))
                     surf_data = suit.flatmap.vol_to_surf(Nifti,space=atlasinfo['normspace'])
                     fig = suit.flatmap.plot(
                         surf_data, render='matplotlib', new_figure=True, cscale=limes, cmap=cmap, colorbar=colorbar)

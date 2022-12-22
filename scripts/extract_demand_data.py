@@ -30,5 +30,5 @@ if __name__ == "__main__":
     # de_dataset.group_average_data(ses_id='ses-01',type='CondHalf',atlas='MNISymC3')
     # de_dataset.group_average_data(ses_id='ses-01',type='CondHalf',atlas='fs32k')
 
-    de_dataset.plot_group_cerebellum(savefig=True, colorbar=True)
+    de_dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)
     pass

@@ -43,5 +43,5 @@ if __name__ == "__main__":
 
     
     # --- Show group average ---
-    dataset.plot_cerebellum(sub='sub-01', savefig=True, colorbar=True)
+    dataset.plot_cerebellum(subject='group', savefig=True, colorbar=True)
     pass
