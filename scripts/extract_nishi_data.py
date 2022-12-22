@@ -20,51 +20,6 @@ data_dir = base_dir + '/Nishimoto'
 atlas_dir = base_dir + '/Atlases'
 
 
-def show_nishimoto_group(type='CondHalf', atlas='SUIT3', cond=0, info_column='task_name', savefig=False):
-    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
-    nishi_dataset = DataSetNishi(data_dir)
-    C = nb.load(nishi_dataset.data_dir.split('/{0}')[0] +
-                f'/group/group_space-{atlas}_{type}.dscalar.nii')
-    D = pd.read_csv(nishi_dataset.data_dir.split('/{0}')[0] +
-                    f'/group/group_info-{type}.tsv', sep='\t')
-    X = C.get_fdata()
-
-    if cond == 'all':
-        conditions = D[info_column]
-        # -- as subplot --
-        # dim = int(np.ceil(np.sqrt(len(conditions))))
-        # fig, axs = plt.subplots(dim,dim)
-        # for i, c in enumerate(conditions):
-        #     Nifti = suit_atlas.data_to_nifti(X[i, :])
-        #     surf_data = suit.flatmap.vol_to_surf(Nifti)
-        #     axs[int(i % dim), int(i / dim)]=suit.flatmap.plot(
-        #         surf_data, render='matplotlib', new_figure=False)
-        #     axs[int(i % dim), int(i / dim)].set_title(c)
-        # fig.show()
-        # -- each in seperate figures --
-        dest_dir = nishi_dataset.data_dir.split('/{0}')[0] + f'/group/figures/'
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        for i, c in enumerate(conditions):
-            Nifti = suit_atlas.data_to_nifti(X[i, :])
-            surf_data = suit.flatmap.vol_to_surf(Nifti)
-            fig = suit.flatmap.plot(
-                surf_data, render='matplotlib', new_figure=True)
-            fig.set_title(c)
-            # save figure
-            if savefig:
-                plt.savefig(dest_dir + f'group_{c}.png')
-            plt.clf()
-            pass
-
-    else:
-        Nifti = suit_atlas.data_to_nifti(X[cond, :])
-        surf_data = suit.flatmap.vol_to_surf(Nifti)
-        fig = suit.flatmap.plot(surf_data, render='plotly')
-        fig.show()
-        print(f'Showing {D[info_column][cond]}')
-        pass
-
 def extract_nishi_group(type='CondHalf', atlas='SUIT3', info_column='task_name'):
     nishi_dataset = DataSetNishi(data_dir)
     nishi_dataset.group_average_data(type, atlas, info_column)
@@ -140,6 +95,10 @@ if __name__ == "__main__":
     # parcel_nishi_fs32k(res=642,ses_id='ses-02',type='condHalf')
     # extract_nishi_suit(ses_id='ses-01',type='CondHalf',atlas='MNISymC3')
     # extract_nishi_suit(ses_id='ses-02',type='CondHalf',atlas='MNISymC3')
-    extract_nishi_fs32k(ses_id='ses-01',type='CondHalf')
-    extract_nishi_fs32k(ses_id='ses-02',type='CondHalf')
+    # extract_nishi_fs32k(ses_id='ses-01',type='CondHalf')
+    # extract_nishi_fs32k(ses_id='ses-02',type='CondHalf')
+
+    dataset = DataSetNishi(data_dir)
+    # dataset.group_average_data(type='CondHalf', atlas='MNISymC3')
+    dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)
     pass

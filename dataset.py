@@ -329,7 +329,7 @@ class DataSet:
         return self.part_info
 
     def get_data(self, space='SUIT3', ses_id='ses-s1',
-                 type='CondHalf', subj=None, fields=None):
+                 type=None, subj=None, fields=None):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -349,6 +349,9 @@ class DataSet:
         # Deal with subset of subject option
         if subj is None:
             subj = np.arange(T.shape[0])
+        
+        if type is None:
+            type = self.default_type
 
         max = 0
 
@@ -396,7 +399,7 @@ class DataSet:
         return Data, info_com
 
     def group_average_data(self, ses_id=None,
-                                 type='CondHalf',
+                                 type=None,
                                  atlas='SUIT3'):
         """Loads group data in SUIT space from a standard experiment structure
         averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
@@ -406,6 +409,9 @@ class DataSet:
         """
         if ses_id is None:
             ses_id = self.sessions[0]
+        if type is None:
+            type = self.default_type
+            
         data, info = self.get_data(space=atlas, ses_id=ses_id,
                                    type=type)
         # average across participants
@@ -420,7 +426,10 @@ class DataSet:
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(C, dest_dir +
                 f'/group_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-        info.drop(columns=['sn']).to_csv(dest_dir +
+        if 'sn' in info.columns:
+            info = info.drop(columns=['sn'])
+
+        info.to_csv(dest_dir +
             f'/group_{ses_id}_info-{type}.tsv', sep='\t',index=False)
 
     def plot_cerebellum(self, subject='group', sessions=None, atlas='SUIT3', type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
