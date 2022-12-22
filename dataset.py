@@ -411,7 +411,7 @@ class DataSet:
             ses_id = self.sessions[0]
         if type is None:
             type = self.default_type
-            
+
         data, info = self.get_data(space=atlas, ses_id=ses_id,
                                    type=type)
         # average across participants
@@ -482,9 +482,10 @@ class DataSet:
                 # -- Plot each condition in seperate figures --
                 dest_dir = self.data_dir.split('/{0}')[0] + f'/{sub}/figures/'
                 Path(dest_dir).mkdir(parents=True, exist_ok=True)
-                for i, c in enumerate(conditions):
+                for c in conditions:
                     condition_name = c.strip()
-                    Nifti = atlasmap.data_to_nifti(X[i, :])
+                    D[D[self.cond_name]==c].index
+                    Nifti = atlasmap.data_to_nifti(X[D[D[self.cond_name]==c].index, :].mean(axis=0))
                     surf_data = suit.flatmap.vol_to_surf(Nifti,space=atlasinfo['normspace'])
                     fig = suit.flatmap.plot(
                         surf_data, render='matplotlib', new_figure=True, cscale=limes, cmap=cmap, colorbar=colorbar)
