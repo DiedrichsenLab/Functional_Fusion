@@ -875,7 +875,7 @@ class DataSetHcpResting(DataSetCifti):
             networkdir = self.base_dir + f'/group_ica/dim_{dimensionality}/'
             networkimg = nb.load(networkdir +
                 'melodic_IC.nii.gz')
-            networks = networkimg.get_fdata()
+            # networks = networkimg.get_fdata()
             net_selected = pd.read_csv(
                 networkdir + 'classified_components.txt', sep=', ', skiprows=[0], skipfooter=1, engine='python', header=None, names=['Network', 'Classification', 'IsNoise'], dtype="category")
             networks = networks[:, :, :,
@@ -1156,26 +1156,22 @@ class DataSetHcpResting(DataSetCifti):
         """
         # Split type information on capital letters
         type_info = re.findall('[A-Z][^A-Z]*', type)
-        if type_info[0] == 'Ico':
-            hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
+
+        hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
 
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id)
-        all_data = am.get_data_nifti(fnames, [cereb_atlas_map])
         coef = None
         for r,run in enumerate(runs):
-            
             # load the cifti
             ts_cifti = nb.load(fnames[run])
+            ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
 
-            # get the ts in volume for subcorticals
-            ts_vol = util.volume_from_cifti(ts_cifti)
-            ts_cerebellum = all_data[0][run]
+            ts_cerebellum = am.get_data_cifti([fnames[run]], [cereb_atlas_map])
             ts_cerebellum = ts_cerebellum[0]
 
             if type_info[0] == 'Ico':
                 # get the ts in surface for corticals
-                ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
                 ts_parcel = []
                 for hem in range(2):
 
@@ -1187,10 +1183,9 @@ class DataSetHcpResting(DataSetCifti):
                 # concatenate them into a single array for correlation calculation
                 ts_seed = np.concatenate(ts_parcel, axis = 1)
             elif type_info[0] == 'Net':
-                # Regress network spatial map into the run's wholebrain data
+                # Regress network spatial map into the run's cortical data
                 # (returns run-specific timecourse for each network)
-                ts = ts_vol.get_fdata()
-                ts_seed = self.get_network_timecourse(networks, ts)
+                ts_seed = self.get_network_timecourse(networks, ts_32k[0])
                 ts_seed = ts_seed.T
 
 
@@ -1205,7 +1200,7 @@ class DataSetHcpResting(DataSetCifti):
             N = ts_cerebellum.shape[0]
             coef[r,:,:] = ts_seed.T @ ts_cerebellum / N
 
-        return coef  # shape (n_tessl,P)
+        return coef
 
     def get_cortical_connectivity(self, participant_id, cortex_mask=None,
                                   runs=[0,1,2,3], type='IcoAll',
