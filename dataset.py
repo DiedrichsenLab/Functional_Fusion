@@ -929,7 +929,7 @@ class DataSetHcpResting(DataSetCifti):
 
 
             # --- Save cerebellar data as dscalar CIFTI-file and write info to tsv ---
-            C = am.data_to_cifti(coef, [atlas_map], info.names)
+            C = suit_atlas.data_to_cifti(coef, info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir +
