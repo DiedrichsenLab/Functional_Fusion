@@ -1154,7 +1154,9 @@ class DataSetHcpResting(DataSetCifti):
            file
 
         """
-        if type[0:3] == 'Ico':
+        # Split type information on capital letters
+        type_info = re.findall('[A-Z][^A-Z]*', type)
+        if type_info[0] == 'Ico':
             hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
 
         # get the file name for the cifti time series
@@ -1171,7 +1173,7 @@ class DataSetHcpResting(DataSetCifti):
             ts_cerebellum = all_data[0][run]
             ts_cerebellum = ts_cerebellum[0]
 
-            if type[0:3] == 'Ico':
+            if type_info[0] == 'Ico':
                 # get the ts in surface for corticals
                 ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
                 ts_parcel = []
@@ -1184,7 +1186,7 @@ class DataSetHcpResting(DataSetCifti):
 
                 # concatenate them into a single array for correlation calculation
                 ts_seed = np.concatenate(ts_parcel, axis = 1)
-            elif type[0:3] == 'Net':
+            elif type_info[0] == 'Net':
                 # Regress network spatial map into the run's wholebrain data
                 # (returns run-specific timecourse for each network)
                 ts = ts_vol.get_fdata()
