@@ -875,7 +875,7 @@ class DataSetHcpResting(DataSetCifti):
             networkdir = self.base_dir + f'/group_ica/dim_{dimensionality}/'
             networkimg = nb.load(networkdir +
                 'melodic_IC.nii.gz')
-            # networks = networkimg.get_fdata()
+            networks = networkimg.get_fdata()
             net_selected = pd.read_csv(
                 networkdir + 'classified_components.txt', sep=', ', skiprows=[0], skipfooter=1, engine='python', header=None, names=['Network', 'Classification', 'IsNoise'], dtype="category")
             networks = networks[:, :, :,
