@@ -858,11 +858,10 @@ class DataSetHcpResting(DataSetCifti):
         
         # Split type information on capital letters
         type_info = re.findall('[A-Z][^A-Z]*', type)
-
+        surf_parcel = None
         if type_info[0] == 'Ico':
             networks=None
             # Get the parcelation
-            surf_parcel = []
             for i, h in enumerate(['L', 'R']):
                 dir = self.atlas_dir + '/tpl-fs32k'
                 gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
@@ -871,7 +870,6 @@ class DataSetHcpResting(DataSetCifti):
             seed_names=list(bpa.name)
         
         elif type_info[0] == 'Net':
-            
             dimensionality = type_info[1].casefold()
             # Get the networks
             networkdir = self.base_dir + f'/group_ica/dim_{dimensionality}/'
