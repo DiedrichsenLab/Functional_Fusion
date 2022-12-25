@@ -896,7 +896,7 @@ class DataSetHcpResting(DataSetCifti):
             coef = self.get_cereb_connectivity(
                 s, atlas_map, runs=runs, type=type, cortical_atlas_parcels=surf_parcel, networks=networks)
 
-            if type_info[2] == 'All':  # Average across runs
+            if type_info[-1] == 'All':  # Average across runs
                 coef = np.nanmean(coef, axis=0)
 
                 # Make info structure
@@ -908,7 +908,7 @@ class DataSetHcpResting(DataSetCifti):
                                      'region_name': seed_names,
                                      'names': seed_names})
 
-            elif type_info[2] == 'Run':  # Concatenate over runs
+            elif type_info[-1] == 'Run':  # Concatenate over runs
                 coef = np.concatenate(coef, axis=0)
 
                 # Make info structure
