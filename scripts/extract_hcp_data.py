@@ -224,14 +224,17 @@ def indv_hcp_pscalar(res=162, index=range(0,100), refix=False):
         print(f"-Saved scalar file for subject {s}, ReFIX={refix}")
 
 if __name__ == "__main__":
-    # extract_hcp_suit(ses_id='ses-s1', type='NetRun', atlas='MNISymC3')
-    # extract_hcp_suit(ses_id='ses-s2', type='NetRun', atlas='MNISymC3')
-    extract_hcp_fs32k(ses_id='ses-s1', type='NetRun')
+    extract_hcp_suit(ses_id='ses-s1', type='NetAutoAll', atlas='MNISymC3')
+    extract_hcp_suit(ses_id='ses-s2', type='NetAutoAll', atlas='MNISymC3')
+    
+    extract_hcp_suit(ses_id='ses-s1', type='NetAutoRun', atlas='MNISymC3')
+    extract_hcp_suit(ses_id='ses-s2', type='NetAutoRun', atlas='MNISymC3')
+    # extract_hcp_fs32k(ses_id='ses-s1', type='NetRun')
     # extract_hcp_data()
     # avrg_hcp_dpconn()
     # C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
     # nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
-    # hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
+    hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
     # data_hcp1, info_hcp1 = hcp_dataset.get_data(space = 'MNISymC3', ses_id = 'ses-s1', type='Run')
     # hcp_dataset.group_average_data(
     #     ses_id='ses-s1', type='NetRun', atlas='MNISymC3')
