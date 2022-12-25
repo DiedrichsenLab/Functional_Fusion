@@ -1163,14 +1163,16 @@ class DataSetHcpResting(DataSetCifti):
         fnames = self.get_data_fnames(participant_id)
         coef = None
         for r,run in enumerate(runs):
-            # load the cifti
-            ts_cifti = nb.load(fnames[run])
-            ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
+            
 
             ts_cerebellum = am.get_data_cifti([fnames[run]], [cereb_atlas_map])
             ts_cerebellum = ts_cerebellum[0]
 
+            # load the cifti
+            ts_cifti = nb.load(fnames[run])
+
             if type_info[0] == 'Ico':
+                ts_32k = util.surf_from_cifti(ts_cifti, hem_name)
                 # get the ts in surface for corticals
                 ts_parcel = []
                 for hem in range(2):
@@ -1185,7 +1187,8 @@ class DataSetHcpResting(DataSetCifti):
             elif type_info[0] == 'Net':
                 # Regress network spatial map into the run's cortical data
                 # (returns run-specific timecourse for each network)
-                ts_seed = self.get_network_timecourse(networks, ts_32k[0])
+                ts_vol = util.volume_from_cifti(ts_cifti)
+                ts_seed = self.get_network_timecourse(networks, ts_vol.get_fdata())
                 ts_seed = ts_seed.T
 
 
