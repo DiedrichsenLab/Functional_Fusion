@@ -24,6 +24,7 @@ from numpy.linalg import pinv,solve
 import warnings
 import SUITPy as suit
 import matplotlib.pyplot as plt
+import re
 
 
 def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
@@ -832,8 +833,11 @@ class DataSetHcpResting(DataSetCifti):
             type (str): Type of extraction:
                 'IcoAll': Single estimate per session, Correlation with cortical icosahedron parcels
                 'IcoRun': Seperate estimates per run, Correlation with cortical icosahedron parcels
-                'NetAll': Single estimate per session, Correlation with cortico-cerebellar resting-state networks
-                'NetRun': Seperate estimates per run, Correlation with cortico-cerebellar resting-state networks
+                'NetAll': Single estimate per session, Correlation with cortico-cerebellar resting-state networks estimated with dimensionality = 25.
+                'NetRun': Seperate estimates per run, Correlation with cortico-cerebellar resting-state networks estimated with dimensionality = 25.
+                'NetAutoAll': Single estimate per session, Correlation with cortico-cerebellar resting-state networks estimated with automatic dimensionality estimation.
+                'NetAutoRun': Seperate estimates per run, Correlation with cortico-cerebellar resting-state networks estimated with automatic dimensionality estimation.
+      
                     Defaults to 'IcoAll'.
 
         Returns:
@@ -851,8 +855,11 @@ class DataSetHcpResting(DataSetCifti):
         mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
         atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
         atlas_map.build(smooth=2.0)
+        
+        # Split type information on capital letters
+        type_info = re.findall('[A-Z][^A-Z]*', type)
 
-        if type[0:3] == 'Ico':
+        if type_info[0] == 'Ico':
             networks=None
             # Get the parcelation
             surf_parcel = []
@@ -862,10 +869,12 @@ class DataSetHcpResting(DataSetCifti):
                 surf_parcel.append(am.AtlasSurfaceParcel(self.hem_name[i], gifti))
             bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
             seed_names=list(bpa.name)
-        elif type[0:3] == 'Net':
-            surf_parcel = None
+        
+        elif type_info[0] == 'Net':
+            
+            dimensionality = type_info[1].casefold()
             # Get the networks
-            networkdir = self.base_dir + '/group_ica/dim_25/'
+            networkdir = self.base_dir + f'/group_ica/dim_{dimensionality}/'
             networkimg = nb.load(networkdir +
                 'melodic_IC.nii.gz')
             networks = networkimg.get_fdata()
@@ -889,7 +898,7 @@ class DataSetHcpResting(DataSetCifti):
             coef = self.get_cereb_connectivity(
                 s, atlas_map, runs=runs, type=type, cortical_atlas_parcels=surf_parcel, networks=networks)
 
-            if type[3:7] == 'All':  # Average across runs
+            if type_info[2] == 'All':  # Average across runs
                 coef = np.nanmean(coef, axis=0)
 
                 # Make info structure
@@ -901,7 +910,7 @@ class DataSetHcpResting(DataSetCifti):
                                      'region_name': seed_names,
                                      'names': seed_names})
 
-            elif type[3:7] == 'Run':  # Concatenate over runs
+            elif type_info[2] == 'Run':  # Concatenate over runs
                 coef = np.concatenate(coef, axis=0)
 
                 # Make info structure
@@ -930,12 +939,6 @@ class DataSetHcpResting(DataSetCifti):
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
-            # --- Build a connectivity CIFTI-file and save ---
-            # bmc = suit_atlas.get_brain_model_axis()
-            # header = nb.Cifti2Header.from_axes((bpa, bmc))
-            # cifti_img = nb.Cifti2Image(dataobj=coef, header=header)
-            # nb.save(cifti_img, dest_dir +
-            #         f'/{s}_space-{atlas}_{ses_id}_{type}_{res}.dpconn.nii')
 
     def extract_all_fs32k(self, ses_id='ses-s1', type='IcoAll', res=162):
         """ MDTB extraction of atlasmap locations
@@ -1158,15 +1161,16 @@ class DataSetHcpResting(DataSetCifti):
 
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id)
+        all_data = am.get_data_nifti(fnames, [cereb_atlas_map])
         coef = None
         for r,run in enumerate(runs):
+            
             # load the cifti
             ts_cifti = nb.load(fnames[run])
 
             # get the ts in volume for subcorticals
             ts_vol = util.volume_from_cifti(ts_cifti)
-            # transfer to suit space applying the deformation
-            ts_cerebellum = am.get_data4D(ts_vol, [cereb_atlas_map])
+            ts_cerebellum = all_data[0][run]
             ts_cerebellum = ts_cerebellum[0]
 
             if type[0:3] == 'Ico':
