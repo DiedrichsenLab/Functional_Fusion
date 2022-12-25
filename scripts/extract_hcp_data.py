@@ -235,12 +235,12 @@ if __name__ == "__main__":
     # C=parcel_hcp_dpconn(hcp_dir + '/group_tessel-162.dpconn.nii')
     # nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
     hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
-    hcp_dataset.group_average_data(
-        ses_id='ses-s1', type='NetAutoAll', atlas='MNISymC3')
-    hcp_dataset.group_average_data(
-        ses_id='ses-s2', type='NetAutoAll', atlas='MNISymC3')
+    # hcp_dataset.group_average_data(
+    #     ses_id='ses-s1', type='NetAutoAll', atlas='MNISymC3')
+    # hcp_dataset.group_average_data(
+    #     ses_id='ses-s2', type='NetAutoAll', atlas='MNISymC3')
     hcp_dataset.plot_cerebellum(subject='group', sessions=[
-                                'ses-01', 'ses-02'], atlas='MNISymC3', type='NetAutoAll', savefig=True, cmap='hot', colorbar=True)
+                                'ses-s1', 'ses-s2'], atlas='MNISymC3', type='NetAutoAll', savefig=True, cmap='hot', colorbar=True)
 
     pass
     
