@@ -803,7 +803,7 @@ class DataSetHcpResting(DataSetCifti):
         self.derivative_dir = self.base_dir + '/derivatives'
         self.sessions=['ses-s1','ses-s2']
         self.hem_name = ['cortex_left', 'cortex_right']
-        self.default_type = 'NetRun'
+        self.default_type = 'NetAutoRun'
         self.cond_ind = 'reg_id'
         self.cond_name = 'region_name'
         self.part_ind = 'half'
