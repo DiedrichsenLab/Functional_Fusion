@@ -1752,6 +1752,7 @@ class DataSetWMFS(DataSetNative):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
         X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
         reg_in = np.arange(C.shape[1],dtype=int)
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=None)
