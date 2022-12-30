@@ -525,7 +525,7 @@ class DataSetNative(DataSet):
         if atlas.structure=='cerebellum':
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             if atlas.name[0:4]!='SUIT':
-                deform1,m = am.get_deform(self.atlas_dir,atlas.name,'SUIT2') 
+                deform1,m = am.get_deform(self.atlas_dir,atlas.name,source='SUIT2') 
                 deform = [deform1, deform]
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world,deform, mask))

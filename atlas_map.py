@@ -59,7 +59,7 @@ def get_deform(atlas_dir,target,source='MNIAsym2'):
         mask: Mask for the source space
     """
     if isinstance(target,str):
-        target = get_atlas(target, atlas_dir)
+        target, _ = get_atlas(target, atlas_dir)
     with open(atlas_dir + '/atlas_description.json') as file:
         atlases = json.load(file)
     if target.name not in atlases:
