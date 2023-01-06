@@ -12,13 +12,14 @@ from matrix import indicator
 import sys
 import os
 import sys
+from nibabel import cifti2
 sys.path.append("~/Documents/Projects/Functional_Fusion")
 
 base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 if sys.platform == "win32":  # for windows user
     base_dir = 'Y:/data/FunctionalFusion'
 
-data_dir = base_dir + '/MDTB'
+project_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
 
@@ -32,6 +33,8 @@ def test_mdtb_suit():
     # create parcel axis for mdtb10 parcellation
     label_img = atlas_dir + '/tpl-SUIT' + '/atl-MDTB10_space-SUIT_dseg.nii'
     SUIT3_atlas.get_parcel(label_img=label_img)
+
+    SUIT3_atlas.get_parcel_axis()
 
     return SUIT3_atlas
 
@@ -50,15 +53,56 @@ def test_mdtb_fs32k():
         label_img.append(atlas_dir + '/tpl-fs32k' + f'/Icosahedron-42_Sym.32k.{hemi}.label.gii')
     
     fs_atlas.get_parcel(label_img=label_img)
+    fs_atlas.get_parcel_axis()
 
     return fs_atlas
 
+# extracting average within a parcel:
+# 1. load the extracted data
+# 2. use the label image to create a parcel axis for the space 
+# 3. calculate mean for each parcel
+# 4. save! 
+
+def extract_parcel_data():
+    """
+    Example code to extract mean across parcel for mdtb suit
+    """
+    # perform all the steps in test_mdtb_suit() to create a parcel axis for the parcellation
+    atlas_parcel = test_mdtb_suit()
+
+    # load in the data for sub-02
+    data_dir = project_dir + '/derivatives' + '/sub-02' +  '/data' + '/sub-02_space-SUIT3_ses-s1_CondAll.dscalar.nii'
+    data_img = nb.load(data_dir)
+    # get data for the structure
+    data = data_img.get_fdata()
+
+    # load the tsv file
+    info_file = project_dir + '/derivatives' + '/sub-02' +  '/data' + '/sub-02_ses-s1_info-CondAll.tsv'
+    info_tsv = pd.read_csv(info_file, sep = '\t')
+
+    # create a matrix for aggregating data (cannot use dataset.agg_data now! Need to make changes)
+    C = indicator(atlas_parcel.label_vector[0],positive=True)
+
+    # get the mean across parcel
+    data = np.nan_to_num(data)
+    data_parcel = (data @ C)/np.sum(C, axis = 0)
+
+    # create a dscale cifti with parcelAxis labels and data_parcel
+    row_axis = info_tsv.cond_name
+    row_axis = nb.cifti2.ScalarAxis(row_axis)
+        
+
+    bm = atlas_parcel.get_brain_model_axis()
+    pa = atlas_parcel.parcel_axis
+    # HEAD = cifti2.Cifti2Header.from_axes((row_axis,bm,pa))
+    header = nb.Cifti2Header.from_axes((row_axis, pa))
+    cifti_img = nb.Cifti2Image(dataobj=data_parcel, header=header)
+    nb.save(cifti_img, 'test_mdtb_10.pscalar.nii')
+    print("DEVELOPING")
+    return data_parcel
 
 if __name__ == "__main__":
-    a = test_mdtb_suit()
-    a.get_parcel_axis()
-
-    b = test_mdtb_fs32k()
-    b.get_parcel_axis()
-
+    # a = test_mdtb_suit()
+    # b = test_mdtb_fs32k()
+    extract_parcel_data()
     print("hovering")
