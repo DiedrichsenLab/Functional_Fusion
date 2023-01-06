@@ -97,8 +97,10 @@ class Atlas():
         """
 
         # make label_img a list if a string is passed on
-        if ~isinstance(label_img, list):
+        if not isinstance(label_img, list):
             self.label_img = [label_img]
+        else:
+            self.label_img = label_img
 
         # get label vectors for each label image
         self.label_vector = []
@@ -129,21 +131,34 @@ class Atlas():
         # number of parcels is the max label in the last element of label image
         self.parcel = np.max(self.label_vector[h])
 
-    def get_parcel_axis(self, label_vector):
+    def get_parcel_axis(self):
         """ Returns parcel axis
 
         Returns:
             bm (cifti2.ParcelAxis)
         """
-        # loop over labels and create brain models
         bm_list = []
-        for l in np.unique(label_vector):
-            if l > 0:
-                # Create BrainModelAxis for each label
-                bm = nb.cifti2.BrainModelAxis.from_mask(label_vector == l,
-                                                    name=self.structure)
-                # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
-                bm_list.append((f"{self.structure}-{l:02}", bm))
+        for h, labels in enumerate(self.label_vector):
+            # loop over labels and create brain models
+            ##??????? UGLY
+            brain_model_name = self.structure
+            if not isinstance(brain_model_name, list):
+                brain_model_name = [brain_model_name]
+            
+            for l in np.unique(labels):
+                if l > 0:
+                    # Make the brain Structure model for each label
+                    if h == 0:
+                        bm = nb.cifti2.BrainModelAxis.from_mask(
+                                                               labels == l,
+                                                               name=brain_model_name[h])
+                    else:
+                        bm = bm + nb.cifti2.BrainModelAxis.from_mask(
+                                                                    labels == l,
+                                                                    name=brain_model_name[h])
+
+                    # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
+                    bm_list.append((f"{self.structure[h]}-{l:02}", bm))
 
         # create parcel axis from the list of brain models created for labels
         self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
@@ -439,37 +454,6 @@ class AtlasSurface(Atlas):
             return_data.append(this_data)
 
         return np.hstack(return_data)
-
-    def get_parcel(self, label_img):
-
-        assert len(label_img) == len(self.structure), \
-            "The length of label images and brain structure should be matched!"
-
-        # get the labels vector
-        label = [nb.load(mg).agg_data() for mg in label_img]
-
-        self.label_vector = []
-        for h, label in enumerate(label_img):
-            # load the label image
-            img = nb.load(label)
-
-            label_vec = img.agg_data()
-
-            # get non-zero labels
-            # Find the unique of parcels with label > 0
-            parcel = np.unique(label_vec[label_vec>0]).shape[0]
-
-            # get non-zero elements of label
-            idx = np.argwhere(label_vec>0)
-
-            # change the values of non zero labels if necessary (only for the second hemi)
-            label_vec[idx] = label_vec[idx] + h*parcel
-
-            self.label_vector.append(label_vec)
-
-        # number of parcels is the max label in the second hemi
-        self.parcel = np.max(self.label_vector[h])
-        return 
     
     def get_brain_model_axis(self):
         """ Returns brain model axis
@@ -489,37 +473,6 @@ class AtlasSurface(Atlas):
                     name=self.structure[i])
         return bm
 
-    def get_parcel_axis(self, label_vector):
-        """ Returns parcel axis
-
-        Returns:
-            bm (cifti2.ParcelAxis)
-        """
-        bm_list = []
-        for h, labels in enumerate(label_vector):
-            # loop over labels and create brain models
-            
-            for l in np.unique(labels):
-                if l > 0:
-
-                    # Make the brain Structure model for each label
-                    if h == 0:
-                        bm = nb.cifti2.BrainModelAxis.from_mask(
-                        labels == l,
-                        name=self.structure[h])
-                    else:
-                        bm = bm + nb.cifti2.BrainModelAxis.from_mask(
-                            labels == l,
-                            name=self.structure[h])
-                    
-                    # Create BrainModelAxis for each label
-                    bm = nb.cifti2.BrainModelAxis.from_mask(labels == l,
-                                                        name=self.structure[h])
-                    # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
-                    bm_list.append((f"{self.structure[h]}-{l:02}", bm))
-
-        # create parcel axis from the list of brain models created for labels
-        self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
 class AtlasSurfaceSymmetric(AtlasSurface):
     """ Surface atlas with left-right symmetry
         The atlas behaves like AtlasSurface, but provides
