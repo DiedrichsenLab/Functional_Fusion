@@ -162,6 +162,7 @@ class Atlas():
 
         # create parcel axis from the list of brain models created for labels
         self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+        self.bm_list = bm_list
 
 class AtlasVolumetric(Atlas):
     """ Volumetric atlas with specific 3d-locations
