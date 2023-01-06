@@ -56,9 +56,9 @@ def test_mdtb_fs32k():
 
 if __name__ == "__main__":
     a = test_mdtb_suit()
-    a.get_parcel_axis(a.label_vector)
+    a.get_parcel_axis()
 
     b = test_mdtb_fs32k()
-    b.get_parcel_axis(b.label_vector)
+    b.get_parcel_axis()
 
     print("hovering")
