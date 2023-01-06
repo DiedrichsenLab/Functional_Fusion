@@ -13,6 +13,10 @@ import nibabel as nb
 import os
 import warnings
 
+import sys
+
+# from dataset import agg_data
+sys.path.append("..")
 import Functional_Fusion.matrix as matrix
 import SUITPy as suit
 import surfAnalysisPy as surf
@@ -83,33 +87,47 @@ class Atlas():
 
     def get_parcel(self, label_img):
         """
-        creates an array containing labels
+        creates an array containing labels for volumetric label nifti
+        for surface atlases, this method will be overwritten
         Args:
-            label_img ('str') - string representing the path to the label image
+            label_img (list) - list of strings representing paths to label images
         Returns 
-            label_vector (np.ndarray) - numpy array containing label values
+            label_vector (list) - list of numpy array containing label values corresponding to label imagesss
 
         """
-        # load in the label image
-        self.label_img = nb.load(label_img)
-        
-        # get the mask
-        Xmask = self.mask_img.get_data()
-        Xmask = (Xmask>0)
 
-        try:
-            self.label_vector = suit.reslice.sample_image(self.label_img,
-                            self.world[0],
-                            self.world[1],
-                            self.world[2],
-                            0)
-        except:
-            # get the labels into an array
-            self.label_vector = self.label_img.agg_data() # this
-            self.label_vector = np.delete(self.label_vector, Xmask==0)
+        # make label_img a list if a string is passed on
+        if ~isinstance(label_img, list):
+            self.label_img = [label_img]
 
-        # Find the unique of parcels with label > 0
-        self.P = np.unique(self.label_vector[self.label_vector>0]).shape[0]
+        # get label vectors for each label image
+        self.label_vector = []
+        for h, label in enumerate(self.label_img):
+            # load the label image
+            img = nb.load(label)
+
+            if hasattr(img, 'agg_data'): # if the label image is gifti
+                label_vec = img.agg_data() 
+            else:
+                label_vec = nt.sample_image(img,
+                                               self.world[0],
+                                               self.world[1],
+                                               self.world[2],
+                                               0) # 0 determines interpolation method for sampling
+
+            # Find the number of parcels with label > 0
+            parcel = np.unique(label_vec[label_vec>0]).shape[0]
+
+            # get non-zero elements of label
+            idx = np.argwhere(label_vec>0)
+
+            # change the values of non zero labels if necessary (only for the second hemi)
+            label_vec[idx] = label_vec[idx] + h*parcel
+
+            self.label_vector.append(label_vec)
+
+        # number of parcels is the max label in the last element of label image
+        self.parcel = np.max(self.label_vector[h])
 
     def get_parcel_axis(self, label_vector):
         """ Returns parcel axis
@@ -123,9 +141,9 @@ class Atlas():
             if l > 0:
                 # Create BrainModelAxis for each label
                 bm = nb.cifti2.BrainModelAxis.from_mask(label_vector == l,
-                                                    name=self.name)
+                                                    name=self.structure)
                 # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
-                bm_list.append((f"{self.name}-{l:02}", bm))
+                bm_list.append((f"{self.structure}-{l:02}", bm))
 
         # create parcel axis from the list of brain models created for labels
         self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
@@ -147,6 +165,7 @@ class AtlasVolumetric(Atlas):
         Xmask = (Xmask>0)
         i,j,k = np.where(Xmask>0)
         self.vox = np.vstack((i,j,k))
+        self.mask = Xmask
         self.world = nt.affine_transform_mat(self.vox,self.mask_img.affine)
         self.P = self.world.shape[1]
         self.structure = structure
@@ -297,7 +316,7 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
 class AtlasSurface(Atlas):
     """Surface-based altas space
     """
-    def __init__(self, name, mask_gii, structure):
+    def __init__(self, name, mask_img, structure):
         """Atlas Surface class constructor
         Args:
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
@@ -311,13 +330,13 @@ class AtlasSurface(Atlas):
         """
         super().__init__(name)
 
-        assert len(mask_gii) == len(structure), \
+        assert len(mask_img) == len(structure), \
             "The length of mask and brain structure should be matched!"
 
         self.structure = structure
-        Xmask = [nb.load(mg).agg_data() for mg in mask_gii]
-        self.vertex_mask = [(X>0) for X in Xmask]
-        self.vertex = [np.nonzero(X)[0] for X in self.vertex_mask]
+        Xmask = [nb.load(mg).agg_data() for mg in mask_img]
+        self.mask = [(X>0) for X in Xmask]
+        self.vertex = [np.nonzero(X)[0] for X in self.mask]
         self.P = sum([v.shape[0] for v in self.vertex])
 
     def data_to_cifti(self, data, row_axis=None):
@@ -421,6 +440,37 @@ class AtlasSurface(Atlas):
 
         return np.hstack(return_data)
 
+    def get_parcel(self, label_img):
+
+        assert len(label_img) == len(self.structure), \
+            "The length of label images and brain structure should be matched!"
+
+        # get the labels vector
+        label = [nb.load(mg).agg_data() for mg in label_img]
+
+        self.label_vector = []
+        for h, label in enumerate(label_img):
+            # load the label image
+            img = nb.load(label)
+
+            label_vec = img.agg_data()
+
+            # get non-zero labels
+            # Find the unique of parcels with label > 0
+            parcel = np.unique(label_vec[label_vec>0]).shape[0]
+
+            # get non-zero elements of label
+            idx = np.argwhere(label_vec>0)
+
+            # change the values of non zero labels if necessary (only for the second hemi)
+            label_vec[idx] = label_vec[idx] + h*parcel
+
+            self.label_vector.append(label_vec)
+
+        # number of parcels is the max label in the second hemi
+        self.parcel = np.max(self.label_vector[h])
+        return 
+    
     def get_brain_model_axis(self):
         """ Returns brain model axis
 
@@ -439,6 +489,37 @@ class AtlasSurface(Atlas):
                     name=self.structure[i])
         return bm
 
+    def get_parcel_axis(self, label_vector):
+        """ Returns parcel axis
+
+        Returns:
+            bm (cifti2.ParcelAxis)
+        """
+        bm_list = []
+        for h, labels in enumerate(label_vector):
+            # loop over labels and create brain models
+            
+            for l in np.unique(labels):
+                if l > 0:
+
+                    # Make the brain Structure model for each label
+                    if h == 0:
+                        bm = nb.cifti2.BrainModelAxis.from_mask(
+                        labels == l,
+                        name=self.structure[h])
+                    else:
+                        bm = bm + nb.cifti2.BrainModelAxis.from_mask(
+                            labels == l,
+                            name=self.structure[h])
+                    
+                    # Create BrainModelAxis for each label
+                    bm = nb.cifti2.BrainModelAxis.from_mask(labels == l,
+                                                        name=self.structure[h])
+                    # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
+                    bm_list.append((f"{self.structure[h]}-{l:02}", bm))
+
+        # create parcel axis from the list of brain models created for labels
+        self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
 class AtlasSurfaceSymmetric(AtlasSurface):
     """ Surface atlas with left-right symmetry
         The atlas behaves like AtlasSurface, but provides
@@ -693,6 +774,8 @@ def get_data_cifti(fnames,atlases):
     for i in range(n_atlas):
         data[i]=np.vstack(data[i])
     return data
+
+
 
 # to be depricated?
 # class AtlasVolumeParcel(Atlas):
