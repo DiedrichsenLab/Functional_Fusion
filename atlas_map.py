@@ -126,7 +126,7 @@ class Atlas():
             # change the values of non zero labels if necessary (only for the second hemi)
             label_vec[idx] = label_vec[idx] + h*parcel
 
-            self.label_vector.append(label_vec)
+            self.label_vector.append(label_vec[label_vec>0])
 
         # number of parcels is the max label in the last element of label image
         self.parcel = np.max(self.label_vector[h])
