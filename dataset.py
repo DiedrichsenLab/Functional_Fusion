@@ -634,7 +634,7 @@ class DataSetMNIVol(DataSet):
                     ses_id='ses-01',
                     type='CondHalf',
                     atlas='SUIT3',
-                    smooth=2.0):
+                    smooth=None):
         """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
         Args:
             type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
