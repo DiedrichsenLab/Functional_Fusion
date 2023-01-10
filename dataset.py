@@ -525,7 +525,7 @@ class DataSetNative(DataSet):
         if atlas.structure=='cerebellum':
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             if atlas.name[0:4]!='SUIT':
-                deform1,m = am.get_deform(self.atlas_dir,atlas.name,'SUIT2') 
+                deform1,m = am.get_deform(self.atlas_dir,atlas.name,source='SUIT2') 
                 deform = [deform1, deform]
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world,deform, mask))
@@ -634,7 +634,7 @@ class DataSetMNIVol(DataSet):
                     ses_id='ses-01',
                     type='CondHalf',
                     atlas='SUIT3',
-                    smooth=2.0):
+                    smooth=None):
         """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
         Args:
             type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
@@ -1752,6 +1752,7 @@ class DataSetWMFS(DataSetNative):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
         X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
         reg_in = np.arange(C.shape[1],dtype=int)
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=None)

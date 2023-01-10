@@ -227,8 +227,8 @@ if __name__ == "__main__":
     # extract_hcp_suit(ses_id='ses-s1', type='NetAutoAll', atlas='MNISymC3')
     # extract_hcp_suit(ses_id='ses-s2', type='NetAutoAll', atlas='MNISymC3')
     
-    # extract_hcp_suit(ses_id='ses-s1', type='NetAutoRun', atlas='MNISymC3')
-    # extract_hcp_suit(ses_id='ses-s2', type='NetAutoRun', atlas='MNISymC3')
+    extract_hcp_suit(ses_id='ses-s1', type='NetAutoRun', atlas='MNISymC2')
+    extract_hcp_suit(ses_id='ses-s2', type='NetAutoRun', atlas='MNISymC2')
     # extract_hcp_fs32k(ses_id='ses-s1', type='NetRun')
     # extract_hcp_data()
     # avrg_hcp_dpconn()
@@ -236,11 +236,11 @@ if __name__ == "__main__":
     # nb.save(C,hcp_dir + '/group_tessel-162.pscalar.nii')
     hcp_dataset = DataSetHcpResting(base_dir + '/HCP')
     # hcp_dataset.group_average_data(
-    #     ses_id='ses-s1', type='NetAutoAll', atlas='MNISymC3')
+    #     ses_id='ses-s1', type='NetAutoAll', atlas='MNISymC2')
     # hcp_dataset.group_average_data(
     #     ses_id='ses-s2', type='NetAutoAll', atlas='MNISymC3')
     hcp_dataset.plot_cerebellum(subject='group', sessions=[
-                                'ses-s1', 'ses-s2'], atlas='MNISymC3', type='NetAutoAll', savefig=True, cmap='hot', colorbar=True)
+                                'ses-s1', 'ses-s2'], atlas='MNISymC2', type='NetAutoAll', savefig=True, cmap='hot', colorbar=True)
 
     pass
     

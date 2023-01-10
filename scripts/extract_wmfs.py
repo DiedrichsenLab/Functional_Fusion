@@ -31,7 +31,8 @@ if __name__ == "__main__":
     # extract_wmfs(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
     # extract_wmfs(ses_id='ses-motor', type='CondHalf', atlas='fs32k')
     # extract_wmfs(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
-    extract_wmfs(ses_id='ses-motor', type='CondHalf', atlas='MNISymC2')
+    extract_wmfs(ses_id='ses-01', type='CondHalf', atlas='MNISymC2')
+    extract_wmfs(ses_id='ses-02', type='CondHalf', atlas='MNISymC2')
 
 
     # --- Group Average ---
@@ -39,9 +40,12 @@ if __name__ == "__main__":
     # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
     # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
     # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='fs32k')
-    dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='MNISymC2')
+    dataset.group_average_data(
+        ses_id='ses-01', type='CondHalf', atlas='MNISymC2')
+    dataset.group_average_data(
+        ses_id='ses-02', type='CondHalf', atlas='MNISymC2')
 
     
     # --- Plot cerebellar data on flatmap ---
-    dataset.plot_cerebellum(subject='all', savefig=True, colorbar=True)
+    dataset.plot_cerebellum(subject='group', savefig=True, colorbar=True)
     pass
