@@ -645,6 +645,7 @@ class AtlasMapDeform():
             linindx = np.ravel_multi_index((vox[0,:],vox[1,:],vox[2,:]),
                                             M.shape,mode='clip')
             # Distances between atlas coordinates and voxel coordinates
+            # TODO: For a lot of voxels, calculating the Euclidian distance is very memory hungry. Build the atlas iteratively to avoid running into memory issues.
             D = nt.euclidean_dist_sq(atlas_ind,world_vox)
             # Find voxels with substantial power under gaussian kernel
             W = np.exp(-0.5 * D/(smooth**2))
