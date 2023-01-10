@@ -19,7 +19,7 @@ import surfAnalysisPy as surf
 import nitools as nt
 import json
 
-def get_atlas(atlas_str,atlas_dir):
+def get_atlas(atlas_str,atlas_dir,sym=False):
     """ returns an atlas from a code
 
     Args:
@@ -40,6 +40,9 @@ def get_atlas(atlas_str,atlas_dir):
     if ainf['type']=="AtlasVolumetric":
         mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
         atlas = AtlasVolumetric(atlas_str,mask_img=mask,structure=ainf['structure'])
+    elif sym and ainf['type'] == "AtlasVolumetric":
+        mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
+        atlas = AtlasVolumeSymmetric(atlas_str, mask_img=mask)
     elif ainf['type']=="AtlasSurface":
         mask = []
         for i,m in enumerate(ainf['mask']):
