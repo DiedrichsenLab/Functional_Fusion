@@ -64,12 +64,12 @@ def show_ibc_group(ses_id='ses-hcp1', type='CondHalf', atlas='MNISymC3', cond=0,
 def extract_all(atlas='MNISym3'):
     ibc_dataset = DataSetIBC(data_dir)
     info = ibc_dataset.get_participants()
-    for ses in ibc_dataset.sessions[1:]:
+    for ses in ibc_dataset.sessions[9:]:
         print(f'extracting {ses}')
         if atlas == 'fs32k':
-            ibc_dataset.extract_all_fs32k(ses,type='CondHalf', smooth=2)
+            ibc_dataset.extract_all_fs32k(ses,type='CondHalf')
         else:
-            ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas=atlas, smooth=2)
+            ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas=atlas)
 
 
 
