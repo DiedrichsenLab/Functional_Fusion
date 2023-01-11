@@ -48,7 +48,7 @@ def get_atlas(atlas_str,atlas_dir):
         mask = []
         for i,m in enumerate(ainf['mask']):
             mask.append(atlas_dir + f"/{ainf['dir']}/{m}")
-        atlas = AtlasSurface(atlas_str, mask_gii=mask, structure=ainf['structure'])
+        atlas = AtlasSurface(atlas_str, mask_img=mask, structure=ainf['structure'])
     return atlas, ainf
 
 def get_deform(atlas_dir,target,source='MNIAsym2'):
@@ -85,17 +85,18 @@ class Atlas():
         self.name = name
         self.P = np.nan # Number of locations in this atlas
 
-    def get_parcel(self, label_img):
+    def get_parcel(self, label_img, unite_hemi = True):
         """
         creates an array containing labels for volumetric label nifti
         for surface atlases, this method will be overwritten
         Args:
             label_img (list) - list of strings representing paths to label images
+            unite_hemi (bool) - average over left and right hemi?
         Returns 
             label_vector (list) - list of numpy array containing label values corresponding to label imagesss
 
         """
-
+        self.unite_hemi = unite_hemi
         # make label_img a list if a string is passed on
         if not isinstance(label_img, list):
             self.label_img = [label_img]
@@ -124,9 +125,10 @@ class Atlas():
             idx = np.argwhere(label_vec>0)
 
             # change the values of non zero labels if necessary (only for the second hemi)
-            label_vec[idx] = label_vec[idx] + h*parcel
+            if not self.unite_hemi:
+                label_vec[idx] = label_vec[idx] + h*parcel
 
-            self.label_vector.append(label_vec[label_vec>0])
+            self.label_vector.append(label_vec)
 
         # number of parcels is the max label in the last element of label image
         self.parcel = np.max(self.label_vector[h])
@@ -146,20 +148,25 @@ class Atlas():
                 brain_model_name = [brain_model_name]
             
             for l in np.unique(labels):
+                
                 if l > 0:
                     # Make the brain Structure model for each label
                     if h == 0:
                         bm = nb.cifti2.BrainModelAxis.from_mask(
-                                                               labels == l,
-                                                               name=brain_model_name[h])
+                                                            labels == l,
+                                                            name=brain_model_name[h])
+                        bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
                     else:
-                        bm = bm + nb.cifti2.BrainModelAxis.from_mask(
-                                                                    labels == l,
-                                                                    name=brain_model_name[h])
-
-                    # append a tuple containing the name of the parcel and the corresponding BrainAxisModel
-                    bm_list.append((f"{self.structure[h]}-{l:02}", bm))
-
+                        # UGGLY STUFF... NEED TO CHANGE
+                        if not self.unite_hemi:
+                            bm = bm + nb.cifti2.BrainModelAxis.from_mask(
+                                                                        labels == l,
+                                                                        name=brain_model_name[h])
+                            bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
+                        else:
+                            pass
+                    
+                                       
         # create parcel axis from the list of brain models created for labels
         self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
         self.bm_list = bm_list
@@ -352,8 +359,9 @@ class AtlasSurface(Atlas):
         self.structure = structure
         Xmask = [nb.load(mg).agg_data() for mg in mask_img]
         self.mask = [(X>0) for X in Xmask]
-        self.vertex = [np.nonzero(X)[0] for X in self.mask]
-        self.P = sum([v.shape[0] for v in self.vertex])
+        self.vertex_mask = [(X>0) for X in Xmask]
+        self.vertex = [np.nonzero(X)[0] for X in self.vertex_mask]
+        self.P = sum([v.shape[0] for v in self.vertex_mask])
 
     def data_to_cifti(self, data, row_axis=None):
         """Maps data back into a cifti image
