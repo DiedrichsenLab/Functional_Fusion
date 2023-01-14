@@ -18,16 +18,17 @@ import SUITPy as suit
 import surfAnalysisPy as surf
 import nitools as nt
 import json
+import atlas_map as am
 
-def get_atlas(atlas_str,atlas_dir,sym=False):
+def get_atlas(atlas_str,atlas_dir):
     """ returns an atlas from a code
 
     Args:
         atlas_str (str): Name of the atlas
         atlas_dir (str): directory name for the atlas
-    
+
     Returns:
-        atlas (AtlasVolumetric object or AtlasSurface object): Atlas object
+        atlas (AtlasVolumetric, AtlasSurface, (or symmetric variant) object): Atlas object
         ainf (dict): Atlas info
     """
     with open(atlas_dir + '/atlas_description.json') as file:
@@ -37,17 +38,14 @@ def get_atlas(atlas_str,atlas_dir,sym=False):
     ainf = atlases[atlas_str]
 
     # Make the atlas object
-    if ainf['type']=="AtlasVolumetric":
-        mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
-        atlas = AtlasVolumetric(atlas_str,mask_img=mask,structure=ainf['structure'])
-    elif sym and ainf['type'] == "AtlasVolumetric":
-        mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
-        atlas = AtlasVolumeSymmetric(atlas_str, mask_img=mask)
-    elif ainf['type']=="AtlasSurface":
+    At = getattr(am,ainf['type'])
+    if isinstance(ainf['mask'],list):
         mask = []
         for i,m in enumerate(ainf['mask']):
             mask.append(atlas_dir + f"/{ainf['dir']}/{m}")
-        atlas = AtlasSurface(atlas_str, mask_gii=mask, structure=ainf['structure'])
+    else:
+        mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
+    atlas = At(atlas_str,mask,ainf['structure'])
     return atlas, ainf
 
 def get_deform(atlas_dir,target,source='MNIAsym2'):
@@ -202,7 +200,7 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
     mapping indices from a full representation to
     a reduced (symmetric) representation of size Psym.
     """
-    def __init__(self,name,mask_img):
+    def __init__(self,name,mask_img,structure="cerebellum"):
         """AtlasVolumeSymmeytric class constructor: Generates members
         indx_full, indx_reduced, indx_flip.
         Assume you have a
@@ -220,7 +218,7 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_img (str): file name of mask image defining atlas location
         """
-        super().__init__(name,mask_img)
+        super().__init__(name,mask_img,structure)
         # Find left and righgt hemispheric voxels
         indx_left = np.where(self.world[0,:]<=0)[0]
         indx_right = np.where(self.world[0,:]>=0)[0]
@@ -355,7 +353,7 @@ class AtlasSurface(Atlas):
         for i, stru in enumerate(self.structure):
             # Align the structure name to cifti file
             stru = nb.cifti2.BrainModelAxis.to_cifti_brain_structure_name(stru)
-            
+
             if stru not in img_names:
                 print(f'The input image does not contain {stru}! (Fill with NaN)')
                 # if the input image doesn't have current brain structure
@@ -370,7 +368,7 @@ class AtlasSurface(Atlas):
                 this_full_data = np.full((data.shape[0], bm.nvertices[stru]), np.nan)
                 this_full_data[:,bm.vertex] = data[:, data_idx]
                 this_data = this_full_data[:, self.vertex[i]]
- 
+
             return_data.append(this_data)
 
         return np.hstack(return_data)
