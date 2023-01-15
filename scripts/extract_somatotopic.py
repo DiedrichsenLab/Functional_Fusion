@@ -21,7 +21,7 @@ atlas_dir = base_dir + '/Atlases'
 
 def extract_somatotopic(ses_id='ses-01',type='CondHalf',atlas='MNISymC3'):
     dataset = DataSetSomatotopic(data_dir)
-    dataset.extract_all(ses_id,type,atlas)
+    dataset.extract_all(ses_id,type,atlas, smooth=0)
 
 
 
