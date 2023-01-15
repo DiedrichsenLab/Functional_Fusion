@@ -37,10 +37,10 @@ def get_atlas(atlas_str,atlas_dir,sym=False):
     ainf = atlases[atlas_str]
 
     # Make the atlas object
-    if ainf['type']=="AtlasVolumetric" and not sym:
+    if ainf['type']=="AtlasVolumetric" and sym is False:
         mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
         atlas = AtlasVolumetric(atlas_str,mask_img=mask,structure=ainf['structure'])
-    elif ainf['type'] == "AtlasVolumetric" and sym:
+    elif (ainf['type'] == "AtlasVolumetric" and sym) or ainf['type'] == 'AtlasVolumeSymmetric':
         mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
         atlas = AtlasVolumeSymmetric(atlas_str, mask_img=mask)
     elif ainf['type']=="AtlasSurface":
