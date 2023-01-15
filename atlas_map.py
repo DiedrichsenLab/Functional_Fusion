@@ -18,7 +18,7 @@ import SUITPy as suit
 import surfAnalysisPy as surf
 import nitools as nt
 import json
-import atlas_map as am
+import Functional_Fusion.atlas_map as am # Need to do self import here to get atlas
 
 def get_atlas(atlas_str,atlas_dir):
     """ returns an atlas from a code
