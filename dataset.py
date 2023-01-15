@@ -30,6 +30,24 @@ import SUITPy as suit
 import matplotlib.pyplot as plt
 import re
 
+def get_dataset_obj(base_dir, dataset):
+    """
+    Returns the dataset class for the dataset of interest
+    Args: 
+    base_dir (str)
+    dataset (str) - name of the dataset
+    Returns:
+    my_dataset (Dataset object)
+    """
+    T = pd.read_csv(base_dir + '/dataset_description.tsv',sep='\t')
+    T.name = [n.casefold() for n in T.name]
+    i = np.where(dataset.casefold() == T.name)[0]
+    if len(i)==0:
+        raise(NameError(f'Unknown dataset: {dataset}'))
+    dsclass = getattr(sys.modules[__name__],T.class_name[int(i)])
+    dir_name = base_dir + '/' + T.dir_name[int(i)]
+    my_dataset = dsclass(dir_name)
+    return my_dataset
 
 def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     """get_dataset
@@ -44,14 +62,14 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     Returns:
         _type_: _description_
     """
-    T = pd.read_csv(base_dir + '/dataset_description.tsv',sep='\t')
-    T.name = [n.casefold() for n in T.name]
-    i = np.where(dataset.casefold() == T.name)[0]
-    if len(i)==0:
-        raise(NameError(f'Unknown dataset: {dataset}'))
-    dsclass = getattr(sys.modules[__name__],T.class_name[int(i)])
-    dir_name = base_dir + '/' + T.dir_name[int(i)]
-    my_dataset = dsclass(dir_name)
+    # T = pd.read_csv(base_dir + '/dataset_description.tsv',sep='\t')
+    # T.name = [n.casefold() for n in T.name]
+    # i = np.where(dataset.casefold() == T.name)[0]
+    # if len(i)==0:
+    #     raise(NameError(f'Unknown dataset: {dataset}'))
+    # dsclass = getattr(sys.modules[__name__],T.class_name[int(i)])
+    # dir_name = base_dir + '/' + T.dir_name[int(i)]
+    my_dataset = get_dataset_obj(base_dir, dataset)
 
     # Get defaults sessions from dataset itself
     if sess=='all':
