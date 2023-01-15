@@ -13,6 +13,10 @@ import pandas as pd
 import os
 import os.path as op
 import sys
+import sys
+
+from matrix import indicator
+sys.path.append("..")
 import Functional_Fusion.util as util
 import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
@@ -357,6 +361,7 @@ class DataSet:
 
         # Loop over the different subjects to find the most complete info
         for i, s in enumerate(T.participant_id.iloc):
+            
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
@@ -372,7 +377,9 @@ class DataSet:
                 max = info.shape[0]
 
         # Loop again to assemble the data
-        for i, s in enumerate(T.participant_id.iloc):
+        Data_list = []
+        for i, s in enumerate(T.participant_id):
+            print(f'- Getting data for {s} in {space}')
             # Load the data
             C = nb.load(self.data_dir.format(s)
                         + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
@@ -390,10 +397,13 @@ class DataSet:
                         incomplete = np.insert(np.asarray(incomplete), j, np.nan)
                         this_data = np.insert(this_data, j, np.nan, axis=0)
 
-            if Data is None:
-                Data = np.zeros((len(subj), C.shape[0], C.shape[1]))
-            Data[i, :, :] = this_data
+            # if Data is None:
+            #     Data = np.zeros((len(subj), C.shape[0], C.shape[1]))
+            # Data[i, :, :] = this_data
+            Data_list.append(this_data[np.newaxis, ...])
 
+        # concatenate along the first dimension (subjects)
+        Data = np.concatenate(Data_list, axis = 0)
         # Ensure that infinite values (from div / 0) show up as NaNs
         Data[np.isinf(Data)] = np.nan
         return Data, info_com
@@ -496,8 +506,6 @@ class DataSet:
                         plt.savefig(
                             dest_dir + f'{sub}_{session}_{condition_name}.png')
                     plt.clf()
-                        
-
 
 class DataSetNative(DataSet):
     """Data set with estimates data stored as
@@ -539,6 +547,17 @@ class DataSetNative(DataSet):
                 atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
                             white,pial, mask))
                 atlas_maps[i].build()
+
+        elif atlas.name=='fs32k_Asym':
+            for i,hem in enumerate(['L','R']):
+                adir = self.anatomical_dir.format(sub)
+                edir = self.estimates_dir.format(sub)
+                pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
+                white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
+                mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+                atlas_maps.append(am.AtlasMapSurf(atlas.vertex_mask[i],
+                            white,pial, mask))
+                atlas_maps[i].build()
         return atlas_maps
 
     def extract_all(self,
@@ -562,6 +581,7 @@ class DataSetNative(DataSet):
                             smooth=smooth)
             print(f'Extract {s}')
             fnames,info = self.get_data_fnames(s,ses_id)
+
             data = am.get_data_nifti(fnames,atlas_maps)
             data,info = self.condense_data(data,info,type,
                     participant_id=s,ses_id=ses_id)
@@ -1750,6 +1770,7 @@ class DataSetWMFS(DataSetNative):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
         X = np.load(dir+f'/{participant_id}_{ses_id}_designmatrix.npy')
         reg_in = np.arange(C.shape[1],dtype=int)
         data_new = optimal_contrast(data_n,C,X,reg_in,baseline=None)
