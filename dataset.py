@@ -28,6 +28,7 @@ from numpy.linalg import pinv,solve
 import warnings
 import SUITPy as suit
 import matplotlib.pyplot as plt
+import re
 
 
 def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
@@ -822,7 +823,7 @@ class DataSetHcpResting(DataSetCifti):
         self.derivative_dir = self.base_dir + '/derivatives'
         self.sessions=['ses-s1','ses-s2']
         self.hem_name = ['cortex_left', 'cortex_right']
-        self.default_type = 'NetRun'
+        self.default_type = 'NetAutoRun'
         self.cond_ind = 'reg_id'
         self.cond_name = 'region_name'
         self.part_ind = 'half'
@@ -852,8 +853,11 @@ class DataSetHcpResting(DataSetCifti):
             type (str): Type of extraction:
                 'IcoAll': Single estimate per session, Correlation with cortical icosahedron parcels
                 'IcoRun': Seperate estimates per run, Correlation with cortical icosahedron parcels
-                'NetAll': Single estimate per session, Correlation with cortico-cerebellar resting-state networks
-                'NetRun': Seperate estimates per run, Correlation with cortico-cerebellar resting-state networks
+                'NetAll': Single estimate per session, Correlation with cortico-cerebellar resting-state networks estimated with dimensionality = 25.
+                'NetRun': Seperate estimates per run, Correlation with cortico-cerebellar resting-state networks estimated with dimensionality = 25.
+                'NetAutoAll': Single estimate per session, Correlation with cortico-cerebellar resting-state networks estimated with automatic dimensionality estimation.
+                'NetAutoRun': Seperate estimates per run, Correlation with cortico-cerebellar resting-state networks estimated with automatic dimensionality estimation.
+      
                     Defaults to 'IcoAll'.
 
         Returns:
@@ -871,21 +875,24 @@ class DataSetHcpResting(DataSetCifti):
         mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
         atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
         atlas_map.build(smooth=2.0)
-
-        if type[0:3] == 'Ico':
+        
+        # Split type information on capital letters
+        type_info = re.findall('[A-Z][^A-Z]*', type)
+        surf_parcel = None
+        if type_info[0] == 'Ico':
             networks=None
             # Get the parcelation
-            surf_parcel = []
             for i, h in enumerate(['L', 'R']):
                 dir = self.atlas_dir + '/tpl-fs32k'
                 gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
                 surf_parcel.append(am.AtlasSurfaceParcel(self.hem_name[i], gifti))
             bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
             seed_names=list(bpa.name)
-        elif type[0:3] == 'Net':
-            surf_parcel = None
+        
+        elif type_info[0] == 'Net':
+            dimensionality = type_info[1].casefold()
             # Get the networks
-            networkdir = self.base_dir + '/group_ica/dim_25/'
+            networkdir = self.base_dir + f'/group_ica/dim_{dimensionality}/'
             networkimg = nb.load(networkdir +
                 'melodic_IC.nii.gz')
             networks = networkimg.get_fdata()
@@ -909,7 +916,7 @@ class DataSetHcpResting(DataSetCifti):
             coef = self.get_cereb_connectivity(
                 s, atlas_map, runs=runs, type=type, cortical_atlas_parcels=surf_parcel, networks=networks)
 
-            if type[3:7] == 'All':  # Average across runs
+            if type_info[-1] == 'All':  # Average across runs
                 coef = np.nanmean(coef, axis=0)
 
                 # Make info structure
@@ -921,7 +928,7 @@ class DataSetHcpResting(DataSetCifti):
                                      'region_name': seed_names,
                                      'names': seed_names})
 
-            elif type[3:7] == 'Run':  # Concatenate over runs
+            elif type_info[-1] == 'Run':  # Concatenate over runs
                 coef = np.concatenate(coef, axis=0)
 
                 # Make info structure
@@ -942,7 +949,7 @@ class DataSetHcpResting(DataSetCifti):
 
 
             # --- Save cerebellar data as dscalar CIFTI-file and write info to tsv ---
-            C = am.data_to_cifti(coef, [atlas_map], info.names)
+            C = suit_atlas.data_to_cifti(coef, info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir +
@@ -950,12 +957,6 @@ class DataSetHcpResting(DataSetCifti):
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
-            # --- Build a connectivity CIFTI-file and save ---
-            # bmc = suit_atlas.get_brain_model_axis()
-            # header = nb.Cifti2Header.from_axes((bpa, bmc))
-            # cifti_img = nb.Cifti2Image(dataobj=coef, header=header)
-            # nb.save(cifti_img, dest_dir +
-            #         f'/{s}_space-{atlas}_{ses_id}_{type}_{res}.dpconn.nii')
 
     def extract_all_fs32k(self, ses_id='ses-s1', type='IcoAll', res=162):
         """ MDTB extraction of atlasmap locations
@@ -1173,25 +1174,26 @@ class DataSetHcpResting(DataSetCifti):
            file
 
         """
-        if type[0:3] == 'Ico':
-            hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
+        # Split type information on capital letters
+        type_info = re.findall('[A-Z][^A-Z]*', type)
+
+        hem_name = ['CIFTI_STRUCTURE_CORTEX_LEFT', 'CIFTI_STRUCTURE_CORTEX_RIGHT']
 
         # get the file name for the cifti time series
         fnames = self.get_data_fnames(participant_id)
         coef = None
         for r,run in enumerate(runs):
+            
+
+            ts_cerebellum = am.get_data_cifti([fnames[run]], [cereb_atlas_map])
+            ts_cerebellum = ts_cerebellum[0]
+
             # load the cifti
             ts_cifti = nb.load(fnames[run])
 
-            # get the ts in volume for subcorticals
-            ts_vol = util.volume_from_cifti(ts_cifti)
-            # transfer to suit space applying the deformation
-            ts_cerebellum = am.get_data4D(ts_vol, [cereb_atlas_map])
-            ts_cerebellum = ts_cerebellum[0]
-
-            if type[0:3] == 'Ico':
+            if type_info[0] == 'Ico':
+                ts_32k = util.surf_from_cifti(ts_cifti, hem_name)
                 # get the ts in surface for corticals
-                ts_32k = util.surf_from_cifti(ts_cifti,hem_name)
                 ts_parcel = []
                 for hem in range(2):
 
@@ -1202,11 +1204,11 @@ class DataSetHcpResting(DataSetCifti):
 
                 # concatenate them into a single array for correlation calculation
                 ts_seed = np.concatenate(ts_parcel, axis = 1)
-            elif type[0:3] == 'Net':
-                # Regress network spatial map into the run's wholebrain data
+            elif type_info[0] == 'Net':
+                # Regress network spatial map into the run's cortical data
                 # (returns run-specific timecourse for each network)
-                ts = ts_vol.get_fdata()
-                ts_seed = self.get_network_timecourse(networks, ts)
+                ts_vol = util.volume_from_cifti(ts_cifti)
+                ts_seed = self.get_network_timecourse(networks, ts_vol.get_fdata())
                 ts_seed = ts_seed.T
 
 
@@ -1221,7 +1223,7 @@ class DataSetHcpResting(DataSetCifti):
             N = ts_cerebellum.shape[0]
             coef[r,:,:] = ts_seed.T @ ts_cerebellum / N
 
-        return coef  # shape (n_tessl,P)
+        return coef
 
     def get_cortical_connectivity(self, participant_id, cortex_mask=None,
                                   runs=[0,1,2,3], type='IcoAll',
