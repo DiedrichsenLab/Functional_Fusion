@@ -49,7 +49,7 @@ def get_dataset_obj(base_dir, dataset):
     my_dataset = dsclass(dir_name)
     return my_dataset
 
-def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
+def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None, info_only=False):
     """get_dataset
 
     Args:
@@ -85,13 +85,19 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None):
     info_l = []
     data_l = []
     for s in sess:
-        dat,inf = my_dataset.get_data(atlas,s,type)
-        data_l.append(dat)
+        if info_only:
+            inf = my_dataset.get_info(s,type)
+        else:
+            dat,inf = my_dataset.get_data(atlas,s,type)
+            data_l.append(dat)
         inf['sess']=[s]*inf.shape[0]
         info_l.append(inf)
 
     info = pd.concat(info_l,ignore_index=True,sort=False)
-    data = np.concatenate(data_l,axis=1)
+    if info_only:
+        data = []
+    else:
+        data = np.concatenate(data_l,axis=1)
     return data,info,my_dataset
 
 def prewhiten_data(data):
@@ -427,6 +433,50 @@ class DataSet:
         Data[np.isinf(Data)] = np.nan
         return Data, info_com
 
+    def get_info(self, ses_id='ses-s1',
+                 type=None, subj=None, fields=None):
+        """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
+
+        Args:
+            space (str): Atlas space (Defaults to 'SUIT3').
+            ses_id (str): Session ID (Defaults to 'ses-s1').
+            type (str): Type of data (Defaults to 'CondHalf').
+            subj (ndarray): Subject numbers to get - by default all
+            fields (list): Column names of info stucture that are returned
+                these are also be tested to be equivalent across subjects
+        Returns:
+            Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
+            info (DataFramw): Data frame with common descriptor
+        """
+        T = self.get_participants()
+
+        # Deal with subset of subject option
+        if subj is None:
+            subj = np.arange(T.shape[0])
+        
+        if type is None:
+            type = self.default_type
+
+        max = 0
+
+        # Loop over the different subjects to find the most complete info
+        for s in T.participant_id.iloc:
+            # Get an check the information
+            info_raw = pd.read_csv(self.data_dir.format(s)
+                                   + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            # Reduce tsv file when fields are given
+            if fields is not None:
+                info = info_raw[fields]
+            else:
+                info = info_raw
+
+            # Keep the most complete info
+            if info.shape[0] > max:
+                info_com = info
+                max = info.shape[0]
+        
+        return info_com
+    
     def group_average_data(self, ses_id=None,
                                  type=None,
                                  atlas='SUIT3'):
@@ -551,7 +601,7 @@ class DataSetNative(DataSet):
         if atlas.structure=='cerebellum':
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             if atlas.name[0:4]!='SUIT':
-                deform1,m = am.get_deform(self.atlas_dir,atlas.name,'SUIT2') 
+                deform1,m = am.get_deform(self.atlas_dir,atlas.name,source='SUIT2') 
                 deform = [deform1, deform]
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world,deform, mask))
@@ -672,7 +722,7 @@ class DataSetMNIVol(DataSet):
                     ses_id='ses-01',
                     type='CondHalf',
                     atlas='SUIT3',
-                    smooth=2.0):
+                    smooth=None):
         """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
         Args:
             type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
