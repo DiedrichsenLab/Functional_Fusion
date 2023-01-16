@@ -30,15 +30,7 @@ import SUITPy as suit
 import matplotlib.pyplot as plt
 import re
 
-def get_dataset_obj(base_dir, dataset):
-    """
-    Returns the dataset class for the dataset of interest
-    Args: 
-    base_dir (str)
-    dataset (str) - name of the dataset
-    Returns:
-    my_dataset (Dataset object)
-    """
+def get_dataset_class(base_dir, dataset):
     T = pd.read_csv(base_dir + '/dataset_description.tsv',sep='\t')
     T.name = [n.casefold() for n in T.name]
     i = np.where(dataset.casefold() == T.name)[0]
@@ -49,16 +41,15 @@ def get_dataset_obj(base_dir, dataset):
     my_dataset = dsclass(dir_name)
     return my_dataset
 
-def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None, info_only=False):
+def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type="CondHalf", info_only=False):
     """get_dataset
-
     Args:
         base_dir (str): Basis directory for the Functional Fusion repro
         dataset (str): Data set indicator
         atlas (str): Atlas indicator. Defaults to 'SUIT3'.
         sess (str or list): Sessiions. Defaults to 'all'.
         type (str): 'CondHalf','CondRun', etc....
-
+        info_only (bool): only returns info (default: False)
     Returns:
         _type_: _description_
     """
@@ -69,7 +60,9 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type=None, info_only=F
     #     raise(NameError(f'Unknown dataset: {dataset}'))
     # dsclass = getattr(sys.modules[__name__],T.class_name[int(i)])
     # dir_name = base_dir + '/' + T.dir_name[int(i)]
-    my_dataset = get_dataset_obj(base_dir, dataset)
+    # my_dataset = dsclass(dir_name)
+
+    my_dataset = get_dataset_class(base_dir, dataset)
 
     # Get defaults sessions from dataset itself
     if sess=='all':
