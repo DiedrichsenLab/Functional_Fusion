@@ -112,43 +112,6 @@ class Atlas():
                 indx = indx + n_vert
         return self.label_vector,self.labels
 
-    def get_parcel_axis(self):
-        """ Returns parcel axis
-
-        Returns:
-            bm (cifti2.ParcelAxis)
-        """
-        bm_list = []
-        for h, labels in enumerate(self.label_vector):
-            # loop over labels and create brain models
-            ##??????? UGLY
-            brain_model_name = self.structure
-            if not isinstance(brain_model_name, list):
-                brain_model_name = [brain_model_name]
-            
-            for l in np.unique(labels):
-                
-                if l > 0:
-                    # Make the brain Structure model for each label
-                    if h == 0:
-                        bm = nb.cifti2.BrainModelAxis.from_mask(
-                                                            labels == l,
-                                                            name=brain_model_name[h])
-                        bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
-                    else:
-                        # UGGLY STUFF... NEED TO CHANGE
-                        if not self.unite_hemi:
-                            bm = bm + nb.cifti2.BrainModelAxis.from_mask(
-                                                                        labels == l,
-                                                                        name=brain_model_name[h])
-                            bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
-                        else:
-                            pass
-                    
-                                       
-        # create parcel axis from the list of brain models created for labels
-        self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
-        self.bm_list = bm_list
 
 class AtlasVolumetric(Atlas):
     """ Volumetric atlas with specific 3d-locations
@@ -182,6 +145,46 @@ class AtlasVolumetric(Atlas):
                                             name=self.structure,
                                             affine = self.mask_img.affine)
         return bm
+
+    def get_parcel_axis(self):
+        """ Returns parcel axis
+        Returns:
+            bm (cifti2.ParcelAxis)
+        """
+        bm_list = []
+        if not hasattr(self,'labels'):
+            raise(NameError('Atlas has no parcels defined yet - call atlas.getparcels(image) first'))
+        for h, labels in enumerate(self.labels):
+            # loop over labels and create brain models
+            ##??????? UGLY
+            brain_model_name = self.structure
+            if not isinstance(brain_model_name, list):
+                brain_model_name = [brain_model_name]
+            
+            for l in np.unique(labels):
+                
+                if l > 0:
+                    # Make the brain Structure model for each label
+                    if h == 0:
+                        bm = nb.cifti2.BrainModelAxis.from_mask(
+                                                            labels == l,
+                                                            name=brain_model_name[h])
+                        bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
+                    else:
+                        # UGGLY STUFF... NEED TO CHANGE
+                        if not self.unite_hemi:
+                            bm = bm + nb.cifti2.BrainModelAxis.from_mask(
+                                                                        labels == l,
+                                                                        name=brain_model_name[h])
+                            bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
+                        else:
+                            pass
+                    
+                                       
+        # create parcel axis from the list of brain models created for labels
+        self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+        self.bm_list = bm_list
+
 
     def data_to_cifti(self, data, row_axis=None):
         """ Transforms data into a cifti image
@@ -280,6 +283,7 @@ class AtlasVolumetric(Atlas):
                             self.world[2],
                             interpolation)
         return data
+
 
 class AtlasVolumeSymmetric(AtlasVolumetric):
     """ Volumetric atlas with left-right symmetry
@@ -502,6 +506,47 @@ class AtlasSurface(Atlas):
                     name=self.structure[i])
         return bm
 
+    def get_parcel_axis(self):
+        """ Returns parcel axis
+
+        Returns:
+            bm (cifti2.ParcelAxis)
+        """
+        if self.unite_hemi:
+            raise(NameError('Cannot create parcel axis with ROIs spanning both hemispheres. Set unite_hemi to FALSE.'))
+        bm_list = []
+        for h, labels in enumerate(self.label_vector):
+            # loop over labels and create brain models
+            ##??????? UGLY
+            brain_model_name = self.structure
+            if not isinstance(brain_model_name, list):
+                brain_model_name = [brain_model_name]
+            
+            for l in np.unique(labels):
+                
+                if l > 0:
+                    # Make the brain Structure model for each label
+                    if h == 0:
+                        bm = nb.cifti2.BrainModelAxis.from_mask(
+                                                            labels == l,
+                                                            name=brain_model_name[h])
+                        bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
+                    else:
+                        # UGGLY STUFF... NEED TO CHANGE
+                        if not self.unite_hemi:
+                            bm = bm + nb.cifti2.BrainModelAxis.from_mask(
+                                                                        labels == l,
+                                                                        name=brain_model_name[h])
+                            bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
+                        else:
+                            pass
+                    
+                                       
+        # create parcel axis from the list of brain models created for labels
+        self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+        self.bm_list = bm_list
+
+
 class AtlasSurfaceSymmetric(AtlasSurface):
     """ Surface atlas with left-right symmetry
         The atlas behaves like AtlasSurface, but provides
@@ -688,7 +733,7 @@ class AtlasMapSurf():
 
 def get_data_nifti(fnames,atlas_maps):
     """Extracts the data for a list of fnames
-    for a list of atlas_maps. This is usually called by DataSet.get_data()
+    for a list of atlas_maps. This is usually called by DataSet.extract_data()
     to extract the required raw data before processing it further
 
     Args:
