@@ -87,52 +87,30 @@ class Atlas():
         self.P = np.nan # Number of locations in this atlas
 
     def get_parcel(self, label_img, unite_hemi = True):
-        """
-        creates an array containing labels for volumetric label nifti
-        for surface atlases, this method will be overwritten
+        """ adds a label_vec to the atlas that assigns each voxel / node of the atlas
+        label_vec[i] = 0 mean that the ith voxel / node is unassigned  
         Args:
-            label_img (list) - list of strings representing paths to label images
-            unite_hemi (bool) - average over left and right hemi?
+            label_img (str/list) - filename(s) of label image(s)
+            unite_hemi (bool) - should ROIs span both left and right hemispheres, (true) or should they get seperate numbers (false)?
         Returns 
-            label_vector (list) - list of numpy array containing label values corresponding to label imagesss
+            label_vec (list) - list of numpy array containing label values corresponding to label images/ 
 
         """
         self.unite_hemi = unite_hemi
-        # make label_img a list if a string is passed on
-        if not isinstance(label_img, list):
-            self.label_img = [label_img]
-        else:
-            self.label_img = label_img
 
         # get label vectors for each label image
-        self.label_vector = []
-        for h, label in enumerate(self.label_img):
-            # load the label image
-            img = nb.load(label)
+        self.label_vector = self.read_data(label_img,0)
+        self.labels = np.unique(self.label_vector[self.label_vector>0])
+        self.n_labels = self.labels.shape[0]
 
-            if hasattr(img, 'agg_data'): # if the label image is gifti
-                label_vec = img.agg_data() 
-            else:
-                label_vec = nt.sample_image(img,
-                                               self.world[0],
-                                               self.world[1],
-                                               self.world[2],
-                                               0) # 0 determines interpolation method for sampling
-
-            # Find the number of parcels with label > 0
-            parcel = np.unique(label_vec[label_vec>0]).shape[0]
-
-            # get non-zero elements of label
-            idx = np.argwhere(label_vec>0)
-
-            # change the values of non zero labels if necessary (only for the second hemi)
-            if not self.unite_hemi:
-                label_vec[idx] = label_vec[idx] + h*parcel
-
-            self.label_vector.append(label_vec)
-
-        # number of parcels is the max label in the last element of label image
-        self.parcel = np.max(self.label_vector[h])
+        # change the values of non zero labels if necessary (only for the second hemi)
+        if not self.unite_hemi:
+            indx = 0 
+            for i,s in enumerate(self.structure):
+                n_vert = self.vertex[i].shape[0]
+                self.label_vector[indx:indx+n_vert] += self.n_labels
+                indx = indx + n_vert
+        return self.label_vector,self.labels
 
     def get_parcel_axis(self):
         """ Returns parcel axis
@@ -245,10 +223,8 @@ class AtlasVolumetric(Atlas):
     def data_to_nifti(self,data):
         """Transforms data in atlas space into
         3d or 4d nifti image
-
         Args:
-            data (np.ndarray): Data to be mapped into nift
-
+            data (np.ndarray): Data to be mapped into nifti
         Returns:
             Nifti1Image: NiftiImage object
         """
@@ -266,6 +242,25 @@ class AtlasVolumetric(Atlas):
         img = nb.Nifti1Image(X,self.mask_img.affine)
         return img
 
+    def read_data(self,img,interpolation):
+        """Read data from a NIFTI or CIFTI file into the volumetric atlas space
+        Args:
+            img (nibabel.image): Nifti or Cifti image
+            interpolation (int)): nearest neighbour (0), trilinear (1)
+        returns: 
+            data (ndarray): (N,P) ndarray
+        """
+        if isinstance(img,str):
+            img = nb.load(img)
+        if isinstance(img,nb.Cifti2Image):
+            img = nt.volume_from_cifti(img,[self.structure])
+        if isinstance(img,(nb.Nifti1Image,nb.Nifti2Image)):
+            data = nt.sample_image(img,
+                self.world[0,:],
+                self.world[1,:],
+                self.world[2,:],interpolation)
+        return data
+
     def sample_nifti(self,img,interpolation):
         """ Samples a img at the atlas locations
         The image needs to be in atlas space.
@@ -276,6 +271,7 @@ class AtlasVolumetric(Atlas):
         Returns:
             np.array: Data sample at the atlas position
         """
+        warnings.DepreciationWarning('sample_nifti is depreciated. Use self.read_data instead')
         if isinstance(img,str):
             img = nb.load(img)
         data = nt.sample_image(img,
@@ -310,7 +306,7 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
             mask_img (str): file name of mask image defining atlas location
         """
         super().__init__(name,mask_img,structure)
-        # Find left and righgt hemispheric voxels
+        # Find left and right hemispheric voxels
         indx_left = np.where(self.world[0,:]<=0)[0]
         indx_right = np.where(self.world[0,:]>=0)[0]
         # Make a version with absolute x-coordiate
@@ -362,7 +358,8 @@ class AtlasSurface(Atlas):
         self.mask = [(X>0) for X in Xmask]
         self.vertex_mask = [(X>0) for X in Xmask]
         self.vertex = [np.nonzero(X)[0] for X in self.vertex_mask]
-        self.P = sum([v.shape[0] for v in self.vertex_mask])
+        # Correction: needs to be number of vertices in mask (JD)
+        self.P = sum([v.shape[0] for v in self.vertex]) 
 
     def data_to_cifti(self, data, row_axis=None):
         """Maps data back into a cifti image
@@ -418,6 +415,28 @@ class AtlasSurface(Atlas):
         cifti_img = nb.Cifti2Image(dataobj=data, header=header)
 
         return cifti_img
+
+    def read_data(self,img,interpolation=0):
+        """ reads data for surface-based atlas from list of gifti [left,right]or single cifti file. Adjusts automatically for node masks.
+        Args:
+            img (nibabel.image): Cifti or (list of) gifti images
+            interpolation (int): nearest neighbour (0), trilinear (1)
+        Returns: 
+            data (ndarray): (N,P) ndarray
+        """
+        if isinstance(img,nb.Cifti2Image):
+            data = self.cifti_to_data(img)
+        elif isinstance(img,list):
+            if len(img) != len(self.structure):
+                raise(NameError('Number of images needs to match len(self.structure)'))
+            data = []
+            for i,im in enumerate(img):
+                if isinstance(im,str):
+                    im = nb.load(im)
+                d = im.agg_data()
+                data.append(d[self.vertex[i]])
+            data = np.hstack(data)
+        return data
 
     def cifti_to_data(self, cifti):
         """Gets the data from a CIFTI file, checking the structure name
@@ -516,15 +535,15 @@ class AtlasSurfaceSymmetric(AtlasSurface):
             "The left and right hemisphere must be symmetric!"
 
         # Initialize indices
-        self.Psym = int(self.P / 2)
+        n_vertex = self.vertex_mask[0].shape[0] # This is the number of vertices before masking 
+        self.Psym = int(self.P/2)
         self.indx_full = np.zeros((2,self.Psym),dtype=int)
         # n_vertex = self.vertex[0].shape[0]
-        n_vertex = self.vertex_mask[0].shape[0]
 
         # Generate full/reduce index
-        self.indx_full[0, :] = np.arange(n_vertex)
-        self.indx_full[1, :] = np.arange(n_vertex) + n_vertex
-        self.indx_reduced = np.tile(np.arange(n_vertex), 2)
+        self.indx_full[0, :] = np.arange(self.Psym)
+        self.indx_full[1, :] = np.arange(self.Psym) + self.Psym
+        self.indx_reduced = np.tile(np.arange(self.Psym), 2)
 
         # Generate flipping index
         indx_orig = np.arange(self.P, dtype=int)
