@@ -86,30 +86,20 @@ class Atlas():
         self.name = name
         self.P = np.nan # Number of locations in this atlas
 
-    def get_parcel(self, label_img, unite_hemi = True):
+    def get_parcel(self, label_img):
         """ adds a label_vec to the atlas that assigns each voxel / node of the atlas
-        label_vec[i] = 0 mean that the ith voxel / node is unassigned  
+        label_vec[i] = 0 mean that the ith voxel / node is unassigned
         Args:
             label_img (str/list) - filename(s) of label image(s)
-            unite_hemi (bool) - should ROIs span both left and right hemispheres, (true) or should they get seperate numbers (false)?
-        Returns 
-            label_vec (list) - list of numpy array containing label values corresponding to label images/ 
+        Returns
+            label_vec (list) - list of numpy array containing label values corresponding to label images/
 
         """
-        self.unite_hemi = unite_hemi
 
         # get label vectors for each label image
-        self.label_vector = self.read_data(label_img,0)
+        self.label_vector = self.read_data(label_img,0).astype(int)
         self.labels = np.unique(self.label_vector[self.label_vector>0])
         self.n_labels = self.labels.shape[0]
-
-        # change the values of non zero labels if necessary (only for the second hemi)
-        if not self.unite_hemi:
-            indx = 0 
-            for i,s in enumerate(self.structure):
-                n_vert = self.vertex[i].shape[0]
-                self.label_vector[indx:indx+n_vert] += self.n_labels
-                indx = indx + n_vert
         return self.label_vector,self.labels
 
 
@@ -147,44 +137,24 @@ class AtlasVolumetric(Atlas):
         return bm
 
     def get_parcel_axis(self):
-        """ Returns parcel axis
+        """ Returns parcel axis based on the current setting of labels
         Returns:
             bm (cifti2.ParcelAxis)
         """
         bm_list = []
         if not hasattr(self,'labels'):
             raise(NameError('Atlas has no parcels defined yet - call atlas.getparcels(image) first'))
-        for h, labels in enumerate(self.labels):
-            # loop over labels and create brain models
-            ##??????? UGLY
-            brain_model_name = self.structure
-            if not isinstance(brain_model_name, list):
-                brain_model_name = [brain_model_name]
-            
-            for l in np.unique(labels):
-                
-                if l > 0:
-                    # Make the brain Structure model for each label
-                    if h == 0:
-                        bm = nb.cifti2.BrainModelAxis.from_mask(
-                                                            labels == l,
-                                                            name=brain_model_name[h])
-                        bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
-                    else:
-                        # UGGLY STUFF... NEED TO CHANGE
-                        if not self.unite_hemi:
-                            bm = bm + nb.cifti2.BrainModelAxis.from_mask(
-                                                                        labels == l,
-                                                                        name=brain_model_name[h])
-                            bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
-                        else:
-                            pass
-                    
-                                       
-        # create parcel axis from the list of brain models created for labels
-        self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
-        self.bm_list = bm_list
-
+        bm_list = []
+        for h, label in enumerate(self.labels):
+            pname = self.structure + f'_{label:02d}'
+            indx = self.label_vector == label
+            bm = nb.cifti2.BrainModelAxis(self.structure,
+                                          voxel=self.vox[:,indx].T,
+                                          affine = self.mask_img.affine,
+                                          volume_shape = self.mask_img.shape)
+            bm_list.append((pname, bm))
+        parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+        return parcel_axis
 
     def data_to_cifti(self, data, row_axis=None):
         """ Transforms data into a cifti image
@@ -250,7 +220,7 @@ class AtlasVolumetric(Atlas):
         Args:
             img (nibabel.image): Nifti or Cifti image
             interpolation (int)): nearest neighbour (0), trilinear (1)
-        returns: 
+        returns:
             data (ndarray): (N,P) ndarray
         """
         if isinstance(img,str):
@@ -363,7 +333,7 @@ class AtlasSurface(Atlas):
         self.vertex_mask = [(X>0) for X in Xmask]
         self.vertex = [np.nonzero(X)[0] for X in self.vertex_mask]
         # Correction: needs to be number of vertices in mask (JD)
-        self.P = sum([v.shape[0] for v in self.vertex]) 
+        self.P = sum([v.shape[0] for v in self.vertex])
 
     def data_to_cifti(self, data, row_axis=None):
         """Maps data back into a cifti image
@@ -425,7 +395,7 @@ class AtlasSurface(Atlas):
         Args:
             img (nibabel.image): Cifti or (list of) gifti images
             interpolation (int): nearest neighbour (0), trilinear (1)
-        Returns: 
+        Returns:
             data (ndarray): (N,P) ndarray
         """
         if isinstance(img,nb.Cifti2Image):
@@ -487,7 +457,7 @@ class AtlasSurface(Atlas):
             return_data.append(this_data)
 
         return np.hstack(return_data)
-    
+
     def get_brain_model_axis(self):
         """ Returns brain model axis
 
@@ -506,45 +476,60 @@ class AtlasSurface(Atlas):
                     name=self.structure[i])
         return bm
 
-    def get_parcel_axis(self):
-        """ Returns parcel axis
+    def get_parcel(self, label_img,unite_struct):
+        """ adds a label_vec to the atlas that assigns each voxel / node of the atlas
+        label_vec[i] = 0 mean that the ith voxel / node is unassigned
+        Args:
+            label_img (str/list) - filename(s) of label image(s)
+        Returns
+            label_vec (list) - list of numpy array containing label values corresponding to label images/
 
+        """
+
+        # get label vectors for each label image
+        self.label_vector = self.read_data(label_img,0).astype(int)
+        self.labels = np.unique(self.label_vector[self.label_vector>0])
+        self.n_labels = self.labels.shape[0]
+
+        # change the values of non zero labels if necessary (only for the second hemi)
+        self.unite_struct = unite_struct
+        if not self.unite_struct:
+            indx = 0
+            for i,s in enumerate(self.structure):
+                n_vert = self.vertex[i].shape[0]
+                label_vec = self.label_vector[indx:indx+n_vert]
+                label_vec[label_vec>0] += self.n_labels*i
+                indx = indx + n_vert
+        self.labels = np.unique(self.label_vector[self.label_vector>0])
+        self.n_labels = self.labels.shape[0]
+        return self.label_vector,self.labels
+
+
+    def get_parcel_axis(self):
+        """ Returns parcel axis based on the current setting of labels
         Returns:
             bm (cifti2.ParcelAxis)
         """
-        if self.unite_hemi:
-            raise(NameError('Cannot create parcel axis with ROIs spanning both hemispheres. Set unite_hemi to FALSE.'))
         bm_list = []
-        for h, labels in enumerate(self.label_vector):
-            # loop over labels and create brain models
-            ##??????? UGLY
-            brain_model_name = self.structure
-            if not isinstance(brain_model_name, list):
-                brain_model_name = [brain_model_name]
-            
-            for l in np.unique(labels):
-                
-                if l > 0:
-                    # Make the brain Structure model for each label
-                    if h == 0:
-                        bm = nb.cifti2.BrainModelAxis.from_mask(
-                                                            labels == l,
-                                                            name=brain_model_name[h])
-                        bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
-                    else:
-                        # UGGLY STUFF... NEED TO CHANGE
-                        if not self.unite_hemi:
-                            bm = bm + nb.cifti2.BrainModelAxis.from_mask(
-                                                                        labels == l,
-                                                                        name=brain_model_name[h])
-                            bm_list.append((f"{self.structure[h]}-{l:02}", bm)) 
-                        else:
-                            pass
-                    
-                                       
-        # create parcel axis from the list of brain models created for labels
-        self.parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
-        self.bm_list = bm_list
+        if self.unite_struct:
+            raise(NameError('Cannot create parcel axis with ROIs spanning both hemispheres. Set unite_struct to FALSE.'))
+        if not hasattr(self,'labels'):
+            raise(NameError('Atlas has no parcels defined yet - call atlas.getparcels(image) first'))
+        indx = 0
+        for i, struct_name in enumerate(self.structure):
+            n_vert = self.vertex[i].shape[0]
+            label_vec = self.label_vector[indx:indx+n_vert]
+            for h, label in enumerate(self.labels):
+                pindx = label_vec==label
+                if pindx.sum()>0:
+                    pname = struct_name + f'_{label:02d}'
+                    bm = nb.cifti2.BrainModelAxis.from_surface(
+                        self.vertex[i][pindx],
+                        self.vertex[i].shape[0],
+                        name=struct_name)
+                    bm_list.append((pname, bm))
+        parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
+        return parcel_axis
 
 
 class AtlasSurfaceSymmetric(AtlasSurface):
@@ -580,7 +565,7 @@ class AtlasSurfaceSymmetric(AtlasSurface):
             "The left and right hemisphere must be symmetric!"
 
         # Initialize indices
-        n_vertex = self.vertex_mask[0].shape[0] # This is the number of vertices before masking 
+        n_vertex = self.vertex_mask[0].shape[0] # This is the number of vertices before masking
         self.Psym = int(self.P/2)
         self.indx_full = np.zeros((2,self.Psym),dtype=int)
         # n_vertex = self.vertex[0].shape[0]

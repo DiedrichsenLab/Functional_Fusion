@@ -1,4 +1,4 @@
-# Script for testing parcel axis 
+# Script for testing parcel axis
 import pandas as pd
 import shutil
 from pathlib import Path
@@ -29,7 +29,7 @@ project_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
 def test_mdtb_suit():
-    
+
     # create an instance of SUIT3 volumetric atlas
     SUIT3_atlas,_ = am.get_atlas('SUIT3',atlas_dir)
 
@@ -42,16 +42,16 @@ def test_mdtb_suit():
     return SUIT3_atlas
 
 def test_mdtb_fs32k():
-    
+
     # create an instance of SUIT3 volumetric atlas
     fs_atlas,_ = am.get_atlas('fs32k',atlas_dir)
-   
+
     # create parcel axis for mdtb10 parcellation
     label_img = []
     for hemi in ['L', 'R']:
         label_img.append(atlas_dir + '/tpl-fs32k' + f'/Icosahedron-42_Sym.32k.{hemi}.label.gii')
-    
-    fs_atlas.get_parcel(label_img=label_img)
+
+    fs_atlas.get_parcel(label_img=label_img,unite_struct=False)
     pa = fs_atlas.get_parcel_axis()
 
     return fs_atlas
@@ -84,7 +84,7 @@ def extract_parcel_data_suit():
     # create a dscale cifti with parcelAxis labels and data_parcel
     row_axis = info_tsv.cond_name
     row_axis = nb.cifti2.ScalarAxis(row_axis)
-        
+
 
     bm = atlas_parcel.get_brain_model_axis()
     pa = atlas_parcel.parcel_axis
@@ -127,7 +127,7 @@ def extract_parcel_data():
     # create a dscale cifti with parcelAxis labels and data_parcel
     row_axis = info_tsv.cond_name
     row_axis = nb.cifti2.ScalarAxis(row_axis)
-        
+
 
     bm = atlas_parcel.get_brain_model_axis()
     pa = atlas_parcel.parcel_axis
@@ -139,7 +139,7 @@ def extract_parcel_data():
     return data_parcel
 
 if __name__ == "__main__":
-    # a = test_mdtb_suit()
+    a = test_mdtb_suit()
     b = test_mdtb_fs32k()
     # extract_parcel_data_suit()
     # extract_parcel_data()
