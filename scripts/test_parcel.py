@@ -64,7 +64,7 @@ def test_parcel_data(atlas):
     data, info = mdtb.get_data(space=atlas.name,ses_id='ses-s1',subj=[0],type="CondHalf")
 
     # create a matrix for aggregating data (cannot use dataset.agg_data now! Need to make changes)
-    data_parcel = ds.agg_parcels(data,atlas.label_vector)
+    data_parcel = ds.agg_parcels(data[0],atlas.label_vector)
 
     # create a dscale cifti with parcelAxis labels and data_parcel
     row_axis = nb.cifti2.ScalarAxis(info.cond_name)
@@ -72,7 +72,7 @@ def test_parcel_data(atlas):
 
     # HEAD = cifti2.Cifti2Header.from_axes((row_axis,bm,pa))
     header = nb.Cifti2Header.from_axes((row_axis, pa))
-    cifti_img = nb.Cifti2Image(dataobj=data_parcel[0], header=header)
+    cifti_img = nb.Cifti2Image(dataobj=data_parcel, header=header)
     nb.save(cifti_img, f'test_{atlas.name}.pscalar.nii')
 
 
