@@ -5,8 +5,7 @@ from pathlib import Path
 import mat73
 import numpy as np
 import Functional_Fusion.atlas_map as am
-from Functional_Fusion.dataset import DataSetMDTB
-from Functional_Fusion.dataset import DataSetHcpResting
+import Functional_Fusion.dataset as ds
 import nibabel as nb
 from Functional_Fusion.matrix import indicator
 import os
@@ -56,91 +55,27 @@ def test_mdtb_fs32k():
 
     return fs_atlas
 
-
-def extract_parcel_data_suit():
+def test_parcel_data(atlas):
     """
     Example code to extract mean across parcel for mdtb suit
     """
-    # perform all the steps in test_mdtb_suit() to create a parcel axis for the parcellation
-    atlas_parcel = test_mdtb_suit()
-
     # load in the data for sub-02
-    data_dir = project_dir + '/derivatives' + '/sub-02' +  '/data' + '/sub-02_space-SUIT3_ses-s1_CondAll.dscalar.nii'
-    data_img = nb.load(data_dir)
-    # get data for the structure
-    data = data_img.get_fdata()
-
-    # load the tsv file
-    info_file = project_dir + '/derivatives' + '/sub-02' +  '/data' + '/sub-02_ses-s1_info-CondAll.tsv'
-    info_tsv = pd.read_csv(info_file, sep = '\t')
+    data,info,mdtb = ds.get_dataset(base_dir,'MDTB',atlas=atlas.name,sess='ses-s1',type="CondHalf")
 
     # create a matrix for aggregating data (cannot use dataset.agg_data now! Need to make changes)
-    C = indicator(atlas_parcel.label_vector[0],positive=True)
-
-    # get the mean across parcel
-    data = np.nan_to_num(data)
-    data_parcel = (data @ C)/np.sum(C, axis = 0)
+    data_parcel = agg_parcels(data,atlas.label_vec)
 
     # create a dscale cifti with parcelAxis labels and data_parcel
-    row_axis = info_tsv.cond_name
-    row_axis = nb.cifti2.ScalarAxis(row_axis)
+    row_axis = nb.cifti2.ScalarAxis(info.cond_name)
+    pa = atlas.get_parcel_axis()
 
-
-    bm = atlas_parcel.get_brain_model_axis()
-    pa = atlas_parcel.parcel_axis
     # HEAD = cifti2.Cifti2Header.from_axes((row_axis,bm,pa))
     header = nb.Cifti2Header.from_axes((row_axis, pa))
     cifti_img = nb.Cifti2Image(dataobj=data_parcel, header=header)
-    nb.save(cifti_img, 'test_mdtb_10.pscalar.nii')
-    A = nb.load('test_mdtb_10.pscalar.nii')
-    return data_parcel
+    nb.save(cifti_img, f'test_{atlas.name}.pscalar.nii')
 
-def extract_parcel_data():
-    """
-    Example code to extract mean across parcel for tessellation
-    """
-    # perform all the steps in test_mdtb_suit() to create a parcel axis for the parcellation
-    atlas_parcel = test_mdtb_fs32k()
-
-    # load in the data for sub-02
-    data_dir = project_dir + '/derivatives' + '/sub-02' +  '/data' + '/sub-02_space-fs32k_ses-s1_CondAll.dscalar.nii'
-    data_img = nb.load(data_dir)
-    # get data for the structure
-    data = data_img.get_fdata()
-
-    # load the tsv file
-    info_file = project_dir + '/derivatives' + '/sub-02' +  '/data' + '/sub-02_ses-s1_info-CondAll.tsv'
-    info_tsv = pd.read_csv(info_file, sep = '\t')
-
-    if len(atlas_parcel.label_vector) == 1: # for cerebellum (not divided by hemi)
-        vector = atlas_parcel.label_vector[0]
-    else: # for cortex, divided into left and right
-        vector = np.concatenate(atlas_parcel.label_vector, axis = 0)
-
-    # create a matrix for aggregating data (cannot use dataset.agg_data now! Need to make changes)
-    C = indicator(vector,positive=True)
-
-    # get the mean across parcel
-    data = np.nan_to_num(data)
-    data_parcel = (data @ C)/np.sum(C, axis = 0)
-
-    # create a dscale cifti with parcelAxis labels and data_parcel
-    row_axis = info_tsv.cond_name
-    row_axis = nb.cifti2.ScalarAxis(row_axis)
-
-
-    bm = atlas_parcel.get_brain_model_axis()
-    pa = atlas_parcel.parcel_axis
-    # HEAD = cifti2.Cifti2Header.from_axes((row_axis,bm,pa))
-    header = nb.Cifti2Header.from_axes((row_axis, pa))
-    cifti_img = nb.Cifti2Image(dataobj=data_parcel, header=header)
-    nb.save(cifti_img, 'test_mdtb_10.pscalar.nii')
-    A = nb.load('test_mdtb_10.pscalar.nii')
-    return data_parcel
 
 if __name__ == "__main__":
     a = test_mdtb_suit()
     b = test_mdtb_fs32k()
-    # extract_parcel_data_suit()
-    # extract_parcel_data()
-    print("hovering")
+    test_parcel_data(a)

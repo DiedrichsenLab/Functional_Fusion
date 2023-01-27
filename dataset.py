@@ -112,7 +112,7 @@ def prewhiten_data(data):
     return data_n
 
 def agg_data(info,by,over,subset=None):
-    """ Aggregates data safely by sorting them by the fields in "by"
+    """ Aggregates data over rows (condition) safely by sorting them by the fields in "by"
     while integrating out "over".
     Adds a n_rep field to count how many instances are of each
     Returns condensed data frame + Contrast matrix.
@@ -159,6 +159,27 @@ def agg_data(info,by,over,subset=None):
     for i,(k,v) in enumerate(info_gb.indices.items()):
         C[indx[v],i]=1
     return data_info,C
+
+def agg_parcels(data,label_vec,fcn=np.nanmean):
+    """ Aggregates data over colums to condense to parcels
+
+    Args:
+        data (ndarray): Either 2d or 3d data structure
+        labels (ndarray): 1d-array that gives the labels
+        fcn (function): Function to use to aggregate over these
+    Return
+        data (ndarray): Either 2d or 3d data structure
+    """
+    # Subset original data frame as needed
+    labels = np.unique(label_vec[label_vec>0])
+    n_parcels = len(labels)
+    psize = data.shape
+    psize[-1] = n_parcels
+    parcel_data = np.zeros(psize)
+    for i,l in enumerate(labels):
+        pdata[...,i]=fcn(data[...,labels==l],axis=len(psize)-1)
+    return pdata
+
 
 def optimal_contrast(data,C,X,reg_in=None,baseline=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
@@ -371,7 +392,7 @@ class DataSet:
         # Deal with subset of subject option
         if subj is None:
             subj = np.arange(T.shape[0])
-        
+
         if type is None:
             type = self.default_type
 
@@ -379,7 +400,7 @@ class DataSet:
 
         # Loop over the different subjects to find the most complete info
         for i, s in enumerate(T.participant_id.iloc):
-            
+
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
@@ -446,7 +467,7 @@ class DataSet:
         # Deal with subset of subject option
         if subj is None:
             subj = np.arange(T.shape[0])
-        
+
         if type is None:
             type = self.default_type
 
@@ -467,9 +488,9 @@ class DataSet:
             if info.shape[0] > max:
                 info_com = info
                 max = info.shape[0]
-        
+
         return info_com
-    
+
     def group_average_data(self, ses_id=None,
                                  type=None,
                                  atlas='SUIT3'):
@@ -516,8 +537,8 @@ class DataSet:
             savefig (str, optional): Boolean indicating whether figure should be saved. Defaults to 'False'.
             cmap (str, optional): Matplotlib colour map. Defaults to 'hot'.
             colorbar (str, optional): Boolean indicating whether colourbar should be plotted in figure. Defaults to 'False'.
-            
-            
+
+
         """
         if sessions is None:
             sessions = self.sessions
@@ -527,10 +548,10 @@ class DataSet:
             subjects = self.get_participants().participant_id.tolist()
         else:
             subjects = [subject]
-        
+
         atlasmap, atlasinfo = am.get_atlas(atlas, self.atlas_dir)
-        
-        for sub in subjects: 
+
+        for sub in subjects:
             print(f'Plotting {sub}')
             for session in sessions:
                 info = self.data_dir.split(
@@ -594,7 +615,7 @@ class DataSetNative(DataSet):
         if atlas.structure=='cerebellum':
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             if atlas.name[0:4]!='SUIT':
-                deform1,m = am.get_deform(self.atlas_dir,atlas.name,source='SUIT2') 
+                deform1,m = am.get_deform(self.atlas_dir,atlas.name,source='SUIT2')
                 deform = [deform1, deform]
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world,deform, mask))
@@ -722,7 +743,7 @@ class DataSetMNIVol(DataSet):
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
         myatlas,_ = am.get_atlas(atlas, self.atlas_dir)
-        
+
         # extract and save data for each participant
         T = self.get_participants()
         for idx, s in enumerate(T.participant_id):
@@ -773,7 +794,7 @@ class DataSetCifti(DataSet):
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
         myatlas,_ = am.get_atlas(atlas,self.atlas_dir)
-        # Get the correct map into CIFTI-format 
+        # Get the correct map into CIFTI-format
         if isinstance(myatlas,am.AtlasVolumetric):
             deform,mask = am.get_deform(self.atlas_dir,
                 target=myatlas,
@@ -783,7 +804,7 @@ class DataSetCifti(DataSet):
             atlas_map.build(smooth=2.0)
         elif isinstance(myatlas,am.AtlasSurface):
             atlas_map = myatlas
-        # Extract the data for each participant 
+        # Extract the data for each participant
         T = self.get_participants()
         for s in T.participant_id:
             print(f'Extract {s}')
@@ -918,7 +939,7 @@ class DataSetHcpResting(DataSetCifti):
                 'NetRun': Seperate estimates per run, Correlation with cortico-cerebellar resting-state networks estimated with dimensionality = 25.
                 'NetAutoAll': Single estimate per session, Correlation with cortico-cerebellar resting-state networks estimated with automatic dimensionality estimation.
                 'NetAutoRun': Seperate estimates per run, Correlation with cortico-cerebellar resting-state networks estimated with automatic dimensionality estimation.
-      
+
                     Defaults to 'IcoAll'.
 
         Returns:
@@ -936,7 +957,7 @@ class DataSetHcpResting(DataSetCifti):
         mask = mni_atlas + '/tpl-MNI152NLin6AsymC_res-2_gmcmask.nii'
         atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
         atlas_map.build(smooth=2.0)
-        
+
         # Split type information on capital letters
         type_info = re.findall('[A-Z][^A-Z]*', type)
         surf_parcel = None
@@ -949,7 +970,7 @@ class DataSetHcpResting(DataSetCifti):
                 surf_parcel.append(am.AtlasSurfaceParcel(self.hem_name[i], gifti))
             bpa = surf_parcel[0].get_parcel_axis() + surf_parcel[1].get_parcel_axis()
             seed_names=list(bpa.name)
-        
+
         elif type_info[0] == 'Net':
             dimensionality = type_info[1].casefold()
             # Get the networks
@@ -1244,7 +1265,7 @@ class DataSetHcpResting(DataSetCifti):
         fnames = self.get_data_fnames(participant_id)
         coef = None
         for r,run in enumerate(runs):
-            
+
 
             ts_cerebellum = am.get_data_cifti([fnames[run]], [cereb_atlas_map])
             ts_cerebellum = ts_cerebellum[0]
@@ -1700,13 +1721,13 @@ class DataSetIBC(DataSetNative):
                 xfm_name = self.atlas_dir + \
                            '/tpl-SUIT/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
                 deform = [xfm_name,deform]
-            
+
             mask = self.estimates_dir.format(s) + f'/{ses_id}/{s}_{ses_id}_mask.nii'
             add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
             atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
             atlas_map.build(smooth=2.0,additional_mask = add_mask)
 
-            
+
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id)
             data = am.get_data_nifti(fnames, [atlas_map])
@@ -1869,7 +1890,7 @@ class DataSetSomatotopic(DataSetMNIVol):
             T (pd.DataFrame):
                 A data frame with information about the N numbers provide
             names: Names for CIFTI-file per row
-        
+
         N.B.: Because some runs are missing for session 1-3, CondRun can only be run for session 04 (which has all runs for all subjects).
         Missing runs are: S3_sess03_MOTOR6, S3_sess01_MOTOR3, S3_sess01_MOTOR4, S3_sess01_MOTOR5, S4_sess01_MOTOR6, S4_sess02_MOTOR6 & S6_sess02_MOTOR2
         """
