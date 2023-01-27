@@ -60,10 +60,11 @@ def test_parcel_data(atlas):
     Example code to extract mean across parcel for mdtb suit
     """
     # load in the data for sub-02
-    data,info,mdtb = ds.get_dataset(base_dir,'MDTB',atlas=atlas.name,sess='ses-s1',type="CondHalf")
+    mdtb = ds.get_dataset_class(base_dir,'MDTB')
+    data, info = mdtb.get_data(space=atlas.name,ses_id='ses-s1',subj=[0],type="CondHalf")
 
     # create a matrix for aggregating data (cannot use dataset.agg_data now! Need to make changes)
-    data_parcel = agg_parcels(data,atlas.label_vec)
+    data_parcel = ds.agg_parcels(data,atlas.label_vector)
 
     # create a dscale cifti with parcelAxis labels and data_parcel
     row_axis = nb.cifti2.ScalarAxis(info.cond_name)
@@ -71,11 +72,12 @@ def test_parcel_data(atlas):
 
     # HEAD = cifti2.Cifti2Header.from_axes((row_axis,bm,pa))
     header = nb.Cifti2Header.from_axes((row_axis, pa))
-    cifti_img = nb.Cifti2Image(dataobj=data_parcel, header=header)
+    cifti_img = nb.Cifti2Image(dataobj=data_parcel[0], header=header)
     nb.save(cifti_img, f'test_{atlas.name}.pscalar.nii')
 
 
 if __name__ == "__main__":
     a = test_mdtb_suit()
-    b = test_mdtb_fs32k()
     test_parcel_data(a)
+    b = test_mdtb_fs32k()
+    test_parcel_data(b)

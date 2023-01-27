@@ -525,7 +525,7 @@ class AtlasSurface(Atlas):
                     pname = struct_name + f'_{label:02d}'
                     bm = nb.cifti2.BrainModelAxis.from_surface(
                         self.vertex[i][pindx],
-                        self.vertex[i].shape[0],
+                        self.vertex_mask[i].shape[0],
                         name=struct_name)
                     bm_list.append((pname, bm))
         parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)

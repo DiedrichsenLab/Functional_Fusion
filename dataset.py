@@ -47,7 +47,7 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type="CondHalf", info_
         base_dir (str): Basis directory for the Functional Fusion repro
         dataset (str): Data set indicator
         atlas (str): Atlas indicator. Defaults to 'SUIT3'.
-        sess (str or list): Sessiions. Defaults to 'all'.
+        sess (str or list): Sessions. Defaults to 'all'.
         type (str): 'CondHalf','CondRun', etc....
         info_only (bool): only returns info (default: False)
     Returns:
@@ -173,12 +173,12 @@ def agg_parcels(data,label_vec,fcn=np.nanmean):
     # Subset original data frame as needed
     labels = np.unique(label_vec[label_vec>0])
     n_parcels = len(labels)
-    psize = data.shape
+    psize = np.array(data.shape)
     psize[-1] = n_parcels
     parcel_data = np.zeros(psize)
     for i,l in enumerate(labels):
-        pdata[...,i]=fcn(data[...,labels==l],axis=len(psize)-1)
-    return pdata
+        parcel_data[...,i]=fcn(data[...,label_vec==l],axis=len(psize)-1)
+    return parcel_data
 
 
 def optimal_contrast(data,C,X,reg_in=None,baseline=None):
@@ -372,7 +372,7 @@ class DataSet:
         return self.part_info
 
     def get_data(self, space='SUIT3', ses_id='ses-s1',
-                 type=None, subj=None, fields=None):
+                 type=None, subj=None, fields=None,verbose=False):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -399,7 +399,7 @@ class DataSet:
         max = 0
 
         # Loop over the different subjects to find the most complete info
-        for i, s in enumerate(T.participant_id.iloc):
+        for i, s in enumerate(T.participant_id.iloc[subj]):
 
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
@@ -417,8 +417,11 @@ class DataSet:
 
         # Loop again to assemble the data
         Data_list = []
-        for i, s in enumerate(T.participant_id):
-            print(f'- Getting data for {s} in {space}')
+        for i, s in enumerate(T.participant_id.iloc[subj]):
+            # If you add verbose printout, make it so 
+            # that by default it is suppressed by a verbose=False option
+            if verbose:  
+                print(f'- Getting data for {s} in {space}')
             # Load the data
             C = nb.load(self.data_dir.format(s)
                         + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
