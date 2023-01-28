@@ -15,7 +15,6 @@ import os.path as op
 import sys
 import sys
 
-from matrix import indicator
 sys.path.append("..")
 import Functional_Fusion.util as util
 import Functional_Fusion.matrix as matrix
