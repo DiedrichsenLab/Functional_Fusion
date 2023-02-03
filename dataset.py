@@ -48,18 +48,9 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type="CondHalf", info_
         atlas (str): Atlas indicator. Defaults to 'SUIT3'.
         sess (str or list): Sessions. Defaults to 'all'.
         type (str): 'CondHalf','CondRun', etc....
-        info_only (bool): only returns info (default: False)
     Returns:
         _type_: _description_
     """
-    # T = pd.read_csv(base_dir + '/dataset_description.tsv',sep='\t')
-    # T.name = [n.casefold() for n in T.name]
-    # i = np.where(dataset.casefold() == T.name)[0]
-    # if len(i)==0:
-    #     raise(NameError(f'Unknown dataset: {dataset}'))
-    # dsclass = getattr(sys.modules[__name__],T.class_name[int(i)])
-    # dir_name = base_dir + '/' + T.dir_name[int(i)]
-    # my_dataset = dsclass(dir_name)
 
     my_dataset = get_dataset_class(base_dir, dataset)
 
@@ -77,20 +68,15 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type="CondHalf", info_
     info_l = []
     data_l = []
     for s in sess:
-        if info_only:
-            inf = my_dataset.get_info(s,type)
-        else:
-            dat,inf = my_dataset.get_data(atlas,s,type)
-            data_l.append(dat)
+        
+        dat,inf = my_dataset.get_data(atlas,s,type)
+        data_l.append(dat)
         inf['sess']=[s]*inf.shape[0]
         info_l.append(inf)
 
     info = pd.concat(info_l,ignore_index=True,sort=False)
-    if info_only:
-        data = []
-    else:
-        data = np.concatenate(data_l,axis=1)
-    return data,info,my_dataset
+    data = np.concatenate(data_l,axis=1)
+    return data, my_dataset
 
 def prewhiten_data(data):
     """ prewhitens a list of data matrices.
