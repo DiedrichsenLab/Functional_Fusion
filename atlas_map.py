@@ -493,12 +493,14 @@ class AtlasSurface(Atlas):
 
         # change the values of non zero labels if necessary (only for the second hemi)
         self.unite_struct = unite_struct
+        self.label_list = []
         if not self.unite_struct:
             indx = 0
             for i,s in enumerate(self.structure):
                 n_vert = self.vertex[i].shape[0]
                 label_vec = self.label_vector[indx:indx+n_vert]
                 label_vec[label_vec>0] += self.n_labels*i
+                self.label_list.append(label_vec)
                 indx = indx + n_vert
         self.labels = np.unique(self.label_vector[self.label_vector>0])
         self.n_labels = self.labels.shape[0]
