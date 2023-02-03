@@ -1,16 +1,14 @@
 # Script for testing parcel axis
 import pandas as pd
-import shutil
 from pathlib import Path
-import mat73
 import numpy as np
+import sys
+sys.path.append('..')
 import Functional_Fusion.atlas_map as am
 import Functional_Fusion.dataset as ds
 import nibabel as nb
-from Functional_Fusion.matrix import indicator
 import os
-import sys
-from nibabel import cifti2
+
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -26,6 +24,7 @@ if not Path(base_dir).exists():
 
 project_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
+conn_dir = '/srv/diedrichsen/data/Cerebellum/connectivity/MDTB/train'
 
 def test_mdtb_suit():
 
@@ -75,9 +74,54 @@ def test_parcel_data(atlas):
     cifti_img = nb.Cifti2Image(dataobj=data_parcel, header=header)
     nb.save(cifti_img, f'test_{atlas.name}.pscalar.nii')
 
+def plot_weights(method = "L2Regression", 
+                 cortex = "Icosahedron-1002_Sym.32k", 
+                 cerebellum = "NettekovenSym34", 
+                 log_alpha = 8, 
+                 dataset_name = "MDTB", 
+                 ses_id = "ses-s1", 
+                 ):
+    # get the file containing best weights
+    filename = os.path.join('/srv/diedrichsen/data/Cerebellum/connectivity/MDTB/train', f'{cortex}_{ses_id}_{method}_logalpha_{log_alpha}_best_weights.npy')
+    weights = np.load(filename)
 
+    # get atlases and create parcels/parcel labels
+    atlas_cereb, ainfo = am.get_atlas('SUIT3',atlas_dir)
+    atlas_cortex, ainfo = am.get_atlas('fs32k', atlas_dir)
+
+    # get label files for cerebellum and cortex
+    # NOTE: To average over cerebellum or cortex, pass on masks as label files
+    label_cereb = atlas_dir + '/tpl-SUIT' + f'/atl-{cerebellum}_space-SUIT_dseg.nii'
+    label_cortex = []
+    for hemi in ['L', 'R']:
+        label_cortex.append(atlas_dir + '/tpl-fs32k' + f'/{cortex}.{hemi}.label.gii')
+
+    # get parcel for both atlases
+    atlas_cereb.get_parcel(label_cereb)
+    atlas_cortex.get_parcel(label_cortex, unite_struct = False)
+    pa = atlas_cereb.get_parcel_axis()
+
+    # get the maps for left and right hemispheres
+    surf_map = []
+    for label in atlas_cortex.label_list:
+        # loop over regions within the hemisphere
+        label_arr = np.zeros([atlas_cereb.n_labels, label.shape[0]])
+        for p in np.arange(1, atlas_cereb.n_labels+1):
+            vox = atlas_cereb.label_vector == p
+            # get average connectivity weights
+            weight_region = np.nanmean(weights[vox, :], axis = 0)
+            for i in np.unique(label):            
+                np.put_along_axis(label_arr[p-1, :], np.where(label==i)[0], weight_region[i-1], axis=0)
+        surf_map.append(label_arr)
+
+    cifti_img = atlas_cortex.data_to_cifti(surf_map, row_axis=pa.name)
+
+    # save weight map
+    nb.save(cifti_img,f'./Test.dscalar.nii')
+    return
 if __name__ == "__main__":
-    a = test_mdtb_suit()
-    test_parcel_data(a)
-    b = test_mdtb_fs32k()
-    test_parcel_data(b)
+    plot_weights()
+    # a = test_mdtb_suit()
+    # test_parcel_data(a)
+    # b = test_mdtb_fs32k()
+    # test_parcel_data(b)
