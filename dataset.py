@@ -76,7 +76,7 @@ def get_dataset(base_dir,dataset,atlas='SUIT3',sess='all',type="CondHalf", info_
 
     info = pd.concat(info_l,ignore_index=True,sort=False)
     data = np.concatenate(data_l,axis=1)
-    return data, my_dataset
+    return data, info, my_dataset
 
 def prewhiten_data(data):
     """ prewhitens a list of data matrices.
