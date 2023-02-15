@@ -146,14 +146,16 @@ def agg_data(info,by,over,subset=None):
     return data_info,C
 
 def agg_parcels(data,label_vec,fcn=np.nanmean):
-    """ Aggregates data over colums to condense to parcels
-
+    """ Aggregates data over columns to condense to parcels
+    Only makes columns for labels > 0 that are present in label_vec
+    Always use labels to determine which column corresponds to which ROI!   
     Args:
         data (ndarray): Either 2d or 3d data structure
         labels (ndarray): 1d-array that gives the labels
         fcn (function): Function to use to aggregate over these
-    Return
-        data (ndarray): Either 2d or 3d data structure
+    Returns:
+        aggdata (ndarray): Aggregated either 2d or 3d data structure
+        labels (ndarray): Region number corresponding to each "column" 
     """
     # Subset original data frame as needed
     labels = np.unique(label_vec[label_vec>0])
@@ -163,7 +165,7 @@ def agg_parcels(data,label_vec,fcn=np.nanmean):
     parcel_data = np.zeros(psize)
     for i,l in enumerate(labels):
         parcel_data[...,i]=fcn(data[...,label_vec==l],axis=len(psize)-1)
-    return parcel_data
+    return parcel_data,labels
 
 
 def optimal_contrast(data,C,X,reg_in=None,baseline=None):
