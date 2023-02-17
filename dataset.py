@@ -157,8 +157,9 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
         data (ndarray): Either 2d or 3d data structure
         labels (ndarray): 1d-array that gives the labels
         fcn (function): Function to use to aggregate over these
-    Return
-        data (ndarray): Either 2d or 3d data structure
+    Returns:
+        aggdata (ndarray): Aggregated either 2d or 3d data structure
+        labels (ndarray): Region number corresponding to each "column" 
     """
     # Subset original data frame as needed
     labels = np.unique(label_vec[label_vec > 0])

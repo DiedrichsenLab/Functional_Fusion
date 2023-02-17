@@ -92,8 +92,8 @@ class Atlas():
         Args:
             label_img (str/list) - filename(s) of label image(s)
         Returns
-            label_vec (list) - list of numpy array containing label values corresponding to label images/
-
+            label_vec (list) - list of numpy array containing label values corresponding to label images (0 means no ROI)
+            labels (ndarray) - List of unique labels > 0 
         """
 
         # get label vectors for each label image
