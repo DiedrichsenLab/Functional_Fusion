@@ -11,6 +11,11 @@ from pathlib import Path
 import os
 import sys
 import time
+from copy import deepcopy
+from dataset import DataSetHcpResting
+import numpy as np
+from nibabel import cifti2
+import numpy as np
 
 base_dir = '/Volumes/diedrichsen_data$/data'
 if not Path(base_dir).exists():
@@ -23,6 +28,64 @@ if not Path(base_dir).exists():
 orig_dir = os.path.join(base_dir, 'HCP_UR100_rfMRI')
 target_dir = os.path.join(base_dir, 'FunctionalFusion/HCP')
 
+
+def check_dimensions():
+    dataset = DataSetHcpResting(str(target_dir))
+    T = dataset.get_participants()
+    for p, participant_id in enumerate(T.participant_id):
+        print(p, participant_id)
+        for run in range(4):
+            fname = Path(dataset.func_dir.format(
+                participant_id)) / f'sub-{participant_id}_run-{run}_space-MSMSulc.dtseries.nii'
+            img = cifti2.load(str(fname))
+            data = img.get_fdata()
+            if data.shape[0] != 1200:
+                print(f'Wrong dimensions for {fname}')
+                print(data.shape)
+
+
+def create_reginfo(log_message=False, ses_id='ses-rest1'):
+    dataset = DataSetHcpResting(str(target_dir))
+
+    # Import general info
+    info = pd.read_csv(target_dir / f'{ses_id}_reginfo.tsv', sep='\t')
+
+    # Import scan-specific info (missing runs)
+    missing_scans = pd.read_csv(
+        orig_dir / 'missing_scans.txt', names=['scan'], header=None)
+    missing_scans[['orig_id', 'session', 'run']] = missing_scans.scan.str.split(
+        "_", expand=True)
+
+    T = dataset.get_participants()
+    for _, id in T.iterrows():
+        print(f'Creating reginfo for {id.participant_id}')
+
+        # Ammend the reginfo.tsv file from the general file
+        reginfo = deepcopy(info)
+        reginfo.insert(loc=0, column='sn', value=[
+            id.participant_id] * info.shape[0])
+
+        for session in info.orig_ses.unique():
+            missing = (id.orig_id == missing_scans.orig_id) & (
+                f'sess{session:02d}' == missing_scans.session)
+            if np.any(missing):
+                for _, miss in missing_scans[missing].iterrows():
+                    run = int(miss.run.split('MOTOR')[1])
+                    if log_message:
+                        print(
+                            f'Missing scan {reginfo[reginfo.orig_run == run]} removed from reginfo')
+                    reginfo = reginfo.drop(
+                        reginfo[reginfo.orig_run == run].index)
+
+        # Make folder
+        dest = target_dir / \
+            f'derivatives/{id.participant_id}/estimates/ses-motor/{id.participant_id}_ses-motor_reginfo.tsv'
+        dest.parent.mkdir(parents=True, exist_ok=True)
+
+        # Save reginfo.tsv file
+        reginfo.to_csv(dest, sep='\t', index=False)
+
+
 def import_func_resting(source_dir, dest_dir, participant_id):
     """Imports the HCP preprocessed resting state files
        into a BIDS/derivative structure
@@ -31,18 +94,18 @@ def import_func_resting(source_dir, dest_dir, participant_id):
         dest_dir (str): destination directory
         participant_id (str): ID of participant
     """
-    run_name=['REST1_LR','REST1_RL','REST2_LR','REST2_RL']
+    run_name = ['REST1_LR', 'REST1_RL', 'REST2_LR', 'REST2_RL']
     # Make the destination directory
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
-    for run,run_n in enumerate(run_name):
+    for run, run_n in enumerate(run_name):
 
         # move data into the corresponding session folder
-        src=(f'/rfMRI_{run_n}/rfMRI_{run_n}_Atlas_hp2000_clean.dtseries.nii')
-        dest=(f'/sub-{participant_id}_run-{run}_space-MSMSulc.dtseries.nii')
+        src = (f'/rfMRI_{run_n}/rfMRI_{run_n}_Atlas_hp2000_clean.dtseries.nii')
+        dest = (f'/sub-{participant_id}_run-{run}_space-MSMSulc.dtseries.nii')
 
         try:
-            shutil.copyfile(source_dir+'/MNINonLinear/Results'+src, 
-                    dest_dir+dest)
+            shutil.copyfile(source_dir + '/MNINonLinear/Results' + src,
+                            dest_dir + dest)
         except:
             print('skipping ' + src)
 
@@ -56,17 +119,17 @@ def import_FIX_extended(source_dir, dest_dir, participant_id):
         dest_dir (str): destination directory
         participant_id (str): ID of participant
     """
-    run_name=['REST1_LR','REST1_RL','REST2_LR','REST2_RL']
+    run_name = ['REST1_LR', 'REST1_RL', 'REST2_LR', 'REST2_RL']
     # bar = progressbar.ProgressBar(maxval=20, widgets=[progressbar.Bar('=', '[', ']'), ' ',
     #                                        progressbar.Percentage()])
-    for run,run_n in enumerate(run_name):
+    for run, run_n in enumerate(run_name):
         # move data into the corresponding session folder
 
         try:
             print(f"   copying folder /rfMRI_{run_n}...")
             start = time.perf_counter()
-            shutil.copytree(source_dir+'/MNINonLinear/Results'+f'/rfMRI_{run_n}',
-                    dest_dir+f'/rfMRI_{run_n}', dirs_exist_ok=True)
+            shutil.copytree(source_dir + '/MNINonLinear/Results' + f'/rfMRI_{run_n}',
+                            dest_dir + f'/rfMRI_{run_n}', dirs_exist_ok=True)
             finish = time.perf_counter()
             elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
             print(f"   Done - duration {elapse}.")
@@ -75,14 +138,15 @@ def import_FIX_extended(source_dir, dest_dir, participant_id):
 
 
 if __name__ == "__main__":
-    T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
-    for s in T.participant_id:
-        print(f"-Start importing subject {s}")
-        # old_id = s.replace('sub-','s',1)
-        dir1 = os.path.join(orig_dir, str(s))
-        dir2 = os.path.join(target_dir, 'derivatives/%s/func' % str(s))
-        import_func_resting(dir1, dir2, str(s))
-        print(f"-Done subject {s}")
+
+    # T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+    # for s in T.participant_id:
+    #     print(f"-Start importing subject {s}")
+    #     # old_id = s.replace('sub-','s',1)
+    #     dir1 = os.path.join(orig_dir, str(s))
+    #     dir2 = os.path.join(target_dir, 'derivatives/%s/func' % str(s))
+    #     import_func_resting(dir1, dir2, str(s))
+    #     print(f"-Done subject {s}")
 
     # S3server_dir = os.path.join('X:/', 'HCP_1200')
     # to_dir = os.path.join(base_dir, 'HCP_UR100_rfMRI')
@@ -94,3 +158,8 @@ if __name__ == "__main__":
     #     dir2 = os.path.join(to_dir, '%s/MNINonLinear/Results' % str(s))
     #     import_FIX_extended(dir1, dir2, str(s))
     #     print(f"-Done subject {s}")
+
+    # Test dimensions of func data
+    check_dimensions()
+    # Create reginfo file for all data
+    create_reginfo(log_message=True, ses_id='ses-rest1')

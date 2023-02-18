@@ -923,23 +923,30 @@ class DataSetMDTB(DataSetNative):
 class DataSetHcpResting(DataSetCifti):
     def __init__(self, dir):
         super().__init__(dir)
-        self.sessions = ['ses-s1', 'ses-s2']
+        self.sessions = ['ses-rest1', 'ses-rest2']
         self.hem_name = ['cortex_left', 'cortex_right']
         self.default_type = 'NetAutoRun'
         self.cond_ind = 'reg_id'
         self.cond_name = 'region_name'
         self.part_ind = 'half'
 
-    def get_data_fnames(self, participant_id):
+    def get_data_fnames(self, participant_id, ses_id):
         """ Gets all raw data files
         Args:
             participant_id (str): Subject
         Returns:
             fnames (list): List of fnames
         """
-        dirw = self.derivative_dir + f"/{participant_id}" + "/func"
+
+        dirw = self.func_dir.format(participant_id)
         fnames = []
-        for r in range(4):
+        if ses_id == "ses-rest1":
+            runs = range(0, 2)
+        elif ses_id == "ses-rest2":
+            runs = range(2, 4)
+        # idx = self.sessions.index(ses_id)
+
+        for r in runs:
             fnames.append(
                 f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
         return fnames
