@@ -941,15 +941,16 @@ class DataSetHcpResting(DataSetCifti):
         dirw = self.func_dir.format(participant_id)
         fnames = []
         if ses_id == "ses-rest1":
-            runs = range(0, 2)
+            runs = np.arange(0, 2)
         elif ses_id == "ses-rest2":
-            runs = range(2, 4)
+            runs = np.arange(3, 5)
         # idx = self.sessions.index(ses_id)
-
+        T = pd.read_csv(
+            dirw + f'/{participant_id}_{ses_id}_reginfo.tsv', sep='\t')
         for r in runs:
             fnames.append(
                 f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
-        return fnames
+        return fnames, T
 
     def condense_data(self, participant_id,
                       atlas_maps,

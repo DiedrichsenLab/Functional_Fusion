@@ -48,13 +48,8 @@ def create_reginfo(log_message=False, ses_id='ses-rest1'):
     dataset = DataSetHcpResting(str(target_dir))
 
     # Import general info
-    info = pd.read_csv(target_dir / f'{ses_id}_reginfo.tsv', sep='\t')
-
-    # Import scan-specific info (missing runs)
-    missing_scans = pd.read_csv(
-        orig_dir / 'missing_scans.txt', names=['scan'], header=None)
-    missing_scans[['orig_id', 'session', 'run']] = missing_scans.scan.str.split(
-        "_", expand=True)
+    info = pd.read_csv(
+        target_dir + f'/{ses_id}_reginfo.tsv', sep='\t')
 
     T = dataset.get_participants()
     for _, id in T.iterrows():
@@ -65,22 +60,10 @@ def create_reginfo(log_message=False, ses_id='ses-rest1'):
         reginfo.insert(loc=0, column='sn', value=[
             id.participant_id] * info.shape[0])
 
-        for session in info.orig_ses.unique():
-            missing = (id.orig_id == missing_scans.orig_id) & (
-                f'sess{session:02d}' == missing_scans.session)
-            if np.any(missing):
-                for _, miss in missing_scans[missing].iterrows():
-                    run = int(miss.run.split('MOTOR')[1])
-                    if log_message:
-                        print(
-                            f'Missing scan {reginfo[reginfo.orig_run == run]} removed from reginfo')
-                    reginfo = reginfo.drop(
-                        reginfo[reginfo.orig_run == run].index)
-
         # Make folder
-        dest = target_dir / \
-            f'derivatives/{id.participant_id}/estimates/ses-motor/{id.participant_id}_ses-motor_reginfo.tsv'
-        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest = target_dir + \
+            f'/derivatives/{id.participant_id}/func/{id.participant_id}_{ses_id}_reginfo.tsv'
+        Path(dest).parent.mkdir(parents=True, exist_ok=True)
 
         # Save reginfo.tsv file
         reginfo.to_csv(dest, sep='\t', index=False)
@@ -160,6 +143,8 @@ if __name__ == "__main__":
     #     print(f"-Done subject {s}")
 
     # Test dimensions of func data
-    check_dimensions()
+    # check_dimensions()
+
     # Create reginfo file for all data
     create_reginfo(log_message=True, ses_id='ses-rest1')
+    create_reginfo(log_message=True, ses_id='ses-rest2')

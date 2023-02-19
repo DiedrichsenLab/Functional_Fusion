@@ -30,7 +30,10 @@ hem_name = ['cortex_left', 'cortex_right']
 def extract_hcp(ses_id='ses-rest1', type='Run', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
     T = hcp_dataset.get_participants()
-    hcp_dataset.get_data_fnames(T.iloc[0].participant_id, ses_id)
+    hcp_dataset.get_data_fnames(
+        participant_id=T.iloc[0].participant_id, ses_id='ses-rest1')
+    hcp_dataset.get_data_fnames(
+        participant_id=T.iloc[0].participant_id, ses_id='ses-rest2')
     hcp_dataset.extract_all(ses_id, type, atlas)
 
 
