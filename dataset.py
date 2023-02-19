@@ -943,7 +943,7 @@ class DataSetHcpResting(DataSetCifti):
         if ses_id == "ses-rest1":
             runs = np.arange(0, 2)
         elif ses_id == "ses-rest2":
-            runs = np.arange(3, 5)
+            runs = np.arange(2, 4)
         # idx = self.sessions.index(ses_id)
         T = pd.read_csv(
             dirw + f'/{participant_id}_{ses_id}_reginfo.tsv', sep='\t')
@@ -952,31 +952,13 @@ class DataSetHcpResting(DataSetCifti):
                 f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
         return fnames, T
 
-    def condense_data(self, data, info, type, participant_id,
-                      ses_id,
-                      ):
+    def condense_data(self, data, info, type):
         # Depending on the type, make a new contrast
         info['half'] = (info.run % 2) + 1
-        n_cond = np.max(info.time_id)
-        if type == 'Half':
-            data_info, C = agg_data(info, ['half', 'time_id'], ['run'])
-            data_info['names'] = [f'{d.timepoint.strip()}-half{d.half}'
-                                  for i, d in data_info.iterrows()]
-        elif type == 'All':
-            data_info, C = agg_data(info, ['time_id'], ['half', 'run'])
-            data_info['names'] = [
-                f'{d.timepoint}' for i, d in data_info.iterrows()]
-        elif type == 'Run':
-            data_info, C = agg_data(info, ['run', 'half', 'time_id'], [])
-            data_info['names'] = [f'{d.timepoint.strip()}-run{d.run}'
-                                  for i, d in data_info.iterrows()]
+        data_info, C = agg_data(info, ['run', 'half', 'time_id'], [])
+        data_info['names'] = [f'{d.timepoint.strip()}-run{d.run}'
+                              for i, d in data_info.iterrows()]
 
-        # Prewhiten the data
-        # data_n = prewhiten_data(data)
-
-        # Combine with contrast
-        # for i in range(len(data_n)):
-            # data_n[i] = pinv(C) @ data_n[i]
         return data, data_info
 
 
