@@ -957,27 +957,27 @@ class DataSetHcpResting(DataSetCifti):
                       ):
         # Depending on the type, make a new contrast
         info['half'] = (info.run % 2) + 1
-        n_cond = np.max(info.reg_id)
+        n_cond = np.max(info.time_id)
         if type == 'Half':
-            data_info, C = agg_data(info, ['half', 'reg_id'], ['run'])
-            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
+            data_info, C = agg_data(info, ['half', 'time_id'], ['run'])
+            data_info['names'] = [f'{d.timepoint.strip()}-half{d.half}'
                                   for i, d in data_info.iterrows()]
         elif type == 'All':
-            data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
+            data_info, C = agg_data(info, ['time_id'], ['half', 'run'])
             data_info['names'] = [
-                f'{d.cond_name}' for i, d in data_info.iterrows()]
+                f'{d.timepoint}' for i, d in data_info.iterrows()]
         elif type == 'Run':
-            data_info, C = agg_data(info, ['run', 'half', 'reg_id'], [])
-            data_info['names'] = [f'{d.cond_name.strip()}-run{d.run}'
+            data_info, C = agg_data(info, ['run', 'half', 'time_id'], [])
+            data_info['names'] = [f'{d.timepoint.strip()}-run{d.run}'
                                   for i, d in data_info.iterrows()]
 
         # Prewhiten the data
-        data_n = prewhiten_data(data)
+        # data_n = prewhiten_data(data)
 
         # Combine with contrast
-        for i in range(len(data_n)):
-            data_n[i] = pinv(C) @ data_n[i]
-        return data_n, data_info
+        # for i in range(len(data_n)):
+            # data_n[i] = pinv(C) @ data_n[i]
+        return data, data_info
 
 
 class DataSetPontine(DataSetNative):
