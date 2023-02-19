@@ -952,10 +952,9 @@ class DataSetHcpResting(DataSetCifti):
                 f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
         return fnames, T
 
-    def condense_data(self, participant_id,
-                      atlas_maps,
+    def condense_data(self, data, info, type, participant_id,
                       ses_id,
-                      type='Run'):
+                      ):
         # Depending on the type, make a new contrast
         info['half'] = (info.run % 2) + 1
         n_cond = np.max(info.reg_id)
