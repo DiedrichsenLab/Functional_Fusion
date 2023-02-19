@@ -952,7 +952,7 @@ class DataSetHcpResting(DataSetCifti):
                 f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
         return fnames, T
 
-    def condense_data(self, data, info, type):
+    def condense_data(self, data, info, type, participant_id, ses_id):
         # Depending on the type, make a new contrast
         info['half'] = (info.run % 2) + 1
         data_info, C = agg_data(info, ['run', 'half', 'time_id'], [])
