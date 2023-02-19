@@ -38,6 +38,9 @@ def extract_hcp(ses_id='ses-rest1', type='Run', atlas='MNISymC3'):
 
 
 if __name__ == "__main__":
-    extract_hcp()
+    extract_hcp(ses_id='ses-rest1', type='Run', atlas='MNISymC3')
+    extract_hcp(ses_id='ses-rest2', type='Run', atlas='MNISymC3')
 
+    extract_hcp(ses_id='ses-rest1', type='Run', atlas='fs32k')
+    extract_hcp(ses_id='ses-rest2', type='Run', atlas='fs32k')
     pass
