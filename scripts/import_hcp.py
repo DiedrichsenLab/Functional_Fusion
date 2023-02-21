@@ -12,7 +12,7 @@ import os
 import sys
 import time
 from copy import deepcopy
-from dataset import DataSetHcpResting
+import dataset as ds
 import numpy as np
 from nibabel import cifti2
 import numpy as np
@@ -29,8 +29,23 @@ orig_dir = os.path.join(base_dir, 'HCP_UR100_rfMRI')
 target_dir = os.path.join(base_dir, 'FunctionalFusion/HCP')
 
 
+class DataSetICANetworks(ds.DataSetMNIVol):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.group_space = 'tpl-MNI152NLin6Asym'
+
+    def get_participants(self):
+        participants = ['dim_auto']
+        return pd.DataFrame({'participant_id': participants})
+
+
+def ica_networks_vol2surf():
+    dataset = DataSetICANetworks(str(target_dir))
+    dataset.extract_all(atlas='fs32k')
+
+
 def check_dimensions():
-    dataset = DataSetHcpResting(str(target_dir))
+    dataset = ds.DataSetHcpResting(str(target_dir))
     T = dataset.get_participants()
     for p, participant_id in enumerate(T.participant_id):
         print(p, participant_id)
@@ -45,7 +60,7 @@ def check_dimensions():
 
 
 def create_reginfo(log_message=False, ses_id='ses-rest1'):
-    dataset = DataSetHcpResting(str(target_dir))
+    dataset = ds.DataSetHcpResting(str(target_dir))
 
     # Import general info
     info = pd.read_csv(
@@ -146,5 +161,8 @@ if __name__ == "__main__":
     # check_dimensions()
 
     # Create reginfo file for all data
-    create_reginfo(log_message=True, ses_id='ses-rest1')
-    create_reginfo(log_message=True, ses_id='ses-rest2')
+    # create_reginfo(log_message=True, ses_id='ses-rest1')
+    # create_reginfo(log_message=True, ses_id='ses-rest2')
+
+    # Get ICA Networks into surface space
+    ica_networks_vol2surf()
