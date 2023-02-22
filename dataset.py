@@ -159,7 +159,7 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
         fcn (function): Function to use to aggregate over these
     Returns:
         aggdata (ndarray): Aggregated either 2d or 3d data structure
-        labels (ndarray): Region number corresponding to each "column" 
+        labels (ndarray): Region number corresponding to each "column"
     """
     # Subset original data frame as needed
     labels = np.unique(label_vec[label_vec > 0])
@@ -994,26 +994,31 @@ class DataSetHcpResting(DataSetCifti):
                       f'/targets/{target}_space-fs32k.dscalar.nii')
 
         # Regress each network into the fs32k cortical data to get a run-specific network timecourse
-        data, info = self.get_data(
-            space='fs32k', ses_id=ses_id, type='Tseries')
-        network_timecourse = self.regress_networks(net.get_fdata(), data)
-
         T = pd.read_csv(self.base_dir + '/participants.tsv', sep='\t')
-        for participant_id in T.participant_id:
+        # Need to do this for half of the participants at a time, since the data is too large
+        for participant_half in [1, 2]:
+            n = T.shape[0] / 2
+            participants = np.arange(
+                (participant_half - 1) * n, (participant_half) * n, dtype=int)
+            data, info = self.get_data(
+                space='fs32k', ses_id=ses_id, type='Tseries', subj=participants)
+            network_timecourse = self.regress_networks(net.get_fdata(), data)
 
-            # data = data[0]
-            # # Regress the network out of the data
-            # X = np.load(
-            #     self.base_dir + f'/derivatives/{participant_id}/ses-rest1/{participant_id}_ses-rest1_designmatrix.npy')
-            # reg_in = np.arange(0, X.shape[1])
-            # C = matrix.indicator(info.run, positive=True)
-            # data_new = optimal_contrast(data, C, X, reg_in, baseline=None)
-            # # Save the data
-            fname = self.base_dir + \
-                f'/derivatives/{participant_id}/ses-rest1/{participant_id}_{ses_id}_{type}.npy'
-            # np.save(fname, data_new)
+            for participant_id in T.participant_id:
 
-        # cortex = self.get_data(space='fs32k', ses_id=ses_id)
+                # data = data[0]
+                # # Regress the network out of the data
+                # X = np.load(
+                #     self.base_dir + f'/derivatives/{participant_id}/ses-rest1/{participant_id}_ses-rest1_designmatrix.npy')
+                # reg_in = np.arange(0, X.shape[1])
+                # C = matrix.indicator(info.run, positive=True)
+                # data_new = optimal_contrast(data, C, X, reg_in, baseline=None)
+                # # Save the data
+                fname = self.base_dir + \
+                    f'/derivatives/{participant_id}/ses-rest1/{participant_id}_{ses_id}_{type}.npy'
+                # np.save(fname, data_new)
+
+            # cortex = self.get_data(space='fs32k', ses_id=ses_id)
         pass
 
 
