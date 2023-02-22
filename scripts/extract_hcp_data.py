@@ -90,6 +90,16 @@ def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='
             dest_dir + fname + '.tsv', sep='\t', index=False)
 
 
+def group_average_hcp(ses_id='ses-rest1', type='Net69Run', atlas='MNISymC3'):
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+    hcp_dataset.group_average_data(
+        ses_id='ses-rest1', type='Net69Run', atlas='MNISymC3')
+    hcp_dataset.group_average_data(
+        ses_id='ses-rest2', type='Net69Run', atlas='MNISymC3')
+    hcp_dataset.plot_cerebellum(subject='group', sessions=[
+                                'ses-rest1', 'ses-rest2'], type=type, atlas=atlas)
+
+
 if __name__ == "__main__":
     #  -- Extract timeseries --
     # extract_hcp_timeseries(
@@ -100,8 +110,11 @@ if __name__ == "__main__":
     # extract_hcp_timeseries(ses_id='ses-rest2', type='Tseries', atlas='fs32k')
 
     # -- Get connectivity fingerprint --
-    extract_connectivity_fingerprint(
-        type='Net69Run', space='MNISymC3', ses_id='ses-rest1')
-    extract_connectivity_fingerprint(
-        type='Net69Run', space='MNISymC3', ses_id='ses-rest2')
+    # extract_connectivity_fingerprint(
+    # type='Net69Run', space='MNISymC3', ses_id='ses-rest1')
+    # extract_connectivity_fingerprint(
+    # type='Net69Run', space='MNISymC3', ses_id='ses-rest2')
+
+    # -- Group average --
+    group_average_hcp(ses_id='ses-rest1', type='Net69Run', atlas='MNISymC3')
     pass
