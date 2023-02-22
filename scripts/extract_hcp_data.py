@@ -84,18 +84,19 @@ def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='
         dest_dir = hcp_dataset.base_dir + \
             f'/derivatives/{participant_id}/data/'
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        fname = f'{participant_id}_{ses_id}_{target+type}'
-        nb.save(C, dest_dir + fname + '.dscalar.nii')
+
+        nb.save(C, dest_dir +
+                f'{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
         info.to_csv(
-            dest_dir + fname + '.tsv', sep='\t', index=False)
+            dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
 
 
-def group_average_hcp(ses_id='ses-rest1', type='Net69Run', atlas='MNISymC3'):
+def group_average_hcp(type='Net69Run', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
     hcp_dataset.group_average_data(
-        ses_id='ses-rest1', type='Net69Run', atlas='MNISymC3')
+        ses_id='ses-rest1', type=type, atlas=atlas)
     hcp_dataset.group_average_data(
-        ses_id='ses-rest2', type='Net69Run', atlas='MNISymC3')
+        ses_id='ses-rest2', type=type, atlas=atlas)
     hcp_dataset.plot_cerebellum(subject='group', sessions=[
                                 'ses-rest1', 'ses-rest2'], type=type, atlas=atlas)
 

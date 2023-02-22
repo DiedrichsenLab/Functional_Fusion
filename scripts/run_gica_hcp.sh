@@ -68,3 +68,13 @@ fslmerge -t ${output_dir}/dim_auto/signal_components.nii.gz `cat ${output_dir}/d
 
 
 # --- Resample all signal componnents into surface space ---
+cd /Volumes/diedrichsen_data$/data/FunctionalFusion/HCP/derivatives/
+for i in *; do
+# mv ${i}/data/${i}_ses-rest1_Net69Run.tsv ${i}/data/${i}_ses-rest1_info-Net69Run.tsv 
+# mv ${i}/data/${i}_ses-rest2_Net69Run.tsv ${i}/data/${i}_ses-rest2_info-Net69Run.tsv 
+
+
+mv ${i}/data/${i}_ses-rest1_Net69Run.dscalar.nii ${i}/data/${i}_space-MNISymC3_ses-rest1_Net69Run.dscalar.nii 
+mv ${i}/data/${i}_ses-rest2_Net69Run.dscalar.nii ${i}/data/${i}_space-MNISymC3_ses-rest2_Net69Run.dscalar.nii 
+
+done

@@ -926,8 +926,8 @@ class DataSetHcpResting(DataSetCifti):
         self.sessions = ['ses-rest1', 'ses-rest2']
         self.hem_name = ['cortex_left', 'cortex_right']
         self.default_type = 'Net69Run'
-        self.cond_ind = 'reg_id'
-        self.cond_name = 'region_name'
+        self.cond_ind = 'net_id'
+        self.cond_name = 'names'
         self.part_ind = 'half'
 
     def get_data_fnames(self, participant_id, ses_id):
