@@ -32,10 +32,44 @@ def extract_hcp_timeseries(ses_id='ses-rest1', type='Tseries', atlas='MNISymC3')
     hcp_dataset.extract_all(ses_id, type, atlas)
 
 
-def get_connectivity():
+def get_connectivity(type='Net69Run', space='MNISymC3', ses_id='ses-rest1'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
-    hcp_dataset.connectivity_fingerprint(
-        atlas='MNISymC3', type='Net69Run', ses_id='ses-rest1')
+    # Load the networks
+
+    target, type = re.findall('[A-Z][^A-Z]*', type)
+    net = nb.load(hcp_dataset.base_dir +
+                  f'/targets/{target}_space-fs32k.dscalar.nii')
+
+    atlas, _ = am.get_atlas(space, hcp_dataset.atlas_dir)
+
+    T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
+    for p, participant_id in enumerate(T.participant_id):
+        # Get cortical data
+        data_cortex, _ = hcp_dataset.get_data(
+            space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
+
+        # Regress each network into the fs32k cortical data to get a run-specific network timecourse
+        network_timecourse = hcp_dataset.regress_networks(
+            net.get_fdata(), data_cortex)
+
+        # Calculate the connectivity fingerprint
+        data_cereb, info = hcp_dataset.get_data(
+            space=space, ses_id=ses_id, type='Tseries', subj=[p])
+        data_cereb = data_cereb.squeeze()
+
+        coef = hcp_dataset.connectivity_fingerprint(
+            data_cereb, network_timecourse, info, type)
+
+        # Save the data
+        names = [axis[0] for axis in net.header.get_axis(0)]
+        C = atlas.data_to_cifti(coef, names)
+        dest_dir = hcp_dataset.base_dir + \
+            f'/derivatives/{participant_id}/{ses_id}/'
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+        fname = f'{participant_id}_{ses_id}_{target+type}'
+        nb.save(C, dest_dir + fname + '.dscalar.nii')
+        info.to_csv(
+            dest_dir + fname + '.tsv', sep='\t', index=False)
 
 
 if __name__ == "__main__":

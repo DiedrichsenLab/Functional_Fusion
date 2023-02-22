@@ -952,15 +952,6 @@ class DataSetHcpResting(DataSetCifti):
                 f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
         return fnames, T
 
-    def condense_data(self, data, info, type, participant_id, ses_id):
-        # Depending on the type, make a new contrast
-        info['half'] = (info.run % 2) + 1
-        data_info, C = agg_data(info, ['run', 'half', 'time_id'], [])
-        data_info['names'] = [f'{d.timepoint.strip()}-run{d.run}'
-                              for i, d in data_info.iterrows()]
-
-        return data, data_info
-
     def regress_networks(self, X, Y):
         """Regresses a spatial map (X) into data (Y).
         Returns the network timecourses.
@@ -986,42 +977,38 @@ class DataSetHcpResting(DataSetCifti):
 
         return network_timecourse
 
-    def connectivity_fingerprint(self, atlas, type, ses_id):
+    def connectivity_fingerprint(self, source, target, info, type):
         """ Calculate the connectivity fingerprint of a target region
         Args:
-            target (int): Index of target region
+            source (np.ndarray): Source data
+            target (np.ndarray): Target timecourse
         Returns:
-            C (np.ndarray): Connectivity fingerprint
+            coef (np.ndarray): Connectivity fingerprint
         """
-        # Load the networks
-        target, type = re.findall('[A-Z][^A-Z]*', type)
-        net = nb.load(self.base_dir +
-                      f'/targets/{target}_space-fs32k.dscalar.nii')
 
-        # Regress each network into the fs32k cortical data to get a run-specific network timecourse
-        T = pd.read_csv(self.base_dir + '/participants.tsv', sep='\t')
-        # Need to do this each participant at a time, since the data is too large
-        for p, participant_id in enumerate(T.participant_id):
-            data, info = self.get_data(
-                space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
-            network_timecourse = self.regress_networks(net.get_fdata(), data)
+        vals = []
+        if type == 'Run':
+            for run in info.run.unique():
+                data_run = source[info.run == run]
+                net_run = target.T[info.run == run]
 
-            for participant_id in T.participant_id:
+                # Standardize the time series for easier calculation
+                data_run = util.zstandarize_ts(data_run)
+                net_run = util.zstandarize_ts(net_run)
 
-                # data = data[0]
-                # # Regress the network out of the data
-                # X = np.load(
-                #     self.base_dir + f'/derivatives/{participant_id}/ses-rest1/{participant_id}_ses-rest1_designmatrix.npy')
-                # reg_in = np.arange(0, X.shape[1])
-                # C = matrix.indicator(info.run, positive=True)
-                # data_new = optimal_contrast(data, C, X, reg_in, baseline=None)
-                # # Save the data
-                fname = self.base_dir + \
-                    f'/derivatives/{participant_id}/ses-rest1/{participant_id}_{ses_id}_{type}.npy'
-                # np.save(fname, data_new)
+                # Correlate
+                vals.append(net_run.T @ data_run / data_run.shape[0])
 
-            # cortex = self.get_data(space='fs32k', ses_id=ses_id)
-        pass
+        elif type == 'All':
+            # Standardize the time series for easier calculation
+            source = util.zstandarize_ts(source)
+            target = util.zstandarize_ts(target)
+
+            # Correlate
+            vals.append(target.T @ source / source.shape[0])
+
+        coef = np.array(vals).squeeze()
+        return coef
 
 
 class DataSetPontine(DataSetNative):
