@@ -58,10 +58,13 @@ done
 fslmerge -t ${output_dir}/dim_auto/signal_components.nii.gz `cat ${output_dir}/dim_auto/signal_components_imgs.txt`
 
 # --- Resample into 1 mm volume space ---
-flirt \
--in ${output_dir}/dim_auto/signal_components.nii.gz \
--ref ${workdir}/FunctionalFusion/Atlases/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_T1w.nii \
--out ${output_dir}/dim_auto/signal_components_1mm.nii.gz \
--nosearch \
--applyisoxfm 1 \
--usesqform
+# flirt \
+# -in ${output_dir}/dim_auto/signal_components.nii.gz \
+# -ref ${workdir}/FunctionalFusion/Atlases/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_T1w.nii \
+# -out ${output_dir}/dim_auto/signal_components_1mm.nii.gz \
+# -nosearch \
+# -applyisoxfm 1 \
+# -usesqform
+
+
+# --- Resample all signal componnents into surface space ---

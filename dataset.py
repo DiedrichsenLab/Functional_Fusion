@@ -925,7 +925,7 @@ class DataSetHcpResting(DataSetCifti):
         super().__init__(dir)
         self.sessions = ['ses-rest1', 'ses-rest2']
         self.hem_name = ['cortex_left', 'cortex_right']
-        self.default_type = 'NetAutoRun'
+        self.default_type = 'Net69Run'
         self.cond_ind = 'reg_id'
         self.cond_name = 'region_name'
         self.part_ind = 'half'
@@ -960,6 +960,61 @@ class DataSetHcpResting(DataSetCifti):
                               for i, d in data_info.iterrows()]
 
         return data, data_info
+
+    def regress_networks(self, X, Y):
+        """Regresses a spatial map (X) into data (Y).
+        Returns the network timecourses.
+
+        Args:
+            X (np.arry): 4D Network data of the signal components
+                (default input networks are in fs32k Space: 91 x 109 x 91 x nComponents )
+            Y (<nibabel CIFTI image object>): fMRI timeseries in volume
+                Has to be in the same space as networks (91 x 109 x 91 x nTimepoints )
+        Returns:
+            network_timecourse (np.ndarray):
+                A numpy array (nTimepoints x nNetworks) with the fMRI timecourse for
+                each resting-state network
+        """
+        X = X.reshape(-1, X.shape[3])
+        Y = Y.reshape(-1, Y.shape[3])
+        network_timecourse = np.matmul(np.linalg.pinv(X), Y)
+
+        return network_timecourse
+
+    def connectivity_fingerprint(self, atlas, type):
+        """ Calculate the connectivity fingerprint of a target region
+        Args:
+            target (int): Index of target region
+        Returns:
+            C (np.ndarray): Connectivity fingerprint
+        """
+        # Load the networks
+        target, type = re.findall('[A-Z][^A-Z]*', type)
+        net = nb.load(self.base_dir +
+                      f'/targets/{target}_space-fs32k.dscalar.nii')
+
+        # Regress each network into the fs32k cortical data to get a run-specific network timecourse
+        data, info = self.get_data(
+            space='fs32k', ses_id='ses-rest1', type='Tseries')
+        network_timecourse = self.regress_networks(net.get_fdata(), data)
+
+        T = pd.read_csv(self.base_dir + '/participants.tsv', sep='\t')
+        for participant_id in T.participant_id:
+
+            # data = data[0]
+            # # Regress the network out of the data
+            # X = np.load(
+            #     self.base_dir + f'/derivatives/{participant_id}/ses-rest1/{participant_id}_ses-rest1_designmatrix.npy')
+            # reg_in = np.arange(0, X.shape[1])
+            # C = matrix.indicator(info.run, positive=True)
+            # data_new = optimal_contrast(data, C, X, reg_in, baseline=None)
+            # # Save the data
+            fname = self.base_dir + \
+                f'/derivatives/{participant_id}/ses-rest1/{participant_id}_ses-rest1_{type}.npy'
+            # np.save(fname, data_new)
+
+        # cortex = self.get_data(space='fs32k', ses_id='ses-rest1')
+        pass
 
 
 class DataSetPontine(DataSetNative):
