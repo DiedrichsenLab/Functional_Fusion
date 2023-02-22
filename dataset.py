@@ -996,19 +996,19 @@ class DataSetHcpResting(DataSetCifti):
         Returns:
             coef (np.ndarray): Connectivity fingerprint
         """
-        vals = []
+        coefs = []
         if type == 'Run':
             for run in info.run.unique():
                 data_run = source[info.run == run]
                 net_run = target.T[info.run == run]
-                val = self.correlate(data_run, net_run)
-                vals.append(val)
+                coef = self.correlate(data_run, net_run)
+                coefs.append(coef)
 
         elif type == 'All':
-            val = self.correlate(source, target)
-            vals.append(val)
+            coef = self.correlate(source, target)
+            coefs.append(coef)
 
-        return np.vstack(vals)
+        return np.vstack(coefs)
 
 
 class DataSetPontine(DataSetNative):
