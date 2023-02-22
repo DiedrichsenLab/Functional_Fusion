@@ -981,7 +981,7 @@ class DataSetHcpResting(DataSetCifti):
 
         return network_timecourse
 
-    def connectivity_fingerprint(self, atlas, type):
+    def connectivity_fingerprint(self, atlas, type, ses_id):
         """ Calculate the connectivity fingerprint of a target region
         Args:
             target (int): Index of target region
@@ -995,7 +995,7 @@ class DataSetHcpResting(DataSetCifti):
 
         # Regress each network into the fs32k cortical data to get a run-specific network timecourse
         data, info = self.get_data(
-            space='fs32k', ses_id='ses-rest1', type='Tseries')
+            space='fs32k', ses_id=ses_id, type='Tseries')
         network_timecourse = self.regress_networks(net.get_fdata(), data)
 
         T = pd.read_csv(self.base_dir + '/participants.tsv', sep='\t')
@@ -1010,10 +1010,10 @@ class DataSetHcpResting(DataSetCifti):
             # data_new = optimal_contrast(data, C, X, reg_in, baseline=None)
             # # Save the data
             fname = self.base_dir + \
-                f'/derivatives/{participant_id}/ses-rest1/{participant_id}_ses-rest1_{type}.npy'
+                f'/derivatives/{participant_id}/ses-rest1/{participant_id}_{ses_id}_{type}.npy'
             # np.save(fname, data_new)
 
-        # cortex = self.get_data(space='fs32k', ses_id='ses-rest1')
+        # cortex = self.get_data(space='fs32k', ses_id=ses_id)
         pass
 
 
