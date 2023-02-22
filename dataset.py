@@ -159,7 +159,7 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
         fcn (function): Function to use to aggregate over these
     Returns:
         aggdata (ndarray): Aggregated either 2d or 3d data structure
-        labels (ndarray): Region number corresponding to each "column" 
+        labels (ndarray): Region number corresponding to each "column"
     """
     # Subset original data frame as needed
     labels = np.unique(label_vec[label_vec > 0])
@@ -923,54 +923,92 @@ class DataSetMDTB(DataSetNative):
 class DataSetHcpResting(DataSetCifti):
     def __init__(self, dir):
         super().__init__(dir)
-        self.sessions = ['ses-s1', 'ses-s2']
+        self.sessions = ['ses-rest1', 'ses-rest2']
         self.hem_name = ['cortex_left', 'cortex_right']
-        self.default_type = 'NetAutoRun'
-        self.cond_ind = 'reg_id'
-        self.cond_name = 'region_name'
+        self.default_type = 'Net69Run'
+        self.cond_ind = 'net_id'
+        self.cond_name = 'names'
         self.part_ind = 'half'
 
-    def get_data_fnames(self, participant_id):
+    def get_data_fnames(self, participant_id, ses_id):
         """ Gets all raw data files
         Args:
             participant_id (str): Subject
         Returns:
             fnames (list): List of fnames
         """
-        dirw = self.derivative_dir + f"/{participant_id}" + "/func"
+
+        dirw = self.func_dir.format(participant_id)
         fnames = []
-        for r in range(4):
+        if ses_id == "ses-rest1":
+            runs = np.arange(0, 2)
+        elif ses_id == "ses-rest2":
+            runs = np.arange(2, 4)
+        # idx = self.sessions.index(ses_id)
+        T = pd.read_csv(
+            dirw + f'/{participant_id}_{ses_id}_reginfo.tsv', sep='\t')
+        for r in runs:
             fnames.append(
                 f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
-        return fnames
+        return fnames, T
 
-    def condense_data(self, participant_id,
-                      atlas_maps,
-                      ses_id,
-                      type='Run'):
-        # Depending on the type, make a new contrast
-        info['half'] = (info.run % 2) + 1
-        n_cond = np.max(info.reg_id)
-        if type == 'Half':
-            data_info, C = agg_data(info, ['half', 'reg_id'], ['run'])
-            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
-                                  for i, d in data_info.iterrows()]
+    def regress_networks(self, X, Y):
+        """Regresses a spatial map (X) into data (Y).
+        Returns the network timecourses.
+
+        Args:
+            X (np.arry): 4D Network data of the signal components
+                (default input networks are in fs32k Space: 59518 vertices x nComponents )
+            Y (<nibabel CIFTI image object>): fMRI timeseries in volume
+                Has to be in the same space as networks (59518 vertices x nTimepoints )
+        Returns:
+            network_timecourse (np.ndarray):
+                A numpy array (nTimepoints x nNetworks) with the fMRI timecourse for
+                each resting-state network
+        """
+        X = X.T
+        Y = Y.T.squeeze()
+        d_excluded = np.where(np.isnan(Y))[0].shape[0]
+        v_excluded = np.unique(np.where(np.isnan(Y))[0]).shape[0]
+        print(
+            f'Setting nan datapoints ({v_excluded} unique vertices) to zero. Entire timeseries: {d_excluded/v_excluded == Y.shape[1]}')
+        Y[np.isnan(Y)] = 0
+        network_timecourse = np.matmul(np.linalg.pinv(X), Y)
+
+        return network_timecourse
+
+    def correlate(self, X, Y):
+        """ Correlate X and Y numpy arrays after standardizing them"""
+        X = util.zstandarize_ts(X)
+        Y = util.zstandarize_ts(Y)
+        return Y.T @ X / X.shape[0]
+
+    def connectivity_fingerprint(self, source, target, info, type):
+        """ Calculate the connectivity fingerprint of a target region
+
+        Args:
+            source (np.ndarray): Source data
+            target (np.nzdarray): Target timecourse
+            info (pandas.DataFrame): Information about the source data
+            type (str): Type of fingerprint to calculate ('Run' or 'All').
+                        Estimates fingerprint from each run seperately or from all concatenated runs.
+
+        Returns:
+            coef (np.ndarray): Connectivity fingerprint
+        """
+        coefs = []
+        if type == 'Run':
+            for run in info.run.unique():
+                data_run = source[info.run == run]
+                net_run = target.T[info.run == run]
+                coef = self.correlate(data_run, net_run)
+                coefs.append(coef)
+
         elif type == 'All':
-            data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
-            data_info['names'] = [
-                f'{d.cond_name}' for i, d in data_info.iterrows()]
-        elif type == 'Run':
-            data_info, C = agg_data(info, ['run', 'half', 'reg_id'], [])
-            data_info['names'] = [f'{d.cond_name.strip()}-run{d.run}'
-                                  for i, d in data_info.iterrows()]
+            coef = self.correlate(source, target)
+            coefs.append(coef)
 
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
-
-        # Combine with contrast
-        for i in range(len(data_n)):
-            data_n[i] = pinv(C) @ data_n[i]
-        return data_n, data_info
+        return np.vstack(coefs)
 
 
 class DataSetPontine(DataSetNative):

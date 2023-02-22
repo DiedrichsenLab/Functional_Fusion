@@ -141,3 +141,4 @@ dmypy.json
 scripts/run_pipeline.py
 ff.code-workspace
 scripts/.vscode/launch.json
+signal_components_1mm.nii.gz
