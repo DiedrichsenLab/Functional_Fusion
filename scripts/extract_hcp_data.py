@@ -32,10 +32,16 @@ def extract_hcp_timeseries(ses_id='ses-rest1', type='Tseries', atlas='MNISymC3')
     hcp_dataset.extract_all(ses_id, type, atlas)
 
 
-def get_connectivity(type='Net69Run', space='MNISymC3', ses_id='ses-rest1'):
-    hcp_dataset = DataSetHcpResting(hcp_dir)
-    # Load the networks
+def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='ses-rest1'):
+    """Extracts the connectivity fingerprint for each network in the HCP data
+    Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse
+            Step 2: Get the correlation of each voxel with each network timecourse (connectivity fingerprint)
+            Step 3: Save the data.
+    """
 
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+
+    # Load the networks
     target, type = re.findall('[A-Z][^A-Z]*', type)
     net = nb.load(hcp_dataset.base_dir +
                   f'/targets/{target}_space-fs32k.dscalar.nii')
@@ -94,7 +100,8 @@ if __name__ == "__main__":
     # extract_hcp_timeseries(ses_id='ses-rest2', type='Tseries', atlas='fs32k')
 
     # -- Get connectivity fingerprint --
-    # Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecours
-    get_connectivity()
-    # Step 2: Get the correlation of each voxel with each network timecourse
+    extract_connectivity_fingerprint(
+        type='Net69Run', space='MNISymC3', ses_id='ses-rest1')
+    extract_connectivity_fingerprint(
+        type='Net69Run', space='MNISymC3', ses_id='ses-rest2')
     pass
