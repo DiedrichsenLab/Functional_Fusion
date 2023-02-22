@@ -34,7 +34,8 @@ def extract_hcp_timeseries(ses_id='ses-rest1', type='Tseries', atlas='MNISymC3')
 
 def get_connectivity():
     hcp_dataset = DataSetHcpResting(hcp_dir)
-    hcp_dataset.connectivity_fingerprint(atlas='MNISymC3', type='Net69Run')
+    hcp_dataset.connectivity_fingerprint(
+        atlas='MNISymC3', type='Net69Run', ses_id='ses-rest1')
 
 
 if __name__ == "__main__":
