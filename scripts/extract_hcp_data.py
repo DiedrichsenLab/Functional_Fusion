@@ -60,11 +60,23 @@ def get_connectivity(type='Net69Run', space='MNISymC3', ses_id='ses-rest1'):
         coef = hcp_dataset.connectivity_fingerprint(
             data_cereb, network_timecourse, info, type)
 
-        # Save the data
+        # Make info
         names = [axis[0] for axis in net.header.get_axis(0)]
-        C = atlas.data_to_cifti(coef, names)
+        runs = np.repeat([info.run.unique()], len(names))
+        net_id = np.tile(np.arange(len(names)),
+                         int(coef.shape[0] / len(names)))
+        info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+                             'sess': [ses_id] * coef.shape[0],
+                             'run': runs,
+                             'half': 2 - (runs < runs[-1]),
+                             'net_id': net_id,
+                             'names': names * int(coef.shape[0] / len(names))})
+
+        # Save the data
+
+        C = atlas.data_to_cifti(coef, info.names)
         dest_dir = hcp_dataset.base_dir + \
-            f'/derivatives/{participant_id}/{ses_id}/'
+            f'/derivatives/{participant_id}/data/'
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         fname = f'{participant_id}_{ses_id}_{target+type}'
         nb.save(C, dest_dir + fname + '.dscalar.nii')

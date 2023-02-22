@@ -977,38 +977,38 @@ class DataSetHcpResting(DataSetCifti):
 
         return network_timecourse
 
+    def correlate(self, X, Y):
+        """ Correlate X and Y numpy arrays after standardizing them"""
+        X = util.zstandarize_ts(X)
+        Y = util.zstandarize_ts(Y)
+        return Y.T @ X / X.shape[0]
+
     def connectivity_fingerprint(self, source, target, info, type):
         """ Calculate the connectivity fingerprint of a target region
+
         Args:
             source (np.ndarray): Source data
-            target (np.ndarray): Target timecourse
+            target (np.nzdarray): Target timecourse
+            info (pandas.DataFrame): Information about the source data
+            type (str): Type of fingerprint to calculate ('Run' or 'All').
+                        Estimates fingerprint from each run seperately or from all concatenated runs.
+
         Returns:
             coef (np.ndarray): Connectivity fingerprint
         """
-
         vals = []
         if type == 'Run':
             for run in info.run.unique():
                 data_run = source[info.run == run]
                 net_run = target.T[info.run == run]
-
-                # Standardize the time series for easier calculation
-                data_run = util.zstandarize_ts(data_run)
-                net_run = util.zstandarize_ts(net_run)
-
-                # Correlate
-                vals.append(net_run.T @ data_run / data_run.shape[0])
+                val = self.correlate(data_run, net_run)
+                vals.append(val)
 
         elif type == 'All':
-            # Standardize the time series for easier calculation
-            source = util.zstandarize_ts(source)
-            target = util.zstandarize_ts(target)
+            val = self.correlate(source, target)
+            vals.append(val)
 
-            # Correlate
-            vals.append(target.T @ source / source.shape[0])
-
-        coef = np.array(vals).squeeze()
-        return coef
+        return np.vstack(vals)
 
 
 class DataSetPontine(DataSetNative):
