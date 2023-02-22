@@ -995,13 +995,10 @@ class DataSetHcpResting(DataSetCifti):
 
         # Regress each network into the fs32k cortical data to get a run-specific network timecourse
         T = pd.read_csv(self.base_dir + '/participants.tsv', sep='\t')
-        # Need to do this for half of the participants at a time, since the data is too large
-        for participant_half in [1, 2]:
-            n = T.shape[0] / 2
-            participants = np.arange(
-                (participant_half - 1) * n, (participant_half) * n, dtype=int)
+        # Need to do this each participant at a time, since the data is too large
+        for p,participant_id in enumerate(T.participant_id):
             data, info = self.get_data(
-                space='fs32k', ses_id=ses_id, type='Tseries', subj=participants)
+                space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
             network_timecourse = self.regress_networks(net.get_fdata(), data)
 
             for participant_id in T.participant_id:
