@@ -1007,7 +1007,7 @@ class DataSetHcpResting(DataSetCifti):
             # Correlate
             vals.append(target.T @ source / source.shape[0])
 
-        coef = np.array(vals).squeeze()
+        coef = np.vstack(vals)
         return coef
 
 
