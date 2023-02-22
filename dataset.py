@@ -967,16 +967,21 @@ class DataSetHcpResting(DataSetCifti):
 
         Args:
             X (np.arry): 4D Network data of the signal components
-                (default input networks are in fs32k Space: 91 x 109 x 91 x nComponents )
+                (default input networks are in fs32k Space: 59518 vertices x nComponents )
             Y (<nibabel CIFTI image object>): fMRI timeseries in volume
-                Has to be in the same space as networks (91 x 109 x 91 x nTimepoints )
+                Has to be in the same space as networks (59518 vertices x nTimepoints )
         Returns:
             network_timecourse (np.ndarray):
                 A numpy array (nTimepoints x nNetworks) with the fMRI timecourse for
                 each resting-state network
         """
-        X = X.reshape(-1, X.shape[3])
-        Y = Y.reshape(-1, Y.shape[3])
+        X = X.T
+        Y = Y.T.squeeze()
+        d_excluded = np.where(np.isnan(Y))[0].shape[0]
+        v_excluded = np.unique(np.where(np.isnan(Y))[0]).shape[0]
+        print(
+            f'Setting nan datapoints ({v_excluded} unique vertices) to zero. Entire timeseries: {d_excluded/v_excluded == Y.shape[1]}')
+        Y[np.isnan(Y)] = 0
         network_timecourse = np.matmul(np.linalg.pinv(X), Y)
 
         return network_timecourse
@@ -996,7 +1001,7 @@ class DataSetHcpResting(DataSetCifti):
         # Regress each network into the fs32k cortical data to get a run-specific network timecourse
         T = pd.read_csv(self.base_dir + '/participants.tsv', sep='\t')
         # Need to do this each participant at a time, since the data is too large
-        for p,participant_id in enumerate(T.participant_id):
+        for p, participant_id in enumerate(T.participant_id):
             data, info = self.get_data(
                 space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
             network_timecourse = self.regress_networks(net.get_fdata(), data)
