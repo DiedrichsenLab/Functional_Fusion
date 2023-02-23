@@ -93,12 +93,17 @@ def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='
 
 def group_average_hcp(type='Net69Run', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
-    hcp_dataset.group_average_data(
-        ses_id='ses-rest1', type=type, atlas=atlas)
-    hcp_dataset.group_average_data(
-        ses_id='ses-rest2', type=type, atlas=atlas)
-    hcp_dataset.plot_cerebellum(subject='group', sessions=[
-                                'ses-rest1', 'ses-rest2'], type=type, atlas=atlas)
+    # hcp_dataset.group_average_data(
+    #     ses_id='ses-rest1', type=type, atlas=atlas)
+    # hcp_dataset.group_average_data(
+    #     ses_id='ses-rest2', type=type, atlas=atlas)
+    # hcp_dataset.plot_cerebellum(subject='group', sessions=[
+    #                             'ses-rest1', 'ses-rest2'], type=type, atlas=atlas, savefig=True, colorbar=True)
+    # get fifures for each subject
+    T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
+    for p, participant_id in enumerate(T.participant_id):
+        hcp_dataset.plot_cerebellum(subject=participant_id, sessions=[
+            'ses-rest1', 'ses-rest2'], type=type, atlas=atlas, savefig=True, colorbar=True)
 
 
 if __name__ == "__main__":
@@ -117,5 +122,5 @@ if __name__ == "__main__":
     # type='Net69Run', space='MNISymC3', ses_id='ses-rest2')
 
     # -- Group average --
-    group_average_hcp(ses_id='ses-rest1', type='Net69Run', atlas='MNISymC3')
+    group_average_hcp(type='Net69Run', atlas='MNISymC3')
     pass
