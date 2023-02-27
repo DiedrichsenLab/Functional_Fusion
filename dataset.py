@@ -170,7 +170,7 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
     for i, l in enumerate(labels):
         parcel_data[..., i] = fcn(
             data[..., label_vec == l], axis=len(psize) - 1)
-    return parcel_data
+    return parcel_data, labels
 
 
 def optimal_contrast(data, C, X, reg_in=None, baseline=None):
