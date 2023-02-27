@@ -43,10 +43,10 @@ def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='
 
     # Load the networks
     target, type = re.findall('[A-Z][^A-Z]*', type)
-    # net = nb.load(hcp_dataset.base_dir +
-    #               f'/targets/{target}_space-fs32k.dscalar.nii')
+    net = nb.load(hcp_dataset.base_dir +
+                  f'/targets/{target}_space-fs32k.dscalar.nii')
 
-    # atlas, _ = am.get_atlas(space, hcp_dataset.atlas_dir)
+    atlas, _ = am.get_atlas(space, hcp_dataset.atlas_dir)
 
     T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
     for p, participant_id in enumerate(T.participant_id):
