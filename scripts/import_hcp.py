@@ -109,7 +109,7 @@ def import_FIX_extended(source_dir, dest_dir, participant_id):
             print('skipping ' + f'/rfMRI_{run_n}')
 
 
-def check_timepoints():
+def check_timepoints(networks):
     dest_dir = networks.split('signal')[0]
     dest_dir + f'/Net69_space-fs32k.dscalar.nii'
     for p, participant_id in enumerate(T.participant_id):
@@ -158,6 +158,9 @@ def check_vertices(networks):
     for n in net.header.get_axis(1).iter_structures():
         print(f'{n[0]}: {n[1]}')
 
+
+# net.header.get_axis(1)
+# ['CIFTI_STRUCTURE_CORTEX_LEFT']
 
 if __name__ == "__main__":
 

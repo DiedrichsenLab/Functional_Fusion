@@ -42,7 +42,7 @@ def get_dataset_class(base_dir, dataset):
     return my_dataset
 
 
-def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', type="CondHalf", info_only=False):
+def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', type=None, info_only=False):
     """get_dataset
     Args:
         base_dir (str): Basis directory for the Functional Fusion repro

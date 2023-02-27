@@ -43,34 +43,35 @@ def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='
 
     # Load the networks
     target, type = re.findall('[A-Z][^A-Z]*', type)
-    net = nb.load(hcp_dataset.base_dir +
-                  f'/targets/{target}_space-fs32k.dscalar.nii')
+    # net = nb.load(hcp_dataset.base_dir +
+    #               f'/targets/{target}_space-fs32k.dscalar.nii')
 
-    atlas, _ = am.get_atlas(space, hcp_dataset.atlas_dir)
+    # atlas, _ = am.get_atlas(space, hcp_dataset.atlas_dir)
 
     T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
     for p, participant_id in enumerate(T.participant_id):
         # Get cortical data
-        data_cortex, _ = hcp_dataset.get_data(
-            space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
+        # data_cortex, _ = hcp_dataset.get_data(
+        #     space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
 
         # Regress each network into the fs32k cortical data to get a run-specific network timecourse
-        network_timecourse = hcp_dataset.regress_networks(
-            net.get_fdata(), data_cortex)
+        # network_timecourse = hcp_dataset.regress_networks(
+        #     net.get_fdata(), data_cortex)
 
         # Calculate the connectivity fingerprint
         data_cereb, info = hcp_dataset.get_data(
             space=space, ses_id=ses_id, type='Tseries', subj=[p])
-        data_cereb = data_cereb.squeeze()
+        # data_cereb = data_cereb.squeeze()
 
-        coef = hcp_dataset.connectivity_fingerprint(
-            data_cereb, network_timecourse, info, type)
-
+        # coef = hcp_dataset.connectivity_fingerprint(
+        #     data_cereb, network_timecourse, info, type)
+        coef = np.random.rand(138, 1)
         # Make info
-        names = [axis[0] for axis in net.header.get_axis(0)]
+        # names = [axis[0] for axis in net.header.get_axis(0)]
+        names = [f'Network_{i}' for i in range(1, 70)]
         runs = np.repeat([info.run.unique()], len(names))
         net_id = np.tile(np.arange(len(names)),
-                         int(coef.shape[0] / len(names)))
+                         int(coef.shape[0] / len(names))) + 1
         info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
                              'sess': [ses_id] * coef.shape[0],
                              'run': runs,
@@ -80,25 +81,30 @@ def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='
 
         # Save the data
 
-        C = atlas.data_to_cifti(coef, info.names)
+        # C = atlas.data_to_cifti(coef, info.names)
         dest_dir = hcp_dataset.base_dir + \
             f'/derivatives/{participant_id}/data/'
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+        # Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
-        nb.save(C, dest_dir +
-                f'{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
+        # nb.save(C, dest_dir +
+        #         f'{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
         info.to_csv(
             dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
 
 
 def group_average_hcp(type='Net69Run', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
-    hcp_dataset.group_average_data(
-        ses_id='ses-rest1', type=type, atlas=atlas)
-    hcp_dataset.group_average_data(
-        ses_id='ses-rest2', type=type, atlas=atlas)
-    hcp_dataset.plot_cerebellum(subject='group', sessions=[
-                                'ses-rest1', 'ses-rest2'], type=type, atlas=atlas)
+    # hcp_dataset.group_average_data(
+    #     ses_id='ses-rest1', type=type, atlas=atlas)
+    # hcp_dataset.group_average_data(
+    #     ses_id='ses-rest2', type=type, atlas=atlas)
+    # hcp_dataset.plot_cerebellum(subject='group', sessions=[
+    #                             'ses-rest1', 'ses-rest2'], type=type, atlas=atlas, savefig=True, colorbar=True)
+    # get fifures for each subject
+    T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
+    for p, participant_id in enumerate(T.participant_id):
+        hcp_dataset.plot_cerebellum(subject=participant_id, sessions=[
+            'ses-rest1', 'ses-rest2'], type=type, atlas=atlas, savefig=True, colorbar=True)
 
 
 if __name__ == "__main__":
@@ -112,10 +118,13 @@ if __name__ == "__main__":
 
     # -- Get connectivity fingerprint --
     # extract_connectivity_fingerprint(
-    # type='Net69Run', space='MNISymC3', ses_id='ses-rest1')
+    #     type='Net69Run', space='MNISymC3', ses_id='ses-rest1')
     # extract_connectivity_fingerprint(
-    # type='Net69Run', space='MNISymC3', ses_id='ses-rest2')
+    #     type='Net69Run', space='MNISymC3', ses_id='ses-rest2')
 
     # -- Group average --
-    group_average_hcp(ses_id='ses-rest1', type='Net69Run', atlas='MNISymC3')
+    # group_average_hcp(type='Net69Run', atlas='MNISymC3')
+
+    extract_hcp_timeseries(
+        ses_id='ses-rest1', type='Tseries', atlas='fs32k')
     pass
