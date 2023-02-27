@@ -159,8 +159,8 @@ def check_vertices(networks):
         print(f'{n[0]}: {n[1]}')
 
 
-net.header.get_axis(1)
-['CIFTI_STRUCTURE_CORTEX_LEFT']
+# net.header.get_axis(1)
+# ['CIFTI_STRUCTURE_CORTEX_LEFT']
 
 if __name__ == "__main__":
 
