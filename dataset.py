@@ -977,30 +977,37 @@ class DataSetHcpResting(DataSetCifti):
 
         return network_timecourse
 
-    def average_within_Icos(self, X, Y):
-        """Average the raw time course into a given parcellation X
+    def average_within_Icos(self, label_file, data, atlas = "fs32k"):
+        """Average the raw time course for voxels within a parcel
 
         Args:
-            X (1d np.array): a cortical parcellation shape (P, )
+            label_file (str): cortical parcellation label file
             Y (np.ndarray): fMRI timeseries in volume
                 Has to be in the same space as networks (59518 vertices x nTimepoints)
         Returns:
             A numpy array (nNetworks x nTimepoints) with the fMRI timecourse for
             each resting-state network
         """
-        num_unique = len(np.unique(X))
 
-        # Convert parcellation to indicator matrix
-        indicator_mat = np.zeros((num_unique, X.shape[0]))
-        indicator_mat[X, np.arange(X.shape[0])] = 1 # shape (N, P)
+        # create an instance of atlas to get the label vector
+        atlas, ainfo = am.get_atlas(atlas,self.atlas_dir)
+
+        # create label_vector by passing on the label file
+        # Set unite_struct to true if you want to integrate over left and right hemi 
+        atlas.get_parcel(label_file, unite_struct = False)
+
+        # use agg_parcel to aggregate data over parcels and get the list of unique parcels
+        parcel_data, parcels =  agg_parcels(data, atlas.label_vector, fcn=np.nanmean)
 
         # fill nan value in Y to zero
         print("Setting nan datapoints (%d unique vertices) to zero"
-              % np.unique(np.where(np.isnan(Y))[1]).shape[0])
-        Y = np.nan_to_num(np.transpose(Y))
+              % np.unique(np.where(np.isnan(parcel_data))[1]).shape[0])
+        # Y = np.nan_to_num(np.transpose(Y))
+        parcel_data = np.nan_to_num(parcel_data)
 
-        return np.matmul(np.linalg.pinv(indicator_mat.T), Y)
-
+        # return np.matmul(np.linalg.pinv(indicator_mat.T), Y)
+        return parcel_data, parcels
+    
     def correlate(self, X, Y):
         """ Correlate X and Y numpy arrays after standardizing them"""
         X = util.zstandarize_ts(X)
