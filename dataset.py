@@ -977,6 +977,30 @@ class DataSetHcpResting(DataSetCifti):
 
         return network_timecourse
 
+    def average_within_Icos(self, X, Y):
+        """Average the raw time course into a given parcellation X
+
+        Args:
+            X (1d np.array): a cortical parcellation shape (P, )
+            Y (np.ndarray): fMRI timeseries in volume
+                Has to be in the same space as networks (59518 vertices x nTimepoints)
+        Returns:
+            A numpy array (nNetworks x nTimepoints) with the fMRI timecourse for
+            each resting-state network
+        """
+        num_unique = len(np.unique(X))
+
+        # Convert parcellation to indicator matrix
+        indicator_mat = np.zeros((num_unique, X.shape[0]))
+        indicator_mat[X, np.arange(X.shape[0])] = 1 # shape (N, P)
+
+        # fill nan value in Y to zero
+        print("Setting nan datapoints (%d unique vertices) to zero"
+              % np.unique(np.where(np.isnan(Y))[1]).shape[0])
+        Y = np.nan_to_num(np.transpose(Y))
+
+        return np.matmul(np.linalg.pinv(indicator_mat.T), Y)
+
     def correlate(self, X, Y):
         """ Correlate X and Y numpy arrays after standardizing them"""
         X = util.zstandarize_ts(X)
