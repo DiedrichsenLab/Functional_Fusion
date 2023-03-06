@@ -252,7 +252,7 @@ class AtlasVolumetric(Atlas):
         Returns:
             np.array: Data sample at the atlas position
         """
-        warnings.DepreciationWarning(
+        warnings.DeprecationWarning(
             'sample_nifti is depreciated. Use self.read_data instead')
         if isinstance(img, str):
             img = nb.load(img)
