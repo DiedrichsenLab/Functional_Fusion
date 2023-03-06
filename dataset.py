@@ -42,7 +42,8 @@ def get_dataset_class(base_dir, dataset):
     return my_dataset
 
 
-def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', type=None, info_only=False):
+def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
+                type=None, info_only=False):
     """get_dataset
     Args:
         base_dir (str): Basis directory for the Functional Fusion repro
@@ -71,7 +72,7 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', type=None, info_on
     data_l = []
     for s in sess:
 
-        dat, inf = my_dataset.get_data(atlas, s, type)
+        dat, inf = my_dataset.get_data(atlas, s, type, subj)
         data_l.append(dat)
         inf['sess'] = [s] * inf.shape[0]
         info_l.append(inf)

@@ -31,6 +31,34 @@ def extract_hcp_timeseries(ses_id='ses-rest1', type='Tseries', atlas='MNISymC3')
     hcp_dataset = DataSetHcpResting(hcp_dir)
     hcp_dataset.extract_all(ses_id, type, atlas)
 
+def make_info(type='Tseries', ses_id='ses-rest1'):
+    """Adding an extra column 'run_id' to the tsv file
+
+    Args:
+        type: file type
+        ses_id: session id
+
+    Returns:
+        Write in the modified tsv file
+    """
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+
+    T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
+    for p, participant_id in enumerate(T.participant_id):
+        # Make info
+        dest_dir = hcp_dataset.base_dir + \
+            f'/derivatives/{participant_id}/data/'
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+
+        info = pd.read_csv(dest_dir + f'{participant_id}_{ses_id}_info-{type}.tsv',
+                           sep='\t')
+
+        info['run_id'] = info['run'].copy()
+        if ses_id == 'ses-rest2':
+            info['run_id'] = info['run_id'] + 2
+
+        info.to_csv(
+            dest_dir + f'{participant_id}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
 def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='ses-rest1'):
     """Extracts the connectivity fingerprint for each network in the HCP data
@@ -200,6 +228,8 @@ def group_average_hcp(type='Net69Run', atlas='MNISymC3'):
 
 
 if __name__ == "__main__":
+    # make_info(type='Tseries', ses_id='ses-rest1')
+    make_info(type='Tseries', ses_id='ses-rest2')
     #  -- Extract timeseries --
     # extract_hcp_timeseries(
     #     ses_id='ses-rest1', type='Tseries', atlas='MNISymC3')
