@@ -43,7 +43,7 @@ def get_dataset_class(base_dir, dataset):
 
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
-                type=None, info_only=False):
+                type=None, smooth=None, info_only=False):
     """get_dataset
     Args:
         base_dir (str): Basis directory for the Functional Fusion repro
@@ -72,7 +72,7 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
     data_l = []
     for s in sess:
 
-        dat, inf = my_dataset.get_data(atlas, s, type, subj)
+        dat, inf = my_dataset.get_data(atlas, s, type, subj, smooth=smooth)
         data_l.append(dat)
         inf['sess'] = [s] * inf.shape[0]
         info_l.append(inf)
@@ -349,6 +349,7 @@ class DataSet:
         self.func_dir = base_dir + '/derivatives/{0}/func'
         self.suit_dir = base_dir + '/derivatives/{0}/suit'
         self.data_dir = base_dir + '/derivatives/{0}/data'
+        self.data_smooth_dir = base_dir + '/derivatives/{0}/data/smoothed_{1}mm'
         # assume that the common atlas directory is on the level before
         self.atlas_dir = os.path.join(os.path.dirname(base_dir), 'Atlases')
         # Some information that a standard data set should have
@@ -370,8 +371,8 @@ class DataSet:
             self.base_dir + '/participants.tsv', delimiter='\t')
         return self.part_info
 
-    def get_data(self, space='SUIT3', ses_id='ses-s1',
-                 type=None, subj=None, fields=None, verbose=False):
+    def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
+                 subj=None, fields=None, smooth=None, verbose=False):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -399,10 +400,13 @@ class DataSet:
 
         # Loop over the different subjects to find the most complete info
         for i, s in enumerate(T.participant_id.iloc[subj]):
-
-            # Get an check the information
-            info_raw = pd.read_csv(self.data_dir.format(s)
-                                   + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            if smooth is not None:
+                info_raw = pd.read_csv(self.data_smooth_dir.format(s, smooth)
+                                       + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            else:
+                # Get an check the information
+                info_raw = pd.read_csv(self.data_dir.format(s)
+                                       + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
             # Reduce tsv file when fields are given
             if fields is not None:
                 info = info_raw[fields]
@@ -422,14 +426,22 @@ class DataSet:
             if verbose:
                 print(f'- Getting data for {s} in {space}')
             # Load the data
-            C = nb.load(self.data_dir.format(s)
-                        + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
+            if smooth is not None:
+                C = nb.load(self.data_smooth_dir.format(s, smooth)
+                            + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
+            else:
+                C = nb.load(self.data_dir.format(s)
+                            + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
             this_data = C.get_fdata()
 
             # Check if this subject data in incomplete
             if this_data.shape[0] != info_com.shape[0]:
-                this_info = pd.read_csv(self.data_dir.format(s)
-                                        + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                if smooth is not None:
+                    this_info = pd.read_csv(self.data_smooth_dir.format(s, smooth)
+                                            + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                else:
+                    this_info = pd.read_csv(self.data_dir.format(s)
+                                            + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
                 base = np.asarray(info_com['names'])
                 incomplete = np.asarray(this_info['names'])
                 for j in range(base.shape[0]):
