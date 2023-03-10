@@ -283,7 +283,7 @@ def reliability_between_subj(X, cond_vec=None,
         Z = eye(n_trials)
     subj_vec = np.arange(n_subj)
     if voxel_wise:
-        r = np.zeroes((n_subj, X.shape[2]))
+        r = np.zeros((n_subj, X.shape[2]))
     else:
         r = np.zeros((n_subj,))
     for s, i in enumerate(subj_vec):
