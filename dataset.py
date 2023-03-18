@@ -378,7 +378,7 @@ class DataSet:
             space (str): Atlas space (Defaults to 'SUIT3').
             ses_id (str): Session ID (Defaults to 'ses-s1').
             type (str): Type of data (Defaults to 'CondHalf').
-            subj (ndarray): Subject numbers to get - by default all
+            subj (ndarray, str, or list):  Subject numbers /names to get
             fields (list): Column names of info stucture that are returned
                 these are also be tested to be equivalent across subjects
         Returns:
@@ -390,15 +390,19 @@ class DataSet:
         Data = None
         # Deal with subset of subject option
         if subj is None:
-            subj = np.arange(T.shape[0])
-
+            subj = T.participant_id
+        elif isinstance(subj,str):
+            subj = [subj]
+        elif isinstance(subj,(list,np.ndarray)):
+            if isinstance(subj[0],int):
+                subj = T.participant_id.iloc[subj]
         if type is None:
             type = self.default_type
 
         max = 0
 
         # Loop over the different subjects to find the most complete info
-        for i, s in enumerate(T.participant_id.iloc[subj]):
+        for i, s in enumerate(subj):
 
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
@@ -416,7 +420,7 @@ class DataSet:
 
         # Loop again to assemble the data
         Data_list = []
-        for i, s in enumerate(T.participant_id.iloc[subj]):
+        for i, s in enumerate(subj):
             # If you add verbose printout, make it so
             # that by default it is suppressed by a verbose=False option
             if verbose:
