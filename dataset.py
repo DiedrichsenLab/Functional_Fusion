@@ -960,7 +960,8 @@ class DataSetHcpResting(DataSetCifti):
     
     def condense_data(self,data, info, type, participant_id=None, ses_id=None):
         """Empty function to be overwritten by child classes."""
-        pass
+        if type=='Tseries':
+            info['names']=info['timepoint']
         return data, info
 
     def regress_networks(self, X, Y):
