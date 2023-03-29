@@ -600,10 +600,7 @@ class DataSet:
                             dest_dir + f'{sub}_{session}_{condition_name}.png')
                     plt.clf()
 
-    
-    def condense_data(self,data, info, type, participant_id=None, ses_id=None):
-        """Empty function to be overwritten by child classes."""
-        return data, info
+
 
 class DataSetNative(DataSet):
     """Data set with estimates data stored as
@@ -960,6 +957,11 @@ class DataSetHcpResting(DataSetCifti):
             fnames.append(
                 f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
         return fnames, T
+    
+    def condense_data(self,data, info, type, participant_id=None, ses_id=None):
+        """Empty function to be overwritten by child classes."""
+        pass
+        return data, info
 
     def regress_networks(self, X, Y):
         """Regresses a spatial map (X) into data (Y).
