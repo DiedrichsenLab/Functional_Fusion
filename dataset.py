@@ -42,7 +42,8 @@ def get_dataset_class(base_dir, dataset):
     return my_dataset
 
 
-def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', type=None, info_only=False):
+def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
+                type=None, info_only=False):
     """get_dataset
     Args:
         base_dir (str): Basis directory for the Functional Fusion repro
@@ -71,7 +72,7 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', type=None, info_on
     data_l = []
     for s in sess:
 
-        dat, inf = my_dataset.get_data(atlas, s, type)
+        dat, inf = my_dataset.get_data(atlas, s, type, subj)
         data_l.append(dat)
         inf['sess'] = [s] * inf.shape[0]
         info_l.append(inf)
@@ -170,7 +171,7 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
     for i, l in enumerate(labels):
         parcel_data[..., i] = fcn(
             data[..., label_vec == l], axis=len(psize) - 1)
-    return parcel_data
+    return parcel_data, labels
 
 
 def optimal_contrast(data, C, X, reg_in=None, baseline=None):
@@ -377,7 +378,7 @@ class DataSet:
             space (str): Atlas space (Defaults to 'SUIT3').
             ses_id (str): Session ID (Defaults to 'ses-s1').
             type (str): Type of data (Defaults to 'CondHalf').
-            subj (ndarray): Subject numbers to get - by default all
+            subj (ndarray, str, or list):  Subject numbers /names to get
             fields (list): Column names of info stucture that are returned
                 these are also be tested to be equivalent across subjects
         Returns:
@@ -389,15 +390,19 @@ class DataSet:
         Data = None
         # Deal with subset of subject option
         if subj is None:
-            subj = np.arange(T.shape[0])
-
+            subj = T.participant_id
+        elif isinstance(subj,str):
+            subj = [subj]
+        elif isinstance(subj,(list,np.ndarray)):
+            if isinstance(subj[0],int):
+                subj = T.participant_id.iloc[subj]
         if type is None:
             type = self.default_type
 
         max = 0
 
         # Loop over the different subjects to find the most complete info
-        for i, s in enumerate(T.participant_id.iloc[subj]):
+        for i, s in enumerate(subj):
 
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
@@ -415,7 +420,7 @@ class DataSet:
 
         # Loop again to assemble the data
         Data_list = []
-        for i, s in enumerate(T.participant_id.iloc[subj]):
+        for i, s in enumerate(subj):
             # If you add verbose printout, make it so
             # that by default it is suppressed by a verbose=False option
             if verbose:
@@ -595,6 +600,10 @@ class DataSet:
                             dest_dir + f'{sub}_{session}_{condition_name}.png')
                     plt.clf()
 
+    
+    def condense_data(self,data, info, type, participant_id=None, ses_id=None):
+        """Empty function to be overwritten by child classes."""
+        return data, info
 
 class DataSetNative(DataSet):
     """Data set with estimates data stored as
@@ -977,6 +986,37 @@ class DataSetHcpResting(DataSetCifti):
 
         return network_timecourse
 
+    def average_within_Icos(self, label_file, data, atlas = "fs32k"):
+        """Average the raw time course for voxels within a parcel
+
+        Args:
+            label_file (str): cortical parcellation label file
+            Y (np.ndarray): fMRI timeseries in volume
+                Has to be in the same space as networks (59518 vertices x nTimepoints)
+        Returns:
+            A numpy array (nNetworks x nTimepoints) with the fMRI timecourse for
+            each resting-state network
+        """
+
+        # create an instance of atlas to get the label vector
+        atlas, ainfo = am.get_atlas(atlas,self.atlas_dir)
+
+        # create label_vector by passing on the label file
+        # Set unite_struct to true if you want to integrate over left and right hemi 
+        atlas.get_parcel(label_file, unite_struct = False)
+
+        # use agg_parcel to aggregate data over parcels and get the list of unique parcels
+        parcel_data, parcels =  agg_parcels(data, atlas.label_vector, fcn=np.nanmean)
+
+        # fill nan value in Y to zero
+        print("Setting nan datapoints (%d unique vertices) to zero"
+              % np.unique(np.where(np.isnan(parcel_data))[1]).shape[0])
+        # Y = np.nan_to_num(np.transpose(Y))
+        parcel_data = np.nan_to_num(parcel_data)
+
+        # return np.matmul(np.linalg.pinv(indicator_mat.T), Y)
+        return parcel_data, parcels
+    
     def correlate(self, X, Y):
         """ Correlate X and Y numpy arrays after standardizing them"""
         X = util.zstandarize_ts(X)
