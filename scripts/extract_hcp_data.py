@@ -229,20 +229,20 @@ def group_average_hcp(type='Net69Run', atlas='MNISymC3'):
 
 if __name__ == "__main__":
     # make_info(type='Tseries', ses_id='ses-rest1')
-    make_info(type='Tseries', ses_id='ses-rest2')
+    # make_info(type='Tseries', ses_id='ses-rest2')
     #  -- Extract timeseries --
-    # extract_hcp_timeseries(
-    #     ses_id='ses-rest1', type='Tseries', atlas='MNISymC3')
-    # extract_hcp_timeseries(
-    #     ses_id='ses-rest2', type='Tseries', atlas='MNISymC3')
+    extract_hcp_timeseries(
+         ses_id='ses-rest1', type='Tseries', atlas='SUIT3')
+    extract_hcp_timeseries(
+         ses_id='ses-rest2', type='Tseries', atlas='SUIT3')
     # extract_hcp_timeseries(ses_id='ses-rest1', type='Tseries', atlas='fs32k')
     # extract_hcp_timeseries(ses_id='ses-rest2', type='Tseries', atlas='fs32k')
 
     # -- Get connectivity fingerprint --
-    extract_connectivity_fingerprint_da(
-        type='Ico162Run', space='MNISymC3', ses_id='ses-rest1')
-    extract_connectivity_fingerprint_da(
-        type='Ico162Run', space='MNISymC3', ses_id='ses-rest2')
+    # extract_connectivity_fingerprint_da(
+    #     type='Ico162Run', space='MNISymC3', ses_id='ses-rest1')
+    # extract_connectivity_fingerprint_da(
+    #     type='Ico162Run', space='MNISymC3', ses_id='ses-rest2')
 
     # -- Group average --
     # group_average_hcp(type='Net69Run', atlas='MNISymC3')

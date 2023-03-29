@@ -600,6 +600,10 @@ class DataSet:
                             dest_dir + f'{sub}_{session}_{condition_name}.png')
                     plt.clf()
 
+    
+    def condense_data(self,data, info, type, participant_id=None, ses_id=None):
+        """Empty function to be overwritten by child classes."""
+        return data, info
 
 class DataSetNative(DataSet):
     """Data set with estimates data stored as
