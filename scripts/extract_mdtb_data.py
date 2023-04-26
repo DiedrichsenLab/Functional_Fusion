@@ -1,4 +1,5 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
+import os
 import pandas as pd
 import shutil
 from pathlib import Path
@@ -9,6 +10,7 @@ from dataset import DataSetMDTB
 import nibabel as nb
 import SUITPy as suit
 import matplotlib.pyplot as plt
+import subprocess
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -63,13 +65,59 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
         nb.save(cifti_img,s_dir + f'/{s}_space-fs32k_{ses_id}_{type}_Iso-{res}.pscalar.nii')
         pass
 
+def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
+    myatlas, _ = am.get_atlas('fs32k', atlas_dir)
+    mdtb_dataset = DataSetMDTB(data_dir)
+    T = mdtb_dataset.get_participants()
+
+    # get the surfaces for smoothing
+    surf_L = mdtb_dataset.atlas_dir + f'/tpl-fs32k/fs_LR.32k.L.midthickness.surf.gii'
+    surf_R = mdtb_dataset.atlas_dir + f'/tpl-fs32k/fs_LR.32k.R.midthickness.surf.gii'
+
+    for s in T.participant_id:
+        print(f'- Smoothing data for {s} fs32k {ses_id} in {smooth}mm ...')
+        # Load the unsmoothed data and fill nan with zeros
+        C = nb.load(mdtb_dataset.data_dir.format(s)
+                    + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
+        mask = np.isnan(C.get_fdata())
+        C = nb.Cifti2Image(dataobj=np.nan_to_num(C.get_fdata()), header=C.header)
+        nb.save(C, 'tmp.dscalar.nii')
+
+        dest_dir = mdtb_dataset.data_smooth_dir.format(s, smooth)
+        cifti_out = dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+
+        # Write in smoothed surface data (filled with 0)
+        smooth_cmd = f"wb_command -cifti-smoothing tmp.dscalar.nii " \
+                     f"{smooth} {smooth} COLUMN {cifti_out} " \
+                     f"-left-surface {surf_L} -right-surface {surf_R} " \
+                     f"-fix-zeros-surface"
+        subprocess.run(smooth_cmd, shell=True)
+        os.remove("tmp.dscalar.nii")
+
+        # Replace 0s back to NaN (we don't want the 0s impact model learning)
+        C = nb.load(cifti_out)
+        data = C.get_fdata()
+        data[mask] = np.nan
+        C = nb.Cifti2Image(dataobj=data, header=C.header)
+        nb.save(C, cifti_out)
+
+        # Copy info to the corresponding /smoothed folder
+        if not Path(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv').exists():
+            info = pd.read_csv(mdtb_dataset.data_dir.format(s)
+                               + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            info.to_csv(
+                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
 
 if __name__ == "__main__":
-    extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='MNISymC3', smooth=None)
-    extract_mdtb(ses_id='ses-s2', type='CondHalf', atlas='MNISymC3', smooth=None)
+    # extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
+    # extract_mdtb(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
     # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
-    
+
+    for s in [1,2,3]:
+        smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=s)
+        smooth_mdtb_fs32k(ses_id='ses-s2', type='CondHalf', smooth=s)
 
     # dataset = DataSetMDTB(data_dir)
     # # dataset.group_average_data(atlas='MNISymC3')

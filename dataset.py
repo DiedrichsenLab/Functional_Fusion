@@ -13,7 +13,7 @@ import pandas as pd
 import os
 import os.path as op
 import sys
-import sys
+import subprocess
 
 sys.path.append("..")
 import Functional_Fusion.util as util
@@ -28,7 +28,8 @@ import warnings
 import SUITPy as suit
 import matplotlib.pyplot as plt
 import re
-
+import torch as pt
+from torch.utils.data import Dataset, DataLoader
 
 def get_dataset_class(base_dir, dataset):
     T = pd.read_csv(base_dir + '/dataset_description.tsv', sep='\t')
@@ -43,7 +44,7 @@ def get_dataset_class(base_dir, dataset):
 
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
-                type=None, info_only=False):
+                type=None, smooth=None, info_only=False):
     """get_dataset
     Args:
         base_dir (str): Basis directory for the Functional Fusion repro
@@ -72,7 +73,7 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
     data_l = []
     for s in sess:
 
-        dat, inf = my_dataset.get_data(atlas, s, type, subj)
+        dat, inf = my_dataset.get_data(atlas, s, type, subj, smooth=smooth)
         data_l.append(dat)
         inf['sess'] = [s] * inf.shape[0]
         info_l.append(inf)
@@ -283,7 +284,7 @@ def reliability_between_subj(X, cond_vec=None,
         Z = eye(n_trials)
     subj_vec = np.arange(n_subj)
     if voxel_wise:
-        r = np.zeroes((n_subj, X.shape[2]))
+        r = np.zeros((n_subj, X.shape[2]))
     else:
         r = np.zeros((n_subj,))
     for s, i in enumerate(subj_vec):
@@ -330,6 +331,33 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
     return Rel, dataset.sessions
 
 
+class fMRI_Dataset(Dataset):
+    def __init__(self, base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
+                    type=None, smooth=None, info_only=False):
+        self.base_dir = base_dir
+        self.dataset = dataset
+        self.atlas = atlas
+        self.sess = sess
+        self.subj = subj
+        self.type = type
+        self.smooth = smooth
+        self.info_only = info_only
+
+    def __len__(self):
+        info = T = pd.read_csv(self.base_dir +
+                               '/dataset_description.tsv', sep='\t')
+        num_sub = info.loc[info.name == self.dataset, 'return_nsubj'].item()
+        return num_sub
+
+    def __getitem__(self, index):
+        data, info, _ = get_dataset(self.base_dir, self.dataset,
+                                    atlas=self.atlas, sess=self.sess,
+                                    subj=None, type=self.types,
+                                    smooth=self.smooth,
+                                    info_only=self.info_only)
+
+        return pt.tensor(data[index]), info
+
 class DataSet:
     def __init__(self, base_dir):
         """DataSet class:
@@ -349,6 +377,7 @@ class DataSet:
         self.func_dir = base_dir + '/derivatives/{0}/func'
         self.suit_dir = base_dir + '/derivatives/{0}/suit'
         self.data_dir = base_dir + '/derivatives/{0}/data'
+        self.data_smooth_dir = base_dir + '/derivatives/{0}/data/smoothed_{1}mm'
         # assume that the common atlas directory is on the level before
         self.atlas_dir = os.path.join(os.path.dirname(base_dir), 'Atlases')
         # Some information that a standard data set should have
@@ -370,8 +399,8 @@ class DataSet:
             self.base_dir + '/participants.tsv', delimiter='\t')
         return self.part_info
 
-    def get_data(self, space='SUIT3', ses_id='ses-s1',
-                 type=None, subj=None, fields=None, verbose=False):
+    def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
+                 subj=None, fields=None, smooth=None, verbose=False):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -403,10 +432,13 @@ class DataSet:
 
         # Loop over the different subjects to find the most complete info
         for i, s in enumerate(subj):
-
-            # Get an check the information
-            info_raw = pd.read_csv(self.data_dir.format(s)
-                                   + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            if smooth is not None:
+                info_raw = pd.read_csv(self.data_smooth_dir.format(s, smooth)
+                                       + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            else:
+                # Get an check the information
+                info_raw = pd.read_csv(self.data_dir.format(s)
+                                       + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
             # Reduce tsv file when fields are given
             if fields is not None:
                 info = info_raw[fields]
@@ -426,14 +458,22 @@ class DataSet:
             if verbose:
                 print(f'- Getting data for {s} in {space}')
             # Load the data
-            C = nb.load(self.data_dir.format(s)
-                        + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
+            if smooth is not None:
+                C = nb.load(self.data_smooth_dir.format(s, smooth)
+                            + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
+            else:
+                C = nb.load(self.data_dir.format(s)
+                            + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
             this_data = C.get_fdata()
 
             # Check if this subject data in incomplete
             if this_data.shape[0] != info_com.shape[0]:
-                this_info = pd.read_csv(self.data_dir.format(s)
-                                        + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                if smooth is not None:
+                    this_info = pd.read_csv(self.data_smooth_dir.format(s, smooth)
+                                            + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                else:
+                    this_info = pd.read_csv(self.data_dir.format(s)
+                                            + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
                 base = np.asarray(info_com['names'])
                 incomplete = np.asarray(this_info['names'])
                 for j in range(base.shape[0]):
@@ -687,6 +727,8 @@ class DataSetNative(DataSet):
             # Write out data as CIFTI file
             C = myatlas.data_to_cifti(data, info.names)
             dest_dir = self.data_dir.format(s)
+            if smooth != 2.0:
+                dest_dir = self.data_smooth_dir.format(s, smooth)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir +
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
