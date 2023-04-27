@@ -377,7 +377,6 @@ class DataSet:
         self.func_dir = base_dir + '/derivatives/{0}/func'
         self.suit_dir = base_dir + '/derivatives/{0}/suit'
         self.data_dir = base_dir + '/derivatives/{0}/data'
-        self.data_smooth_dir = base_dir + '/derivatives/{0}/data/smoothed_{1}mm'
         # assume that the common atlas directory is on the level before
         self.atlas_dir = os.path.join(os.path.dirname(base_dir), 'Atlases')
         # Some information that a standard data set should have
@@ -432,13 +431,9 @@ class DataSet:
 
         # Loop over the different subjects to find the most complete info
         for i, s in enumerate(subj):
-            if smooth is not None:
-                info_raw = pd.read_csv(self.data_smooth_dir.format(s, smooth)
-                                       + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
-            else:
-                # Get an check the information
-                info_raw = pd.read_csv(self.data_dir.format(s)
-                                       + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            # Get an check the information
+            info_raw = pd.read_csv(self.data_dir.format(s)
+                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
             # Reduce tsv file when fields are given
             if fields is not None:
                 info = info_raw[fields]
@@ -459,8 +454,8 @@ class DataSet:
                 print(f'- Getting data for {s} in {space}')
             # Load the data
             if smooth is not None:
-                C = nb.load(self.data_smooth_dir.format(s, smooth)
-                            + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
+                C = nb.load(self.data_dir.format(s, smooth)
+                            + f'/{s}_space-{space}_{ses_id}_{type}_desc-sm{int(smooth)}.dscalar.nii')
             else:
                 C = nb.load(self.data_dir.format(s)
                             + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
@@ -468,12 +463,8 @@ class DataSet:
 
             # Check if this subject data in incomplete
             if this_data.shape[0] != info_com.shape[0]:
-                if smooth is not None:
-                    this_info = pd.read_csv(self.data_smooth_dir.format(s, smooth)
-                                            + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
-                else:
-                    this_info = pd.read_csv(self.data_dir.format(s)
-                                            + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                this_info = pd.read_csv(self.data_dir.format(s)
+                                        + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
                 base = np.asarray(info_com['names'])
                 incomplete = np.asarray(this_info['names'])
                 for j in range(base.shape[0]):
@@ -727,9 +718,6 @@ class DataSetNative(DataSet):
             # Write out data as CIFTI file
             C = myatlas.data_to_cifti(data, info.names)
             dest_dir = self.data_dir.format(s)
-            if smooth != 2.0:
-                dest_dir = self.data_smooth_dir.format(s, smooth)
-            Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir +
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
