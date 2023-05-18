@@ -28,8 +28,6 @@ import warnings
 import SUITPy as suit
 import matplotlib.pyplot as plt
 import re
-import torch as pt
-from torch.utils.data import Dataset, DataLoader
 
 def get_dataset_class(base_dir, dataset):
     T = pd.read_csv(base_dir + '/dataset_description.tsv', sep='\t')
@@ -330,33 +328,6 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
         Rel[i, :] = np.nanmean(np.nanmean(r, axis=0), axis=0)
     return Rel, dataset.sessions
 
-
-class fMRI_Dataset(Dataset):
-    def __init__(self, base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
-                    type=None, smooth=None, info_only=False):
-        self.base_dir = base_dir
-        self.dataset = dataset
-        self.atlas = atlas
-        self.sess = sess
-        self.subj = subj
-        self.type = type
-        self.smooth = smooth
-        self.info_only = info_only
-
-    def __len__(self):
-        info = T = pd.read_csv(self.base_dir +
-                               '/dataset_description.tsv', sep='\t')
-        num_sub = info.loc[info.name == self.dataset, 'return_nsubj'].item()
-        return num_sub
-
-    def __getitem__(self, index):
-        data, info, _ = get_dataset(self.base_dir, self.dataset,
-                                    atlas=self.atlas, sess=self.sess,
-                                    subj=None, type=self.types,
-                                    smooth=self.smooth,
-                                    info_only=self.info_only)
-
-        return pt.tensor(data[index]), info
 
 class DataSet:
     def __init__(self, base_dir):
