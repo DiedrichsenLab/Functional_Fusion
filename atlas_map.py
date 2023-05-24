@@ -215,18 +215,22 @@ class AtlasVolumetric(Atlas):
         if p != self.P:
             raise (NameError('Data needs to be a P vector or NxP matrix'))
         if N > 1:
-            if data.dtype == 'float':
+            if np.issubdtype(data.dtype,np.floating):
                 X = np.empty(self.mask_img.shape + (N,),dtype=float)
                 X.fill(np.nan)
-            elif data.dtype == 'int':
+            elif np.issubdtype(data.dtype,np.integer):
                 X = np.zeros(self.mask_img.shape + (N,),dtype=int)
+            else:
+                raise ValueError('Data type not supported')
             X[self.vox[0], self.vox[1], self.vox[2]] = data.T
         else:
-            if data.dtype == 'float':
+            if np.issubdtype(data.dtype,np.floating):
                 X = np.empty(self.mask_img.shape,dtype=float)
                 X.fill(np.nan)
-            elif data.dtype == 'int':
+            elif np.issubdtype(data.dtype,np.integer):
                 X = np.zeros(self.mask_img.shape,dtype=int)
+            else:
+                raise ValueError('Data type not supported')
             X[self.vox[0], self.vox[1], self.vox[2]] = data
         img = nb.Nifti1Image(X, self.mask_img.affine)
         return img
