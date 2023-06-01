@@ -368,6 +368,35 @@ class DataSet:
         self.part_info = pd.read_csv(
             self.base_dir + '/participants.tsv', delimiter='\t')
         return self.part_info
+    
+    def get_info(self,subj, ses_id='ses-s1', type=None, fields=None):
+        """Loads the info files for a dataset for a specific session 
+        returns the most complete version across subjects
+        Args:
+            subj (list): list of subjects
+            ses_id (str): session id. Defaults to 'ses-s1'.
+            type (str): type of info file. Defaults to None.
+            fields (list): fields to keep. Defaults to None (using all).
+        """     
+
+        max = 0
+
+        # Loop over the different subjects to find the most complete info
+        for i, s in enumerate(subj):
+            # Get an check the information
+            info_raw = pd.read_csv(self.data_dir.format(s)
+                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+            # Reduce tsv file when fields are given
+            if fields is not None:
+                info = info_raw[fields]
+            else:
+                info = info_raw
+
+            # Keep the most complete info
+            if info.shape[0] > max:
+                info_com = info
+                max = info.shape[0]
+        return info_com
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
                  subj=None, fields=None, smooth=None, verbose=False):
@@ -402,23 +431,7 @@ class DataSet:
         if type is None:
             type = self.default_type
 
-        max = 0
-
-        # Loop over the different subjects to find the most complete info
-        for i, s in enumerate(subj):
-            # Get an check the information
-            info_raw = pd.read_csv(self.data_dir.format(s)
-                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
-            # Reduce tsv file when fields are given
-            if fields is not None:
-                info = info_raw[fields]
-            else:
-                info = info_raw
-
-            # Keep the most complete info
-            if info.shape[0] > max:
-                info_com = info
-                max = info.shape[0]
+        info_com = self.get_info(subj, ses_id=ses_id, type=type, fields=fields)
 
         # Loop again to assemble the data
         Data_list = []
