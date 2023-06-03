@@ -369,7 +369,7 @@ class DataSet:
             self.base_dir + '/participants.tsv', delimiter='\t')
         return self.part_info
     
-    def get_info(self,subj, ses_id='ses-s1', type=None, fields=None):
+    def get_info(self, subj, ses_id='ses-s1', type=None, fields=None):
         """Loads the info files for a dataset for a specific session 
         returns the most complete version across subjects
         Args:
@@ -431,7 +431,7 @@ class DataSet:
         if type is None:
             type = self.default_type
 
-        info_com = self.get_info(subj, ses_id=ses_id, type=type, fields=fields)
+        info_com = self.get_info(subj = subj, ses_id=ses_id, type=type, fields=fields)
 
         # Loop again to assemble the data
         Data_list = []
