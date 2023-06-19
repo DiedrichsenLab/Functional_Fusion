@@ -29,6 +29,7 @@ import SUITPy as suit
 import matplotlib.pyplot as plt
 import re
 
+
 def get_dataset_class(base_dir, dataset):
     T = pd.read_csv(base_dir + '/dataset_description.tsv', sep='\t')
     T.name = [n.casefold() for n in T.name]
@@ -302,7 +303,7 @@ def reliability_between_subj(X, cond_vec=None,
 
 
 def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
-                     subtract_mean=True, voxel_wise=True):
+                     subtract_mean=True, voxel_wise=True, subject_wise=False):
     """    Calculates the average within subject reliability maps across sessions for a single data
 
     Args:
@@ -318,6 +319,8 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
     n_sess = len(dataset.sessions)
     n_vox = data.shape[2]
     Rel = np.zeros((n_sess, n_vox))
+    if subject_wise:
+        Rel = np.zeros((n_sess, data.shape[0], n_vox))
     for i, s in enumerate(dataset.sessions):
         indx = info.sess == s
         r = reliability_within_subj(data[:, indx, :],
@@ -325,7 +328,10 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
                                     cond_vec=info[dataset.cond_ind][indx],
                                     voxel_wise=voxel_wise,
                                     subtract_mean=subtract_mean)
-        Rel[i, :] = np.nanmean(np.nanmean(r, axis=0), axis=0)
+        if subject_wise:
+            Rel[i, :, :] = np.nanmean(r, axis=1)
+        else:
+            Rel[i, :] = np.nanmean(np.nanmean(r, axis=0), axis=0)
     return Rel, dataset.sessions
 
 
@@ -368,7 +374,7 @@ class DataSet:
         self.part_info = pd.read_csv(
             self.base_dir + '/participants.tsv', delimiter='\t')
         return self.part_info
-    
+
     def get_info(self, subj, ses_id='ses-s1', type=None, fields=None):
         """Loads the info files for a dataset for a specific session 
         returns the most complete version across subjects
@@ -377,7 +383,7 @@ class DataSet:
             ses_id (str): session id. Defaults to 'ses-s1'.
             type (str): type of info file. Defaults to None.
             fields (list): fields to keep. Defaults to None (using all).
-        """     
+        """
 
         max = 0
 
@@ -385,7 +391,7 @@ class DataSet:
         for i, s in enumerate(subj):
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
-                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                                   + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
             # Reduce tsv file when fields are given
             if fields is not None:
                 info = info_raw[fields]
@@ -419,19 +425,20 @@ class DataSet:
         # Deal with subset of subject option
         if subj is None:
             subj = T.participant_id
-        elif isinstance(subj,str):
+        elif isinstance(subj, str):
             subj = [subj]
-        elif isinstance(subj,(list,np.ndarray)):
-            if isinstance(subj[0],int):
+        elif isinstance(subj, (list, np.ndarray)):
+            if isinstance(subj[0], int):
                 subj = T.participant_id.iloc[subj]
-            elif isinstance(subj[0],str):
+            elif isinstance(subj[0], str):
                 subj = subj
             else:
-                raise(NameError('subj must be a list of strings or integers'))
+                raise (NameError('subj must be a list of strings or integers'))
         if type is None:
             type = self.default_type
 
-        info_com = self.get_info(subj = subj, ses_id=ses_id, type=type, fields=fields)
+        info_com = self.get_info(
+            subj=subj, ses_id=ses_id, type=type, fields=fields)
 
         # Loop again to assemble the data
         Data_list = []
@@ -618,7 +625,6 @@ class DataSet:
                         plt.savefig(
                             dest_dir + f'{sub}_{session}_{condition_name}.png')
                     plt.clf()
-
 
 
 class DataSetNative(DataSet):
@@ -975,11 +981,11 @@ class DataSetHcpResting(DataSetCifti):
             fnames.append(
                 f'{dirw}/sub-{participant_id}_run-{r}_space-MSMSulc.dtseries.nii')
         return fnames, T
-    
-    def condense_data(self,data, info, type, participant_id=None, ses_id=None):
+
+    def condense_data(self, data, info, type, participant_id=None, ses_id=None):
         """Empty function to be overwritten by child classes."""
-        if type=='Tseries':
-            info['names']=info['timepoint']
+        if type == 'Tseries':
+            info['names'] = info['timepoint']
         return data, info
 
     def regress_networks(self, X, Y):
@@ -1007,7 +1013,7 @@ class DataSetHcpResting(DataSetCifti):
 
         return network_timecourse
 
-    def average_within_Icos(self, label_file, data, atlas = "fs32k"):
+    def average_within_Icos(self, label_file, data, atlas="fs32k"):
         """Average the raw time course for voxels within a parcel
 
         Args:
@@ -1020,14 +1026,15 @@ class DataSetHcpResting(DataSetCifti):
         """
 
         # create an instance of atlas to get the label vector
-        atlas, ainfo = am.get_atlas(atlas,self.atlas_dir)
+        atlas, ainfo = am.get_atlas(atlas, self.atlas_dir)
 
         # create label_vector by passing on the label file
-        # Set unite_struct to true if you want to integrate over left and right hemi 
-        atlas.get_parcel(label_file, unite_struct = False)
+        # Set unite_struct to true if you want to integrate over left and right hemi
+        atlas.get_parcel(label_file, unite_struct=False)
 
         # use agg_parcel to aggregate data over parcels and get the list of unique parcels
-        parcel_data, parcels =  agg_parcels(data, atlas.label_vector, fcn=np.nanmean)
+        parcel_data, parcels = agg_parcels(
+            data, atlas.label_vector, fcn=np.nanmean)
 
         # fill nan value in Y to zero
         print("Setting nan datapoints (%d unique vertices) to zero"
@@ -1037,7 +1044,7 @@ class DataSetHcpResting(DataSetCifti):
 
         # return np.matmul(np.linalg.pinv(indicator_mat.T), Y)
         return parcel_data, parcels
-    
+
     def correlate(self, X, Y):
         """ Correlate X and Y numpy arrays after standardizing them"""
         X = util.zstandarize_ts(X)
