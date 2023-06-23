@@ -21,12 +21,13 @@ import SUITPy as suit
 import surfAnalysisPy as surf
 import nitools as nt
 import json
+
 # Need to do self import here to get atlas
 import Functional_Fusion.atlas_map as am
 
 
 def get_atlas(atlas_str, atlas_dir):
-    """ returns an atlas from a code
+    """returns an atlas from a code
 
     Args:
         atlas_str (str): Name of the atlas
@@ -36,26 +37,26 @@ def get_atlas(atlas_str, atlas_dir):
         atlas (AtlasVolumetric, AtlasSurface, (or symmetric variant) object): Atlas object
         ainf (dict): Atlas info
     """
-    with open(atlas_dir + '/atlas_description.json') as file:
+    with open(atlas_dir + "/atlas_description.json") as file:
         atlases = json.load(file)
     if atlas_str not in atlases:
-        raise (NameError(f'Unknown Atlas: {atlas_str}'))
+        raise (NameError(f"Unknown Atlas: {atlas_str}"))
     ainf = atlases[atlas_str]
 
     # Make the atlas object
-    At = getattr(am, ainf['type'])
-    if isinstance(ainf['mask'], list):
+    At = getattr(am, ainf["type"])
+    if isinstance(ainf["mask"], list):
         mask = []
-        for i, m in enumerate(ainf['mask']):
+        for i, m in enumerate(ainf["mask"]):
             mask.append(atlas_dir + f"/{ainf['dir']}/{m}")
     else:
         mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
-    atlas = At(atlas_str, mask, ainf['structure'])
+    atlas = At(atlas_str, mask, ainf["structure"])
     return atlas, ainf
 
 
-def get_deform(atlas_dir, target, source='MNIAsym2'):
-    """ Get name of group deformation map between two volumetric atlas spaces
+def get_deform(atlas_dir, target, source="MNIAsym2"):
+    """Get name of group deformation map between two volumetric atlas spaces
     Args:
         atlas_dir (str): Atlas Directory
         target (str/atlas): Target space
@@ -67,12 +68,12 @@ def get_deform(atlas_dir, target, source='MNIAsym2'):
     """
     if isinstance(target, str):
         target, _ = get_atlas(target, atlas_dir)
-    with open(atlas_dir + '/atlas_description.json') as file:
+    with open(atlas_dir + "/atlas_description.json") as file:
         atlases = json.load(file)
     if target.name not in atlases:
-        raise (NameError(f'Unknown Atlas: {target.name}'))
+        raise (NameError(f"Unknown Atlas: {target.name}"))
     if source not in atlases:
-        raise (NameError(f'Unknown Atlas: {source}'))
+        raise (NameError(f"Unknown Atlas: {source}"))
     tar = atlases[target.name]
     src = atlases[source]
     deform = f"{atlas_dir}/{src['dir']}/tpl-{src['space']}_space-{tar['space']}_xfm.nii"
@@ -80,7 +81,7 @@ def get_deform(atlas_dir, target, source='MNIAsym2'):
     return deform, mask
 
 
-class Atlas():
+class Atlas:
     """The Atlas class implements the general atlas functions
     for mapping from the P brain locations back to nii or gifti files
     Each Atlas is associated with a set of atlas maps
@@ -91,13 +92,13 @@ class Atlas():
         self.P = np.nan  # Number of locations in this atlas
 
     def get_parcel(self, label_img):
-        """ adds a label_vec to the atlas that assigns each voxel / node of the atlas
+        """adds a label_vec to the atlas that assigns each voxel / node of the atlas
         label_vec[i] = 0 mean that the ith voxel / node is unassigned
         Args:
             label_img (str/list) - filename(s) of label image(s)
         Returns
             label_vec (list) - list of numpy array containing label values corresponding to label images (0 means no ROI)
-            labels (ndarray) - List of unique labels > 0 
+            labels (ndarray) - List of unique labels > 0
         """
 
         # get label vectors for each label image
@@ -108,10 +109,9 @@ class Atlas():
 
 
 class AtlasVolumetric(Atlas):
-    """ Volumetric atlas with specific 3d-locations
-    """
+    """Volumetric atlas with specific 3d-locations"""
 
-    def __init__(self, name, mask_img, structure='cerebellum'):
+    def __init__(self, name, mask_img, structure="cerebellum"):
         """Atlas Volumetric class constructor
 
         Args:
@@ -121,8 +121,8 @@ class AtlasVolumetric(Atlas):
         """
         super().__init__(name)
         self.mask_img = nb.load(mask_img)
-        Xmask = self.mask_img.get_data()
-        Xmask = (Xmask > 0)
+        Xmask = self.mask_img.get_fdata()
+        Xmask = Xmask > 0
         i, j, k = np.where(Xmask > 0)
         self.vox = np.vstack((i, j, k))
         self.mask = Xmask
@@ -131,39 +131,44 @@ class AtlasVolumetric(Atlas):
         self.structure = structure
 
     def get_brain_model_axis(self):
-        """ Returns brain model axis
+        """Returns brain model axis
 
         Returns:
             bm (cifti2.BrainModelAxis)
         """
-        bm = nb.cifti2.BrainModelAxis.from_mask(self.mask_img.get_data(),
-                                                name=self.structure,
-                                                affine=self.mask_img.affine)
+        bm = nb.cifti2.BrainModelAxis.from_mask(
+            self.mask_img.get_fdata(), name=self.structure, affine=self.mask_img.affine
+        )
         return bm
 
     def get_parcel_axis(self):
-        """ Returns parcel axis based on the current setting of labels
+        """Returns parcel axis based on the current setting of labels
         Returns:
             bm (cifti2.ParcelAxis)
         """
         bm_list = []
-        if not hasattr(self, 'labels'):
-            raise (NameError(
-                'Atlas has no parcels defined yet - call atlas.getparcels(image) first'))
+        if not hasattr(self, "labels"):
+            raise (
+                NameError(
+                    "Atlas has no parcels defined yet - call atlas.getparcels(image) first"
+                )
+            )
         bm_list = []
         for h, label in enumerate(self.labels):
-            pname = self.structure + f'_{label:02d}'
+            pname = self.structure + f"_{label:02d}"
             indx = self.label_vector == label
-            bm = nb.cifti2.BrainModelAxis(self.structure,
-                                          voxel=self.vox[:, indx].T,
-                                          affine=self.mask_img.affine,
-                                          volume_shape=self.mask_img.shape)
+            bm = nb.cifti2.BrainModelAxis(
+                self.structure,
+                voxel=self.vox[:, indx].T,
+                affine=self.mask_img.affine,
+                volume_shape=self.mask_img.shape,
+            )
             bm_list.append((pname, bm))
         parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
         return parcel_axis
 
     def data_to_cifti(self, data, row_axis=None):
-        """ Transforms data into a cifti image
+        """Transforms data into a cifti image
         Args:
             data: the input data to be mapped
                 (ndarray/list) - 1-d Numpy array of the size (P,)
@@ -180,20 +185,23 @@ class AtlasVolumetric(Atlas):
         """
         if isinstance(data, list):
             data = data[0]
-        assert data.shape[1] == self.P, \
-            "The length of data and brain structure should be matched!"
+        assert (
+            data.shape[1] == self.P
+        ), "The length of data and brain structure should be matched!"
         if row_axis is None:
-            row_axis = [f'row {r:03}' for r in range(data.shape[0])]
+            row_axis = [f"row {r:03}" for r in range(data.shape[0])]
             row_axis = nb.cifti2.ScalarAxis(row_axis)
-        elif hasattr(row_axis, '__iter__'):
-            assert data.shape[0] == len(row_axis), \
-                "The length of row_axis should match the data!"
+        elif hasattr(row_axis, "__iter__"):
+            assert data.shape[0] == len(
+                row_axis
+            ), "The length of row_axis should match the data!"
             row_axis = nb.cifti2.ScalarAxis(row_axis)
         elif isinstance(row_axis, nb.cifti2.cifti2_axes.Axis):
             pass
         else:
             raise ValueError(
-                'The input row_axis instance type does not meet the requirement!')
+                "The input row_axis instance type does not meet the requirement!"
+            )
 
         bm = self.get_brain_model_axis()
         header = nb.Cifti2Header.from_axes((row_axis, bm))
@@ -203,7 +211,7 @@ class AtlasVolumetric(Atlas):
     def data_to_nifti(self, data):
         """Transforms data in atlas space into
         3d or 4d nifti image
-        depending on data type, the empty parts of the image will be NaNs or zeros. 
+        depending on data type, the empty parts of the image will be NaNs or zeros.
         Args:
             data (np.ndarray): Data to be mapped into nifti
         Returns:
@@ -213,24 +221,24 @@ class AtlasVolumetric(Atlas):
             data = data.reshape(1, -1)
         N, p = data.shape
         if p != self.P:
-            raise (NameError('Data needs to be a P vector or NxP matrix'))
+            raise (NameError("Data needs to be a P vector or NxP matrix"))
         if N > 1:
-            if np.issubdtype(data.dtype,np.floating):
-                X = np.empty(self.mask_img.shape + (N,),dtype=float)
+            if np.issubdtype(data.dtype, np.floating):
+                X = np.empty(self.mask_img.shape + (N,), dtype=float)
                 X.fill(np.nan)
-            elif np.issubdtype(data.dtype,np.integer):
-                X = np.zeros(self.mask_img.shape + (N,),dtype=int)
+            elif np.issubdtype(data.dtype, np.integer):
+                X = np.zeros(self.mask_img.shape + (N,), dtype=int)
             else:
-                raise ValueError('Data type not supported')
+                raise ValueError("Data type not supported")
             X[self.vox[0], self.vox[1], self.vox[2]] = data.T
         else:
-            if np.issubdtype(data.dtype,np.floating):
-                X = np.empty(self.mask_img.shape,dtype=float)
+            if np.issubdtype(data.dtype, np.floating):
+                X = np.empty(self.mask_img.shape, dtype=float)
                 X.fill(np.nan)
-            elif np.issubdtype(data.dtype,np.integer):
-                X = np.zeros(self.mask_img.shape,dtype=int)
+            elif np.issubdtype(data.dtype, np.integer):
+                X = np.zeros(self.mask_img.shape, dtype=int).astype(np.int8)
             else:
-                raise ValueError('Data type not supported')
+                raise ValueError("Data type not supported")
             X[self.vox[0], self.vox[1], self.vox[2]] = data
         img = nb.Nifti1Image(X, self.mask_img.affine)
         return img
@@ -248,14 +256,13 @@ class AtlasVolumetric(Atlas):
         if isinstance(img, nb.Cifti2Image):
             img = nt.volume_from_cifti(img, [self.structure])
         if isinstance(img, (nb.Nifti1Image, nb.Nifti2Image)):
-            data = nt.sample_image(img,
-                                   self.world[0, :],
-                                   self.world[1, :],
-                                   self.world[2, :], interpolation)
+            data = nt.sample_image(
+                img, self.world[0, :], self.world[1, :], self.world[2, :], interpolation
+            )
         return data
 
     def sample_nifti(self, img, interpolation):
-        """ Samples a img at the atlas locations
+        """Samples a img at the atlas locations
         The image needs to be in atlas space.
 
         Args:
@@ -265,19 +272,18 @@ class AtlasVolumetric(Atlas):
             np.array: Data sample at the atlas position
         """
         warnings.DeprecationWarning(
-            'sample_nifti is depreciated. Use self.read_data instead')
+            "sample_nifti is depreciated. Use self.read_data instead"
+        )
         if isinstance(img, str):
             img = nb.load(img)
-        data = nt.sample_image(img,
-                               self.world[0],
-                               self.world[1],
-                               self.world[2],
-                               interpolation)
+        data = nt.sample_image(
+            img, self.world[0], self.world[1], self.world[2], interpolation
+        )
         return data
 
 
 class AtlasVolumeSymmetric(AtlasVolumetric):
-    """ Volumetric atlas with left-right symmetry
+    """Volumetric atlas with left-right symmetry
     The atlas behaves like AtlasVolumetrc, but provides
     mapping indices from a full representation to
     a reduced (symmetric) representation of size Psym.
@@ -319,10 +325,14 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
         # that matches the left hemisphere
         for i in range(self.Psym):
             a = np.nonzero(
-                np.all(world_coord[:, i:i + 1] == self.world[:, indx_right], axis=0))[0]
+                np.all(world_coord[:, i : i + 1] == self.world[:, indx_right], axis=0)
+            )[0]
             if len(a) != 1:
-                raise (NameError(
-                    'The voxels in mask do not seem to be fully symmetric along the x-axis'))
+                raise (
+                    NameError(
+                        "The voxels in mask do not seem to be fully symmetric along the x-axis"
+                    )
+                )
             self.indx_full[1, i] = indx_right[a[0]]
             self.indx_reduced[indx_right[a[0]]] = i
         # Generate flipping index
@@ -333,8 +343,7 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
 
 
 class AtlasSurface(Atlas):
-    """Surface-based altas space
-    """
+    """Surface-based altas space"""
 
     def __init__(self, name, mask_img, structure):
         """Atlas Surface class constructor
@@ -350,8 +359,9 @@ class AtlasSurface(Atlas):
         """
         super().__init__(name)
 
-        assert len(mask_img) == len(structure), \
-            "The length of mask and brain structure should be matched!"
+        assert len(mask_img) == len(
+            structure
+        ), "The length of mask and brain structure should be matched!"
 
         self.structure = structure
         Xmask = [nb.load(mg).agg_data() for mg in mask_img]
@@ -382,35 +392,41 @@ class AtlasSurface(Atlas):
             # Check #1: the passing data is a list, then it should match
             # the number of brain structures in current atlasMap, and the
             # number of vertices in each structure should be aligned.
-            assert len(data) == len(self.structure), \
-                "The length of data and brain structure should be matched!"
+            assert len(data) == len(
+                self.structure
+            ), "The length of data and brain structure should be matched!"
             for i, dat in enumerate(data):
-                assert dat.shape[1] == self.vertex[i].shape[0], \
-                    f"The number of vertices doesn't match in {self.structure[i]}"
+                assert (
+                    dat.shape[1] == self.vertex[i].shape[0]
+                ), f"The number of vertices doesn't match in {self.structure[i]}"
 
             # If list is passed, horizontal stack them.
             data = np.hstack(data)
         elif isinstance(data, np.ndarray):
             # Check #2: the passing data is np.ndarray, then check the
             # number of vertices whether is matched with data
-            assert data.shape[1] == self.P, \
-                "The length of data and brain structure should be matched!"
+            assert (
+                data.shape[1] == self.P
+            ), "The length of data and brain structure should be matched!"
         else:
             raise ValueError(
-                'The input data must be a np.ndarray or a list of np.ndarray')
+                "The input data must be a np.ndarray or a list of np.ndarray"
+            )
 
         if row_axis is None:
-            row_axis = [f'row {r:03}' for r in range(data.shape[0])]
+            row_axis = [f"row {r:03}" for r in range(data.shape[0])]
             row_axis = nb.cifti2.ScalarAxis(row_axis)
-        elif hasattr(row_axis, '__iter__'):
-            assert data.shape[0] == len(row_axis), \
-                "The length of row_axis should match the data!"
+        elif hasattr(row_axis, "__iter__"):
+            assert data.shape[0] == len(
+                row_axis
+            ), "The length of row_axis should match the data!"
             row_axis = nb.cifti2.ScalarAxis(row_axis)
         elif isinstance(row_axis, nb.cifti2.cifti2_axes.Axis):
             pass
         else:
             raise ValueError(
-                'The input row_axis instance type does not meet the requirement!')
+                "The input row_axis instance type does not meet the requirement!"
+            )
 
         bm = self.get_brain_model_axis()
         header = nb.Cifti2Header.from_axes((row_axis, bm))
@@ -419,7 +435,7 @@ class AtlasSurface(Atlas):
         return cifti_img
 
     def read_data(self, img, interpolation=0):
-        """ reads data for surface-based atlas from list of gifti [left,right]or single cifti file. Adjusts automatically for node masks.
+        """reads data for surface-based atlas from list of gifti [left,right]or single cifti file. Adjusts automatically for node masks.
         Args:
             img (nibabel.image): Cifti or (list of) gifti images
             interpolation (int): nearest neighbour (0), trilinear (1)
@@ -430,8 +446,7 @@ class AtlasSurface(Atlas):
             data = self.cifti_to_data(img)
         elif isinstance(img, list):
             if len(img) != len(self.structure):
-                raise (
-                    NameError('Number of images needs to match len(self.structure)'))
+                raise (NameError("Number of images needs to match len(self.structure)"))
             data = []
             for i, im in enumerate(img):
                 if isinstance(im, str):
@@ -469,20 +484,17 @@ class AtlasSurface(Atlas):
             stru = nb.cifti2.BrainModelAxis.to_cifti_brain_structure_name(stru)
 
             if stru not in img_names:
-                print(
-                    f'The input image does not contain {stru}! (Fill with NaN)')
+                print(f"The input image does not contain {stru}! (Fill with NaN)")
                 # if the input image doesn't have current brain structure
                 # we then fill these vertices with NaN value
-                this_data = np.full(
-                    (data.shape[0], self.vertex[i].shape[0]), np.nan)
+                this_data = np.full((data.shape[0], self.vertex[i].shape[0]), np.nan)
             else:
                 idx = img_names.index(stru)
                 data_idx = img_stru[idx][1]
                 bm = img_stru[idx][2]
 
                 # Restore the full data for this structure
-                this_full_data = np.full(
-                    (data.shape[0], bm.nvertices[stru]), np.nan)
+                this_full_data = np.full((data.shape[0], bm.nvertices[stru]), np.nan)
                 this_full_data[:, bm.vertex] = data[:, data_idx]
                 this_data = this_full_data[:, self.vertex[i]]
 
@@ -491,7 +503,7 @@ class AtlasSurface(Atlas):
         return np.hstack(return_data)
 
     def get_brain_model_axis(self):
-        """ Returns brain model axis
+        """Returns brain model axis
 
         Returns:
             bm (cifti2.BrainModelAxis)
@@ -500,16 +512,16 @@ class AtlasSurface(Atlas):
         for i, name in enumerate(self.structure):
             if i == 0:
                 bm = nb.cifti2.BrainModelAxis.from_mask(
-                    self.vertex_mask[i],
-                    name=self.structure[i])
+                    self.vertex_mask[i], name=self.structure[i]
+                )
             else:
                 bm = bm + nb.cifti2.BrainModelAxis.from_mask(
-                    self.vertex_mask[i],
-                    name=self.structure[i])
+                    self.vertex_mask[i], name=self.structure[i]
+                )
         return bm
 
     def get_parcel(self, label_img, unite_struct):
-        """ adds a label_vec to the atlas that assigns each voxel / node of the atlas
+        """adds a label_vec to the atlas that assigns each voxel / node of the atlas
         label_vec[i] = 0 mean that the ith voxel / node is unassigned
         Args:
             label_img (str/list) - filename(s) of label image(s)
@@ -530,7 +542,7 @@ class AtlasSurface(Atlas):
             indx = 0
             for i, s in enumerate(self.structure):
                 n_vert = self.vertex[i].shape[0]
-                label_vec = self.label_vector[indx:indx + n_vert]
+                label_vec = self.label_vector[indx : indx + n_vert]
                 label_vec[label_vec > 0] += self.n_labels * i
                 self.label_list.append(label_vec)
                 indx = indx + n_vert
@@ -539,39 +551,46 @@ class AtlasSurface(Atlas):
         return self.label_vector, self.labels
 
     def get_parcel_axis(self):
-        """ Returns parcel axis based on the current setting of labels
+        """Returns parcel axis based on the current setting of labels
         Returns:
             bm (cifti2.ParcelAxis)
         """
         bm_list = []
         if self.unite_struct:
-            raise (NameError(
-                'Cannot create parcel axis with ROIs spanning both hemispheres. Set unite_struct to FALSE.'))
-        if not hasattr(self, 'labels'):
-            raise (NameError(
-                'Atlas has no parcels defined yet - call atlas.getparcels(image) first'))
+            raise (
+                NameError(
+                    "Cannot create parcel axis with ROIs spanning both hemispheres. Set unite_struct to FALSE."
+                )
+            )
+        if not hasattr(self, "labels"):
+            raise (
+                NameError(
+                    "Atlas has no parcels defined yet - call atlas.getparcels(image) first"
+                )
+            )
         indx = 0
         for i, struct_name in enumerate(self.structure):
             n_vert = self.vertex[i].shape[0]
-            label_vec = self.label_vector[indx:indx + n_vert]
+            label_vec = self.label_vector[indx : indx + n_vert]
             for h, label in enumerate(self.labels):
                 pindx = label_vec == label
                 if pindx.sum() > 0:
-                    pname = struct_name + f'_{label:02d}'
+                    pname = struct_name + f"_{label:02d}"
                     bm = nb.cifti2.BrainModelAxis.from_surface(
                         self.vertex[i][pindx],
                         self.vertex_mask[i].shape[0],
-                        name=struct_name)
+                        name=struct_name,
+                    )
                     bm_list.append((pname, bm))
         parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
         return parcel_axis
 
 
 class AtlasSurfaceSymmetric(AtlasSurface):
-    """ Surface atlas with left-right symmetry
-        The atlas behaves like AtlasSurface, but provides
-        mapping indices from a full representation to
-        a reduced (symmetric) representation of size Psym.
+    """Surface atlas with left-right symmetry
+    The atlas behaves like AtlasSurface, but provides
+    mapping indices from a full representation to
+    a reduced (symmetric) representation of size Psym.
     """
 
     def __init__(self, name, mask_gii, structure):
@@ -597,8 +616,9 @@ class AtlasSurfaceSymmetric(AtlasSurface):
                               name of mask image defining atlas locations
         """
         super().__init__(name, mask_gii, structure)
-        assert np.array_equal(self.vertex[0], self.vertex[1]), \
-            "The left and right hemisphere must be symmetric!"
+        assert np.array_equal(
+            self.vertex[0], self.vertex[1]
+        ), "The left and right hemisphere must be symmetric!"
 
         # Initialize indices
         # This is the number of vertices before masking
@@ -619,7 +639,7 @@ class AtlasSurfaceSymmetric(AtlasSurface):
         self.indx_flip[self.indx_full[1]] = indx_orig[self.indx_full[0]]
 
 
-class AtlasMapDeform():
+class AtlasMapDeform:
     def __init__(self, world, deform_img, mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
         to the desired atlas space in form of a voxel list
@@ -652,10 +672,7 @@ class AtlasMapDeform():
         # Apply possible multiple deformation maps sequentially
         xyz = self.world.copy()
         for i, di in enumerate(self.deform_img):
-            xyz = nt.sample_image(di,
-                                  xyz[0],
-                                  xyz[1],
-                                  xyz[2], 1).squeeze().T
+            xyz = nt.sample_image(di, xyz[0], xyz[1], xyz[2], 1).squeeze().T
             pass
         atlas_ind = xyz
         N = atlas_ind.shape[1]  # Number of locations in atlas
@@ -671,22 +688,21 @@ class AtlasMapDeform():
             # If file name, load the nifti image
             if isinstance(additional_mask, str):
                 additional_mask = nb.load(additional_mask)
-            add_mask = nt.sample_image(additional_mask,
-                                       world_vox[0],
-                                       world_vox[1],
-                                       world_vox[2], 1)
+            add_mask = nt.sample_image(
+                additional_mask, world_vox[0], world_vox[1], world_vox[2], 1
+            )
             world_vox = world_vox[:, add_mask > 0]
             vox = vox[:, add_mask > 0]
 
         if smooth is None:  # Use nearest neighbor interpolation
-            linindx, good = nt.coords_to_linvidxs(
-                atlas_ind, self.mask_img, mask=True)
+            linindx, good = nt.coords_to_linvidxs(atlas_ind, self.mask_img, mask=True)
             self.vox_list = linindx.reshape(-1, 1)
             self.vox_weight = np.ones((linindx.shape[0], 1))
             self.vox_weight[np.logical_not(good)] = np.nan
-        else:              # Use smoothing kernel of specific size
-            linindx = np.ravel_multi_index((vox[0, :], vox[1, :], vox[2, :]),
-                                           M.shape, mode='clip')
+        else:  # Use smoothing kernel of specific size
+            linindx = np.ravel_multi_index(
+                (vox[0, :], vox[1, :], vox[2, :]), M.shape, mode="clip"
+            )
             # Distances between atlas coordinates and voxel coordinates
             # TODO: For a lot of voxels, calculating the Euclidian distance is very memory hungry. Build the atlas iteratively to avoid running into memory issues.
             D = nt.euclidean_dist_sq(atlas_ind, world_vox)
@@ -712,7 +728,7 @@ class AtlasMapDeform():
         pass
 
 
-class AtlasMapSurf():
+class AtlasMapSurf:
     def __init__(self, vertex, white_surf, pial_surf, mask_img):
         """AtlasMapSurf stores the mapping rules for a freesurfer-style surface (pial + white surface pair)
         Args:
@@ -743,15 +759,17 @@ class AtlasMapSurf():
         n_vert = c1.shape[1]
         if c2.shape[1] != n_vert:
             raise (
-                NameError('White and pial surfaces should have same number of vertices.'))
+                NameError(
+                    "White and pial surfaces should have same number of vertices."
+                )
+            )
 
         # Get the indices for all the points being sampled
         indices = np.zeros((n_points, 3, n_vert))
         for i in range(n_points):
             indices[i, :, :] = (1 - depths[i]) * c1 + depths[i] * c2
 
-        self.vox_list, good = nt.coords_to_linvidxs(
-            indices, self.mask_img, mask=True)
+        self.vox_list, good = nt.coords_to_linvidxs(indices, self.mask_img, mask=True)
         all = good.sum(axis=0)
         # print(f'{self.name} has {np.sum(all==0)} vertices without data')
         all[all == 0] = 1
@@ -780,7 +798,7 @@ def get_data_nifti(fnames, atlas_maps):
             V = nb.load(f)
         else:
             V = f
-        if (V.ndim > 3):
+        if V.ndim > 3:
             vols = vols + nb.funcs.four_to_three(V)
         else:
             vols.append(V)
@@ -802,7 +820,7 @@ def get_data_nifti(fnames, atlas_maps):
 
 
 def get_data_cifti(fnames, atlases):
-    """ Extracts the data for a list of fnames
+    """Extracts the data for a list of fnames
     for a list of atlas_maps. This is usually called by DataSet.get_data()
     to extract the required raw data before processing it further
 
@@ -820,14 +838,15 @@ def get_data_cifti(fnames, atlases):
         cifti = nb.load(f)
         for i, at in enumerate(atlases):
             if isinstance(at, AtlasMapDeform):
-                V = nt.volume_from_cifti(cifti, ['cerebellum'])
+                V = nt.volume_from_cifti(cifti, ["cerebellum"])
                 data[i].append(get_data_nifti([V], [at])[0])
             elif isinstance(at, AtlasVolumetric):
                 V = nt.volume_from_cifti(cifti, [at.structure])
-                data[i].append(nt.sample_image(V,
-                                               at.world[0, :],
-                                               at.world[1, :],
-                                               at.world[2, :], 0))
+                data[i].append(
+                    nt.sample_image(
+                        V, at.world[0, :], at.world[1, :], at.world[2, :], 0
+                    )
+                )
             elif isinstance(at, AtlasSurface):
                 data[i].append(at.cifti_to_data(cifti))
     for i in range(n_atlas):
