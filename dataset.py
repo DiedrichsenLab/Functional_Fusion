@@ -50,6 +50,7 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
         dataset (str): Data set indicator
         atlas (str): Atlas indicator. Defaults to 'SUIT3'.
         sess (str or list): Sessions. Defaults to 'all'.
+        subj (ndarray, str, or list):  Subject numbers /names to get [None = all]
         type (str): 'CondHalf','CondRun', etc....
     Returns:
         _type_: _description_
