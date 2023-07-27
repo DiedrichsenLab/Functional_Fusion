@@ -111,13 +111,14 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
 
 
 if __name__ == "__main__":
+    extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
     # extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
     # extract_mdtb(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
     # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
 
-    for s in [1,2,3]:
-        smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=s)
-        smooth_mdtb_fs32k(ses_id='ses-s2', type='CondHalf', smooth=s)
+    # for s in [1,2,3]:
+    #     smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=s)
+    #     smooth_mdtb_fs32k(ses_id='ses-s2', type='CondHalf', smooth=s)
 
     # dataset = DataSetMDTB(data_dir)
     # # dataset.group_average_data(atlas='MNISymC3')

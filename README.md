@@ -22,7 +22,7 @@ Or you can install the package manually from the original binary source as above
 Once you clone the functional fusion repository, you need to add it to your PYTHONPATH, so you can import the functionality. Add these lines to your .bash_profile, .bash_rc .zsh_profile file... 
 
 ```
-PYTHONPATH=<your_repo_absolute_path>:${PYTHONPATH}
+PYTHONPATH=<abspath_of_repo_parentdir>:${PYTHONPATH}
 export PYTHONPATH
 ```
 

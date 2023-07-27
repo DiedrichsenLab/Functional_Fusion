@@ -31,6 +31,7 @@ def extract_hcp_timeseries(ses_id='ses-rest1', type='Tseries', atlas='MNISymC3')
     hcp_dataset = DataSetHcpResting(hcp_dir)
     hcp_dataset.extract_all(ses_id, type, atlas)
 
+
 def make_info(type='Tseries', ses_id='ses-rest1'):
     """Adding an extra column 'run_id' to the tsv file
 
@@ -59,6 +60,7 @@ def make_info(type='Tseries', ses_id='ses-rest1'):
 
         info.to_csv(
             dest_dir + f'{participant_id}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+
 
 def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='ses-rest1'):
     """Extracts the connectivity fingerprint for each network in the HCP data
@@ -93,7 +95,6 @@ def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='
 
         coef = hcp_dataset.connectivity_fingerprint(
             data_cereb, network_timecourse, info, type)
-        coef = np.random.rand(138, 1)
         # Make info
         names = [f'Network_{i}' for i in range(1, 70)]
         runs = np.repeat([info.run.unique()], len(names))
@@ -108,7 +109,7 @@ def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='
 
         # Save the data
 
-        # C = atlas.data_to_cifti(coef, info.names)
+        C = atlas.data_to_cifti(coef, info.names)
         dest_dir = hcp_dataset.base_dir + \
             f'/derivatives/{participant_id}/data/'
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
@@ -117,6 +118,7 @@ def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='
                 f'{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
         info.to_csv(
             dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
+
 
 def extract_connectivity_fingerprint_da(type='Ico162Run', space='MNISymC3', ses_id='ses-rest1'):
     """Extracts the connectivity fingerprint for each network in the HCP data
@@ -146,7 +148,7 @@ def extract_connectivity_fingerprint_da(type='Ico162Run', space='MNISymC3', ses_
     if target.startswith('Net'):
         net = nb.load(hcp_dataset.base_dir +
                       f'/targets/{target}_space-fs32k.dscalar.nii')
-        names = [f'Network_{i}' for i in range(1, net.shape[0]+1)]
+        names = [f'Network_{i}' for i in range(1, net.shape[0] + 1)]
 
     # 2. Extract connectivity from Icosahedrons
     elif target.startswith('Ico'):
@@ -158,7 +160,8 @@ def extract_connectivity_fingerprint_da(type='Ico162Run', space='MNISymC3', ses_
             labels += [dir + f'/Icosahedron-{res}_Sym.32k.{h}.label.gii']
             masks += [dir + f'/tpl-fs32k_hemi-{h}_mask.label.gii']
 
-        surf_parcel = am.AtlasSurface('Coretex', masks, ['cortex_left', 'cortex_right'])
+        surf_parcel = am.AtlasSurface(
+            'Coretex', masks, ['cortex_left', 'cortex_right'])
 
         net = surf_parcel.get_parcel(labels, None)[0]
         bpa = surf_parcel.get_parcel_axis()
@@ -168,7 +171,8 @@ def extract_connectivity_fingerprint_da(type='Ico162Run', space='MNISymC3', ses_
 
     T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
     for p, participant_id in enumerate(T.participant_id):
-        print(f'-Extracting sub {participant_id} using Network: {target}, Type: {type} ...')
+        print(
+            f'-Extracting sub {participant_id} using Network: {target}, Type: {type} ...')
         # Get cortical data
         data_cortex, _ = hcp_dataset.get_data(
             space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
@@ -180,7 +184,7 @@ def extract_connectivity_fingerprint_da(type='Ico162Run', space='MNISymC3', ses_
         elif target.startswith('Ico'):
             # Average
             network_timecourse = hcp_dataset.average_within_Icos(
-                net-1, data_cortex.squeeze())
+                net - 1, data_cortex.squeeze())
 
         # Calculate the connectivity fingerprint
         data_cereb, info = hcp_dataset.get_data(
@@ -212,41 +216,46 @@ def extract_connectivity_fingerprint_da(type='Ico162Run', space='MNISymC3', ses_
         info.to_csv(
             dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
 
+
 def group_average_hcp(type='Net69Run', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
-    # hcp_dataset.group_average_data(
-    #     ses_id='ses-rest1', type=type, atlas=atlas)
-    # hcp_dataset.group_average_data(
-    #     ses_id='ses-rest2', type=type, atlas=atlas)
-    # hcp_dataset.plot_cerebellum(subject='group', sessions=[
-    #                             'ses-rest1', 'ses-rest2'], type=type, atlas=atlas, savefig=True, colorbar=True)
-    # get fifures for each subject
-    T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
-    for p, participant_id in enumerate(T.participant_id):
-        hcp_dataset.plot_cerebellum(subject=participant_id, sessions=[
-            'ses-rest1', 'ses-rest2'], type=type, atlas=atlas, savefig=True, colorbar=True)
+    hcp_dataset.group_average_data(
+        ses_id='ses-rest1', type=type, atlas=atlas)
+    hcp_dataset.group_average_data(
+        ses_id='ses-rest2', type=type, atlas=atlas)
+    hcp_dataset.plot_cerebellum(subject='group', sessions=[
+                                'ses-rest1', 'ses-rest2'], type=type, atlas=atlas, savefig=True, colorbar=True)
+    # # get figures for each subject
+    # T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
+    # for p, participant_id in enumerate(T.participant_id):
+    #     hcp_dataset.plot_cerebellum(subject=participant_id, sessions=[
+    #         'ses-rest1', 'ses-rest2'], type=type, atlas=atlas, savefig=True, colorbar=True)
 
 
 if __name__ == "__main__":
     # make_info(type='Tseries', ses_id='ses-rest1')
-    make_info(type='Tseries', ses_id='ses-rest2')
+    # make_info(type='Tseries', ses_id='ses-rest2')
     #  -- Extract timeseries --
     # extract_hcp_timeseries(
-    #     ses_id='ses-rest1', type='Tseries', atlas='MNISymC3')
+    #     ses_id='ses-rest1', type='Tseries', atlas='MNISymC2')
     # extract_hcp_timeseries(
-    #     ses_id='ses-rest2', type='Tseries', atlas='MNISymC3')
+    #     ses_id='ses-rest2', type='Tseries', atlas='MNISymC2')
+
     # extract_hcp_timeseries(ses_id='ses-rest1', type='Tseries', atlas='fs32k')
     # extract_hcp_timeseries(ses_id='ses-rest2', type='Tseries', atlas='fs32k')
 
     # -- Get connectivity fingerprint --
-    extract_connectivity_fingerprint_da(
-        type='Ico162Run', space='MNISymC3', ses_id='ses-rest1')
-    extract_connectivity_fingerprint_da(
-        type='Ico162Run', space='MNISymC3', ses_id='ses-rest2')
+    extract_connectivity_fingerprint(
+        type='Net69Run', space='MNISymC2', ses_id='ses-rest1')
+    extract_connectivity_fingerprint(
+        type='Net69Run', space='MNISymC2', ses_id='ses-rest2')
+
+    # extract_hcp_timeseries(
+    #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')
 
     # -- Group average --
-    # group_average_hcp(type='Net69Run', atlas='MNISymC3')
-
+    # group_average_hcp(type='Ico162Run', atlas='MNISymC3')
+    # pass
     # extract_hcp_timeseries(
     #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')
     # pass
