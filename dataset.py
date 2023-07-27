@@ -407,7 +407,7 @@ class DataSet:
             space (str): Atlas space (Defaults to 'SUIT3').
             ses_id (str): Session ID (Defaults to 'ses-s1').
             type (str): Type of data (Defaults to 'CondHalf').
-            subj (ndarray, str, or list):  Subject numbers /names to get
+            subj (ndarray, str, or list):  Subject numbers /names to get [None = all]
             fields (list): Column names of info stucture that are returned
                 these are also be tested to be equivalent across subjects
         Returns:
@@ -425,6 +425,10 @@ class DataSet:
         elif isinstance(subj,(list,np.ndarray)):
             if isinstance(subj[0],int):
                 subj = T.participant_id.iloc[subj]
+            elif isinstance(subj[0],str):
+                subj = subj
+            else:
+                raise(NameError('subj must be a list of strings or integers'))
         if type is None:
             type = self.default_type
 
