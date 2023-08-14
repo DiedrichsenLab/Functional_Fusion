@@ -21,6 +21,7 @@ import SUITPy as suit
 import surfAnalysisPy as surf
 import nitools as nt
 import json
+import re
 
 # Need to do self import here to get atlas
 import Functional_Fusion.atlas_map as am
@@ -80,6 +81,50 @@ def get_deform(atlas_dir, target, source="MNIAsym2"):
     mask = f"{atlas_dir}/{src['dir']}/{src['mask']}"
     return deform, mask
 
+def parcel_recombine(label_vector,parcels_selected,label_id=None,label_name=None):
+    """ Recombines and selects different parcels
+    into a new label vector for ROI analysis.
+    IMPORTANT: Note that each old parcel can only be
+    mapped to one new parcel. That is the elements of parcels_selected must be non-overlapping.
+    Args:
+        label_vector (ndarrray):
+            voxel array of labels
+        parcels_selected (list):
+            list of the parcels being selected. Each element should be
+            a. Scalar value of lable_ids
+            b. List/array of scalar values of label_ids
+            c. A regexp - for example 'D.L' would select all labels starting with D.L
+        label_id (ndarrray):
+            ndarray of parcel ids
+        label_name (list):
+            List of parcel names
+
+    Returns:
+        label_vector: new coded vector, with the first ROI label with 1. all others 0
+        label_id: new label id
+        label_name: new label name
+    """
+    # If all parcels are selected, just return the original
+    if (parcels_selected is None) or (parcels_selected == "all"):
+        return label_vector, label_id, label_name
+    elif isinstance(parcels_selected, (list,np.ndarray)):
+        label_vector_new = np.zeros(label_vector.shape,dtype=int)
+        label_id_new = np.arange(len(parcels_selected)+1)
+        label_name_new = ['0']
+        for i,p in enumerate(parcels_selected):
+            if isinstance(p,int):
+                indx=[p]
+                label_name_new.append(label_name[np.nonzero(label_id==p)[0][0]])
+            elif isinstance(p,str):
+                indx = [label_id[i] for i, x in enumerate(label_name) if re.search(p, x) is not None]
+                label_name_new.append(p)
+            elif isinstance(p,list):
+                indx = p
+                label_name_new.append(f'reg_{i}')
+            label_vector_new[np.isin(label_vector,indx)]=i+1
+    else:
+        raise ValueError('parcels_selected must be a list')
+    return label_vector_new, label_id_new, label_name_new
 
 class Atlas:
     """The Atlas class implements the general atlas functions
