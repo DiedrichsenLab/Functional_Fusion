@@ -13,3 +13,4 @@ sphinx-copybutton
 numpydoc
 nbsphinx
 ipykernel
+sphinx-rtd-theme
