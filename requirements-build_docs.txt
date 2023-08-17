@@ -1,0 +1,15 @@
+mat73
+matplotlib
+nibabel
+nilearn
+numpy
+pandas
+scipy
+neuroimagingtools
+sphinx>=1.4
+sphinx-gallery
+sphinxcontrib-bibtex
+sphinx-copybutton
+numpydoc
+nbsphinx
+ipykernel
