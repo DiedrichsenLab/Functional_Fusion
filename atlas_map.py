@@ -58,14 +58,14 @@ def get_atlas(atlas_str, atlas_dir):
 
 def get_deform(atlas_dir, target, source="MNIAsym2"):
     """Get name of group deformation map between two volumetric atlas spaces
+
     Args:
         atlas_dir (str): Atlas Directory
         target (str/atlas): Target space
         source (str): Source space
-        smooth (float): Defaults to None.
     Returns:
-        deform: Name of deformation map
-        mask: Mask for the source space
+        deform (str): Name of deformation map
+        mask (str): Name of mask for the source space
     """
     if isinstance(target, str):
         target, _ = get_atlas(target, atlas_dir)
@@ -82,28 +82,26 @@ def get_deform(atlas_dir, target, source="MNIAsym2"):
     return deform, mask
 
 def parcel_recombine(label_vector,parcels_selected,label_id=None,label_name=None):
-    """ Recombines and selects different parcels
-    into a new label vector for ROI analysis.
-    IMPORTANT: Note that each old parcel can only be
-    mapped to one new parcel. That is the elements of parcels_selected must be non-overlapping.
+    """ Recombines and selects different parcels into a new label vector for ROI analysis.
+    IMPORTANT: Note that each old parcel can only be mapped to one new parcel. That is the elements
+    of parcels_selected must be non-overlapping.
+
     Args:
-        label_vector (ndarrray):
-            voxel array of labels
+        label_vector (ndarrray): voxel array of labels
         parcels_selected (list):
             list of the parcels being selected. Each element should be
-            a. Scalar value of lable_ids
-            b. List/array of scalar values of label_ids
-            c. A regexp - for example 'D.L' would select all labels starting with D.L
-        label_id (ndarrray):
-            ndarray of parcel ids
-        label_name (list):
-            List of parcel names
+            a) Scalar value of lable_ids,
+            b) List/array of scalar values of label_ids
+            c) A regexp - for example 'D.L' would select all labels starting with D.L
+        label_id (ndarrray): ndarray of parcel ids
+        label_name (list): List of parcel names
 
     Returns:
         label_vector: new coded vector, with the first ROI label with 1. all others 0
         label_id: new label id
         label_name: new label name
     """
+
     # If all parcels are selected, just return the original
     if (parcels_selected is None) or (parcels_selected == "all"):
         return label_vector, label_id, label_name
@@ -127,21 +125,24 @@ def parcel_recombine(label_vector,parcels_selected,label_id=None,label_name=None
     return label_vector_new, label_id_new, label_name_new
 
 class Atlas:
-    """The Atlas class implements the general atlas functions
-    for mapping from the P brain locations back to nii or gifti files
-    Each Atlas is associated with a set of atlas maps
-    """
-
     def __init__(self, name):
+        """ The Atlas class implements the mapping from the P brain locations back to the defining
+        Volumetric or surface space. It also allows for parcellation of these brain locations.
+        Each Atlas is associated with a set of atlas maps
+
+        Args:
+            name (str): Unique code for the atlas (e.g. 'SUIT3')
+        """
         self.name = name
         self.P = np.nan  # Number of locations in this atlas
 
     def get_parcel(self, label_img):
         """adds a label_vec to the atlas that assigns each voxel / node of the atlas
         label_vec[i] = 0 mean that the ith voxel / node is unassigned
+
         Args:
             label_img (str/list) - filename(s) of label image(s)
-        Returns
+        Returns:
             label_vec (list) - list of numpy array containing label values corresponding to label images (0 means no ROI)
             labels (ndarray) - List of unique labels > 0
         """
@@ -154,10 +155,9 @@ class Atlas:
 
 
 class AtlasVolumetric(Atlas):
-    """Volumetric atlas with specific 3d-locations"""
-
     def __init__(self, name, mask_img, structure="cerebellum"):
-        """Atlas Volumetric class constructor
+        """Atlas Volumetric is an atlas for a Volumetric
+        space / structure.
 
         Args:
             name (str): Name of atlas (atlas string)
@@ -188,15 +188,14 @@ class AtlasVolumetric(Atlas):
 
     def get_parcel_axis(self):
         """Returns parcel axis based on the current setting of labels
+
         Returns:
             bm (cifti2.ParcelAxis)
         """
+
         bm_list = []
         if not hasattr(self, "labels"):
-            raise (
-                NameError(
-                    "Atlas has no parcels defined yet - call atlas.getparcels(image) first"
-                )
+            raise (NameError("Atlas has no parcels defined yet - call atlas.getparcels(image) first")
             )
         bm_list = []
         for h, label in enumerate(self.labels):
@@ -214,17 +213,16 @@ class AtlasVolumetric(Atlas):
 
     def data_to_cifti(self, data, row_axis=None):
         """Transforms data into a cifti image
+
         Args:
-            data: the input data to be mapped
-                (ndarray/list) - 1-d Numpy array of the size (P,)
-            row_axis: label for row axis in cifti file, it can be
-                (list) - a list of row names
-                (object) - a pandas framework object of the row names
-                (cifti2.Axis) - a cifti2 Axis object that can be directly
-                                used to write header. (e.g. ScalarAxis,
-                                SeriesAxis, ...)
-                None - default to generate a list of row names that
-                       matches the input data
+            data (ndarray/list): the input data to be mapped 1-d Numpy array of the size (P,)
+            row_axis: label for row axis in cifti file, it can be:
+
+                | (list) - a list of row names
+                | (object) - a pandas framework object of the row names
+                | (cifti2.Axis) - a cifti2 Axis object that can be directly used to write header. (e.g. ScalarAxis, SeriesAxis, ...)
+                | (None) - default to generate a list of row names that matches the input data
+
         Returns:
             Cifti2Image: Cifti2Image object
         """
@@ -254,13 +252,12 @@ class AtlasVolumetric(Atlas):
         return cifti_img
 
     def data_to_nifti(self, data):
-        """Transforms data in atlas space into
-        3d or 4d nifti image
-        depending on data type, the empty parts of the image will be NaNs or zeros.
+        """Transforms data in atlas space into 3d or 4d nifti image depending on data type, the empty parts of the image will be NaNs or zeros.
+
         Args:
             data (np.ndarray): Data to be mapped into nifti
         Returns:
-            Nifti1Image: NiftiImage object
+            Nifti1Image(nb.Nifti1Image): NiftiImage object
         """
         if data.ndim == 1:
             data = data.reshape(1, -1)
@@ -290,10 +287,11 @@ class AtlasVolumetric(Atlas):
 
     def read_data(self, img, interpolation):
         """Read data from a NIFTI or CIFTI file into the volumetric atlas space
+
         Args:
             img (nibabel.image): Nifti or Cifti image
             interpolation (int)): nearest neighbour (0), trilinear (1)
-        returns:
+        Returns:
             data (ndarray): (N,P) ndarray
         """
         if isinstance(img, str):
@@ -328,30 +326,29 @@ class AtlasVolumetric(Atlas):
 
 
 class AtlasVolumeSymmetric(AtlasVolumetric):
-    """Volumetric atlas with left-right symmetry
-    The atlas behaves like AtlasVolumetrc, but provides
-    mapping indices from a full representation to
-    a reduced (symmetric) representation of size Psym.
-    """
-
     def __init__(self, name, mask_img, structure="cerebellum"):
-        """AtlasVolumeSymmeytric class constructor: Generates members
-        indx_full, indx_reduced, indx_flip.
-        Assume you have a
-            Full: N x P array
-            Left: N x Psym array
-            Right: N x Psym array
-        then:
-            Left = Full[:,index_full[0]]
-            Right = Full[:,index_full[1]]
-            Avrg = (Left + Right)/2
-            Full = Avrg[:,index_reduced]
-        To Flip:
-            flippedFull = Full[:,index_flip]
+        """Volumetric atlas with left-right symmetry. The atlas behaves like AtlasVolumetric,
+        but provides mapping indices from a full representation to a
+        reduced (symmetric) representation of size Psym.
+        The constructor generates members indx_full, indx_reduced, indx_flip.
+
+        | Assume you have a
+        | Full: N x P array
+        | Left: N x Psym array
+        | Right: N x Psym array
+        | then:
+        | Left = Full[:,index_full[0]]
+        | Right = Full[:,index_full[1]]
+        | Avrg = (Left + Right)/2
+        | Full = Avrg[:,index_reduced]
+        | To Flip:
+        | flippedFull = Full[:,index_flip]
+
         Args:
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_img (str): file name of mask image defining atlas location
         """
+
         super().__init__(name, mask_img, structure)
         # Find left and right hemispheric voxels
         indx_left = np.where(self.world[0, :] <= 0)[0]
@@ -395,8 +392,7 @@ class AtlasSurface(Atlas):
         Args:
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_gii (list): gifti file name of mask image defining atlas locations
-            structure (list): [cortex_left, cortex_right] gifti file name of mask image defining
-            atlas locations
+            structure (list): [cortex_left, cortex_right] - CIFTI brain structure names
         Notes:
             Since this class is called 'AtlasSurface', I think we should
             only integrate surface datas in cifti brain structures so that
@@ -418,18 +414,20 @@ class AtlasSurface(Atlas):
 
     def data_to_cifti(self, data, row_axis=None):
         """Maps data back into a cifti image
+
         Args:
             data: the input data to be mapped
-                (ndarray) - 1-d Numpy array of the size (P,)
-                (list) - list of ndarray
+
+                | (ndarray) - 1-d Numpy array of the size (P,)
+                | (list) - list of ndarray
+
             row_axis: label for row axis in cifti file, it can be
-                (list) - a list of colum names
-                (object) - a pandas framework object of the colum names
-                (cifti2.Axis) - a cifti2 Axis object that can be directly
-                                used to write header. (e.g. ScalarAxis,
-                                SeriesAxis, ...)
-                None - default to generate a list of column names that
-                       matches the input data
+
+                | (list) - a list of colum names
+                | (object) - a pandas framework object of the colum names
+                | (cifti2.Axis) - a cifti2 Axis object that can be directly used to write header. (e.g. ScalarAxis, SeriesAxis, ...)
+                | None - default to generate a list of column names that matches the input data
+
         Returns:
             Cifti2Image: Cifti2Image object
         """
@@ -481,6 +479,7 @@ class AtlasSurface(Atlas):
 
     def read_data(self, img, interpolation=0):
         """reads data for surface-based atlas from list of gifti [left,right]or single cifti file. Adjusts automatically for node masks.
+
         Args:
             img (nibabel.image): Cifti or (list of) gifti images
             interpolation (int): nearest neighbour (0), trilinear (1)
@@ -568,6 +567,7 @@ class AtlasSurface(Atlas):
     def get_parcel(self, label_img, unite_struct):
         """adds a label_vec to the atlas that assigns each voxel / node of the atlas
         label_vec[i] = 0 mean that the ith voxel / node is unassigned
+
         Args:
             label_img (str/list) - filename(s) of label image(s)
         Returns
@@ -597,6 +597,7 @@ class AtlasSurface(Atlas):
 
     def get_parcel_axis(self):
         """Returns parcel axis based on the current setting of labels
+
         Returns:
             bm (cifti2.ParcelAxis)
         """
@@ -632,33 +633,32 @@ class AtlasSurface(Atlas):
 
 
 class AtlasSurfaceSymmetric(AtlasSurface):
-    """Surface atlas with left-right symmetry
-    The atlas behaves like AtlasSurface, but provides
-    mapping indices from a full representation to
-    a reduced (symmetric) representation of size Psym.
+    """
     """
 
     def __init__(self, name, mask_gii, structure):
-        """AtlasSurfaceSymmeytric class constructor: Generates members
-        indx_full, indx_reduced, indx_flip.
-        Assume you have a
-            Full: N x P array
-            Left: N x Psym array
-            Right: N x Psym array
-        then:
-            Left = Full[:,index_full[0]]
-            Right = Full[:,index_full[1]]
-            Avrg = (Left + Right)/2
-            Full = Avrg[:,index_reduced]
-        To Flip:
-            flippedFull = Full[:,index_flip]
+        """ Surface atlas with left-right symmetry
+        The atlas behaves like AtlasSurface, but provides
+        a reduced (symmetric) representation of size Psym.AtlasSurfaceSymmeytric
+        Constructor: Generates members indx_full, indx_reduced, indx_flip.
+        mapping indices from a full representation to
+
+        | Assume you have a
+        | Full: N x P array
+        | Left: N x Psym array
+        | Right: N x Psym array
+        | then:
+        | Left = Full[:,index_full[0]]
+        | Right = Full[:,index_full[1]]
+        | Avrg = (Left + Right)/2
+        | Full = Avrg[:,index_reduced]
+        | To Flip:
+        | flippedFull = Full[:,index_flip]
+
         Args:
-            name (str): Name of the brain structure (cortex_left,
-                        cortex_right, cerebellum)
-            mask_gii (list): gifti file name of mask image defining
-                        atlas locations
-            structure (list): [cortex_left, cortex_right] gifti file
-                              name of mask image defining atlas locations
+            name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            mask_gii (list): gifti file name of mask image defining atlas locations
+            structure (list): [cortex_left, cortex_right] - CIFTI brain structure names
         """
         super().__init__(name, mask_gii, structure)
         assert np.array_equal(
@@ -688,6 +688,7 @@ class AtlasMapDeform:
     def __init__(self, world, deform_img, mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
         to the desired atlas space in form of a voxel list
+
         Args:
             worlds (ndarray): 3xP ND array of world locations
             deform_img (str/list): Name of deformation map image(s)
@@ -776,6 +777,7 @@ class AtlasMapDeform:
 class AtlasMapSurf:
     def __init__(self, vertex, white_surf, pial_surf, mask_img):
         """AtlasMapSurf stores the mapping rules for a freesurfer-style surface (pial + white surface pair)
+
         Args:
             vertex (ndarray): Array of vertices included in the atlas map
             white_surf (str): Name for white matter surface
@@ -789,12 +791,14 @@ class AtlasMapSurf:
         self.mask_img = nb.load(mask_img)
 
     def build(self, smooth=None, depths=[0, 0.2, 0.4, 0.6, 0.8, 1.0]):
-        """
-        Using the dataset, builds a list of voxel indices of
+        """ Using the dataset, builds a list of voxel indices of
         each of the nodes
-        vox_list: List of voxels to sample for each atlas location
-        vox_weight: Weight of each of these voxels to determine the atlas location
-        Arg:
+
+            | vox_list: List of voxels to sample for each atlas location
+            | vox_weight: Weight of each of these voxels to determine the atlas location
+
+        Args:
+            smooth (double): SD of smoothing kernel (mm) or None for nearest neighbor
             depths (iterable): List of depth between pial (1) and white (0) surface that
             will be sampled
         """

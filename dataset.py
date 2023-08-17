@@ -15,7 +15,6 @@ import os.path as op
 import sys
 import subprocess
 
-sys.path.append("..")
 import Functional_Fusion.util as util
 import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
@@ -31,6 +30,15 @@ import re
 
 
 def get_dataset_class(base_dir, dataset):
+    """ Returns the dataset object without loading the data
+
+    Args:
+        base_dir (str): Functional Fusion base directory
+        dataset (str): _description_
+
+    Returns:
+        my_dataset (Dataset): Dataset object
+    """
     T = pd.read_csv(base_dir + '/dataset_description.tsv', sep='\t')
     T.name = [n.casefold() for n in T.name]
     i = np.where(dataset.casefold() == T.name)[0]
@@ -44,16 +52,19 @@ def get_dataset_class(base_dir, dataset):
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
                 type=None, smooth=None, info_only=False):
-    """get_dataset
+    """get_dataset tensor and data set object
+
     Args:
-        base_dir (str): Basis directory for the Functional Fusion repro
+        base_dir (str): Basis directory for the Functional Fusion datastructure
         dataset (str): Data set indicator
         atlas (str): Atlas indicator. Defaults to 'SUIT3'.
         sess (str or list): Sessions. Defaults to 'all'.
         subj (ndarray, str, or list):  Subject numbers /names to get [None = all]
         type (str): 'CondHalf','CondRun', etc....
     Returns:
-        _type_: _description_
+        data (nd.array):nsubj x ncond x nvox data tensor
+        info (pd.DataFrame): Dataframe with info about the data
+        my_dataset (DataSet): Dataset object
     """
 
     my_dataset = get_dataset_class(base_dir, dataset)
@@ -369,6 +380,7 @@ class DataSet:
         available in the study. The fields in the data frame correspond to the
         standard columns in participant.tsv.
         https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html
+
         Returns:
             Pinfo (pandas data frame): participant information in standard bids format
         """
@@ -376,20 +388,33 @@ class DataSet:
             self.base_dir + '/participants.tsv', delimiter='\t')
         return self.part_info
 
-    def get_info(self, subj, ses_id='ses-s1', type=None, fields=None):
-        """Loads the info files for a dataset for a specific session 
-        returns the most complete version across subjects
+    def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None):
+        """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
+
         Args:
-            subj (list): list of subjects
-            ses_id (str): session id. Defaults to 'ses-s1'.
-            type (str): type of info file. Defaults to None.
-            fields (list): fields to keep. Defaults to None (using all).
+            space (str): Atlas space (Defaults to 'SUIT3').
+            ses_id (str): Session ID (Defaults to 'ses-s1').
+            type (str): Type of data (Defaults to 'CondHalf').
+            subj (ndarray): Subject numbers to get - by default all
+            fields (list): Column names of info stucture that are returned
+                these are also be tested to be equivalent across subjects
+        Returns:
+            Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
+            info (DataFramw): Data frame with common descriptor
         """
+        T = self.get_participants()
+
+        # Deal with subset of subject option
+        if subj is None:
+            subj = np.arange(T.shape[0])
+
+        if type is None:
+            type = self.default_type
 
         max = 0
 
         # Loop over the different subjects to find the most complete info
-        for i, s in enumerate(subj):
+        for s in T.participant_id.iloc:
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
@@ -403,7 +428,9 @@ class DataSet:
             if info.shape[0] > max:
                 info_com = info
                 max = info.shape[0]
+
         return info_com
+
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
                  subj=None, fields=None, smooth=None, verbose=False):
@@ -482,55 +509,13 @@ class DataSet:
         Data[np.isinf(Data)] = np.nan
         return Data, info_com
 
-    def get_info(self, ses_id='ses-s1',
-                 type=None, subj=None, fields=None):
-        """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
-
-        Args:
-            space (str): Atlas space (Defaults to 'SUIT3').
-            ses_id (str): Session ID (Defaults to 'ses-s1').
-            type (str): Type of data (Defaults to 'CondHalf').
-            subj (ndarray): Subject numbers to get - by default all
-            fields (list): Column names of info stucture that are returned
-                these are also be tested to be equivalent across subjects
-        Returns:
-            Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
-            info (DataFramw): Data frame with common descriptor
-        """
-        T = self.get_participants()
-
-        # Deal with subset of subject option
-        if subj is None:
-            subj = np.arange(T.shape[0])
-
-        if type is None:
-            type = self.default_type
-
-        max = 0
-
-        # Loop over the different subjects to find the most complete info
-        for s in T.participant_id.iloc:
-            # Get an check the information
-            info_raw = pd.read_csv(self.data_dir.format(s)
-                                   + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
-            # Reduce tsv file when fields are given
-            if fields is not None:
-                info = info_raw[fields]
-            else:
-                info = info_raw
-
-            # Keep the most complete info
-            if info.shape[0] > max:
-                info_com = info
-                max = info.shape[0]
-
-        return info_com
 
     def group_average_data(self, ses_id=None,
                            type=None,
                            atlas='SUIT3'):
         """Loads group data in SUIT space from a standard experiment structure
         averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
+
         Args:
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
@@ -563,6 +548,7 @@ class DataSet:
     def plot_cerebellum(self, subject='group', sessions=None, atlas='SUIT3', type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
         """Loads group data in SUIT3 space from a standard experiment structure
         averaged across all subjects and projects to SUIT flatmap. Saves the results as .png figures in the data/group/figures directory.
+
         Args:
             sub (str, optional): Subject string. Defaults to group to plot data averaged across all subjects.
             session (str, optional): Session string. Defaults to first session of in session list of dataset.
@@ -572,8 +558,6 @@ class DataSet:
             savefig (str, optional): Boolean indicating whether figure should be saved. Defaults to 'False'.
             cmap (str, optional): Matplotlib colour map. Defaults to 'hot'.
             colorbar (str, optional): Boolean indicating whether colourbar should be plotted in figure. Defaults to 'False'.
-
-
         """
         if sessions is None:
             sessions = self.sessions
@@ -626,7 +610,6 @@ class DataSet:
                         plt.savefig(
                             dest_dir + f'{sub}_{session}_{condition_name}.png')
                     plt.clf()
-
 
 class DataSetNative(DataSet):
     """Data set with estimates data stored as
@@ -781,6 +764,7 @@ class DataSetMNIVol(DataSet):
                     atlas='SUIT3',
                     smooth=None):
         """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
+
         Args:
             type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
@@ -883,6 +867,7 @@ class DataSetMDTB(DataSetNative):
                       participant_id=None,
                       ses_id=None):
         """ Condense the data in a certain way optimally
+
         Args:
             data (list): List of extracted datasets
             info (DataFrame): Data Frame with description of data - row-wise
