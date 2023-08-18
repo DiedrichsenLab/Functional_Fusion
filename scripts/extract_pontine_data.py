@@ -5,8 +5,8 @@ from pathlib import Path
 import mat73
 import numpy as np
 import sys
-import atlas_map as am
-from dataset import DataSetPontine
+import Functional_Fusion.atlas_map as am
+from Functional_Fusion.dataset import DataSetPontine
 import nibabel as nb
 import SUITPy as suit
 import matplotlib.pyplot as plt
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     # extract_pontine_suit(ses_id='ses-01', type='TaskHalf', atlas='MNISymC2')
     # show_pontine_group(type='TaskHalf', atlas='SUIT3',
     #                    cond='all', savefig=True)
-    
+
     dataset = DataSetPontine(data_dir)
     dataset.group_average_data(atlas='MNISymC3')
     dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)

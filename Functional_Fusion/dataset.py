@@ -13,7 +13,6 @@ import pandas as pd
 import os
 import os.path as op
 import sys
-import subprocess
 
 import Functional_Fusion.util as util
 import Functional_Fusion.matrix as matrix
@@ -26,7 +25,6 @@ from numpy.linalg import pinv, solve
 import warnings
 import SUITPy as suit
 import matplotlib.pyplot as plt
-import re
 
 
 def get_dataset_class(base_dir, dataset):
@@ -867,14 +865,13 @@ class DataSetMDTB(DataSetNative):
                       participant_id=None,
                       ses_id=None):
         """ Condense the data in a certain way optimally
+        'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+        'CondRun': Conditions with seperate estimates per run. Defaults to 'CondHalf'.
 
         Args:
             data (list): List of extracted datasets
             info (DataFrame): Data Frame with description of data - row-wise
             type (str): Type of extraction:
-                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
-                'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'CondHalf'.
             participant_id (str): ID of participant
             ses_id (str): Name of session
 
@@ -882,8 +879,7 @@ class DataSetMDTB(DataSetNative):
             Y (list of np.ndarray):
                 A list (len = numatlas) with N x P_i numpy array of prewhitened data
             T (pd.DataFrame):
-                A data frame with information about the N numbers provide
-            names: Names for CIFTI-file per row
+                A data frame with information about the N numbers provided
         """
 
         # Depending on the type, make a new contrast

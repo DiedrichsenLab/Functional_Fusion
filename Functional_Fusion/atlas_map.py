@@ -6,26 +6,16 @@ The functions of atlas definition and atlas mapping
 Created on 3/30/2022 at 3:00 PM
 Author: dzhi, jdiedrichsen
 """
-from matplotlib.ticker import IndexLocator
 import numpy as np
 from numpy.linalg import inv
 import nibabel as nb
-import os
 import warnings
-
-import sys
-
-# from dataset import agg_data
-import Functional_Fusion.matrix as matrix
-import SUITPy as suit
-import surfAnalysisPy as surf
 import nitools as nt
 import json
 import re
 
 # Need to do self import here to get atlas
 import Functional_Fusion.atlas_map as am
-
 
 def get_atlas(atlas_str, atlas_dir):
     """returns an atlas from a code

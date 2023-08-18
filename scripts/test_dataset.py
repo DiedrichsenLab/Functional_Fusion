@@ -4,18 +4,16 @@ import shutil
 from pathlib import Path
 import mat73
 import numpy as np
-import atlas_map as am
+import Functional_Fusion.atlas_map as am
 import Functional_Fusion.dataset as ds
+from Functional_Fusion.matrix import indicator
 import nibabel as nb
-from matrix import indicator
-import sys
-import os
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 
 def reliability_ibc():
     dataset = ds.DataSetIBC(base_dir + '/IBC')
-    # Specify the fields you want to have / check 
+    # Specify the fields you want to have / check
     T = dataset.get_participants()
     dataset.sessions = dataset.sessions[9:12]
     num_sess = len(dataset.sessions)

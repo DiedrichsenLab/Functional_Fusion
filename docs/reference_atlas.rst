@@ -30,3 +30,8 @@ Atlas Classes
 Atlasmap Classes
 ----------------
 
+.. autoclass:: atlas_map.AtlasMapDeform
+   :members:
+
+.. autoclass:: atlas_map.AtlasMapSurf
+   :members:

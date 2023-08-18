@@ -6,7 +6,7 @@ import mat73
 import numpy as np
 import scipy.io as sio
 import os
-import import_data as im
+import Functional_Fusion.import_data as im
 
 
 
@@ -27,7 +27,7 @@ def import_spm_glm(source_dir,dest_dir,sub_id,sess_id):
     dest =[]
 
     T={}
-    
+
     D = pd.read_csv(source_dir + f'/{sub_id}_{sess_id}_reginfo.tsv',sep='\t')
 
     # Prepare beta files for transfer
@@ -73,7 +73,7 @@ def import_spm_designmatrix(source_dir,dest_dir,sub_id,sess_id):
 if __name__ == "__main__":
     base_source_dir = '/Volumes/diedrichsen_data$/data/Cerebellum/Nishimoto/raw/'
     base_dest_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Nishimoto/derivatives/'
-    
+
     subj_list = []
     for i in range(1, 7):
         subj_list.append(f"sub-{i:02d}")
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
 
         # for ss in [1, 2]:
-            
+
         #     # # --- Import GLM data ---
         #     # source_dir = os.path.join(base_source_dir, sub, 'estimates', 'glm01', f'ses-{ss:02d}')
         #     # dest_dir = os.path.join(base_dest_dir,  sub, 'estimates', f"ses-{ss:02d}")
