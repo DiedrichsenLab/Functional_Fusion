@@ -15,7 +15,7 @@ import json
 import re
 
 # Need to do self import here to get atlas
-import Functional_Fusion.atlas_map as am
+import atlas_map as am
 
 def get_atlas(atlas_str, atlas_dir):
     """returns an atlas from a code
