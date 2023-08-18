@@ -35,3 +35,8 @@ Atlasmap Classes
 
 .. autoclass:: atlas_map.AtlasMapSurf
    :members:
+
+.. autofunction:: atlas_map.get_data_nifti
+
+.. autofunction:: atlas_map.get_data_cifti
+

@@ -694,12 +694,12 @@ class AtlasMapDeform:
         self.mask_img = nb.load(mask_img)
 
     def build(self, smooth=None, additional_mask=None):
-        """
-        Using the dataset, builds a list of voxel indices of
+        """ Using the dataset, builds a list of voxel indices of
         For each of the locations. It creates:
         vox_list: List of voxels to sample for each atlas location
         vox_weight: Weight of each of these voxels to determine the atlas location
-        Arg:
+
+        Args:
             smooth (double): SD of smoothing kernel (mm) or None for nearest neighbor
             additional_mask: Additional Mask image (not necessarily in functional space - only voxels with elements > 0 in that image
             will be used for the altas )
