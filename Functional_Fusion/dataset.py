@@ -14,7 +14,7 @@ import os
 import os.path as op
 import sys
 
-import util as util
+import Functional_Fusion.util as util
 import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
 import scipy.linalg as sl
