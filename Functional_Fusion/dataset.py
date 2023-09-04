@@ -453,13 +453,17 @@ class DataSet:
             subj = T.participant_id
         elif isinstance(subj, str):
             subj = [subj]
+        elif isinstance(subj, (int,np.integer)):
+            subj = [T.participant_id.iloc[subj]]
         elif isinstance(subj, (list, np.ndarray)):
-            if isinstance(subj[0], int):
+            if isinstance(subj[0], (int,np.integer)):
                 subj = T.participant_id.iloc[subj]
             elif isinstance(subj[0], str):
                 subj = subj
             else:
                 raise (NameError('subj must be a list of strings or integers'))
+        else:
+            raise (NameError('subj must be a str, int, list or ndarray'))
         if type is None:
             type = self.default_type
 

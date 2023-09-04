@@ -19,6 +19,7 @@ Documentation
    overview.rst
    import.rst
    extract.rst
+   analyze.rst
    reference.rst
 
 Indices and tables

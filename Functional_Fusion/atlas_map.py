@@ -554,15 +554,16 @@ class AtlasSurface(Atlas):
                 )
         return bm
 
-    def get_parcel(self, label_img, unite_struct):
+    def get_parcel(self, label_img, unite_struct=False):
         """adds a label_vec to the atlas that assigns each voxel / node of the atlas
         label_vec[i] = 0 mean that the ith voxel / node is unassigned
 
         Args:
             label_img (str/list) - filename(s) of label image(s)
-        Returns
-            label_vec (list) - list of numpy array containing label values corresponding to label images/
-
+            unite_struct (bool) - join labels across hemispheres? Default: False
+        Returns:
+            label_vec (list) - list of numpy array containing label values corresponding to label images
+            labels (ndarray) - List of unique labels > 0
         """
 
         # get label vectors for each label image
