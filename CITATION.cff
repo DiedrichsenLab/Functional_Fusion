@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "Please cite this software as below."
+authors:
+- family-names: "Diedrichsen"
+  given-names: "Jörn"
+  orcid: "https://orcid.org/0000-0003-0264-8532"
+- family-names: "Nettekoven"
+  given-names: "Caroline"
+  orcid: "https://orcid.org/0000-0001-5374-1011"
+- family-namnes: "Zhi"
+  given-names: "Da"
+  orcid: "https://orcid.org/0000-0001-6023-6523"
+- family-names: "Shahshahani"
+  given-names: "Ladan"
+- family-namnes: "Pinho"
+  given-names: "Ana Luisa"
+title: "Functional Fusion: A common framework for the analysis of functional fMRI studies."
+version: 1.0.0
+date-released: 2023-09-10
+url: "https://github.com/DiedrichsenLab/Functional_Fusion"
