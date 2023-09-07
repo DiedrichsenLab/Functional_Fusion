@@ -13,7 +13,8 @@ authors:
 - family-names: "Shahshahani"
   given-names: "Ladan"
 - family-namnes: "Pinho"
-  given-names: "Ana Luisa"
+  given-names: "Ana Luísa"
+  orcid: "https://orcid.org/0000-0001-8718-0902"
 title: "Functional Fusion: A common framework for the analysis of functional fMRI studies."
 version: 1.0.0
 date-released: 2023-09-10
