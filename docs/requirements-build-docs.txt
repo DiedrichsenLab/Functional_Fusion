@@ -10,8 +10,8 @@ sphinx>=1.4
 sphinx-gallery
 sphinxcontrib-bibtex
 sphinx-copybutton
+sphinx-rtd-theme
 numpydoc
 nbsphinx
 ipykernel
-sphinx-rtd-theme
 SUITPy
