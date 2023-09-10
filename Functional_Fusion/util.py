@@ -33,6 +33,7 @@ def volume_from_cifti(ts_cifti, struct_names=None):
         """
         Gets the 4D nifti object containing the time series
         for all the subcortical structures
+
         Args:
             ts_cifti (cifti obj ) - cifti object of the time series
         Returns:
@@ -69,8 +70,8 @@ def surf_from_cifti(ts_cifti,
                     struct_names=['CIFTI_STRUCTURE_CORTEX_LEFT',
                                   'CIFTI_STRUCTURE_CORTEX_RIGHT'],
                     mask_gii=None):
-        """
-        Gets the time series of cortical surface vertices (Left and Right)
+        """Gets the time series of cortical surface vertices (Left and Right)
+
         Args:
             ts_cifti (cifti obj) - cifti object of time series
             struct_names (list): the struct name of left and right cortex
