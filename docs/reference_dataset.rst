@@ -1,8 +1,8 @@
 Dataset module
 ==============
 
-Functions
----------
+Dataset Functions
+-----------------
 .. autofunction:: dataset.get_dataset_class
 
 .. autofunction:: dataset.get_dataset

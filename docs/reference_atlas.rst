@@ -2,8 +2,8 @@
 Atlas module
 ============
 
-Functions
----------
+Atlas Functions
+---------------
 .. autofunction:: atlas_map.get_atlas
 
 .. autofunction:: atlas_map.get_deform
