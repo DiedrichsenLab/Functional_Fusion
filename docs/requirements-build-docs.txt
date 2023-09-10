@@ -7,10 +7,8 @@ pandas
 scipy
 neuroimagingtools
 sphinx>=1.4
-sphinx-gallery
 sphinxcontrib-bibtex
 sphinx-copybutton
-sphinx-rtd-theme
 numpydoc
 nbsphinx
 ipykernel
