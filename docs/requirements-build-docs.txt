@@ -9,6 +9,7 @@ neuroimagingtools
 sphinx>=1.4
 sphinxcontrib-bibtex
 sphinx-copybutton
+sphinx-rtd-theme
 numpydoc
 nbsphinx
 ipykernel
