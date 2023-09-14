@@ -38,15 +38,15 @@ The folder structure of derivatives (example for DataSetNative)
 |                |          sub-<label>_ses-<label>_designmatrix.npy                    # Design matrix used for estimation
 |                |          sub-<label>_ses-<label>_mask.nii                            # Brain mask in functional space
 |                |          sub-<label>_ses-<label>_reginfo.tsv                         # Information on regression estimate values structure
-|                |                                                                        # TSV-file with obligatory columns
-|                |                                                                        #      run: run number (reflected in file name)
-|                |                                                                        #      reg_id: regressor id (reflected in file name)
-|                |                                                                        #      reg_num: column number of regressor in design matrix
+|                |                                                                      # TSV-file with obligatory columns
+|                |                                                                      #      run: run number (reflected in file name)
+|                |                                                                      #      reg_id: regressor id (reflected in file name)
+|                |                                                                      #      reg_num: column number of regressor in design matrix
 |                |          sub-<label>_ses-<label>_resms.nii                           # Model Variance (ResMS.nii in SPM, sigmasquareds.nii.gz in FSL)
 |                |          sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii    # Parameter estimates (beta_0001.nii in SPM, pe1.nii.gz in FSL)
 |                └───data/
-                            sub-<label>_ses-<label>_space-<label>_<type>.nii            # Cifti file with extracted data
-                            sub-<label>_ses-<label>_<type>.nii                          # tsv file with information for the rows
+|                           sub-<label>_ses-<label>_space-<label>_<type>.nii            # Cifti file with extracted data
+|                           sub-<label>_ses-<label>_<type>.nii                          # tsv file with information for the rows
 
 
 Import Anatomical and MNI normalization parameters from SPM (Segement)
