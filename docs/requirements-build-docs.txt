@@ -1,3 +1,5 @@
+sphinx
+sphinx-rtd-theme
 mat73
 matplotlib
 nibabel
@@ -6,10 +8,8 @@ numpy
 pandas
 scipy
 neuroimagingtools
-sphinx>=1.4
 sphinxcontrib-bibtex
 sphinx-copybutton
-sphinx-rtd-theme
 numpydoc
 nbsphinx
 ipykernel
