@@ -275,7 +275,7 @@ class AtlasVolumetric(Atlas):
         img = nb.Nifti1Image(X, self.mask_img.affine)
         return img
 
-    def read_data(self, img, interpolation):
+    def read_data(self, img, interpolation=0):
         """Read data from a NIFTI or CIFTI file into the volumetric atlas space
 
         Args:
@@ -554,38 +554,6 @@ class AtlasSurface(Atlas):
                 )
         return bm
 
-    def get_parcel(self, label_img, unite_struct=False):
-        """adds a label_vec to the atlas that assigns each voxel / node of the atlas
-        label_vec[i] = 0 mean that the ith voxel / node is unassigned
-
-        Args:
-            label_img (str/list) - filename(s) of label image(s)
-            unite_struct (bool) - join labels across hemispheres? Default: False
-        Returns:
-            label_vec (list) - list of numpy array containing label values corresponding to label images
-            labels (ndarray) - List of unique labels > 0
-        """
-
-        # get label vectors for each label image
-        self.label_vector = self.read_data(label_img, 0).astype(int)
-        self.labels = np.unique(self.label_vector[self.label_vector > 0])
-        self.n_labels = self.labels.shape[0]
-
-        # change the values of non zero labels if necessary (only for the second hemi)
-        self.unite_struct = unite_struct
-        self.label_list = []
-        if not self.unite_struct:
-            indx = 0
-            for i, s in enumerate(self.structure):
-                n_vert = self.vertex[i].shape[0]
-                label_vec = self.label_vector[indx : indx + n_vert]
-                label_vec[label_vec > 0] += self.n_labels * i
-                self.label_list.append(label_vec)
-                indx = indx + n_vert
-        self.labels = np.unique(self.label_vector[self.label_vector > 0])
-        self.n_labels = self.labels.shape[0]
-        return self.label_vector, self.labels
-
     def get_parcel_axis(self):
         """Returns parcel axis based on the current setting of labels
 
@@ -621,6 +589,39 @@ class AtlasSurface(Atlas):
                     bm_list.append((pname, bm))
         parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
         return parcel_axis
+
+    def get_parcel(self, label_img, unite_struct=False):
+        """adds a label_vec to the atlas that assigns each voxel / node of the atlas
+        label_vec[i] = 0 mean that the ith voxel / node is unassigned
+
+        Args:
+            label_img (str/list) - filename(s) of label image(s)
+            unite_struct (bool) - join labels across hemispheres? Default: False
+        Returns:
+            label_vec (list) - list of numpy array containing label values corresponding to label images
+            labels (ndarray) - List of unique labels > 0
+        """
+
+        # get label vectors for each label image
+        self.label_vector = self.read_data(label_img, 0).astype(int)
+        self.labels = np.unique(self.label_vector[self.label_vector > 0])
+        self.n_labels = self.labels.shape[0]
+
+        # change the values of non zero labels if necessary (only for the second hemi)
+        self.unite_struct = unite_struct
+        self.label_list = []
+        if not self.unite_struct:
+            indx = 0
+            for i, s in enumerate(self.structure):
+                n_vert = self.vertex[i].shape[0]
+                label_vec = self.label_vector[indx : indx + n_vert]
+                label_vec[label_vec > 0] += self.n_labels * i
+                self.label_list.append(label_vec)
+                indx = indx + n_vert
+        self.labels = np.unique(self.label_vector[self.label_vector > 0])
+        self.n_labels = self.labels.shape[0]
+        return self.label_vector, self.labels
+
 
 
 class AtlasSurfaceSymmetric(AtlasSurface):

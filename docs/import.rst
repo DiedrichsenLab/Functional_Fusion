@@ -2,13 +2,11 @@ Data Import
 ###########
 
 Each dataset is stored in a separate directory in the `basedir` directory. Depending to the dataset, the preprocessed time series or individual effect-size estimates are stored.
+The Data Set class `DataSet` is designed to be the entry of getting the data in standard format. To be able to reuse a lot of the code across data sets, it is useful if the way the data is
+stored is homogenous across datasets
 
-Directory structure for derivatives
------------------------------------
-The Data Set class `DataSet` is designed to be the entry of getting the data in standard format. To be able to reuse a lot of the code across data sets, it is useful if the
-
-Derivatives structure
----------------------
+Directory structure
+-------------------
 The folder structure of derivatives (example for DataSetNative)
 
 
@@ -17,7 +15,7 @@ The folder structure of derivatives (example for DataSetNative)
 |        │
 |        └───group/
 |        │
-|        │       ...
+|        │       similar to the subject-folder
 |        │
 |        └───sub-<label>/
 |                └───anat/
@@ -36,20 +34,20 @@ The folder structure of derivatives (example for DataSetNative)
 |                │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask in functional space
 |                |       sub-<id>_space-SUIT_xfm.nii                   # coordinate transformation file into native
 |                └───estimates/
-|        			└───ses-s1/
-|                            sub-<label>_ses-<label>_designmatrix.npy                    # Design matrix used for estimation
-|                            sub-<label>_ses-<label>_mask.nii                            # Brain mask in functional space
-|                            sub-<label>_ses-<label>_reginfo.tsv                         # Information on regression estimate values structure
-|                                                                                        # TSV-file with obligatory columns
-|                                                                                        #      run: run number (reflected in file name)
-|                                                                                        #      reg_id: regressor id (reflected in file name)
-|                                                                                        #      reg_num: column number of regressor in design matrix
-|                            sub-<label>_ses-<label>_resms.nii                           # Model Variance (ResMS.nii in SPM, sigmasquareds.nii.gz in FSL)
-|                            sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii    # Parameter estimates (beta_0001.nii in SPM, pe1.nii.gz in FSL)
+|        		 |   └───ses-s1/
+|                |          sub-<label>_ses-<label>_designmatrix.npy                    # Design matrix used for estimation
+|                |          sub-<label>_ses-<label>_mask.nii                            # Brain mask in functional space
+|                |          sub-<label>_ses-<label>_reginfo.tsv                         # Information on regression estimate values structure
+|                |                                                                        # TSV-file with obligatory columns
+|                |                                                                        #      run: run number (reflected in file name)
+|                |                                                                        #      reg_id: regressor id (reflected in file name)
+|                |                                                                        #      reg_num: column number of regressor in design matrix
+|                |          sub-<label>_ses-<label>_resms.nii                           # Model Variance (ResMS.nii in SPM, sigmasquareds.nii.gz in FSL)
+|                |          sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii    # Parameter estimates (beta_0001.nii in SPM, pe1.nii.gz in FSL)
+|                └───data/
+                            sub-<label>_ses-<label>_space-<label>_<type>.nii            # Cifti file with extracted data
+                            sub-<label>_ses-<label>_<type>.nii                          # tsv file with information for the rows
 
-
-Import data to the Functional Fusion framework
-==============================================
 
 Import Anatomical and MNI normalization parameters from SPM (Segement)
 ----------------------------------------------------------------------
@@ -72,6 +70,6 @@ Import SUIT normalization
 -------------------------
 Run SUIT isolation, and normalization outside of the Funtional Fusion framework. Additionally, you need to save the non-linear transformation between SUIT and individual subject space as a deformation file.
 
-.. code-block:: python
+.. code-block:: matlab
 
     suit_save_darteldef(<c_anat_name>,'wdir',workingdirectory)
