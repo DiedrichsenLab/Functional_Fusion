@@ -36,10 +36,9 @@ extensions = ['sphinx.ext.napoleon',
               'sphinx.ext.mathjax',
               'sphinx.ext.intersphinx',
               'sphinx.ext.doctest',
-              'nbsphinx',
-              'sphinx_rtd_theme']
+              'nbsphinx']
 
-autodoc_member_order = 'bysource'
+#autodoc_member_order = 'bysource'
 
 napoleon_custom_sections = [('Returns', 'params_style')]
 
@@ -66,8 +65,8 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-html_theme_options = {
-    'collapse_navigation': True,
-    'sticky_navigation': True,
-    'navigation_depth': 4
-}
+#html_theme_options = {
+#    'collapse_navigation': True,
+#    'sticky_navigation': True,
+#    'navigation_depth': 4
+#}
