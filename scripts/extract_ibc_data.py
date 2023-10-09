@@ -1,30 +1,31 @@
 # Script for importing the IBC data set from super_cerebellum to general format.
+import os
 import pandas as pd
 import shutil
 from pathlib import Path
 import mat73
 import numpy as np
 import atlas_map as am
-from dataset import *
+from dataset import DataSetIBC
 import nibabel as nb
 import SUITPy as suit
 import matplotlib.pyplot as plt
-
-
+import subprocess
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 if not Path(base_dir).exists():
-    base_dir = 'Y:\data\FunctionalFusion'
+    base_dir = 'Y:/data/FunctionalFusion'
 if not Path(base_dir).exists():
-    raise (NameError('Could not find base_dir'))
+    raise NameError('Could not find base_dir')
 
 data_dir = base_dir + '/IBC'
 atlas_dir = base_dir + '/Atlases'
 
 
-def show_ibc_group(ses_id='ses-hcp1', type='CondHalf', atlas='MNISymC3', cond=0, info_column='names', savefig=False):
+def show_ibc_group(ses_id='ses-hcp1', type='CondHalf', atlas='MNISymC3',
+                   cond=0, info_column='names', savefig=False):
     if (atlas == 'MNISymC3'):
         mask = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-MNISymC_res-3_gmcmask.nii'
     suit_atlas = am.AtlasVolumetric('cerebellum', mask_img=mask)
@@ -71,7 +72,43 @@ def extract_all(atlas='MNISym3'):
         else:
             ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas=atlas)
 
+def smooth_ibc_fs32k(type='CondHalf', smooth=1):
+    myatlas, _ = am.get_atlas('fs32k', atlas_dir)
+    ds = DataSetIBC(data_dir)
+    T = ds.get_participants()
 
+    # get the surfaces for smoothing
+    surf_L = ds.atlas_dir + f'/tpl-fs32k/fs_LR.32k.L.midthickness.surf.gii'
+    surf_R = ds.atlas_dir + f'/tpl-fs32k/fs_LR.32k.R.midthickness.surf.gii'
+
+    for ses_id in ds.sessions:
+        for s in T.participant_id:
+            print(f'- Smoothing data for {s} fs32k {ses_id} in {smooth} mm ...')
+            # Load the unsmoothed data and fill nan with zeros
+            C = nb.load(ds.data_dir.format(s)
+                        + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
+            mask = np.isnan(C.get_fdata())
+            C = nb.Cifti2Image(dataobj=np.nan_to_num(C.get_fdata()), header=C.header)
+            nb.save(C, 'tmp.dscalar.nii')
+
+            dest_dir = ds.data_dir.format(s)
+            cifti_out = dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}_' \
+                                   f'desc-sm{smooth}.dscalar.nii'
+
+            # Write in smoothed surface data (filled with 0)
+            smooth_cmd = f"wb_command -cifti-smoothing tmp.dscalar.nii " \
+                         f"{smooth} {smooth} COLUMN {cifti_out} " \
+                         f"-left-surface {surf_L} -right-surface {surf_R} " \
+                         f"-fix-zeros-surface"
+            subprocess.run(smooth_cmd, shell=True)
+            os.remove("tmp.dscalar.nii")
+
+            # Replace 0s back to NaN (we don't want the 0s impact model learning)
+            C = nb.load(cifti_out)
+            data = C.get_fdata()
+            data[mask] = np.nan
+            C = nb.Cifti2Image(dataobj=data, header=C.header)
+            nb.save(C, cifti_out)
 
 def copy_currentAsOld():
     """This function copies the regressor info file as "_old.tsv"
@@ -151,13 +188,14 @@ if __name__ == "__main__":
     # extract_all('MNISymC2')
     # extract_all('MNISymC2')
 
+    ################# Smooth IBC fs32k data #################
+    for s in [1,2,3,4,5,6,7]:
+        smooth_ibc_fs32k(type='CondHalf', smooth=s)
 
-    # parcel_mdtb_fs32k()
-    # 
-    dataset = DataSetIBC(data_dir)
-    for session in dataset.sessions:
-        dataset.group_average_data(atlas='MNISymC2', ses_id=session)
-    
-    dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', colorbar=True)
+    # dataset = DataSetIBC(data_dir)
+    # for session in dataset.sessions:
+    #     dataset.group_average_data(atlas='MNISymC2', ses_id=session)
+    #
+    # dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', colorbar=True)
 
  
