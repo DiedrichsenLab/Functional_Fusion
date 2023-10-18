@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GIFTI xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="http://brainvis.wustl.edu/caret6/xml_schemas/GIFTI_Caret.xsd"
+       Version="1"
+       NumberOfDataArrays="1">
+   <MetaData>
+      <MD>
+         <Name><![CDATA[AnatomicalStructurePrimary]]></Name>
+         <Value><![CDATA[CortexLeft]]></Value>
+      </MD>
+      <MD>
+         <Name><![CDATA[encoding]]></Name>
+         <Value><![CDATA[XML_BASE64_GZIP]]></Value>
+      </MD>
+   </MetaData>
+   <LabelTable>
+      <Label Key="1" Red="0" Green="0" Blue="0" Alpha="0"><![CDATA[???]]></Label>
+      <Label Key="43" Red="0.760784" Green="0.513726" Blue="0.709804" Alpha="1"><![CDATA[L_SCEF_ROI]]></Label>
+      <Label Key="44" Red="0.729412" Green="0.380392" Blue="0.105882" Alpha="1"><![CDATA[L_6ma_ROI]]></Label>
+      <Label Key="78" Red="0.0823529" Green="0.545098" Blue="0.415686" Alpha="1"><![CDATA[L_6r_ROI]]></Label>
+      <Label Key="80" Red="0.270588" Green="0.760784" Blue="0.937255" Alpha="1"><![CDATA[L_IFJp_ROI]]></Label>
+   </LabelTable>
+<DataArray Intent="NIFTI_INTENT_LABEL"
+           DataType="NIFTI_TYPE_INT32"
+           ArrayIndexingOrder="RowMajorOrder"
+           Dimensionality="1"
+           Dim0="32492"
+           Encoding="GZipBase64Binary"
+           Endian="LittleEndian"
+           ExternalFileName=""
+           ExternalFileOffset="0">
+   <MetaData>
+      <MD>
+         <Name><![CDATA[Name]]></Name>
+         <Value><![CDATA[col_01]]></Value>
+      </MD>
+   </MetaData>
+   <Data>eJzt2kFuwyAQBdDcpzmL1fufpuqiUmQVhzGDA/g9iV2Y/7GzSng8AAAAAAAAgFZflYsxrfr+Vj3Xrzuea0arnGXlc8xmpf4zmrU3AAAAwOqeFQsAAAAAIMP+Dlzr3cTa+841s6Oz/tb+N9SWOc/GGa+zWvdnzOi1t/S8j/aVlPZEPl/z2Xei333uzf83AAAAAHBPPe55Z98jr7mbvp9dyonMqumfOS9rVsYcK/89AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAKtk8XOGF7WTPY/lkjW6HviJ1n6FnqOErPo34j9By1X02vq7vVdrqy10idIl169xmlS6TD94c79MiPZGfnR3KzsqPnzcg+k9eSeSbrbN5VWWcyMnN6zj/qH8no9Wyyn0d2z9FmXTmjZv/eu+dQ2gcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI/kBtBqrMw==</Data>
+</DataArray>
+</GIFTI>

@@ -13,16 +13,18 @@ import warnings
 import nitools as nt
 import json
 import re
+import os 
 
-# Need to do self import here to get atlas
+# Need to do self import here to get Atlas directory
 import Functional_Fusion.atlas_map as am
+default_atlas_dir = os.path.dirname(am.__file__) + '/Atlases'
 
-def get_atlas(atlas_str, atlas_dir):
+def get_atlas(atlas_str, atlas_dir=default_atlas_dir):
     """returns an atlas from a code
 
     Args:
         atlas_str (str): Name of the atlas
-        atlas_dir (str): directory name for the atlas
+        atlas_dir (str): Atlas Directory (defaults to Functional_Fusion/Atlases)
 
     Returns:
         atlas (AtlasVolumetric, AtlasSurface, (or symmetric variant) object): Atlas object
@@ -45,14 +47,13 @@ def get_atlas(atlas_str, atlas_dir):
     atlas = At(atlas_str, mask, ainf["structure"])
     return atlas, ainf
 
-
-def get_deform(atlas_dir, target, source="MNIAsym2"):
+def get_deform(target, source="MNIAsym2",atlas_dir = default_atlas_dir):
     """Get name of group deformation map between two volumetric atlas spaces
 
     Args:
-        atlas_dir (str): Atlas Directory
         target (str/atlas): Target space
         source (str): Source space
+        atlas_dir (str): Atlas Directory (defaults to Functional_Fusion/Atlases)
     Returns:
         deform (str): Name of deformation map
         mask (str): Name of mask for the source space

@@ -39,7 +39,8 @@ Subclasses are ``AtlasVolumetric``, and ``AtlasSurface``. Each Atlas contains  `
 * ``MNISymC3``: Cerebellum in MNI152NLin2009cSym space (3mm voxels)
 * ``MNISymC2``: Cerebellum in MNI152NLin2009cSym space (2mm voxels)
 * ``fs32k``: Left and Right hemisphere, using identical Medial wall mask
-* ``fs32k_Asym``: Left and Right hemisphere, using asymmetric medial wall mask from HCP.
+* ``fs32kAsym``: Left and Right hemisphere, using asymmetric medial wall mask  from HCP.
+
 
 Getting atlases
 ---------------
