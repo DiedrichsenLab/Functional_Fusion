@@ -1,5 +1,5 @@
-Data Analysis
-#############
+Using Datasets and Atlases
+########################## 
 
 To use Functional fusion framework you need access to a folder that holds the datasets and atlases.
 
@@ -9,7 +9,6 @@ To use Functional fusion framework you need access to a folder that holds the da
     import Functional_Fusion.atlas_map as am
     import nibabel as nb
     base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
-    atlas_dir = base_dir + '/Atlases'
 
 
 Loading Data
@@ -48,9 +47,9 @@ You can get an atlas by calling:
 
 .. code-block:: python
 
-    atlas,ainf = am.get_atlas(atlas_str,atlas_dir)
+    atlas,ainf = am.get_atlas(atlas_str)
 
-``atlas`` is an Atlas object, and ``ainf`` is a dictionary with information about the atlas.
+``atlas_str`` is a string that defines the atlas (see above). The function returns a tuple, where ``atlas`` is an Atlas object, and ``ainf`` is a dictionary with information about the atlas.
 
 
 Reading and writing from atlas space to Nifti, Gifti, or Cifti files
@@ -63,7 +62,7 @@ A typical use case is to read data from a Nifti file, does some computations, an
 .. code-block:: python
 
     # Get the atlas
-    atlas,ainf = am.get_atlas('SUIT3',atlas_dir)
+    atlas,ainf = am.get_atlas('SUIT3')
     # Read data from Nifti file using linear interpolation (1)
     X = atlas.read_data('my_nift_file',interpolation=1)
     # Do some computations
