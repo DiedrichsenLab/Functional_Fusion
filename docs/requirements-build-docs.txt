@@ -8,9 +8,6 @@ numpy
 pandas
 scipy
 neuroimagingtools
-sphinxcontrib-bibtex
-sphinx-copybutton
-numpydoc
 nbsphinx
 ipykernel
 SUITPy
