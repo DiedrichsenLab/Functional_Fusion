@@ -8,18 +8,17 @@ This project depends on several third party libraries, including:
 
 [numpy](https://numpy.org/) (version>=1.22.2)
 
-nibabel []
+[nibabel](https://nipy.org/nibabel/)
 
 [nilearn](https://nilearn.github.io/stable/index.html) (version>=0.9.0), ...
 
-	pip install numpy nilearn ...
+[nitools](https://github.com/DiedrichsenLab/nitools)
 
-[nitools]
-    pip install neuroimagingtools
+	pip install numpy nibabel nilearn neuroimagingtools
 
 Or you can install the package manually from the original binary source as above links.
 
-Once you clone the functional fusion repository, you need to add it to your PYTHONPATH, so you can import the functionality. Add these lines to your .bash_profile, .bash_rc .zsh_profile file...
+Once you clone the functional fusion repository, you may want to it to your PYTHONPATH, so you can import the functionality. Add these lines to your .bash_profile, .bash_rc .zsh_profile file...
 
 ```
 PYTHONPATH=<abspath_of_repo_parentdir>:${PYTHONPATH}
