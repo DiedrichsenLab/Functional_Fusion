@@ -92,6 +92,68 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
     return data, info, my_dataset
 
 
+def build_dataset_from_fusionProject(dataset, atlas, base_dir, sess='all',
+                                     cond_ind='cond_num_uni', type='CondHalf',
+                                     part_ind='half', subj=None, join_sess=False,
+                                     join_sess_part=False, smooth=None):
+    """ Builds dataset, cond_vec, part_vec, subj_ind from the given
+        dataset in Functional fusion project
+
+    Args:
+        dataset (str): Names of the dataset to build
+        atlas (object): Atlas indicator
+        sess (list): list of 'all' or list of sessions
+        design_ind (list, optional): _description_. Defaults to None.
+        part_ind (list, optional): _description_. Defaults to None.
+        subj (list, optional): _description_. Defaults to None.
+        join_sess (bool, optional): Model the sessions with a single model.
+            Defaults to True.
+    Returns:
+        data, cond_vec, part_vec, subj_ind
+    """
+    sub = 0
+    data, cond_vec, part_vec, subj_ind = [],[],[],[]
+    # Run over datasets get data + design
+    dat, info, tds = get_dataset(base_dir, dataset, atlas=atlas.name,
+                                 sess=sess, type=type, smooth=smooth)
+
+    # Sub-index the subjects:
+    if subj is not None:
+        dat = dat[subj, :, :]
+    n_subj = dat.shape[0]
+    # Find correct indices
+    if cond_ind is None:
+        cond_ind = tds.cond_ind
+    if part_ind is None:
+        part_ind = tds.part_ind
+
+    # Make different sessions either the same or different
+    if join_sess:
+        data.append(dat)
+        cond_vec.append(info[cond_ind].values.reshape(-1, ))
+
+        # Check if we want to set no partition after join sessions
+        if join_sess_part:
+            part_vec.append(np.ones(info[part_ind].shape))
+        else:
+            part_vec.append(info[part_ind].values.reshape(-1, ))
+        subj_ind.append(np.arange(sub, sub + n_subj))
+    else:
+        if sess == 'all':
+            sessions = tds.sessions
+        else:
+            sessions = sess
+        # Now build and split across the correct sessions:
+        for s in sessions:
+            indx = info.sess == s
+            data.append(dat[:, indx, :])
+            cond_vec.append(info[cond_ind].values[indx].reshape(-1, ))
+            part_vec.append(info[part_ind].values[indx].reshape(-1, ))
+            subj_ind.append(np.arange(sub, sub + n_subj))
+
+    return data, cond_vec, part_vec, subj_ind
+
+
 def prewhiten_data(data):
     """ prewhitens a list of data matrices.
     It assumes that the last row of each data matrix is the ResMS-value
