@@ -17,6 +17,7 @@ Documentation
    :caption: Contents:
 
    overview.rst
+   atlas.rst
    import.rst
    extract.rst
    analyze.rst
