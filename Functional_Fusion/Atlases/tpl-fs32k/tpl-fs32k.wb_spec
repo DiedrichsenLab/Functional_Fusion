@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CaretSpecFile Version="1.0">
+   <MetaData>
+   </MetaData>
+   <DataFile Structure="CortexLeft"
+             DataFileType="SURFACE"
+             Selected="true">
+      tpl_fs32k_hemi-L_flat.surf.gii
+   </DataFile>
+   <DataFile Structure="CortexLeft"
+             DataFileType="SURFACE"
+             Selected="true">
+      tpl_fs32k_hemi-L_inflated.surf.gii
+   </DataFile>
+   <DataFile Structure="CortexLeft"
+             DataFileType="SURFACE"
+             Selected="true">
+      tpl_fs32k_hemi-L_sphere.surf.gii
+   </DataFile>
+   <DataFile Structure="CortexLeft"
+             DataFileType="SURFACE"
+             Selected="true">
+      tpl_fs32k_hemi-L_veryinflated.surf.gii
+   </DataFile>
+   <DataFile Structure="CortexRight"
+             DataFileType="SURFACE"
+             Selected="true">
+      tpl_fs32k_hemi-R_flat.surf.gii
+   </DataFile>
+   <DataFile Structure="CortexRight"
+             DataFileType="SURFACE"
+             Selected="true">
+      tpl_fs32k_hemi-R_inflated.surf.gii
+   </DataFile>
+   <DataFile Structure="CortexRight"
+             DataFileType="SURFACE"
+             Selected="true">
+      tpl_fs32k_hemi-R_sphere.surf.gii
+   </DataFile>
+   <DataFile Structure="CortexRight"
+             DataFileType="SURFACE"
+             Selected="true">
+      tpl_fs32k_hemi-R_veryinflated.surf.gii
+   </DataFile>
+   <DataFile Structure="CortexLeft"
+             DataFileType="LABEL"
+             Selected="true">
+      tpl-fs32k_hemi-L_mask.label.gii
+   </DataFile>
+   <DataFile Structure="CortexRight"
+             DataFileType="LABEL"
+             Selected="true">
+      tpl-fs32k_hemi-R_mask.label.gii
+   </DataFile>
+</CaretSpecFile>
