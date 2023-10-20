@@ -117,7 +117,7 @@ def build_dataset_from_fusionProject(dataset, atlas, base_dir, sess='all',
     dat, info, tds = get_dataset(base_dir, dataset, atlas=atlas.name,
                                  sess=sess, type=type, smooth=smooth)
 
-    # Sub-index the subjects:
+    # Sub-index the subjects: (REMOVE AND PASS TO GET_DATA)
     if subj is not None:
         dat = dat[subj, :, :]
     n_subj = dat.shape[0]
