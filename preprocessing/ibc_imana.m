@@ -10,6 +10,7 @@ if isdir('/srv/diedrichsen/data')
     addpath(sprintf('%s/../matlab/spm12/toolbox/suit/', workdir));
     addpath(sprintf('%s/../matlab/dataframe', workdir));
     addpath(sprintf('%s/../matlab/imaging/tools/', workdir));
+    addpath('/home/ROBARTS/agrilopi/mygit/Functional_Fusion/preprocessing')
 elseif isdir('/home/analu/diedrichsen_data/data')
     workdir='/home/analu/diedrichsen_data/data';
 elseif isdir('/Volumes/diedrichsen_data$/data/')
@@ -59,8 +60,9 @@ fs_dir   = 'surfaceFreeSurfer';
 wb_dir   = 'surfaceWB';
 
 % list of subjects
-subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+% subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 % subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
+subj_n  = [4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
@@ -72,8 +74,10 @@ session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
 % session_names = {'spatial-navigation'};
 
-SM = tdfread('ibc_sessions_map.tsv','\t');
-fields = fieldnames(SM);
+session_names_rs = {'mtt1', 'mtt2'};
+
+% SM = tdfread('ibc_sessions_map.tsv','\t');
+% fields = fieldnames(SM);
 % sessmap = RenameField(SM, fields, {'session', 'sub01', 'sub02', ...
 %     'sub04', 'sub05', 'sub06', 'sub07', 'sub08', 'sub09', 'sub11', ... 
 %     'sub12', 'sub13', 'sub14', 'sub15'});
@@ -370,6 +374,84 @@ switch what
                 movefile([fullfile(funcraw_subjses_dir, ...
                     ['ses-' num2str(ses, '%02d')]) '/spm_*.ps'], ...
                     sessderiv_dir)
+                % Delete unziped raw files from localscratch
+                if any(size(dir('/localscratch/*.nii'), 1))
+                    delete('/localscratch/*.nii')
+                end
+            end % smap (session_names)
+        end % s (sn)
+        
+    case 'FUNC:realign_restingstate'          % realign functional images
+        % SPM realigns all volumes to the first volume of first run
+        % example usage: ibc_imana('FUNC:realign', 'sn', 1)
+        % Updated upstream
+        
+        spm_figure('GetWin','Graphics'); % create SPM .ps file at the end
+        
+        sn   = subj_id; % list of subjects
+        vararginoptions(varargin, {'sn', 'ses', 'runs'});
+                
+        for s = sn        
+            funcraw_subjses_dir = fullfile(base_dir, raw_dir, ...
+                subj_str{s}, func_dir)          
+            funcderiv_subjses_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s}, func_dir)
+            sbj_number = str2double((extractAfter(subj_str{s},'sub-')))
+            for smap = session_names_rs
+                data = {}; 
+                cd(fullfile(funcraw_subjses_dir, ['ses-' char(smap)]))
+                spm_jobman('initcfg')
+                indexes = find(contains(sessid,char(smap)))';
+                runs = double.empty;
+                trs = double.empty;
+                for j=1:length(indexes)
+                    runs(j)=sessrun(indexes(j));
+                    trs(j)=numTRs(indexes(j));
+                end
+                for r = 1:length(runs)
+                    rname = sprintf('%s_ses-%s_run-%02d_bold.nii.gz', ...
+                        subj_str{s}, char(smap), runs(r));
+                    gunzip(rname, '/localscratch');
+                    for j = 1:trs(r)-numDummys
+                        data{r}{j,1} = sprintf(...
+                            append('/localscratch/', ...
+                            '%s_ses-%s_run-%02d_bold.nii,%d'), ...
+                            subj_str{s}, char(smap), runs(r), j);
+                    end % j (TRs/images)
+                end % r (runs)
+                % Skip resting-state runs in mtt sessions
+                data(3:end)=[];
+                % Load batch and run spm
+                spmja_realign(data);
+                % Create if does not exist the derivatives folder
+                sessderiv_dir = fullfile(funcderiv_subjses_dir, ...
+                    ['ses-' char(smap) 'rest']);
+                if not(isfolder(sessderiv_dir))
+                    mkdir(sessderiv_dir);
+                % If derivatives folder already exists,
+                else
+                    % and it is not empty,
+                    if numel(sessderiv_dir) > 2                        
+                        % delete all its content
+                        content = dir(sessderiv_dir);
+                        for iContent = 3 : numel(content)
+                            if ~content(iContent).isdir
+                                % remove files of folder
+                                delete(sprintf('%s/%s', sessderiv_dir, ...
+                                    content(iContent).name));
+                            end
+                        end
+                    end
+                end
+                % Move files from "/localscratch" to derivatives folder
+                movefile(['/localscratch/rp_' subj_str{s} '_ses-' ...
+                    char(smap) '_run-*_bold.txt'], sessderiv_dir)
+                movefile(['/localscratch/r' subj_str{s} '_ses-' ...
+                    char(smap) '_run-*_bold.nii'], sessderiv_dir)
+                movefile(['/localscratch/' subj_str{s} '_ses-' ...
+                    char(smap) '_run-*_bold.mat'], sessderiv_dir)
+                movefile([fullfile(funcraw_subjses_dir, ...
+                    ['ses-' char(smap)]) '/spm_*.ps'], sessderiv_dir)
                 % Delete unziped raw files from localscratch
                 if any(size(dir('/localscratch/*.nii'), 1))
                     delete('/localscratch/*.nii')
@@ -752,7 +834,6 @@ switch what
         
         spm_get_space(T2, M * T2_vol.mat);
         
-
     case 'FUNC:run'              % add functional pipelines here
         % Example usage: nishimoto_imana('FUNC:run', 'sn', [2, 3, 4, 5, 6])
         
@@ -1376,7 +1457,6 @@ switch what
             end % ss (sessions)
         end % s (sn)
         
-
     case 'GLM:estimate'     % estimate beta values
         % Example usage: ibc_imana('GLM:estimate', 'sn', [1], 'ses', {'archi'})
         
