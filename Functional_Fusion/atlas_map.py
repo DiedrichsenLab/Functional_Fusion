@@ -287,7 +287,7 @@ class AtlasVolumetric(Atlas):
         """
         if isinstance(img, str):
             img = nb.load(img)
-        elif isinstance(img, nb.Cifti2Image):
+        if isinstance(img, nb.Cifti2Image):
             img = nt.volume_from_cifti(img, [self.structure])
         if isinstance(img, (nb.Nifti1Image, nb.Nifti2Image)):
             data = nt.sample_image(
