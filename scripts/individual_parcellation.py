@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
     ## Step 5: Compute the individual parcellations
     indiv_par, _ = fm.get_indiv_parcellation(ar_model, tdata, atlas, cond_v, part_v,
-                                             sub_ind, return_soft_parcel=True)
+                                             sub_ind)
 
     # Step 3: Save the individual parcellations as a nifti/gifti file
     # Step 3.1: Convert the individual parcellations to gifti file
