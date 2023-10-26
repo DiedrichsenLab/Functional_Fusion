@@ -69,28 +69,56 @@ def plot_multi_flat(data, atlas, grid, cmap='tab20b', dtype='label',
         plt.savefig('/indiv_parcellations.png')
 
 if __name__ == "__main__":
-    K=17
-    # Step 1.1: Load the atlas
-    atlas, _ = am.get_atlas('MNISymC3', 'Y:\data\FunctionalFusion\Atlases')
+    ## Step 1: Load the atlas
+    atlas, _ = am.get_atlas('MNISymC3')
 
-    # Step 1.2: Load the group prior from a pre-trained model
-    model_dir = 'Y:/data/Cerebellum/ProbabilisticParcellationModel/Models'
-    model_name = f'/Models_03/asym_Md_space-MNISymC3_K-{K}'
-    fname = model_dir + model_name
-    U, _ = ar.load_group_parcellation(fname, device='cuda')
+    ## Step 2a: Load the probabilstic group atlas from a _probseg.nii file
+    atlas_dir = 'Y:/data/FunctionalFusion/Atlases/tpl-MNI152NLin2009cSymC'
+    model_name = f'/atl-Anatom_space-MNI152NLin2009cSymC_probseg.nii'
+    U = atlas.read_data(atlas_dir + model_name)
+    U = U.T
 
-    # Step 1.3: Build the arrangement model
-    ar_model = ar.build_arrangement_model(U, K, atlas)
+    ## Step 2b: Or Load the group prior from a pre-trained model
+    # model_dir = 'Y:/data/Cerebellum/ProbabilisticParcellationModel/Models'
+    # model_name = f'/Models_03/asym_Md_space-MNISymC3_K-40'
+    # fname = model_dir + model_name
+    # U, _ = ar.load_group_parcellation(fname, device='cuda')
 
-    # Step 2.1: Load the individual localizing data / info
-    tdata, cond_v, part_v, sub_ind = ds.build_dataset_from_fusionProject('MDTB', atlas,
-                                            'Y:/data/FunctionalFusion',
-                                            sess='all', cond_ind='cond_num_uni',
-                                            type='CondHalf', part_ind='half',
-                                            subj=None, join_sess=False,
-                                            join_sess_part=False, smooth=None)
+    ## Step 3: Build the arrangement model
+    ar_model = ar.build_arrangement_model(U, atlas)
 
-    # Step 2.2: Compute the individual parcellations
+    ## Step 4a: Load the individual localizing data / info from Fusion project
+    # Step 4a.1: Load the data into 3d tensor
+    data, info, tds = ds.get_dataset('Y:/data/FunctionalFusion', 'MDTB',
+                                     atlas=atlas.name, subj=None)
+    # Step 4a.2: Prepare the data into the right format
+    tdata, cond_v, part_v, sub_ind = fm.prep_datasets(data, info, type='CondHalf',
+                                                      cond_ind='cond_num_uni',
+                                                      part_ind='half', join_sess=False,
+                                                      join_sess_part=False)
+
+    # ## Step 4b: Build custom individual localizing data / info
+    # # Step 4b.1: Build the data into list of 3d tensor
+    # data_dir = 'Y:/data/FunctionalFusion/MDTB/derivatives/{0}/data'
+    # mdtb_dataset = ds.get_dataset_class('Y:/data/FunctionalFusion','MDTB')
+    # subj = mdtb_dataset.get_participants().participant_id
+    # data, info = [], []
+    # for ses_id in mdtb_dataset.sessions:
+    #     this_data = []
+    #     this_info = []
+    #     info.append(mdtb_dataset.get_info(ses_id=ses_id, type='CondHalf'))
+    #     for i, s in enumerate(subj):
+    #         file_name = f'/{s}_space-{atlas.name}_{ses_id}_CondHalf.dscalar.nii'
+    #         this_data.append(atlas.read_data(data_dir.format(s) + file_name).T)
+    #     data.append(np.stack(this_data))
+    # # Step 4b.2: Assemble condition and partition vectors
+    # cond_v, part_v, sub_ind = [], [], []
+    # for j, inf in enumerate(info):
+    #     cond_v.append(inf['cond_num_uni'].values.reshape(-1,))
+    #     part_v.append(inf['half'].values.reshape(-1,))
+    #     sub_ind.append(np.arange(0, len(subj)))
+
+    ## Step 5: Compute the individual parcellations
     indiv_par, _ = fm.get_indiv_parcellation(ar_model, tdata, atlas, cond_v, part_v,
                                              sub_ind, return_soft_parcel=True)
 

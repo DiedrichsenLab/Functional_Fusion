@@ -81,7 +81,6 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
     info_l = []
     data_l = []
     for s in sess:
-
         dat, inf = my_dataset.get_data(atlas, s, type, subj, smooth=smooth)
         data_l.append(dat)
         inf['sess'] = [s] * inf.shape[0]
