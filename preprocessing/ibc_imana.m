@@ -62,7 +62,7 @@ wb_dir   = 'surfaceWB';
 % list of subjects
 % subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 % subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_n  = [4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
+subj_n  = [1]
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
@@ -74,6 +74,7 @@ session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
 % session_names = {'spatial-navigation'};
 
+% session_names_rs = {'mtt1', 'mtt2'};
 session_names_rs = {'mtt1', 'mtt2'};
 
 % SM = tdfread('ibc_sessions_map.tsv','\t');
@@ -419,8 +420,14 @@ switch what
                             subj_str{s}, char(smap), runs(r), j);
                     end % j (TRs/images)
                 end % r (runs)
-                % Skip resting-state runs in mtt sessions
+                % Skip task runs in mtt sessions
                 data(3:end)=[];
+                % Stack Mean EPI
+                mean_epi= fullfile(...
+                    funcderiv_subjses_dir, ['ses-' char(smap)], ...
+                    sprintf('mean%s_ses-%s_run-03_bold.nii', ...
+                    subj_str{s}, char(smap)));
+                data{1} = [{mean_epi}; data{1}];
                 % Load batch and run spm
                 spmja_realign(data);
                 % Create if does not exist the derivatives folder
@@ -486,7 +493,7 @@ switch what
         % - Manually adjust mean functional image and save the results 
         %   ("r" will be added as a prefix)
         % Example usage: 
-        % ibc_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')ses-03
+        % ibc_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
         sn     = subj_id;   % list of subjects        
         step   = 'manual';  % first 'manual' then 'auto'
         prefix = 'r'; % to use the bias corrected version, set it to 'rb'
