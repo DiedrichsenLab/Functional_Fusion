@@ -287,12 +287,14 @@ class AtlasVolumetric(Atlas):
         """
         if isinstance(img, str):
             img = nb.load(img)
-        if isinstance(img, nb.Cifti2Image):
+        elif isinstance(img, nb.Cifti2Image):
             img = nt.volume_from_cifti(img, [self.structure])
         if isinstance(img, (nb.Nifti1Image, nb.Nifti2Image)):
             data = nt.sample_image(
                 img, self.world[0, :], self.world[1, :], self.world[2, :], interpolation
             )
+        else:
+            raise(NameError("Unknown image type"))
         return data
 
     def sample_nifti(self, img, interpolation):
