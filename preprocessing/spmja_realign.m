@@ -1,4 +1,4 @@
-function spmj_realign(data,varargin)
+function spmja_realign(data,varargin)
 % spmj_realign(data)
 % INPUT: 
 %   data:    cell array (runs) of cell array (images) 

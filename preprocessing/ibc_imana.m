@@ -62,7 +62,7 @@ wb_dir   = 'surfaceWB';
 % list of subjects
 % subj_n  = [1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
 % subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15];
-subj_n  = [1]
+subj_n  = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
 
 for s=1:length(subj_n)
     subj_str{s} = ['sub-' num2str(subj_n(s), '%02d')];
@@ -392,6 +392,9 @@ switch what
         
         spm_figure('GetWin','Graphics'); % create SPM .ps file at the end
         
+        % Go to the folder of script
+        cd(fileparts(mfilename('fullpath')))
+        
         sn   = subj_id; % list of subjects
         vararginoptions(varargin, {'sn', 'ses', 'runs'});
                 
@@ -435,8 +438,8 @@ switch what
 %                 data{1} = [{mean_epi}; data{1}];
 
                 % Load batch and run spm
-                % spmja_realign(data);
-                spmja_realign(data);
+                % spmja_realign(data); % register to the first
+                spmj_realign(data);    % register to the mean
                 
                 % Create if does not exist the derivatives folder
                 sessderiv_dir = fullfile(funcderiv_subjses_dir, ...
@@ -458,6 +461,7 @@ switch what
                         end
                     end
                 end
+                
                 % Move files from "/localscratch" to derivatives folder
                 movefile(['/localscratch/mean' subj_str{s} '_ses-' ...
                     char(smap) '_run-*_bold.nii'], sessderiv_dir)
@@ -556,6 +560,86 @@ switch what
                         sprintf('%smean%s_ses-%s_run-01_bold.nii', ...
                         prefix, subj_str{s}, smapstr))};
                 end
+            
+                J.other             = {''};
+                J.eoptions.cost_fun = 'nmi';
+                J.eoptions.sep      = [4 2];
+                J.eoptions.tol      = [0.02 0.02 0.02 0.001 0.001 0.001 ...
+                    0.01 0.01 0.01 0.001 0.001 0.001];
+                J.eoptions.fwhm     = [7 7];
+                matlabbatch{1}.spm.spatial.coreg.estimate=J;
+                spm_jobman('run', matlabbatch);
+            
+                % (3) Manually check again
+%               coregtool;
+%               keyboard();
+                % checking the affine matrix
+%                 T1_vol = spm_vol(J.ref);
+%                 T1_vol = T1_vol{1};
+%                 T2_vol = spm_vol(J.source);
+%                 T2_vol = T2_vol{1};
+%                 x = spm_coreg(T2_vol, T1_vol);
+%                 M = spm_matrix(x);
+%                 display(M)
+            
+                % NOTE:
+                % Overwrites meanepi, unless you update in step one, 
+                % which saves it as rmeanepi.
+                % Each time you click "update" in coregtool, it saves 
+                % current alignment by appending the prefix 'r' to the 
+                % current file. So if you continually update rmeanepi, 
+                % you'll end up with a file called r...rrrmeanepi.
+            end
+        end % s (sn)
+        
+    case 'FUNC:coreg_restingstate' % coregistration with the anatomicals
+        % (1) Manually seed the functional/anatomical registration
+        % - Do "coregtool" on the matlab command window
+        % - Select anatomical image and mean functional image to overlay
+        % - Manually adjust mean functional image and save the results 
+        %   ("r" will be added as a prefix)
+        % Example usage: 
+        % ibc_imana('FUNC:coreg', 'sn', [1], 'prefix', 'r')
+        sn     = subj_id;   % list of subjects        
+        step   = 'manual';  % first 'manual' then 'auto'
+        prefix = 'r'; % to use the bias corrected version, set it to 'rb'
+        % ===================
+        % After the manual registration, the mean functional image will be
+        % saved with r as the prefix which will then be used in the
+        % automatic registration
+        vararginoptions(varargin, {'sn', 'step', 'prefix'});
+        spm_jobman('initcfg')
+        
+        for s = sn
+            % Get the directory of subjects anatomical and functional
+            raw_subj_dir = fullfile(base_dir, raw_dir, subj_str{s});
+            subj_anat_dir = fullfile(raw_subj_dir, anat_dir);
+            derivatives_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s});
+            for smap = session_names_rs
+                subj_func_dir = fullfile(derivatives_subj_dir, ...
+                    func_dir, ['ses-' char(smap) 'rest']);
+            
+                % goes to subjects anatomical dir so that coreg tool ...
+                % starts from that directory (just for convenience)
+                cd(subj_anat_dir); 
+            
+                switch step
+                    case 'manual'
+                        coregtool;
+                        keyboard;
+                    case 'auto'
+                        % do nothing
+                end % switch step
+                            
+                % (2) Automatically co-register functional and ...
+                % anatomical images
+                J.ref = {fullfile(subj_anat_dir, sprintf('%s_T1w.nii', ...
+                    subj_str{s}))}; % just one anatomical or more than one?
+ 
+                J.source = {fullfile(subj_func_dir, ...
+                    sprintf('%smean%s_ses-%s_run-01_bold.nii', ...
+                    prefix, subj_str{s}, char(smap)))};
             
                 J.other             = {''};
                 J.eoptions.cost_fun = 'nmi';
@@ -721,6 +805,69 @@ switch what
 %                             prefix, subj_str{s}, ses, r, i)); 
                         Q{end+1} = fullfile(subj_func_dir, ...
                             ['ses-' smapstr], sprintf(...
+                            'r%s_ses-%s_run-%02d_bold.nii,%d', ...
+                            subj_str{s}, smapstr, r, i));
+                    end
+                end % r(runs)                
+                spmj_makesamealign_nifti(char(P),char(Q));
+            end % ss (sess)
+        end % s (sn)
+        
+    case 'FUNC:make_samealign_restingstate' % align all the functionals
+        % Aligns all functional images to rmean functional image
+        % Example usage: 
+        % ibc_imana('FUNC:make_samealign', 'prefix', 'r', 'sn', [1])
+        
+        sn     = subj_id;  % subject list
+        prefix = 'r'; % prefix for the meanepi: r or rbb if bias corrected
+        
+        vararginoptions(varargin, {'sn', 'prefix'});
+                
+        for s = sn
+            % Get the directory of subjects functional
+            deriv_subj_dir = fullfile(base_dir, derivatives_dir, ...
+                subj_str{s})
+            subj_func_dir = fullfile(deriv_subj_dir, func_dir);
+            sbj_number = str2double((extractAfter(subj_str{s}, ...
+                'sub-')))
+            subsess = cellstr(sessmap.(['sub' num2str(sbj_number, ...
+                '%02d')]));
+            for smap = session_names_rs
+                sesstag = sessnum{find(contains(subsess,smap))};
+                ses = sscanf(sesstag,'ses-%d');
+                smapstr = replace(smap{1}, '-', '');
+                % cd to the folder with realigned-to-sess1 functional data
+                cd(fullfile(subj_func_dir, ['ses-' char(smap) 'rest']))
+                indexes = find(contains(sessid, smap))';
+                runs = double.empty;
+                trs = double.empty;
+                % get the list of runs for the session
+                for j=1:length(indexes)
+                    runs(j)=sessrun(indexes(j));
+                    trs(j)=numTRs(indexes(j));
+                end
+                fprintf('- make_samealign  %s \n', subj_str{s})
+                
+                % Select image for reference 
+                %%% note that functional images are aligned with the first
+                %%% run from first session hence, the ref is always 
+                %%% rmean<subj>_ses-01_run-01
+                P{1} = fullfile(subj_func_dir, ['ses-' char(smap) 'rest'], ...
+                    sprintf('%smean%s_ses-%s_run-01_bold.nii', ...
+                    prefix, subj_str{s}, smapstr));
+                runs(3:5)=[]
+
+                % Select images to be realigned
+                Q = {};
+                for r = runs
+                    for i = 1:trs(r)-numDummys
+                        % for 'auto' mode in coregistration, remove prefix 
+                        % and explicitly add 'r' prefix in the same place
+%                         Q{end+1} = fullfile(subj_func_dir, ...
+%                             sprintf('%s%s_ses-%02d_run-%02d.nii,%d', ...
+%                             prefix, subj_str{s}, ses, r, i)); 
+                        Q{end+1} = fullfile(subj_func_dir, ...
+                            ['ses-' char(smap) 'rest'], sprintf(...
                             'r%s_ses-%s_run-%02d_bold.nii,%d', ...
                             subj_str{s}, smapstr, r, i));
                     end
