@@ -69,20 +69,20 @@ for s=1:length(subj_n)
 end
 subj_id = 1:length(subj_n);
 
-session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
+% session_names = {'archi', 'hcp1', 'hcp2', 'rsvp-language'};
 % session_names = {'mtt1', 'mtt2', 'preference', 'tom', 'enumeration', ...
 %     'self', 'clips4', 'lyon1', 'lyon2', 'mathlang', 'spatial-navigation'};
-% session_names = {'spatial-navigation'};
+session_names = {'mtt1', 'mtt2'};
 
 % session_names_rs = {'mtt1', 'mtt2'};
 session_names_rs = {'mtt1', 'mtt2'};
 
-% SM = tdfread('ibc_sessions_map.tsv','\t');
-% fields = fieldnames(SM);
-% sessmap = RenameField(SM, fields, {'session', 'sub01', 'sub02', ...
-%     'sub04', 'sub05', 'sub06', 'sub07', 'sub08', 'sub09', 'sub11', ... 
-%     'sub12', 'sub13', 'sub14', 'sub15'});
-% sessnum = cellstr(sessmap.session);
+SM = tdfread('ibc_sessions_map.tsv','\t');
+fields = fieldnames(SM);
+sessmap = RenameField(SM, fields, {'session', 'sub01', 'sub02', ...
+    'sub04', 'sub05', 'sub06', 'sub07', 'sub08', 'sub09', 'sub11', ... 
+    'sub12', 'sub13', 'sub14', 'sub15'});
+sessnum = cellstr(sessmap.session);
 
 sesstruct = tdfread('ibc_sessions_structure.tsv','\t');
 sessid = cellstr(sesstruct.session);
@@ -293,6 +293,9 @@ switch what
         
         spm_figure('GetWin','Graphics'); % create SPM .ps file at the end
         
+        % Go to the folder of script
+        cd(fileparts(mfilename('fullpath')))
+        
         sn   = subj_id; % list of subjects
         vararginoptions(varargin, {'sn', 'ses', 'runs'});
                 
@@ -400,7 +403,6 @@ switch what
             sbj_number = str2double((extractAfter(subj_str{s},'sub-')))
             for smap = session_names_rs
                 data = {}; 
-                cd(fullfile(funcraw_subjses_dir, ['ses-' char(smap)]))
                 spm_jobman('initcfg')
                 indexes = find(contains(sessid,char(smap)))';
                 runs = double.empty;
@@ -410,8 +412,10 @@ switch what
                     trs(j)=numTRs(indexes(j));
                 end
                 for r = 1:length(runs)
-                    rname = sprintf('%s_ses-%s_run-%02d_bold.nii.gz', ...
-                        subj_str{s}, char(smap), runs(r));
+                    rname = fullfile(funcraw_subjses_dir, ...
+                        ['ses-' char(smap)], ...
+                        sprintf('%s_ses-%s_run-%02d_bold.nii.gz', ...
+                        subj_str{s}, char(smap), runs(r)));
                     gunzip(rname, '/localscratch');
                     for j = 1:trs(r)-numDummys
                         data{r}{j,1} = sprintf(...
@@ -422,14 +426,18 @@ switch what
                 end % r (runs)
                 % Skip task runs in mtt sessions
                 data(3:end)=[];
+                
                 % Stack Mean EPI
-                mean_epi= fullfile(...
-                    funcderiv_subjses_dir, ['ses-' char(smap)], ...
-                    sprintf('mean%s_ses-%s_run-03_bold.nii', ...
-                    subj_str{s}, char(smap)));
-                data{1} = [{mean_epi}; data{1}];
+%                 mean_epi= fullfile(...
+%                     funcderiv_subjses_dir, ['ses-' char(smap)], ...
+%                     sprintf('mean%s_ses-%s_run-03_bold.nii', ...
+%                     subj_str{s}, char(smap)));
+%                 data{1} = [{mean_epi}; data{1}];
+
                 % Load batch and run spm
+                % spmja_realign(data);
                 spmja_realign(data);
+                
                 % Create if does not exist the derivatives folder
                 sessderiv_dir = fullfile(funcderiv_subjses_dir, ...
                     ['ses-' char(smap) 'rest']);
@@ -451,14 +459,15 @@ switch what
                     end
                 end
                 % Move files from "/localscratch" to derivatives folder
+                movefile(['/localscratch/mean' subj_str{s} '_ses-' ...
+                    char(smap) '_run-*_bold.nii'], sessderiv_dir)
                 movefile(['/localscratch/rp_' subj_str{s} '_ses-' ...
                     char(smap) '_run-*_bold.txt'], sessderiv_dir)
                 movefile(['/localscratch/r' subj_str{s} '_ses-' ...
                     char(smap) '_run-*_bold.nii'], sessderiv_dir)
                 movefile(['/localscratch/' subj_str{s} '_ses-' ...
                     char(smap) '_run-*_bold.mat'], sessderiv_dir)
-                movefile([fullfile(funcraw_subjses_dir, ...
-                    ['ses-' char(smap)]) '/spm_*.ps'], sessderiv_dir)
+                movefile(['spm_*.ps'], sessderiv_dir)
                 % Delete unziped raw files from localscratch
                 if any(size(dir('/localscratch/*.nii'), 1))
                     delete('/localscratch/*.nii')
