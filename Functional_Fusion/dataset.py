@@ -333,7 +333,7 @@ def reliability_within_subj(X, part_vec, cond_vec,
 def reliability_between_subj(X, cond_vec=None,
                              voxel_wise=False,
                              subtract_mean=True):
-    """ Calculates the between-subject reliability of a data set
+    """ Calculates the correlation of the responses of each of the subjects with the mean of the other subjects. 
     If cond_vec is given, the data is averaged across multiple measurem
     first.
 
