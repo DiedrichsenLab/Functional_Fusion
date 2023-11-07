@@ -85,16 +85,18 @@ if __name__ == "__main__":
     # U, _ = ar.load_group_parcellation(fname, device='cuda')
 
     ## Step 3: Build the arrangement model
-    ar_model = ar.build_arrangement_model(U, prior_type='prob', atlas=atlas)
+    ar_model = ar.build_arrangement_model(U, prior_type='logpi', atlas=atlas,
+                                          sym_type='sym')
 
     ## Step 4a: Load the individual localizing data / info from Fusion project
     # Step 4a.1: Load the data into 3d tensor
     data, info, tds = ds.get_dataset('Y:/data/FunctionalFusion', 'MDTB',
                                      atlas=atlas.name, subj=None)
     # Step 4a.2: Prepare the data into the right format
-    tdata, cond_v, part_v, sub_ind = fm.prep_datasets(data, info,
-                                                      cond_ind='cond_num_uni',
-                                                      part_ind='half', join_sess=False,
+    tdata, cond_v, part_v, sub_ind = fm.prep_datasets(data, info.sess,
+                                                      info['cond_num_uni'].values,
+                                                      info['half'].values,
+                                                      join_sess=False,
                                                       join_sess_part=False)
 
     # ## Step 4b: Build custom individual localizing data / info
@@ -119,15 +121,15 @@ if __name__ == "__main__":
     #     sub_ind.append(np.arange(0, len(subj)))
 
     ## Step 5: Compute the individual parcellations
-    indiv_par, _ = fm.get_indiv_parcellation(ar_model, tdata, atlas, cond_v, part_v,
-                                             sub_ind)
+    indiv_par, _, _ = fm.get_indiv_parcellation(ar_model, tdata, atlas,
+                                                cond_v, part_v, sub_ind)
 
     # Step 3: Save the individual parcellations as a nifti/gifti file
     # Step 3.1: Convert the individual parcellations to gifti file
-    gii_file = nt.make_label_gifti(indiv_par.cpu().numpy().transpose(),
-                                   labels=["label_{}".format(i) for i in range(K)],
-                                   column_names=["subj_{}".format(i+1)
-                                                 for i in range(indiv_par.shape[0])])
+    # gii_file = nt.make_label_gifti(indiv_par.cpu().numpy().transpose(),
+    #                                labels=["label_{}".format(i) for i in range(K)],
+    #                                column_names=["subj_{}".format(i+1)
+    #                                              for i in range(indiv_par.shape[0])])
     # nb.save(gii_file, '/Md_Asym_17.dlabel.gii')
     # TODO: here we need to write a function to convert the
     #       individual parcellations to nifti file
