@@ -63,7 +63,7 @@ A typical use case is to read data from a Nifti file, does some computations, an
 .. code-block:: python
 
     cifti = atlas.data_to_cifti(Y)
-    nb.save(cifti,'my_cifti_file.nii')
+    nb.save(cifti,'my_cifti_file.dscalar.nii')
     # Write data to Nifti file:
     nifti = atlas.data_to_nifti(Y)
     nb.save(nifti,'my_nifti_file.nii')
