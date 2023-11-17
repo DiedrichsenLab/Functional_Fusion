@@ -2,7 +2,22 @@ import numpy as np
 import Functional_Fusion.atlas_map as am
 import Functional_Fusion.dataset as ds
 import os, pickle
-from py_util_dx.py_utils import setProjectPath
+
+
+def setProjectPath():
+    """
+    setProjectPath specifies the main directory of the project and the results folder
+
+    usage
+    projectPath, mainResultsPath = setProjectPath()
+
+    last modified: 2023.11.06
+    """
+    pythonAnalysisPath = os.getcwd()
+    projectPath = os.path.join(pythonAnalysisPath, '..')    # exploration path
+    mainResultsPath = os.path.join(projectPath, 'results')
+
+    return projectPath, mainResultsPath
 
 
 def decompose_pattern_into_group_indv_noise(data, criterion='global'):
