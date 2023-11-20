@@ -26,7 +26,7 @@ def decompose_pattern_into_group_indv_noise(data, criterion='global'):
     into group, individual and noise components, return the variance estimates of each component
 
     input
-        data
+        data 
             * either a list of numpy ndarrays [sub-01: (n_partitions_01 x n_conditions x n_voxels), sub-02: (n_partitions_02 x n_conditions x n_voxels), ...]
             * or an ndarray of shape n_subjects x n_partitions x n_conditions x n_voxels, i.e., S x R x N x P
         criterion (str)

@@ -21,6 +21,9 @@ Dataset Functions
 
 .. autofunction:: dataset.reliability_maps
 
+.. autofunction:: dataset.decompose_pattern_into_group_indiv_noise
+
+
 General dataset classes
 -----------------------
 .. autoclass:: dataset.DataSet
