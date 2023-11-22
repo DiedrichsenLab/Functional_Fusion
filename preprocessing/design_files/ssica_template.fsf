@@ -273,7 +273,7 @@ set fmri(totalVoxels) 202535424
 set fmri(ncopeinputs) 0
 
 # 4D AVW data or FEAT directory (1)
-set feat_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/rrun_YY"
+set feat_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/rrun_YY_hdr"
 
 # Add confound EVs text file
 set fmri(confoundevs) 0

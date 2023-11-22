@@ -8,7 +8,7 @@ design_dir = Path('~/code/Python/Functional_Fusion/preprocessing/design_files/')
 runs = ["01", "02"]
 
 def correct_header(img_file):
-    """Correct the header of the image file to have a TR of 1. Saves the file as a .nii.gz file for use with fsl.
+    """Correct the header of the image file to have a TR of 1. Saves the file as a _hdr.nii.gz file for use with fsl.
     Args:
         img_file (string): path to the image file to be corrected
     """
@@ -23,7 +23,7 @@ def correct_header(img_file):
         # Modify the TR field in the header
         img.header['pixdim'][4] = 1
 
-        # Save the modified image as a '.nii.gz' file
+        # Save the modified image as image file ending in '_hdr.nii.gz' 
         nib.save(img, out_file)
         
     else:
@@ -31,7 +31,7 @@ def correct_header(img_file):
 
 
 def make_design(subject, run):
-    img_file = Path(f"{str(subject_path)}/rrun_{run}.nii.gz")
+    img_file = Path(f"{str(subject_path)}/rrun_{run}_hdr.nii.gz")
     design_template = Path(f"{design_dir}/ssica_template.fsf")
     design_output = Path(f"{design_dir}/rest_{subject}_run-{run}.fsf")
 
@@ -60,7 +60,7 @@ def run_ica(subject, run):
 
     """
 
-    img_file = Path(f"{str(subject_path)}/rrun_{run}.nii.gz")
+    img_file = Path(f"{str(subject_path)}/rrun_{run}_hdr.nii.gz")
     ica_dir = Path(f"{subject_path}/run{run}.ica")
     design_template = Path(f"{design_dir}/ssica_template.fsf")
     design_output = Path(f"{design_dir}/rest_{subject}_run-{run}.fsf")
