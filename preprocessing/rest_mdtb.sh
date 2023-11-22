@@ -67,3 +67,8 @@ for i in ${data_dir}/s*; do
         fi
     done
 done
+
+# # Rename all .nii.gz files to end in _hdr.nii.gz
+# for i in /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/imaging_data/s*/*.nii.gz; do
+#     mv "$i" "${i%.nii.gz}_hdr.nii.gz"
+# done
