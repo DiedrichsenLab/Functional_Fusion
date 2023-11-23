@@ -18,7 +18,7 @@ def correct_header(img_file):
     Args:
         img_file (string): path to the image file to be corrected
     """
-    out_file = Path(f"{img_file}.gz")
+    out_file = Path(f"{img_file.strip('.nii')}_hdr.nii.gz")
     img_file = Path(img_file)
     
     if not out_file.exists() and img_file.exists():
@@ -115,19 +115,37 @@ def balanced_subset(subjects, runs, percent_data):
 
     return list(subset_subjects), list(subset_runs)
 
-def make_classifier_sample():
+def make_classifier_sample(add_new_subjects=False):
     # Create a balanced subset of subjects and runs to classify into signal or noise
     # get first element of subject folders
     subject_list = [subject.name for subject in subject_folders]
     percent_data = 30
     subset_subjects, subset_runs = balanced_subset(subject_list, runs, percent_data)
     # Save
-    subset_file = Path(f"{design_dir}/classified_subjects.tsv")
     df = pd.DataFrame({'subject': subset_subjects, 'run': subset_runs})
     df = df.sort_values(by=['subject', 'run'])
     # if file already exists, add a timestamp to the filename
     subset_file = Path(f"{design_dir}/classified_subjects_{datetime.now().strftime('%Y%m%d')}.tsv")
+    
+
+    
+    if add_new_subjects:
+        # Import existing classified subjects
+        akready_classified = pd.read_csv(Path(f"{design_dir}/classified_subjects.tsv"), sep='\t')
+        # Add the new subjects to the existing dataframe
+        # Make df.run integer
+        akready_classified.run = akready_classified.run.astype(int)
+        df = pd.concat([akready_classified, df], ignore_index=True)
+        # Remove duplicates and sort by subject and run
+        df = df.drop_duplicates()
+        # Remove duplicates of the same subject, keeping the first entry
+        df = df.drop_duplicates(subset=['subject'], keep='first').sort_values(by=['subject', 'run'])
+        # Make sure the subset is still balanced across runs
+        df.groupby(['run']).size()
+    
+    # Save
     df.to_csv(subset_file, index=False, sep='\t')
+    
 
 
 
@@ -135,19 +153,19 @@ if __name__ == "__main__":
     subject_folders = data_dir.glob('s[0-9][0-9]')
 
     # --- Correct the header of the image files by inserting TR ---
-    # for subject_path in subject_folders:
-    #     subject = subject_path.name[1:]  # remove the 's' prefix
-    #     for run in runs:
-    #         img_file = f"{str(subject_path)}/rrun_{run}.nii"
-    #         correct_header(img_file)
+    for subject_path in subject_folders:
+        subject = subject_path.name[1:]  # remove the 's' prefix
+        for run in runs:
+            img_file = f"{str(subject_path)}/rrun_{run}.nii"
+            correct_header(img_file)
 
     # --- Create the design files for each subject and run single-subject ICA ---
     # for subject_path in subject_folders:
     #     subject = subject_path.name[1:]
     #     for run in runs:
-    #         make_design(subject, run)
+    #         # make_design(subject, run)
     #         run_ica(subject, run)
 
-    # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
-    make_classifier_sample()
+    # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
+    # make_classifier_sample()
 

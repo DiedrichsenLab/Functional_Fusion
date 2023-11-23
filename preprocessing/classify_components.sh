@@ -26,9 +26,9 @@ runs=("01" "02")
 # ------ Classify single-subject ICA components ------ 
 for i in $subjects; do
     subject=${i##*s}
-    # test if subject is in ${design_dir}/classified_subjects.csv
-    if grep -q s${subject} ${design_dir}/classified_subjects.csv; then
-        run=`grep s${subject} ${design_dir}/classified_subjects.csv | awk '{print $2}'`
+    # test if subject is in ${design_dir}/classified_subjects.tsv
+    if grep -q s${subject} ${design_dir}/classified_subjects.tsv; then
+        run=`grep s${subject} ${design_dir}/classified_subjects.tsv | awk '{print $2}'`
         if [ -d $i/run${run}.ica/filtered_func_data.ica ] && [ ! -f $i/run${run}.ica/filtered_func_data.ica/classifications.txt ]; then
                 echo CLassifying $i ${run}
                 
@@ -50,7 +50,7 @@ for i in $subjects; do
                 echo "Already classified $i ${run}"
         fi
     else
-        echo "Skipping $i"
+        echo "Not classifying $i"
     fi
 done
 
