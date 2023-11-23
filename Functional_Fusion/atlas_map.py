@@ -502,7 +502,7 @@ class AtlasSurface(Atlas):
         Args:
             cifti (ciftiimage or filename): Cifti file to be used
         Returns:
-            np.ndarray: NxP in single np-array
+            data (np.ndarray): NxP np-array
         """
         # First check the input is a cifti image object
         if isinstance(cifti, str):

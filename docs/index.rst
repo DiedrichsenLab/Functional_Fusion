@@ -16,11 +16,11 @@ Documentation
    :maxdepth: 2
    :caption: Contents:
 
-   overview.rst
-   atlas.rst
-   import.rst
-   extract.rst
-   analyze.rst
+   01overview.rst
+   02atlas.rst
+   03import.rst
+   04extract.rst
+   05analyze.rst
    reference.rst
 
 Indices and tables
