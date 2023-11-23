@@ -72,7 +72,7 @@ def run_ica(subject, run):
 
     if img_file.is_file() and not ica_dir.is_dir():
         print(f"Running SS melodic for subject {subject} run {run}")
-        subprocess.run(['feat', str(design_output)])
+        subprocess.Popen(['feat', str(design_output)])
 
     elif not img_file.is_file():
         print(f"{subject} {run}: missing image file")
@@ -152,19 +152,19 @@ def make_classifier_sample(add_new_subjects=False):
 if __name__ == "__main__":
     subject_folders = data_dir.glob('s[0-9][0-9]')
 
-    # --- Correct the header of the image files by inserting TR ---
-    for subject_path in subject_folders:
-        subject = subject_path.name[1:]  # remove the 's' prefix
-        for run in runs:
-            img_file = f"{str(subject_path)}/rrun_{run}.nii"
-            correct_header(img_file)
+    # # --- Correct the header of the image files by inserting TR ---
+    # for subject_path in subject_folders:
+    #     subject = subject_path.name[1:]  # remove the 's' prefix
+    #     for run in runs:
+    #         img_file = f"{str(subject_path)}/rrun_{run}.nii"
+    #         correct_header(img_file)
 
     # --- Create the design files for each subject and run single-subject ICA ---
-    # for subject_path in subject_folders:
-    #     subject = subject_path.name[1:]
-    #     for run in runs:
-    #         # make_design(subject, run)
-    #         run_ica(subject, run)
+    for subject_path in subject_folders:
+        subject = subject_path.name[1:]
+        for run in runs:
+            make_design(subject, run)
+            run_ica(subject, run)
 
     # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
     # make_classifier_sample()
