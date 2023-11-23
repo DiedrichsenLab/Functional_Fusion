@@ -152,7 +152,7 @@ def make_classifier_sample(add_new_subjects=False):
 if __name__ == "__main__":
     subject_folders = data_dir.glob('s[0-9][0-9]')
 
-    # # --- Correct the header of the image files by inserting TR ---
+    # --- Correct the header of the image files by inserting TR ---
     # for subject_path in subject_folders:
     #     subject = subject_path.name[1:]  # remove the 's' prefix
     #     for run in runs:
