@@ -2,6 +2,12 @@ import ProbabilisticParcellation.util as ut
 import nibabel as nib
 from pathlib import Path
 import subprocess
+import random
+from itertools import product
+import pandas as pd
+from datetime import datetime
+
+
 
 data_dir = Path(f'{ut.base_dir}/../Cerebellum/super_cerebellum/resting_state/imaging_data/')
 design_dir = Path('~/code/Python/Functional_Fusion/preprocessing/design_files/').expanduser()
@@ -31,7 +37,7 @@ def correct_header(img_file):
 
 
 def make_design(subject, run):
-    img_file = Path(f"{str(subject_path)}/rrun_{run}_hdr.nii.gz")
+    img_file = Path(f"{data_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
     design_template = Path(f"{design_dir}/ssica_template.fsf")
     design_output = Path(f"{design_dir}/rest_{subject}_run-{run}.fsf")
 
@@ -60,9 +66,8 @@ def run_ica(subject, run):
 
     """
 
-    img_file = Path(f"{str(subject_path)}/rrun_{run}_hdr.nii.gz")
-    ica_dir = Path(f"{subject_path}/run{run}.ica")
-    design_template = Path(f"{design_dir}/ssica_template.fsf")
+    img_file = Path(f"{data_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
+    ica_dir = Path(f"{data_dir}/s{subject}/run{run}.ica")
     design_output = Path(f"{design_dir}/rest_{subject}_run-{run}.fsf")
 
     if img_file.is_file() and not ica_dir.is_dir():
@@ -80,16 +85,69 @@ def run_ica(subject, run):
             subprocess.run(['firefox', str(ica_dir / 'report.html')])
 
 
-if __name__ == "__main__":
 
-    # for subject_path in data_dir.glob('s[0-9][0-9]'):
+def balanced_subset(subjects, runs, percent_data):
+    # Calculate the number of subjects to select
+    num_scans = len(subjects) * len(runs)
+    num_scans_to_select = int(num_scans * percent_data * 0.01)
+
+    # Generate all combinations of subjects and runs
+    all_combinations = list(product(subjects, runs))
+
+    # Shuffle the combinations to ensure randomness
+    random.shuffle(all_combinations)
+
+    # Initialize counters
+    selected_subjects = set()
+    subset = []
+
+    # Select subjects while maintaining balance across runs
+    for subject, run in all_combinations:
+        if subject not in selected_subjects:
+            selected_subjects.add(subject)
+            subset.append((subject, run))
+
+        if len(selected_subjects) == num_scans_to_select:
+            break
+
+    # Separate the subset into lists of subjects and runs
+    subset_subjects, subset_runs = zip(*subset)
+
+    return list(subset_subjects), list(subset_runs)
+
+def make_classifier_sample():
+    # Create a balanced subset of subjects and runs to classify into signal or noise
+    # get first element of subject folders
+    subject_list = [subject.name for subject in subject_folders]
+    percent_data = 30
+    subset_subjects, subset_runs = balanced_subset(subject_list, runs, percent_data)
+    # Save
+    subset_file = Path(f"{design_dir}/classified_subjects.tsv")
+    df = pd.DataFrame({'subject': subset_subjects, 'run': subset_runs})
+    df = df.sort_values(by=['subject', 'run'])
+    # if file already exists, add a timestamp to the filename
+    subset_file = Path(f"{design_dir}/classified_subjects_{datetime.now().strftime('%Y%m%d')}.tsv")
+    df.to_csv(subset_file, index=False, sep='\t')
+
+
+
+if __name__ == "__main__":
+    subject_folders = data_dir.glob('s[0-9][0-9]')
+
+    # --- Correct the header of the image files by inserting TR ---
+    # for subject_path in subject_folders:
     #     subject = subject_path.name[1:]  # remove the 's' prefix
     #     for run in runs:
     #         img_file = f"{str(subject_path)}/rrun_{run}.nii"
     #         correct_header(img_file)
 
-    for subject_path in data_dir.glob('s[0-9][0-9]'):
-        subject = subject_path.name[1:]
-        for run in runs:
-            make_design(subject, run)
-            run_ica(subject, run)
+    # --- Create the design files for each subject and run single-subject ICA ---
+    # for subject_path in subject_folders:
+    #     subject = subject_path.name[1:]
+    #     for run in runs:
+    #         make_design(subject, run)
+    #         run_ica(subject, run)
+
+    # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
+    make_classifier_sample()
+
