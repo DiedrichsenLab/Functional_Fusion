@@ -130,18 +130,17 @@ def make_classifier_sample(add_new_subjects=False):
 
     
     if add_new_subjects:
-        # Import existing classified subjects
-        akready_classified = pd.read_csv(Path(f"{design_dir}/classified_subjects.tsv"), sep='\t')
         # Add the new subjects to the existing dataframe
-        # Make df.run integer
+        akready_classified = pd.read_csv(Path(f"{design_dir}/classified_subjects.tsv"), sep='\t')
         akready_classified.run = akready_classified.run.astype(int)
         df = pd.concat([akready_classified, df], ignore_index=True)
-        # Remove duplicates and sort by subject and run
+        # Remove duplicates 
         df = df.drop_duplicates()
-        # Remove duplicates of the same subject, keeping the first entry
         df = df.drop_duplicates(subset=['subject'], keep='first').sort_values(by=['subject', 'run'])
-        # Make sure the subset is still balanced across runs
-        df.groupby(['run']).size()
+        # Check if  the subset is still balanced across runs
+        print(f"Runs : {df.groupby(['run']).size()}")
+        # Make run into zero-padded string
+        df.run = df.run.apply(lambda x: f"{x:02d}")
     
     # Save
     df.to_csv(subset_file, index=False, sep='\t')
