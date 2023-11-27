@@ -406,6 +406,129 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
     return Rel, dataset.sessions
 
 
+def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
+    """
+    this function decompose a collection of (across subjects and partitions) activity patterns (N condition x P voxels)
+    into group, individual and noise components, returns the variance estimates of each component.
+
+    Args:
+        data (list,ndarray):
+            * either a list of numpy ndarrays [sub-01: (n_partitions_01 x n_conditions x n_voxels), sub-02: (n_partitions_02 x n_conditions x n_voxels), ...]
+            * or an ndarray of shape n_subjects x n_partitions x n_conditions x n_voxels, i.e., S x R x N x P
+        criterion (str):
+            * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
+            * 'condition_wise': partition variance components for each condition separately -> returns as many rows as conditions
+            * 'global':         partition variance components for the whole pattern (N x P) -> returns a single row
+    Returns:
+        variances: (K x 3 ndarray): v_g, v_s, v_e (variance for group, subject, and noise), where K is the number of voxels or conditions or 1
+    """
+
+    if isinstance(data, list):
+        n_subjects = len(data)
+        n_conditions = data[0].shape[1]
+        n_voxels = data[0].shape[2]
+        n_partitions_each_subject = [x.shape[0] for x in data]
+        n_partitions = np.max(n_partitions_each_subject)
+
+        # X = np.full((n_subjects, n_partitions, n_conditions, n_voxels), np.nan)
+        X = np.full((n_subjects, n_partitions, n_conditions, n_voxels), 0)
+
+        for subjI in np.arange(n_subjects):
+            X[subjI, 0:n_partitions_each_subject[subjI]] = data[subjI]
+
+    else:
+        [n_subjects, n_partitions, n_conditions, n_voxels] = data.shape
+        X = data
+
+    if criterion == 'voxel_wise':
+        Y = X.transpose([3, 0, 1, 2])
+        n_obs = n_conditions
+    elif criterion == 'condition_wise':
+        Y = X.transpose([2, 0, 1, 3])
+        n_obs = n_voxels
+    elif criterion == 'global':
+        Y = X.reshape((1, n_subjects, n_partitions, n_conditions * n_voxels))
+        n_obs = n_conditions * n_voxels
+    else:
+        Y = np.empty(1)
+        print('invalid criterion')
+
+    [n_reps, _, _, n_features] = Y.shape
+    variances = np.zeros((n_reps, 3))
+
+    for repI in np.arange(n_reps):
+        Z = np.zeros((n_subjects * n_partitions, n_features))
+        indx = 0
+        indx_mat_1 = np.zeros((Z.shape[0], Z.shape[0]))     # for across subjects
+        indx_mat_2 = np.zeros(indx_mat_1.shape)             # for within subject, across partitions
+        indx_mat_3 = np.zeros(indx_mat_1.shape)             # for within-observations
+
+        for subjI in np.arange(n_subjects):
+            subj_start_indx = subjI * n_partitions
+            subj_end_indx = (subjI + 1) * n_partitions
+            indx_mat_2[subj_start_indx: subj_end_indx, subj_start_indx: subj_end_indx] = 1
+            other_subj_inds = np.setdiff1d(np.arange(Z.shape[0]), np.arange(subj_start_indx, subj_end_indx))
+            indx_mat_1[subj_start_indx: subj_end_indx, other_subj_inds] = 1
+            for partI in np.arange(n_partitions):
+                Z[indx] = Y[repI, subjI, partI]
+                indx_mat_3[indx, indx] = 1
+                indx = indx + 1
+
+        variance_mat = np.matmul(Z, Z.T)
+
+        # indices for across subjects (i.e., v_g)
+        indx_mat_1 = np.triu(indx_mat_1, 1)
+        where_across_subject = np.where(indx_mat_1 > 0)
+        SS_1 = np.nanmean(variance_mat[where_across_subject])
+
+        # indices for within subject across partitions (i.e., v_g + v_s)
+        indx_mat_2 = np.triu(indx_mat_2, 1)
+        where_within_subject_across_partitions = np.where(indx_mat_2 > 0)
+        SS_2 = np.nanmean(variance_mat[where_within_subject_across_partitions])
+
+        # indices for within-observation pairs (i.e., v_g + v_s + v_e)
+        indx_mat_3 = np.triu(indx_mat_3, 0)
+        where_within_observation = np.where(indx_mat_3 > 0)
+        SS_3 = np.nanmean(variance_mat[where_within_observation])
+
+        v_e = (SS_3 - SS_2) / n_obs
+        v_s = (SS_2 - SS_1) / n_obs
+        v_g = SS_1 / n_obs
+        variances[repI] = np.array([v_g, v_s, v_e])
+
+    return variances
+
+
+def flat2ndarray(flat_data, part_vec, cond_vec):
+    """
+    convert flat data (n_subjects x n_trials x n_voxels) into a 4d ndarray (n_subjects x n_partitions x n_conditions x n_voxels)
+
+    Args:
+        flat_data:
+        part_vec:
+        cond_vec:
+
+    Returns:
+        data
+
+    """
+
+    [n_subjects, n_trials, n_voxels] = flat_data.shape
+
+    unique_partitions = np.unique(part_vec)
+    n_partitions = unique_partitions.size
+
+    unique_conditions = np.unique(cond_vec)
+    n_conditions = unique_conditions.size
+
+    data = np.zeros((n_subjects, n_partitions, n_conditions, n_voxels))
+
+    for partI in np.arange(n_partitions):
+        for condI in np.arange(n_conditions):
+            trial_inds = np.where(cond_vec == unique_conditions[condI] and part_vec == unique_partitions[partI])
+            data[:, partI, condI, :] = np.mean(flat_data[:, trial_inds, :], axis=1)
+
+
 class DataSet:
     def __init__(self, base_dir):
         """DataSet class:
