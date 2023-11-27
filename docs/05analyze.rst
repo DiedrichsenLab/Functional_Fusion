@@ -82,7 +82,7 @@ Within subject, across runs:
 Within observation:
 
 .. math::
-    E(\mathbf{y}_{i,j}^T\mathbf{y}_{i,k}) =  v_{g} + v_{s} + v_{\epsilon}
+    E(\mathbf{y}_{i,j}^T\mathbf{y}_{i,j}) =  v_{g} + v_{s} + v_{\epsilon}
 
 To develop estimators for these quantities we replace the Expectation with the mean **over all possible pairings**.
 
