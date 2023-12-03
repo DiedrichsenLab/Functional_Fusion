@@ -8,10 +8,13 @@ import pandas as pd
 from datetime import datetime
 
 
-
 data_dir = f'{ut.base_dir}/../Cerebellum/super_cerebellum/'
-design_dir = Path('~/code/Python/Functional_Fusion/preprocessing/design_files/').expanduser()
+rest_dir = Path(f'{data_dir}/resting_state/imaging_data/')
+anat_dir = Path(f'{data_dir}/sc1/anatomicals/')
+design_dir = Path(
+    '~/code/Python/Functional_Fusion/preprocessing/design_files/').expanduser()
 runs = ["01", "02"]
+
 
 def correct_header(img_file):
     """Correct the header of the image file to have a TR of 1. Saves the file as a _hdr.nii.gz file for use with fsl.
@@ -20,18 +23,18 @@ def correct_header(img_file):
     """
     out_file = Path(f"{img_file.strip('.nii')}_hdr.nii.gz")
     img_file = Path(img_file)
-    
+
     if not out_file.exists() and img_file.exists():
         print(f"Adding TR to header of {img_file}")
-        
+
         img = nib.load(img_file)
 
         # Modify the TR field in the header
         img.header['pixdim'][4] = 1
 
-        # Save the modified image as image file ending in '_hdr.nii.gz' 
+        # Save the modified image as image file ending in '_hdr.nii.gz'
         nib.save(img, out_file)
-        
+
     else:
         print(f"{img_file} already processed")
 
@@ -46,15 +49,16 @@ def bet_anatomical(img_file):
     """
     out_file = Path(f"{img_file.strip('.nii')}_brain")
     img_file = Path(img_file)
-    
+
     if not out_file.exists() and img_file.exists():
         print(f"Brain extracting {img_file}")
-        
+
         # Brain extract the anatomical image
         subprocess.run(['bet', str(img_file), str(out_file), '-R'])
-        
+
     else:
         print(f"{img_file} already extracted")
+
 
 def make_design(subject, run, type='ssica'):
     """Create the design file for the single-subject ICA for the subject and run.
@@ -65,7 +69,7 @@ def make_design(subject, run, type='ssica'):
         type (string): type of design file to create (default: 'ssica'). Run 'ssica' for single-subject ICA exploration of data and 'reg' for registration to standard space (to be used by FIX).
     """
 
-    img_file = Path(f"{data_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
+    img_file = Path(f"{rest_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
     design_template = Path(f"{design_dir}/{type}_template.fsf")
     design_output = Path(f"{design_dir}/{type}_{subject}_run-{run}.fsf")
 
@@ -88,17 +92,16 @@ def make_design(subject, run, type='ssica'):
         print(f"{subject} {run}: design file already created")
 
 
-
 def run_ica(subject, run, type='reg'):
     """Run the single-subject ICA on the resting state data for the subject and run.
 
     """
 
-    img_file = Path(f"{data_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
-    ica_dir = Path(f"{data_dir}/s{subject}/run{run}.ica")
+    img_file = Path(f"{rest_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
+    ica_dir = Path(f"{rest_dir}/s{subject}/run{run}.ica")
     design_output = Path(f"{design_dir}/{type}_{subject}_run-{run}.fsf")
 
-    if img_file.is_file() and not ica_dir.is_dir():
+    if img_file.is_file():
         print(f"Running {type} for subject {subject} run {run}")
         subprocess.Popen(['feat', str(design_output)])
 
@@ -111,7 +114,6 @@ def run_ica(subject, run, type='reg'):
             subprocess.run(['open', str(ica_dir / 'report.html')])
         else:
             subprocess.run(['firefox', str(ica_dir / 'report.html')])
-
 
 
 def balanced_subset(subjects, runs, percent_data):
@@ -143,43 +145,42 @@ def balanced_subset(subjects, runs, percent_data):
 
     return list(subset_subjects), list(subset_runs)
 
+
 def make_classifier_sample(add_new_subjects=False):
     # Create a balanced subset of subjects and runs to classify into signal or noise
     # get first element of subject folders
     subject_list = [subject.name for subject in rest_dir.glob('s[0-9][0-9]')]
     percent_data = 30
-    subset_subjects, subset_runs = balanced_subset(subject_list, runs, percent_data)
+    subset_subjects, subset_runs = balanced_subset(
+        subject_list, runs, percent_data)
     # Save
     df = pd.DataFrame({'subject': subset_subjects, 'run': subset_runs})
     df = df.sort_values(by=['subject', 'run'])
     # if file already exists, add a timestamp to the filename
-    subset_file = Path(f"{design_dir}/classified_subjects_{datetime.now().strftime('%Y%m%d')}.tsv")
-    
+    subset_file = Path(
+        f"{design_dir}/classified_subjects_{datetime.now().strftime('%Y%m%d')}.tsv")
 
-    
     if add_new_subjects:
         # Add the new subjects to the existing dataframe
-        akready_classified = pd.read_csv(Path(f"{design_dir}/classified_subjects.tsv"), sep='\t')
+        akready_classified = pd.read_csv(
+            Path(f"{design_dir}/classified_subjects.tsv"), sep='\t')
         akready_classified.run = akready_classified.run.astype(int)
         df = pd.concat([akready_classified, df], ignore_index=True)
-        # Remove duplicates 
+        # Remove duplicates
         df = df.drop_duplicates()
-        df = df.drop_duplicates(subset=['subject'], keep='first').sort_values(by=['subject', 'run'])
+        df = df.drop_duplicates(subset=['subject'], keep='first').sort_values(
+            by=['subject', 'run'])
         # Check if  the subset is still balanced across runs
         print(f"Runs : {df.groupby(['run']).size()}")
         # Make run into zero-padded string
         df.run = df.run.apply(lambda x: f"{x:02d}")
-    
+
     # Save
     df.to_csv(subset_file, index=False, sep='\t')
-    
-
 
 
 if __name__ == "__main__":
-    rest_dir = Path(f'{data_dir}/resting_state/imaging_data/')
-    anat_dir = Path(f'{data_dir}/sc1/anatomicals/')
-    
+
     # --- Brain-extract anatomical to be used in registration ---
     # for subject_path in anat_dir.glob('s[0-9][0-9]'):
     #     subject = subject_path.name[1:]  # remove the 's' prefix
@@ -203,4 +204,3 @@ if __name__ == "__main__":
 
     # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
     # make_classifier_sample()
-
