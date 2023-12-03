@@ -251,7 +251,7 @@ set fmri(regstandard) "/software/fsl/6.0.4/data/standard/MNI152_T1_2mm_brain"
 # 0   : No search
 # 90  : Normal search
 # 180 : Full search
-set fmri(regstandard_search) 90
+set fmri(regstandard_search) 180
 
 # Degrees of Freedom for registration to standard space
 set fmri(regstandard_dof) 12
