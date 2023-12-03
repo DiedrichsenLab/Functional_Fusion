@@ -9,7 +9,7 @@ from datetime import datetime
 
 
 
-data_dir = Path(f'{ut.base_dir}/../Cerebellum/super_cerebellum/resting_state/imaging_data/')
+data_dir = f'{ut.base_dir}/../Cerebellum/super_cerebellum/'
 design_dir = Path('~/code/Python/Functional_Fusion/preprocessing/design_files/').expanduser()
 runs = ["01", "02"]
 
@@ -35,6 +35,23 @@ def correct_header(img_file):
     else:
         print(f"{img_file} already processed")
 
+
+def bet_anatomical(img_file):
+    """Brain extract the anatomical image using FSL's BET.
+    Args:
+        img_file (string): path to the anatomical image file to be brain extracted
+    """
+    out_file = Path(f"{img_file.strip('.nii')}_brain")
+    img_file = Path(img_file)
+    
+    if not out_file.exists() and img_file.exists():
+        print(f"Brain extracting {img_file}")
+        
+        # Brain extract the anatomical image
+        subprocess.run(['bet', str(img_file), str(out_file), '-R'])
+        
+    else:
+        print(f"{img_file} already extracted")
 
 def make_design(subject, run):
     img_file = Path(f"{data_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
@@ -149,21 +166,29 @@ def make_classifier_sample(add_new_subjects=False):
 
 
 if __name__ == "__main__":
-    subject_folders = data_dir.glob('s[0-9][0-9]')
+    rest_dir = Path(f'{data_dir}/resting_state/imaging_data/')
+    anat_dir = Path(f'{data_dir}/sc1/anatomicals/')
+    
+    # --- Brain-extract anatomical to be used in registration ---
+    for subject_path in anat_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]  # remove the 's' prefix
+        for run in runs:
+            img_file = f"{str(subject_path)}/anatomical.nii"
+            bet_anatomical(img_file)
 
     # --- Correct the header of the image files by inserting TR ---
-    # for subject_path in subject_folders:
+    # for subject_path in rest_dir.glob('s[0-9][0-9]'):
     #     subject = subject_path.name[1:]  # remove the 's' prefix
     #     for run in runs:
     #         img_file = f"{str(subject_path)}/rrun_{run}.nii"
     #         correct_header(img_file)
 
     # --- Create the design files for each subject and run single-subject ICA ---
-    for subject_path in subject_folders:
-        subject = subject_path.name[1:]
-        for run in runs:
-            make_design(subject, run)
-            run_ica(subject, run)
+    # for subject_path in rest_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]
+    #     for run in runs:
+    #         make_design(subject, run)
+    #         run_ica(subject, run)
 
     # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
     # make_classifier_sample()
