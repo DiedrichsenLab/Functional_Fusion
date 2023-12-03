@@ -30,7 +30,7 @@ set fmri(featwatcher_yn) 1
 set fmri(sscleanup_yn) 0
 
 # Output directory
-set fmri(outputdir) "/Volumes/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/runYY.ica/reg"
+set fmri(outputdir) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/runYY.ica/reg"
 
 # TR(s)
 set fmri(tr) 1
@@ -269,13 +269,13 @@ set fmri(paradigm_hp) 100
 set fmri(ncopeinputs) 0
 
 # 4D AVW data or FEAT directory (1)
-set feat_files(1) "/Volumes/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/runYY.ica/mean_func"
+set feat_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/runYY.ica/mean_func"
 
 # Add confound EVs text file
 set fmri(confoundevs) 0
 
 # Subject's structural image for analysis 1
-set highres_files(1) "/Volumes/diedrichsen/data/Cerebellum/super_cerebellum/sc1/anatomicals/sXX/anatomical"
+set highres_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/sc1/anatomicals/sXX/anatomical"
 
 # EV 1 title
 set fmri(evtitle1) ""
