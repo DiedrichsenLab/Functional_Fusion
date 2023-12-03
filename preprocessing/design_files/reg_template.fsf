@@ -269,7 +269,7 @@ set fmri(paradigm_hp) 100
 set fmri(ncopeinputs) 0
 
 # 4D AVW data or FEAT directory (1)
-set feat_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/runYY.ica/mean_func"
+set feat_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/runYY.ica/filtered_func_data.nii.gz"
 
 # Add confound EVs text file
 set fmri(confoundevs) 0
