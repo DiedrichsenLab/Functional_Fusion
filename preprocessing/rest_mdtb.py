@@ -38,6 +38,9 @@ def correct_header(img_file):
 
 def bet_anatomical(img_file):
     """Brain extract the anatomical image using FSL's BET.
+
+    N.B. Using BBR registration for functional to anatomical (required for FIX classification) requires that the anatomical image be brain extracted.
+    
     Args:
         img_file (string): path to the anatomical image file to be brain extracted
     """
