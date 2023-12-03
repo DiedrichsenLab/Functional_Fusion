@@ -40,7 +40,7 @@ def bet_anatomical(img_file):
     """Brain extract the anatomical image using FSL's BET.
 
     N.B. Using BBR registration for functional to anatomical (required for FIX classification) requires that the anatomical image be brain extracted.
-    
+
     Args:
         img_file (string): path to the anatomical image file to be brain extracted
     """
@@ -56,10 +56,18 @@ def bet_anatomical(img_file):
     else:
         print(f"{img_file} already extracted")
 
-def make_design(subject, run):
+def make_design(subject, run, type='ssica'):
+    """Create the design file for the single-subject ICA for the subject and run.
+
+    Args:
+        subject (string): subject ID
+        run (string): run ID
+        type (string): type of design file to create (default: 'ssica'). Run 'ssica' for single-subject ICA exploration of data and 'reg' for registration to standard space (to be used by FIX).
+    """
+
     img_file = Path(f"{data_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
-    design_template = Path(f"{design_dir}/ssica_template.fsf")
-    design_output = Path(f"{design_dir}/rest_{subject}_run-{run}.fsf")
+    design_template = Path(f"{design_dir}/{type}_template.fsf")
+    design_output = Path(f"{design_dir}/{type}_{subject}_run-{run}.fsf")
 
     if img_file.is_file() and not design_output.is_file():
         # Read the contents of the template file
@@ -81,17 +89,17 @@ def make_design(subject, run):
 
 
 
-def run_ica(subject, run):
+def run_ica(subject, run, type='reg'):
     """Run the single-subject ICA on the resting state data for the subject and run.
 
     """
 
     img_file = Path(f"{data_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
     ica_dir = Path(f"{data_dir}/s{subject}/run{run}.ica")
-    design_output = Path(f"{design_dir}/rest_{subject}_run-{run}.fsf")
+    design_output = Path(f"{design_dir}/{type}_{subject}_run-{run}.fsf")
 
     if img_file.is_file() and not ica_dir.is_dir():
-        print(f"Running SS melodic for subject {subject} run {run}")
+        print(f"Running {type} for subject {subject} run {run}")
         subprocess.Popen(['feat', str(design_output)])
 
     elif not img_file.is_file():
@@ -138,7 +146,7 @@ def balanced_subset(subjects, runs, percent_data):
 def make_classifier_sample(add_new_subjects=False):
     # Create a balanced subset of subjects and runs to classify into signal or noise
     # get first element of subject folders
-    subject_list = [subject.name for subject in subject_folders]
+    subject_list = [subject.name for subject in rest_dir.glob('s[0-9][0-9]')]
     percent_data = 30
     subset_subjects, subset_runs = balanced_subset(subject_list, runs, percent_data)
     # Save
@@ -173,11 +181,11 @@ if __name__ == "__main__":
     anat_dir = Path(f'{data_dir}/sc1/anatomicals/')
     
     # --- Brain-extract anatomical to be used in registration ---
-    for subject_path in anat_dir.glob('s[0-9][0-9]'):
-        subject = subject_path.name[1:]  # remove the 's' prefix
-        for run in runs:
-            img_file = f"{str(subject_path)}/anatomical.nii"
-            bet_anatomical(img_file)
+    # for subject_path in anat_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]  # remove the 's' prefix
+    #     for run in runs:
+    #         img_file = f"{str(subject_path)}/anatomical.nii"
+    #         bet_anatomical(img_file)
 
     # --- Correct the header of the image files by inserting TR ---
     # for subject_path in rest_dir.glob('s[0-9][0-9]'):
@@ -187,11 +195,11 @@ if __name__ == "__main__":
     #         correct_header(img_file)
 
     # --- Create the design files for each subject and run single-subject ICA ---
-    # for subject_path in rest_dir.glob('s[0-9][0-9]'):
-    #     subject = subject_path.name[1:]
-    #     for run in runs:
-    #         make_design(subject, run)
-    #         run_ica(subject, run)
+    for subject_path in rest_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]
+        for run in runs:
+            make_design(subject, run, type='reg')
+            run_ica(subject, run)
 
     # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
     # make_classifier_sample()
