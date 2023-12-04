@@ -219,11 +219,11 @@ if __name__ == "__main__":
     #         correct_header(img_file)
 
     # --- Create the design files for each subject and run single-subject ICA ---
-    # for subject_path in rest_dir.glob('s[0-9][0-9]'):
-    #     subject = subject_path.name[1:]
-    #     for run in runs:
-    #         make_design(subject, run)
-    #         run_ica(subject, run)
+    for subject_path in rest_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]
+        for run in runs:
+            make_design(subject, run)
+            run_ica(subject, run)
 
     # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
     # make_classifier_sample()
