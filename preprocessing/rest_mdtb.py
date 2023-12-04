@@ -83,18 +83,17 @@ def rename_anatomical(img_file):
     subprocess.run(['mv', str(opti_file), str(out_file)])
 
 
-def make_design(subject, run, type='ssica'):
+def make_design(subject, run):
     """Create the design file for the single-subject ICA for the subject and run.
 
     Args:
         subject (string): subject ID
         run (string): run ID
-        type (string): type of design file to create (default: 'ssica'). Run 'ssica' for single-subject ICA exploration of data and 'reg' for registration to standard space (to be used by FIX).
     """
 
     img_file = Path(f"{rest_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
-    design_template = Path(f"{design_dir}/{type}_template.fsf")
-    design_output = Path(f"{design_dir}/{type}_{subject}_run-{run}.fsf")
+    design_template = Path(f"{design_dir}/ssice_template.fsf")
+    design_output = Path(f"{design_dir}/ssice_{subject}_run-{run}.fsf")
 
     if img_file.is_file() and not design_output.is_file():
         # Read the contents of the template file
@@ -115,17 +114,17 @@ def make_design(subject, run, type='ssica'):
         print(f"{subject} {run}: design file already created")
 
 
-def run_ica(subject, run, type='reg'):
+def run_ica(subject, run):
     """Run the single-subject ICA on the resting state data for the subject and run.
 
     """
 
     img_file = Path(f"{rest_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
     ica_dir = Path(f"{rest_dir}/s{subject}/run{run}.ica")
-    design_output = Path(f"{design_dir}/{type}_{subject}_run-{run}.fsf")
+    design_output = Path(f"{design_dir}/ssica_{subject}_run-{run}.fsf")
 
     if img_file.is_file():
-        print(f"Running {type} for subject {subject} run {run}")
+        print(f"Running ssica for subject {subject} run {run}")
         subprocess.Popen(['feat', str(design_output)])
 
     elif not img_file.is_file():
@@ -223,7 +222,7 @@ if __name__ == "__main__":
     # for subject_path in rest_dir.glob('s[0-9][0-9]'):
     #     subject = subject_path.name[1:]
     #     for run in runs:
-    #         make_design(subject, run, type='reg')
+    #         make_design(subject, run)
     #         run_ica(subject, run)
 
     # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
