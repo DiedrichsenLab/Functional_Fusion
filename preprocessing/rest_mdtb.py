@@ -39,7 +39,7 @@ def correct_header(img_file):
         print(f"{img_file} already processed")
 
 
-def bet_anatomical(img_file):
+def bet_anatomical(img_file, use='opti'):
     """Brain extract the anatomical image using FSL's BET.
 
     N.B. Using BBR registration for functional to anatomical (required for FIX classification) requires that the anatomical image be brain extracted.
@@ -47,17 +47,39 @@ def bet_anatomical(img_file):
     Args:
         img_file (string): path to the anatomical image file to be brain extracted
     """
-    out_file = Path(f"{img_file.strip('.nii')}_brain")
+    if use == 'opti':
+        out_file = Path(f"{img_file.strip('.nii')}_optiBET_brain.nii.gz")
+    elif use == 'bet':
+        out_file = Path(f"{img_file.strip('.nii')}_brain.nii.gz")
     img_file = Path(img_file)
 
     if not out_file.exists() and img_file.exists():
-        print(f"Brain extracting {img_file}")
+        if use == 'opti':
+            print(f"Brain extracting {img_file} with optiBET")
 
-        # Brain extract the anatomical image
-        subprocess.run(['bet', str(img_file), str(out_file), '-R'])
+            # Brain extract the anatomical image
+            subprocess.run(['/srv/diedrichsen/shell/optiBET.sh', '-i', str(img_file)])
+
+        elif use == 'bet':
+            print(f"Brain extracting {img_file} with fsl")
+
+            # Brain extract the anatomical image
+            subprocess.run(['bet', str(img_file), str(out_file), '-R'])
 
     else:
         print(f"{img_file} already extracted")
+
+
+def rename_anatomical(img_file):
+    """Rename the anatomical image file to have a _brain.nii.gz suffix.
+
+    Args:
+        img_file (string): path to the anatomical image file
+    """
+    
+    out_file = f"{img_file.strip('.nii')}_brain.nii.gz"
+    new_file = f"{img_file.strip('.nii')}_optiBET_brain.nii.gz"
+    subprocess.run(['mv', str(out_file), str(new_file)])
 
 
 def make_design(subject, run, type='ssica'):
@@ -182,11 +204,13 @@ def make_classifier_sample(add_new_subjects=False):
 if __name__ == "__main__":
 
     # --- Brain-extract anatomical to be used in registration ---
-    # for subject_path in anat_dir.glob('s[0-9][0-9]'):
-    #     subject = subject_path.name[1:]  # remove the 's' prefix
-    #     for run in runs:
-    #         img_file = f"{str(subject_path)}/anatomical.nii"
-    #         bet_anatomical(img_file)
+    for subject_path in anat_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]  # remove the 's' prefix
+        for run in runs:
+            img_file = f"{str(subject_path)}/anatomical.nii"
+            bet_anatomical(img_file)
+            rename_anatomical(img_file)
+    
 
     # --- Correct the header of the image files by inserting TR ---
     # for subject_path in rest_dir.glob('s[0-9][0-9]'):
@@ -196,11 +220,11 @@ if __name__ == "__main__":
     #         correct_header(img_file)
 
     # --- Create the design files for each subject and run single-subject ICA ---
-    for subject_path in rest_dir.glob('s[0-9][0-9]'):
-        subject = subject_path.name[1:]
-        for run in runs:
-            make_design(subject, run, type='reg')
-            run_ica(subject, run)
+    # for subject_path in rest_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]
+    #     for run in runs:
+    #         make_design(subject, run, type='reg')
+    #         run_ica(subject, run)
 
     # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
     # make_classifier_sample()
