@@ -58,7 +58,8 @@ def bet_anatomical(img_file, use='opti'):
             print(f"Brain extracting {img_file} with optiBET")
 
             # Brain extract the anatomical image
-            subprocess.run(['/srv/diedrichsen/shell/optiBET.sh', '-i', str(img_file)])
+            subprocess.run(
+                ['/srv/diedrichsen/shell/optiBET.sh', '-i', str(img_file)])
 
         elif use == 'bet':
             print(f"Brain extracting {img_file} with fsl")
@@ -76,10 +77,10 @@ def rename_anatomical(img_file):
     Args:
         img_file (string): path to the anatomical image file
     """
-    
+
     out_file = f"{img_file.strip('.nii')}_brain.nii.gz"
-    new_file = f"{img_file.strip('.nii')}_optiBET_brain.nii.gz"
-    subprocess.run(['mv', str(out_file), str(new_file)])
+    opti_file = f"{img_file.strip('.nii')}_optiBET_brain.nii.gz"
+    subprocess.run(['mv', str(opti_file), str(out_file)])
 
 
 def make_design(subject, run):
@@ -209,7 +210,6 @@ if __name__ == "__main__":
             img_file = f"{str(subject_path)}/anatomical.nii"
             # bet_anatomical(img_file)
             rename_anatomical(img_file)
-    
 
     # --- Correct the header of the image files by inserting TR ---
     # for subject_path in rest_dir.glob('s[0-9][0-9]'):
