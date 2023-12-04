@@ -204,12 +204,12 @@ def make_classifier_sample(add_new_subjects=False):
 if __name__ == "__main__":
 
     # --- Brain-extract anatomical to be used in registration ---
-    for subject_path in anat_dir.glob('s[0-9][0-9]'):
-        subject = subject_path.name[1:]  # remove the 's' prefix
-        for run in runs:
-            img_file = f"{str(subject_path)}/anatomical.nii"
-            # bet_anatomical(img_file)
-            rename_anatomical(img_file)
+    # for subject_path in anat_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]  # remove the 's' prefix
+    #     for run in runs:
+    #         img_file = f"{str(subject_path)}/anatomical.nii"
+    #         bet_anatomical(img_file)
+    #         rename_anatomical(img_file)
 
     # --- Correct the header of the image files by inserting TR ---
     # for subject_path in rest_dir.glob('s[0-9][0-9]'):
