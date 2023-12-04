@@ -212,11 +212,11 @@ if __name__ == "__main__":
     #         rename_anatomical(img_file)
 
     # --- Correct the header of the image files by inserting TR ---
-    # for subject_path in rest_dir.glob('s[0-9][0-9]'):
-    #     subject = subject_path.name[1:]  # remove the 's' prefix
-    #     for run in runs:
-    #         img_file = f"{str(subject_path)}/rrun_{run}.nii"
-    #         correct_header(img_file)
+    for subject_path in rest_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]  # remove the 's' prefix
+        for run in runs:
+            img_file = f"{str(subject_path)}/rrun_{run}.nii"
+            correct_header(img_file)
 
     # --- Create the design files for each subject and run single-subject ICA ---
     for subject_path in rest_dir.glob('s[0-9][0-9]'):
