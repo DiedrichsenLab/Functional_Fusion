@@ -92,7 +92,7 @@ def make_design(subject, run):
 
     img_file = Path(f"{rest_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
     design_template = Path(f"{design_dir}/ssice_template.fsf")
-    design_output = Path(f"{design_dir}/ssice_{subject}_run-{run}.fsf")
+    design_output = Path(f"{design_dir}/ssica_{subject}_run-{run}.fsf")
 
     if img_file.is_file() and not design_output.is_file():
         # Read the contents of the template file
@@ -207,7 +207,7 @@ if __name__ == "__main__":
         subject = subject_path.name[1:]  # remove the 's' prefix
         for run in runs:
             img_file = f"{str(subject_path)}/anatomical.nii"
-            bet_anatomical(img_file)
+            # bet_anatomical(img_file)
             rename_anatomical(img_file)
     
 
