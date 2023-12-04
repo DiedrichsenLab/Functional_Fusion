@@ -92,7 +92,7 @@ def make_design(subject, run):
     """
 
     img_file = Path(f"{rest_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
-    design_template = Path(f"{design_dir}/ssice_template.fsf")
+    design_template = Path(f"{design_dir}/ssica_template.fsf")
     design_output = Path(f"{design_dir}/ssica_{subject}_run-{run}.fsf")
 
     if img_file.is_file() and not design_output.is_file():
