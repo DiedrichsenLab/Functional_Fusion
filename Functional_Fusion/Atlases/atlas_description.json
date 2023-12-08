@@ -55,6 +55,13 @@
          "structure": "wholebrain",
          "normspace": "FSL",
          "type": "AtlasVolumetric"},
+      "MNIAsymBG2": {
+         "dir": "tpl-MNI152NLin6Asym",
+         "space": "MNI152NLin6Asym",
+         "res": 2,
+         "mask": "tpl-MNI152NLin6Asym_res-2_BG.nii",
+         "structure": "BasalGanglia",
+         "type": "AtlasVolumetric"},
      "fs32k": {
 	      "dir": "tpl-fs32k",
           "longname": "fs32k",

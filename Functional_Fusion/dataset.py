@@ -698,6 +698,18 @@ class DataSetNative(DataSet):
         return fnames, T
 
     def get_indiv_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+        """Get Atlasmap for the transform of an individual subject to the space in which the atlas is defined. 
+
+        Args:
+            atlas (Atlas): Atlas object
+            sub (int): Subject number 
+            ses_id (str): 
+                Session for dataset for datasets, for which not all sessions are aligned to the same space
+            smooth (float): Smoothing kernel width. Defaults to None = nearest neighbor. 
+
+        Returns:
+            _type_: _description_
+        """
         atlas_maps = []
         if atlas.structure == 'cerebellum':
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
