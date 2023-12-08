@@ -30,9 +30,23 @@ def reliability_ibc():
         RB[:,i] = ds.reliability_between_subj(data,cond_vec=info.reg_id)
     pass
 
+def test_decompose(): 
+    N = 5
+    R = 3 
+    C = 10
+    P = 80 
+
+    data = np.random.randn(N,R,C,P)
+    variances = ds.decompose_pattern_into_group_indiv_noise(data,'global')
+    variances1 = ds.decompose_pattern_into_group_indiv_noise(data,'voxel_wise')
+    variances2 = ds.decompose_pattern_into_group_indiv_noise(data,'condition_wise')
+    
+    pass
+
+
 if __name__ == "__main__":
     # make_mdtb_suit()
-    reliability_ibc()
+    test_decompose()
     # data,info,ds = ds.get_dataset(base_dir,'Demand',atlas='MNISymC3')
     pass
 
