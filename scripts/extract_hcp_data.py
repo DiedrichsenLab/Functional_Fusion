@@ -147,7 +147,7 @@ def extract_connectivity_fingerprint_da(type='Ico162Run', space='MNISymC3', ses_
     # 1. Extract connectivity from ICA Network
     if target.startswith('Net'):
         net = nb.load(hcp_dataset.base_dir +
-                      f'/targets/{target}_space-fs32k.dscalar.nii')
+                      f'/targets/tpl-fs32k_{target}.dscalar.nii')
         names = [f'Network_{i}' for i in range(1, net.shape[0] + 1)]
 
     # 2. Extract connectivity from Icosahedrons
