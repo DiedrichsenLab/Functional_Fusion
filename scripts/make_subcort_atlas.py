@@ -1,7 +1,9 @@
-import numpy as np
-import nibabel as nb
+
 import os
 import Functional_Fusion.atlas_map as am
+
+import numpy as np
+import nibabel as nb
 
 # download the atlas from FSL (MNI152NonLinear Asym 6 or sym) and make a mask for all the basal ganglia structures
 # List of indices for Basal ganglia structures from HarvardOxford subcortical atlas"
@@ -42,7 +44,7 @@ def make_mask_harvOx(atlas_file, mask_index = [5, 16, 7, 18, 6, 17, 11, 21]):
 
     return nb_mask
 
-def save_bg_mask_maxprob(path_to_scAtlas, thr = 50, res = 1):
+def save_bg_mask_maxprob(path_to_atlas, thr = 50, res = 1):
     """_code to make and save basal ganglia masks based on max probability images for HarvardOxford cortical/subcortical atlas_
     Args:
         path_to_scAtlas (str): _full path (including name) to the atlas file_ Example name: "HarvardOxford-sub-maxprob-thr50-1mm.nii.gz"
@@ -54,17 +56,25 @@ def save_bg_mask_maxprob(path_to_scAtlas, thr = 50, res = 1):
 
 
     # this can be found in $FSLDIR/data/atlases
-    path_to_nii = f"{path_to_scAtlas}/HarvardOxford-sub-maxprob-thr{thr}-{res}mm.nii.gz"
+    path_to_nii = f"{path_to_atlas}/HarvardOxford-sub-maxprob-thr{thr}-{res}mm.nii.gz"
     
     # create mask for basal ganglia resolution 1 mm
     bg_mask = make_mask_harvOx(atlas_file = path_to_nii, mask_index = [5, 16, 7, 18, 6, 17, 11, 21])
-    path_to_bg_atlas = f"{atlas_dir}/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-1_bgmask.nii"
+    path_to_bg_atlas = f"{atlas_dir}/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-{res}_bgmask.nii"
     nb.save(bg_mask, path_to_bg_atlas)
     return
 
 
 if __name__ == "__main__":
-    save_bg_mask_maxprob(res=1)
-    save_bg_mask_maxprob(res=2)
+
+    # save masks for basal ganglia res 1 and 2 mm
+    path_to_atlas = "/Users/lshahsha/Desktop/HarvardOxford" # this can be found in $FSLDIR/data/atlases
+    save_bg_mask_maxprob(path_to_atlas=path_to_atlas, res=1)
+    save_bg_mask_maxprob(path_to_atlas=path_to_atlas, res=2)
+
+    # testing functions from atlas map
+    atlas, ainfo = am.get_atlas(atlas_str="MNIAsymBg2")
+
+    print(atlas.structure)
 
     pass
