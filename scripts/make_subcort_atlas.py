@@ -41,6 +41,22 @@ def make_mask_harvOx(atlas_file, mask_index = [5, 16, 7, 18, 6, 17, 11, 21]):
     return nb_mask
 
 if __name__ == "__main__":
-    path_to_atlas = "/Users/lshahsha/Desktop/HarvardOxford/HarvardOxford-sub-maxprob-thr50-1mm.nii.gz"
-    bg_mask = make_mask_harvOx(atlas_file = path_to_atlas, mask_index = [5, 16, 7, 18, 6, 17, 11, 21])
-    th_mask = make_mask_harvOx(atlas_file = path_to_atlas, mask_index = [4, 15])
+    # directory to save the atlas mask
+    atlas_dir = "/Volumes/Diedrichsen_data$/data/FunctionalFusion/Atlases"
+
+    # this can be found in $FSLDIR/data/atlases
+    path_to_nii_1mm = "/Users/lshahsha/Desktop/HarvardOxford/HarvardOxford-sub-maxprob-thr50-1mm.nii.gz"
+    path_to_nii_2mm = "/Users/lshahsha/Desktop/HarvardOxford/HarvardOxford-sub-maxprob-thr50-2mm.nii.gz"
+    
+    # create mask for basal ganglia resolution 1 mm
+    bg_mask = make_mask_harvOx(atlas_file = path_to_nii_1mm, mask_index = [5, 16, 7, 18, 6, 17, 11, 21])
+    path_to_bg_atlas = f"{atlas_dir}/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-1_bgmask.nii"
+    nb.save(bg_mask, path_to_bg_atlas)
+
+    # create mask for basal ganglia resolution 1 mm
+    bg_mask = make_mask_harvOx(atlas_file = path_to_nii_2mm, mask_index = [5, 16, 7, 18, 6, 17, 11, 21])
+    path_to_bg_atlas = f"{atlas_dir}/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-2_bgmask.nii"
+    nb.save(bg_mask, path_to_bg_atlas)
+
+    # create mask for thalamus resolution 1 mm
+    th_mask = make_mask_harvOx(atlas_file = path_to_nii_1mm, mask_index = [4, 15])
