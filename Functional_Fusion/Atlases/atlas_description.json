@@ -80,5 +80,21 @@
           "mask": ["tpl-fs32kAsym_hemi-L_mask.label.gii",
             	   "tpl-fs32kAsym_hemi-R_mask.label.gii"],
           "structure": ["cortex_left","cortex_right"],
-          "type": "AtlasSurface"}
+          "type": "AtlasSurface"}, 
+     "MNIAsymBg1": {
+            "dir": "tpl-MNI152NLin6Asym",
+            "space": "MNI152NLin6Asym",
+            "res": 1,
+            "mask": "tpl-MNI152NLin6Asym_res-1_bgmask.nii",
+            "structure": "basal_ganglia",
+            "normspace": "FSL",
+            "type": "AtlasVolumetric"},
+     "MNIAsymBg2": {
+            "dir": "tpl-MNI152NLin6Asym",
+            "space": "MNI152NLin6Asym",
+            "res": 2,
+            "mask": "tpl-MNI152NLin6Asym_res-2_bgmask.nii",
+            "structure": "basal_ganglia",
+            "normspace": "FSL",
+            "type": "AtlasVolumetric"}
 }
