@@ -13,7 +13,7 @@ import warnings
 import nitools as nt
 import json
 import re
-import os 
+import os
 
 # Need to do self import here to get Atlas directory
 import Functional_Fusion.atlas_map as am
@@ -44,7 +44,9 @@ def get_atlas(atlas_str, atlas_dir=default_atlas_dir):
             mask.append(atlas_dir + f"/{ainf['dir']}/{m}")
     else:
         mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
-    atlas = At(atlas_str, mask, ainf["structure"])
+    atlas = At(atlas_str, mask)
+    atlas.structure = ainf["structure"]
+    atlas.space = ainf["space"]
     return atlas, ainf
 
 def get_deform(target, source="MNIAsym2",atlas_dir = default_atlas_dir):
@@ -126,6 +128,8 @@ class Atlas:
         """
         self.name = name
         self.P = np.nan  # Number of locations in this atlas
+        self.structure = 'unknown'
+        self.space = 'unknown'
 
     def get_parcel(self, label_img):
         """adds a label_vec to the atlas that assigns each voxel / node of the atlas
@@ -146,7 +150,7 @@ class Atlas:
 
 
 class AtlasVolumetric(Atlas):
-    def __init__(self, name, mask_img, structure="cerebellum"):
+    def __init__(self, name, mask_img):
         """Atlas Volumetric is an atlas for a Volumetric
         space / structure.
 
@@ -164,7 +168,6 @@ class AtlasVolumetric(Atlas):
         self.mask = Xmask
         self.world = nt.affine_transform_mat(self.vox, self.mask_img.affine)
         self.P = self.world.shape[1]
-        self.structure = structure
 
     def get_brain_model_axis(self):
         """Returns brain model axis
