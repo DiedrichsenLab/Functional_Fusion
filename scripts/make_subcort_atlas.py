@@ -68,7 +68,7 @@ def save_bg_mask_maxprob(path_to_atlas, thr = 50, res = 1):
 if __name__ == "__main__":
 
     # save masks for basal ganglia res 1 and 2 mm
-    path_to_atlas = "/Users/lshahsha/Desktop/HarvardOxford" # this can be found in $FSLDIR/data/atlases
+    path_to_atlas = "/Users/lshahsha/Documents/myAtlases/HarvardOxford" # this can be found in $FSLDIR/data/atlases
     save_bg_mask_maxprob(path_to_atlas=path_to_atlas, res=1)
     save_bg_mask_maxprob(path_to_atlas=path_to_atlas, res=2)
 
@@ -76,5 +76,4 @@ if __name__ == "__main__":
     atlas, ainfo = am.get_atlas(atlas_str="MNIAsymBg2")
 
     print(atlas.structure)
-
     pass
