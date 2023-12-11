@@ -1070,7 +1070,7 @@ class DataSetMDTB(DataSetNative):
                 f'{d.cond_name}' for i, d in data_info.iterrows()]
 
             # Baseline substraction
-            B = np.ones((data_info.shape[0],))
+            B = np.ones((data_info.shape[0],)).reshape(-1, 1)
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
