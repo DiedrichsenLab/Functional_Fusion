@@ -19,9 +19,9 @@ if not Path(base_dir).exists():
 data_dir = base_dir + '/WMFS'
 atlas_dir = base_dir + '/Atlases'
 
-def extract_wmfs(ses_id='ses-01',type='CondHalf',atlas='MNISymC3'):
+def extract_wmfs(ses_id='ses-01',type='CondHalf',atlas='MNISymC3', smooth=2.0):
     dataset = DataSetWMFS(data_dir)
-    dataset.extract_all(ses_id,type,atlas)
+    dataset.extract_all(ses_id,type,atlas, smooth=smooth)
 
 
 
