@@ -19,9 +19,9 @@ if not Path(base_dir).exists():
 data_dir = base_dir + '/Demand'
 atlas_dir = base_dir + '/Atlases'
 
-def extract_demand(ses_id='ses-01',type='CondHalf',atlas='MNISymC3'):
+def extract_demand(ses_id='ses-01',type='CondHalf',atlas='MNISymC3', smooth = 2.0):
     de_dataset = DataSetDemand(data_dir)
-    de_dataset.extract_all(ses_id,type,atlas)
+    de_dataset.extract_all(ses_id,type,atlas, smooth = smooth)
 
 if __name__ == "__main__":
     # extract_demand(ses_id='ses-01', type='CondHalf', atlas='MNISymC2')
