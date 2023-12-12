@@ -142,3 +142,6 @@ scripts/run_pipeline.py
 ff.code-workspace
 scripts/.vscode/launch.json
 
+preprocessing/mdtb_rest_LOO/
+preprocessing/mdtb_rest/00001.txt
+settings.sh
