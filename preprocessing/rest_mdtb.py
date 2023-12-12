@@ -202,7 +202,6 @@ def make_classifier_sample(add_new_subjects=False):
     df.to_csv(subset_file, index=False, sep='\t')
 
 
-
 def classify_components():
     runs = ["01", "02"]
     # Load the list of subjects to classify
@@ -210,10 +209,12 @@ def classify_components():
     classified_df = pd.read_csv(classified_file, sep='\t', header=0)
 
     for subject_number, run in classified_df.values:
-        subject_path = op.join(data_dir, f'resting_state/imaging_data/{subject_number}')
+        subject_path = op.join(
+            data_dir, f'resting_state/imaging_data/{subject_number}')
 
         # Check if components are not classified
-        ica_path = op.join(subject_path, f'run{run:02d}.feat', 'filtered_func_data.ica')
+        ica_path = op.join(
+            subject_path, f'run{run:02d}.feat', 'filtered_func_data.ica')
         labels_file = op.join(ica_path, 'hand_labels_noise.txt')
         if op.exists(ica_path) and not op.exists(labels_file):
             print(f"Classifying {subject_number} run{run}")
@@ -237,17 +238,15 @@ def classify_components():
             if op.exists(rot_trans_plot):
                 subprocess.run(['open', op.join(subject_path, f'*_{run}.png')])
             else:
-                subprocess.run(['open', op.join(subject_path, f'run{run}.feat', 'report_prestats.html')])
+                subprocess.run(
+                    ['open', op.join(subject_path, f'run{run}.feat', 'report_prestats.html')])
 
             # Open fsleyes
-            subprocess.run(['fsleyes', '--scene', 'melodic', '-ad', op.join(subject_path, f'run{run}.feat', 'filtered_func_data.ica')])
+            subprocess.run(['fsleyes', '--scene', 'melodic', '-ad',
+                           op.join(subject_path, f'run{run}.feat', 'filtered_func_data.ica')])
 
         else:
             print(f"Already classified {subject_number} run{run}")
-
-
-
-
 
 
 if __name__ == "__main__":
@@ -277,13 +276,13 @@ if __name__ == "__main__":
     # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
     # make_classifier_sample()
 
-
     # --- Classify components ---
     # classify_components()
 
-
-    # --- After classification, run fix ---    
-    ica_folders =  [f"{folder}/run{run}_smoothed.ica" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if op.exists(f'{folder}/run{run}_smoothed.ica/filtered_func_data.ica/hand_labels_noise.txt')]
-    ica_folders =  ica_folders + [f"{folder}/run{run}.feat" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if op.exists(f"{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt")]
+    # --- After classification, run fix ---
+    ica_folders = [f"{folder}/run{run}_smoothed.ica" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if op.exists(
+        f'{folder}/run{run}_smoothed.ica/filtered_func_data.ica/hand_labels_noise.txt')]
+    ica_folders = ica_folders + [f"{folder}/run{run}.feat" for folder in rest_dir.glob(
+        's[0-9][0-9]') for run in runs if op.exists(f"{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt")]
     subprocess.run(
-    ['/srv/software/fix/1.06.15/', '-t', 'mdtb_rest', '-l'] + ica_folders)
+        ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_rest', '-l'] + ica_folders)
