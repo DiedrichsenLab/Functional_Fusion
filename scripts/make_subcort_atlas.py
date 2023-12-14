@@ -20,7 +20,7 @@ import nibabel as nb
 # Left Thalamus: 4
 # Right Thalamus: 15
 
-def make_mask_harvOx(atlas_file, mask_index = [5, 16, 7, 18, 6, 17, 11, 21]):
+def make_mask_harvOx(atlas_file, mask_index = [5, 16, 7, 18, 6, 17, 11, 21], bin = True):
     """_uses thresholded max probability image created for HarvardOxford atlas from FSL to create a mask_
 
     Args:
@@ -28,6 +28,7 @@ def make_mask_harvOx(atlas_file, mask_index = [5, 16, 7, 18, 6, 17, 11, 21]):
         mask_index (list, optional): _list of indices corresponding to bg structures from xml file_. 
                                     Defaults to [5, 16, 7, 18, 6, 17, 11, 21] for basal ganglia (gives one mask including left and right structures)
                                     Use [4, 15] for Thalamus (gives one mask including left and right structures).
+        bin (bool, optional): _if True, the mask will be binary. If False, the mask will have values corresponding to the selected atlas values in mask_index_. Defaults to True.
     Returns:
         nb_mask (nb.nifti object): _nifti image of the mask_
     """
@@ -38,6 +39,10 @@ def make_mask_harvOx(atlas_file, mask_index = [5, 16, 7, 18, 6, 17, 11, 21]):
     dat_atl = nb_atl.get_fdata().astype(int)
     # make a mask for thalamus only and test it
     dat_mask = np.isin(dat_atl, mask_index)*1 # multiply by 1 to convert boolean to integer
+
+    if ~bin: 
+        # multiply the mask by the atlas data to get the mask for the basal ganglia
+        dat_mask = dat_mask*dat_atl
 
     # make a nifti imaging affine matrix and header from the original image of the atlas
     nb_mask = nb.Nifti1Image(dat_mask, affine=nb_atl.affine, header = nb_atl.header)
@@ -64,16 +69,33 @@ def save_bg_mask_maxprob(path_to_atlas, thr = 50, res = 1):
     nb.save(bg_mask, path_to_bg_atlas)
     return
 
+def make_bg_label():
+    """creates a label file containing only labels for BG from harvard oxford atlas
+    """
+    pass
 
 if __name__ == "__main__":
 
-    # save masks for basal ganglia res 1 and 2 mm
+
+
+    # # save masks for basal ganglia res 1 and 2 mm
     path_to_atlas = "/Users/lshahsha/Documents/myAtlases/HarvardOxford" # this can be found in $FSLDIR/data/atlases
-    save_bg_mask_maxprob(path_to_atlas=path_to_atlas, res=1)
-    save_bg_mask_maxprob(path_to_atlas=path_to_atlas, res=2)
+    path_to_nii = f"{path_to_atlas}/HarvardOxford-sub-maxprob-thr{50}-{2}mm.nii.gz"
 
-    # testing functions from atlas map
-    atlas, ainfo = am.get_atlas(atlas_str="MNIAsymBg2")
+    # atl-HarvardOxBg_space-MNI152NLin6Asym_dseg.nii
+    # save the mask for basal ganglia atlas
+    # save_bg_mask_maxprob(path_to_atlas=path_to_atlas, res=1)
+    # save_bg_mask_maxprob(path_to_atlas=path_to_atlas, res=2)
 
-    print(atlas.structure)
+    # make a label file and save it
+    base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Atlases'
+    nb_label = make_mask_harvOx(path_to_nii, mask_index = [5, 16, 7, 18, 6, 17, 11, 21], bin = False)
+    path_to_label = f"{base_dir}/tpl-MNI152NLin6Asym/atl-HarvardOxBg_space-MNI152NLin6Asym_dseg.nii"
+    nb.save(nb_label, path_to_label)    
+
+
+    # # testing functions from atlas map
+    # atlas, ainfo = am.get_atlas(atlas_str="MNIAsymBg2")
+
+    # print(atlas.structure)
     pass
