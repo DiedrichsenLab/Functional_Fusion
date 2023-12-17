@@ -248,6 +248,13 @@ def classify_components():
         else:
             print(f"Already classified {subject_number} run{run}")
 
+def copy_motionparams(subject_path, run)
+    ica_path = f"{str(subject_path)}/run{run}.feat"
+    rp_file = f"{str(subject_path)}/rp_run_{run}.txt"
+    if op.exists(ica_path) and op.exists(rp_file):
+        subprocess.run(['mkdir', f"{ica_path}/mc"])
+        subprocess.run(['cp', rp_file, f"{ica_path}/mc/prefiltered_func_data_mcf.par"])
+    
 
 if __name__ == "__main__":
 
@@ -278,6 +285,13 @@ if __name__ == "__main__":
 
     # --- Classify components ---
     # classify_components()
+
+    # --- Copy motion parameter files to ica folders for feature extraction ---
+    for subject_path in rest_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]
+        for run in runs:
+            copy_motionparams(subject_path, run)
+
 
     # --- After classification, run fix ---
     ica_folders = [f"{folder}/run{run}_smoothed.ica" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if op.exists(
