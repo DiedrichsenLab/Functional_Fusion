@@ -7,6 +7,7 @@ import random
 from itertools import product
 import pandas as pd
 from datetime import datetime
+import os
 
 
 data_dir = f'{ut.base_dir}/../Cerebellum/super_cerebellum/'
@@ -210,7 +211,7 @@ def classify_components():
 
     for subject_number, run in classified_df.values:
         subject_path = op.join(
-            data_dir, f'resting_state/imaging_data/{subject_number}')
+            rest_dir, subject_number)
 
         # Check if components are not classified
         ica_path = op.join(
@@ -310,6 +311,9 @@ if __name__ == "__main__":
 
     # --- Run leave-one-out testing using HCP training data and standard training data to compare acccuracy ---
     ica_folders = get_ica_folders()
+    # change working directory to output directory
+    os.chdir(f'{rest_dir}/../')
+    
     subprocess.run(
         ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/HCP_hp2000.RData', 'hcp3t'] + ica_folders)
     subprocess.run(
