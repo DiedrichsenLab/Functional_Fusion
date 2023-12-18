@@ -248,20 +248,24 @@ def classify_components():
         else:
             print(f"Already classified {subject_number} run{run}")
 
+
 def get_ica_folders():
     ica_folders = [f"{folder}/run{run}_smoothed.ica" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if op.exists(
         f'{folder}/run{run}_smoothed.ica/filtered_func_data.ica/hand_labels_noise.txt')]
     ica_folders = ica_folders + [f"{folder}/run{run}.feat" for folder in rest_dir.glob(
         's[0-9][0-9]') for run in runs if op.exists(f"{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt")]
+
     return ica_folders
+
 
 def copy_motionparams(subject_path, run):
     ica_path = f"{str(subject_path)}/run{run}.feat"
     rp_file = f"{str(subject_path)}/rp_run_{run}.txt"
     if op.exists(ica_path) and op.exists(rp_file):
         subprocess.run(['mkdir', f"{ica_path}/mc"])
-        subprocess.run(['cp', rp_file, f"{ica_path}/mc/prefiltered_func_data_mcf.par"])
-    
+        subprocess.run(
+            ['cp', rp_file, f"{ica_path}/mc/prefiltered_func_data_mcf.par"])
+
 
 if __name__ == "__main__":
 
@@ -293,14 +297,20 @@ if __name__ == "__main__":
     # --- Classify components ---
     # classify_components()
 
-    # --- Copy motion parameter files to ica folders for feature extraction ---
-    for subject_path in rest_dir.glob('s[0-9][0-9]'):
-        subject = subject_path.name[1:]
-        for run in runs:
-            copy_motionparams(subject_path, run)
+    # # --- Copy motion parameter files to ica folders for feature extraction ---
+    # for subject_path in rest_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]
+    #     for run in runs:
+    #         copy_motionparams(subject_path, run)
 
+    # # --- After classification, run fix training and leave-one-out testing ---
+    # ica_folders = get_ica_folders()
+    # subprocess.run(
+    #     ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_rest', '-l'] + ica_folders)
 
-    # --- After classification, run fix ---
+    # --- Run leave-one-out testing using HCP training data and standard training data to compare acccuracy ---
     ica_folders = get_ica_folders()
     subprocess.run(
-        ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_rest', '-l'] + ica_folders)
+        ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/HCP_hp2000.RData', 'hcp3t'] + ica_folders)
+    subprocess.run(
+        ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/Standard.RData', 'standard'] + ica_folders)
