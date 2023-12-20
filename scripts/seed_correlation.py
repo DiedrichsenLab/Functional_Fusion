@@ -8,8 +8,7 @@ import numpy as np
 # set paths
 base_dir = paths.set_base_dir()
 rest_dir = f'{base_dir}/../Cerebellum/super_cerebellum/resting_state/'
-data_dir = f'{base_dir}/../Cerebellum/super_cerebellum/resting_state/imaging_data'
-
+data_dir = f'{rest_dir}/imaging_data'
 
 def extract_voxel_timeseries(data, coord):
     x, y, z = coord
@@ -22,8 +21,8 @@ def correlate_with_all_voxels(X, Y):
     Y = util.zstandarize_ts(Y)
     return Y.T @ X / X.shape[0]
 
-
-cerebellum_coordinates = {
+def get_cerebellum_coordinates():
+    cerebellum_coordinates= {
     's02': (36, 23, 20),
     's03': (38, 21, 17),
     's06': (37, 21, 18),
@@ -133,12 +132,12 @@ def get_all_corrmaps(save=False, roi='cerebellum'):
     correlations_maps = []
     folders = Path(data_dir).glob('s*')
     for s, subject in enumerate(folders):
-        subject = str(subject).split('/')[-1]
-        for run in [1, 2]:
-            for clean in [True, False]:
-                correlation_map = get_corrmap(
-                    subject, run, clean=clean, roi=roi, save=save)
-                correlations_maps.append(correlation_map)
+            subject = str(subject).split('/')[-1]
+            for run in [1, 2]:
+                for clean in [True, False]:
+                    correlation_map = get_corrmap(
+                        subject, run, clean=clean, roi=roi, save=save)
+                    correlations_maps.append(correlation_map)
 
 
 if __name__ == "__main__":
