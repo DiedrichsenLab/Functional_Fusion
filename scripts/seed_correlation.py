@@ -67,7 +67,6 @@ subjects_runs = {
     's08': [2],
     's10': [2]}
 
-
 if __name__ == "__main__":
     # set paths
     base_dir = paths.set_base_dir()

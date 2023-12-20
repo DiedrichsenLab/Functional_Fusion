@@ -88,3 +88,32 @@ done
 i=/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10
 echo $i;
 fsleyes --voxelLoc 91 73 101 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func 
+
+
+fsleyes \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run01.feat/reg/example_func.nii.gz \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run01.feat/reg/highres.nii.gz \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s06-run01.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s06-run01_clean.nii.gz -dr 0.1 0.3 -cm red-yellow &
+
+
+fsleyes \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run01.feat/reg/example_func.nii.gz \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run01.feat/reg/highres.nii.gz \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s07-run01.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s07-run01_clean.nii.gz -dr 0.1 0.3 -cm red-yellow &
+
+
+fsleyes \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run01.feat/reg/example_func.nii.gz \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run01.feat/reg/highres.nii.gz \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s08-run02.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s08-run02_clean.nii.gz -dr 0.1 0.3 -cm red-yellow &
+
+
+fsleyes \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run01.feat/reg/example_func.nii.gz \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run01.feat/reg/highres.nii.gz \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s10-run02.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s10-run02_clean.nii.gz -dr 0.1 0.3 -cm red-yellow &
+
