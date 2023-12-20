@@ -94,9 +94,9 @@ def get_corrmap(subject, run, clean=False, roi='cerebellum', save=False):
     # z_transformed_map = z_transform_correlation_map(correlation_map)
     
     # Save correlation map
-    save_path = f'{rest_dir}/fix_ica/corrmap-{roi[0]}_{subject}-run{run:02d}_prefix.nii.gz'
+    save_path = f'{rest_dir}/fix_ica/corrmaps/{roi[0]}_{subject}-run{run:02d}_prefix.nii.gz'
     if clean:
-        save_path = f'{rest_dir}/fix_ica/corrmap-{roi[0]}_{subject}-run{run:02d}_postfix.nii.gz'
+        save_path = f'{rest_dir}/fix_ica/corrmaps/{roi[0]}_{subject}-run{run:02d}_postfix.nii.gz'
     correlation_img = mask.copy()
     correlation_img[mask > 0] = correlation_map
     correlation_image = nib.Nifti1Image(
