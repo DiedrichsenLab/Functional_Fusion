@@ -52,7 +52,20 @@ cerebellum_coordinates = {
     's30': (37, 22, 19),
     's31': (37, 22, 19),
 
-}
+    }
+    return cerebellum_coordinates
+
+def extract_voxel_timeseries(data, coord):
+    x, y, z = coord
+    voxel_timeseries = data[x, y, z, :]
+    return voxel_timeseries
+
+
+def correlate_with_all_voxels(X, Y):
+    X = util.zstandarize_ts(X)
+    Y = util.zstandarize_ts(Y)
+    return Y.T @ X / X.shape[0]
+
 
 
 def get_corrmap(subject, run, clean=False, roi='cerebellum', save=False):
@@ -74,12 +87,13 @@ def get_corrmap(subject, run, clean=False, roi='cerebellum', save=False):
         data_path = f'{rest_dir}/imaging_data/{subject}/run{run:02d}.feat/filtered_func_data_clean.nii.gz'
     data = nib.load(data_path).get_fdata()
 
+    cerebellum_coordinates = get_cerebellum_coordinates()
     # Extract voxel timeseries
     if roi == 'cerebellum':
         seed_coord = cerebellum_coordinates[subject]
     else:
         seed_coord = cerebellum_coordinates[subject]
-        seed_coord = (seed_coord[0], seed_coord[1], seed_coord[2] + 5)
+        seed_coord = (seed_coord[0], seed_coord[1], seed_coord[2] + 10)
     voxel_timeseries = extract_voxel_timeseries(data, seed_coord)
     # voxel_timeseries = voxel_timeseries.reshape((voxel_timeseries.shape[0], 1)).T
 

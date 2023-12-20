@@ -78,7 +78,7 @@ done
 
  for i in /Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s*; do
     echo $i;
-    fsleyes --voxelLoc 91 73 101 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func ;
+    fsleyes --voxelLoc 91 73 147 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func ;
 done
 
 
@@ -87,33 +87,90 @@ done
 
 i=/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10
 echo $i;
-fsleyes --voxelLoc 91 73 101 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func 
+fsleyes --voxelLoc 91 73 147 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func 
+
+
+
+# ------ CEREBELLUM ----------------
 
 
 fsleyes \
 /Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run01.feat/reg/example_func.nii.gz \
 /Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run01.feat/reg/highres.nii.gz \
-/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s06-run01.nii.gz -dr 0.1 0.3 -cm red-yellow \
-/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s06-run01_clean.nii.gz -dr 0.1 0.3 -cm red-yellow &
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/c_s06-run01_prefix.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/c_s06-run01_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
 
 
 fsleyes \
 /Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run01.feat/reg/example_func.nii.gz \
 /Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run01.feat/reg/highres.nii.gz \
-/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s07-run01.nii.gz -dr 0.1 0.3 -cm red-yellow \
-/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s07-run01_clean.nii.gz -dr 0.1 0.3 -cm red-yellow &
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/c_s07-run01_prefix.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/c_s07-run01_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
 
 
 fsleyes \
 /Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run01.feat/reg/example_func.nii.gz \
 /Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run01.feat/reg/highres.nii.gz \
-/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s08-run02.nii.gz -dr 0.1 0.3 -cm red-yellow \
-/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s08-run02_clean.nii.gz -dr 0.1 0.3 -cm red-yellow &
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/c_s08-run02_prefix.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/c_s08-run02_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
 
 
 fsleyes \
 /Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run01.feat/reg/example_func.nii.gz \
 /Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run01.feat/reg/highres.nii.gz \
-/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s10-run02.nii.gz -dr 0.1 0.3 -cm red-yellow \
-/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/correlation_map_s10-run02_clean.nii.gz -dr 0.1 0.3 -cm red-yellow &
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/c_s10-run02_prefix.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/c_s10-run02_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
 
+
+
+
+
+# ------ OCCIPITAL ----------------
+
+fsleyes \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run01.feat/reg/example_func.nii.gz \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run01.feat/reg/highres.nii.gz \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_s06-run01_prefix.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_s06-run01_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
+
+fsleyes \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run01.feat/reg/example_func.nii.gz \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run01.feat/reg/highres.nii.gz \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_s07-run01_prefix.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_s07-run01_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
+
+fsleyes \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run01.feat/reg/example_func.nii.gz \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run01.feat/reg/highres.nii.gz \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_s08-run02_prefix.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_s08-run02_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
+
+fsleyes \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run01.feat/reg/example_func.nii.gz \
+/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run01.feat/reg/highres.nii.gz \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_s10-run02_prefix.nii.gz -dr 0.1 0.3 -cm red-yellow \
+/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_s10-run02_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
+
+
+# Pull the images up automatically
+for i in /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/imaging_data/*; do
+    echo $i;
+    subject=${i##*imaging_data/}
+    subject=${subject%/}
+    fsleyes --voxelLoc 91 73 147 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func  \
+    /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_${subject}-run01_prefix.nii.gz -dr 0.1 0.3 -cm red-yellow \
+    /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_${subject}-run01_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
+done
+
+
+# Take screenshots automatically
+for i in /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/imaging_data/s*; do
+    echo $i;
+    subject=${i##*imaging_data/}
+    subject=${subject%/}
+    fsleyes render -of ~/Documents/Projects/LocalizationCerebellum/figures/corrmaps/${subject}_prefix.png --voxelLoc 91 73 147 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func  \
+    /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_${subject}-run01_prefix.nii.gz -dr 0.1 0.3 -cm red-yellow \
+    
+    fsleyes render -of ~/Documents/Projects/LocalizationCerebellum/figures/corrmaps/${subject}_postfix.png --voxelLoc 91 73 147 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func  \
+    /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_${subject}-run01_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
+done
