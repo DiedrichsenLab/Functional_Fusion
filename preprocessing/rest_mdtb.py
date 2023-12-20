@@ -313,13 +313,14 @@ if __name__ == "__main__":
     # labelled_folders = get_labelled_folders()
     # # change working directory to output directory (this is where the fix results will be saved)
     # os.chdir(f'{rest_dir}/../fix_ica/')
-    
+
     # subprocess.run(
     #     ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/HCP_hp2000.RData', 'hcp3t'] + labelled_folders)
     # subprocess.run(
     #     ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/Standard.RData', 'standard'] + labelled_folders)
 
     # --- Run FIX cleanup---
+    chosen_threshold = 20
     # # For those scans that have hand-labelled components, clean noise components from the data
     # labelled_folders = [f"{folder}/run{run}.feat" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if op.exists(
     #     f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
@@ -327,13 +328,11 @@ if __name__ == "__main__":
     #     subprocess.run(
     #         ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/hand_labels_noise.txt'])
 
-    
     # For the rest, automatically classify labelled components using mdtb training set, then clean noise components from the data
     automatic_folders = [f"{folder}/run{run}.feat" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if not op.exists(
-    f'{folder}/run{run}feat.ica/filtered_func_data.ica/hand_labels_noise.txt')]
+        f'{folder}/run{run}feat.ica/filtered_func_data.ica/hand_labels_noise.txt')]
     for folder in automatic_folders:
         subprocess.run(
-        ['/srv/software/fix/1.06.15/fix', '-c', f'{str(rest_dir)}/../fix_ica/mdtb_rest.RData', folder])
+            ['/srv/software/fix/1.06.15/fix', '-c', folder, f'{str(rest_dir)}/../fix_ica/mdtb_rest.RData', str(chosen_threshold)])
         # subprocess.run(
-        #     ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/fix4melview_mdtb_rest_LOO_thr20.txt'])
-    
+        #     ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/fix4melview_mdtb_rest_LOO_thr{chosen_threshold}.txt'])
