@@ -8,6 +8,8 @@ import numpy as np
 # set paths
 base_dir = paths.set_base_dir()
 rest_dir = f'{base_dir}/../Cerebellum/super_cerebellum/resting_state/'
+data_dir = f'{base_dir}/../Cerebellum/super_cerebellum/resting_state/imaging_data'
+
 
 def extract_voxel_timeseries(data, coord):
     x, y, z = coord
@@ -20,6 +22,7 @@ def correlate_with_all_voxels(X, Y):
     Y = util.zstandarize_ts(Y)
     return Y.T @ X / X.shape[0]
 
+
 cerebellum_coordinates = {
     's02': (36, 23, 20),
     's03': (38, 21, 17),
@@ -29,39 +32,39 @@ cerebellum_coordinates = {
     's09': (39, 24, 22),
     's10': (38, 26, 21),
     's12': (40, 25, 20),
-    # 's13': (37, 22, 19),
-    # 's14': (37, 22, 19),
-    # 's15': (37, 22, 19),
-    # 's16': (37, 22, 19),
-    # 's17': (37, 22, 19),
-    # 's18': (37, 22, 19),
-    # 's19': (37, 22, 19),
-    # 's20': (37, 22, 19),
-    # 's21': (37, 22, 19),
-    # 's22': (37, 22, 19),
-    # 's23': (37, 22, 19),
-    # 's24': (37, 22, 19),
-    # 's25': (37, 22, 19),
-    # 's26': (37, 22, 19),
-    # 's27': (37, 22, 19),
-    # 's28': (37, 22, 19),
-    # 's29': (37, 22, 19),
-    # 's30': (37, 22, 19),
-    # 's31': (37, 22, 19),
+    's13': (37, 22, 19),
+    's14': (37, 22, 19),
+    's15': (37, 22, 19),
+    's16': (37, 22, 19),
+    's17': (37, 22, 19),
+    's18': (37, 22, 19),
+    's19': (37, 22, 19),
+    's20': (37, 22, 19),
+    's21': (37, 22, 19),
+    's22': (37, 22, 19),
+    's23': (37, 22, 19),
+    's24': (37, 22, 19),
+    's25': (37, 22, 19),
+    's26': (37, 22, 19),
+    's27': (37, 22, 19),
+    's28': (37, 22, 19),
+    's29': (37, 22, 19),
+    's30': (37, 22, 19),
+    's31': (37, 22, 19),
 
 }
 
 
 def get_corrmap(subject, run, clean=False, roi='cerebellum', save=False):
     """Get correlation map for a given subject and run.
-        
+
         Args:
             subject (str): subject ID
             run (int): run number
             clean (bool): whether to use clean data
             roi (str): ROI to use as seed
             save (bool): whether to save the correlation map
-            
+
         Returns:
             correlation_map (np.ndarray): correlation map
     """
@@ -92,7 +95,7 @@ def get_corrmap(subject, run, clean=False, roi='cerebellum', save=False):
 
     # Z-transform correlation map
     # z_transformed_map = z_transform_correlation_map(correlation_map)
-    
+
     # Save correlation map
     save_path = f'{rest_dir}/fix_ica/corrmaps/{roi[0]}_{subject}-run{run:02d}_prefix.nii.gz'
     if clean:
@@ -105,21 +108,25 @@ def get_corrmap(subject, run, clean=False, roi='cerebellum', save=False):
     nib.save(correlation_image, save_path)
     return correlation_map
 
+
 def get_all_corrmaps(save=False, roi='cerebellum'):
     """Get correlation maps for all subjects and runs.
-        
+
         Args:
             save (bool): whether to save the correlation maps
             roi (str): ROI to use as seed
     """
     correlations_maps = []
-    for s, subject in enumerate(rest_dir.glob('s*')):
+    folders = Path(data_dir).glob('s*')
+    for s, subject in enumerate(folders):
+        subject = str(subject).split('/')[-1]
         for run in [1, 2]:
             for clean in [True, False]:
-                correlation_map = get_corrmap(subject, run, clean=clean, roi=roi, save=save)
+                correlation_map = get_corrmap(
+                    subject, run, clean=clean, roi=roi, save=save)
                 correlations_maps.append(correlation_map)
 
+
 if __name__ == "__main__":
-    get_all_corrmaps(save=True, roi='cerebellum')
+    # get_all_corrmaps(save=True, roi='cerebellum')
     get_all_corrmaps(save=True, roi='occipital')
-    
