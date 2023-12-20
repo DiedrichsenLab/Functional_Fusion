@@ -30,6 +30,7 @@ coordinates = {
     's07': (39, 24, 19),
     's08': (38, 23, 19),
     's09': (39, 24, 22),
+    's10': (38, 26, 21),
     's12': (40, 25, 20),
     # 's13': (37, 22, 19),
     # 's14': (37, 22, 19),
@@ -52,12 +53,20 @@ coordinates = {
     # 's31': (37, 22, 19),
 
 }
+
+subjects_runs = {
+    's06': [1],
+    's07': [1],
+    's08': [2],
+    's10': [2]}
 if __name__ == "__main__":
     # set paths
     base_dir = paths.set_base_dir()
     rest_dir = f'{base_dir}/../Cerebellum/super_cerebellum/resting_state/'
-    for s, subject in enumerate(rest_dir.glob('s*')):
-        for run in [1, 2]:
+    # for s, subject in enumerate(rest_dir.glob('s*')):
+    for s, subject in enumerate(subjects_runs.keys()):
+        # for run in [1, 2]:
+        for run in subjects_runs[subject]:
             for clean in [True, False]:
                 # Load data
                 data_path = f'{rest_dir}/imaging_data/{subject}/run{run:02d}.feat/filtered_func_data.nii.gz'

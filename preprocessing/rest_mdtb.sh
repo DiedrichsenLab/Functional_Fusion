@@ -80,3 +80,11 @@ done
     echo $i;
     fsleyes --voxelLoc 91 73 101 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func ;
 done
+
+
+
+
+
+i=/Volumes/diedrichsen_data$/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10
+echo $i;
+fsleyes --voxelLoc 91 73 101 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func 
