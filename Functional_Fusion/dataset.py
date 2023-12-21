@@ -771,12 +771,13 @@ class DataSetNative(DataSet):
     nifti-files in Native space.
     """
 
-    def get_data_fnames(self, participant_id, session_id=None):
+    def get_data_fnames(self, participant_id, session_id=None, type='Cond'):
         """ Gets all raw data files
 
         Args:
             participant_id (str): Subject
             session_id (str): Session ID. Defaults to None.
+            type (str): Type of data. Defaults to 'Cond' for task-based data. For rest data use 'Tseries'.
         Returns:
             fnames (list): List of fnames, last one is the resMS image
             T (pd.DataFrame): Info structure for regressors (reginfo)
@@ -784,9 +785,12 @@ class DataSetNative(DataSet):
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
         T = pd.read_csv(
             dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
-        fnames = [
-            f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
-        fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
+        if type[:4] == 'Cond' or type[:4] == 'Task':
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
+            fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
+        elif type == 'Tseries':
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
+        
         return fnames, T
 
     def get_indiv_atlasmaps(self, atlas, sub, ses_id, smooth=None):
@@ -855,7 +859,7 @@ class DataSetNative(DataSet):
             atlas_maps = self.get_indiv_atlasmaps(myatlas, s, ses_id,
                                                   smooth=smooth)
             print(f'Extract {s}')
-            fnames, info = self.get_data_fnames(s, ses_id)
+            fnames, info = self.get_data_fnames(s, ses_id, type=type)
 
             data = am.get_data_nifti(fnames, atlas_maps)
             data, info = self.condense_data(data, info, type,
