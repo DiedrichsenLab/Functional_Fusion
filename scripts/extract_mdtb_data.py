@@ -9,13 +9,7 @@ import nibabel as nb
 import subprocess
 import scripts.paths as pt
 
-# base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
-# if not Path(base_dir).exists():
-#     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-# if not Path(base_dir).exists():
-#     base_dir = 'Y:/data/FunctionalFusion'
-# if not Path(base_dir).exists():
-#     raise(NameError('Could not find base_dir'))
+
 base_dir = pt.set_base_dir()
 atlas_dir = pt.set_atlas_dir(base_dir)
 data_dir = base_dir + '/MDTB'

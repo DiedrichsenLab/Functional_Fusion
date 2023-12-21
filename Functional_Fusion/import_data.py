@@ -1,10 +1,9 @@
 import shutil
 import pandas as pd
 from pathlib import Path
-import mat73
 import numpy as np
 import scipy.io as sio
-
+import mat73
 
 def import_suit(source_dir, dest_dir, anat_name, participant_id):
     """
@@ -187,3 +186,52 @@ def import_spm_designmatrix(source_dir, dest_dir, sub_id, sess_id):
     DM = X['X']
     filename = dest_dir + f'/{sub_id}_{sess_id}_designmatrix_unf.npy'
     np.save(filename, DM)
+
+
+def create_reginfo(source_dir, dest_dir, ses_id='ses-rest1'):
+    dataset = ds.DataSetHcpResting(str(dest_dir))
+
+    # Import general info
+    info = pd.read_csv(
+        dest_dir + f'/{ses_id}_reginfo.tsv', sep='\t')
+
+    T = dataset.get_participants()
+    for _, id in T.iterrows():
+        print(f'Creating reginfo for {id.participant_id}')
+
+        # Ammend the reginfo.tsv file from the general file
+        reginfo = deepcopy(info)
+        reginfo.insert(loc=0, column='sn', value=[
+            id.participant_id] * info.shape[0])
+
+        # Make folder
+        dest = dest_dir + \
+            f'/derivatives/{id.participant_id}/func/{id.participant_id}_{ses_id}_reginfo.tsv'
+        Path(dest).parent.mkdir(parents=True, exist_ok=True)
+
+        # Save reginfo.tsv file
+        reginfo.to_csv(dest, sep='\t', index=False)
+
+
+def import_func_resting(source_dir, dest_dir, participant_id):
+    """Imports the HCP preprocessed resting state files
+       into a BIDS/derivative structure
+    Args:
+        source_dir (str): source directory
+        dest_dir (str): destination directory
+        participant_id (str): ID of participant
+    """
+    run_name = ['REST1_LR', 'REST1_RL', 'REST2_LR', 'REST2_RL']
+    # Make the destination directory
+    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    for run, run_n in enumerate(run_name):
+
+        # move data into the corresponding session folder
+        src = (f'/rfMRI_{run_n}/rfMRI_{run_n}_Atlas_hp2000_clean.dtseries.nii')
+        dest = (f'/sub-{participant_id}_run-{run}_space-MSMSulc.dtseries.nii')
+
+        try:
+            shutil.copyfile(source_dir + '/MNINonLinear/Results' + src,
+                            dest_dir + dest)
+        except:
+            print('skipping ' + src)

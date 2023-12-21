@@ -1,12 +1,14 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
 import pandas as pd
-import shutil
-from pathlib import Path
-import mat73
 import numpy as np
+import Functional_Fusion.import_data as id
+import scripts.paths as pt
 
-import import_data as id
 
+base_dir = pt.set_base_dir()
+atlas_dir = pt.set_atlas_dir(base_dir)
+data_dir = base_dir + '/MDTB'
+atlas_dir = base_dir + '/Atlases'
 
 base_dir = '/Volumes/diedrichsen_data$/data'
 orig_dir = base_dir + '/Cerebellum/super_cerebellum'
@@ -43,10 +45,13 @@ def fix_sc2_reginfo():
             T1.to_csv(info,sep='\t',index=False)
 
 if __name__ == "__main__":
-    fix_sc2_reginfo()
-    # T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
-    # for s in T.participant_id[0:1]:
-    #     old_id = s.replace('sub-','s',1)
+    # fix_sc2_reginfo()
+    T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
+    participants = T.participant_id
+    # only take participants who have rest data
+    participants = participants[T['ses-rest']==1]
+    for s in participants:
+        old_id = s.replace('sub-','s',1)
         # dir1 = orig_dir + f'/sc1/suit/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/suit'
         # id.import_suit(dir1,dir2,'anatomical',s)
@@ -67,3 +72,6 @@ if __name__ == "__main__":
         #dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s1'
         # id.import_spm_glm(dir1,dir2,s,'ses-s2',info_dict)
         # id.import_spm_designmatrix(dir1,dir2,s,'ses-s1')
+        dir1 = orig_dir + f'/resting_state/imaging_data_fix/{old_id}'
+        dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
+        id.import_spm_glm(dir1,dir2,s,'ses-rest',info_dict)
