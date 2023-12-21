@@ -1,10 +1,10 @@
 import shutil
 import pandas as pd
 from pathlib import Path
-import mat73
 import numpy as np
 import scipy.io as sio
-
+import mat73
+from copy import deepcopy
 
 def import_suit(source_dir, dest_dir, anat_name, participant_id):
     """
@@ -187,3 +187,90 @@ def import_spm_designmatrix(source_dir, dest_dir, sub_id, sess_id):
     DM = X['X']
     filename = dest_dir + f'/{sub_id}_{sess_id}_designmatrix_unf.npy'
     np.save(filename, DM)
+
+
+def create_reginfo(dest_dir, participant_id, ses_id='ses-rest', reginfo_general='sub-02'):
+    """ Creates a reginfo.tsv file for a given participant
+    Args:
+        reginfo_general (str): file name of general reginfo file
+        dest_dir (str): destination directory
+        participant_id (str): ID of participant
+        ses_id (str): ID of session
+
+        N.B. General reginfo file for rest is in the following format and needs to be created for ONE subject only in the subject's estimates folder:
+
+            run	timepoint	task	time_id
+            1	T0001	    rest	1
+            1	T0002	    rest	2
+            1	T0003	    rest	3
+            1	T0004	    rest	4
+                    .
+                    .
+                    .
+            2	T0601	    rest	601
+            2	T0602	    rest	602
+            2	T0603	    rest	603
+            2	T0604	    rest	604
+                    .
+                    .
+
+    """
+
+    # Import general info
+    reginfo_general_file = f'{reginfo_general}/estimates/{ses_id}/{reginfo_general}_{ses_id}_reginfo.tsv'
+    info = pd.read_csv(dest_dir.split(participant_id)[0] + reginfo_general_file, sep='\t')
+
+    print(f'Creating reginfo for {participant_id}')
+
+    # Ammend the reginfo.tsv file from the general file
+    reginfo = deepcopy(info)
+
+
+    # Make folder
+    dest = dest_dir + \
+        f'/{participant_id}_{ses_id}_reginfo.tsv'
+    Path(dest).parent.mkdir(parents=True, exist_ok=True)
+
+    # Save reginfo.tsv file
+    reginfo.to_csv(dest, sep='\t', index=False)
+
+
+def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict):
+    """Imports the resting state files
+       into a BIDS/derivative structure
+    Args:
+        source_dir (str): source directory
+        dest_dir (str): destination directory
+        participant_id (str): ID of participant
+        ses_id (str): ID of session
+        info_dict (dict): Dictionary with run information and name of subject that stores the pre-created general timeseries reginfo.tsv file
+    """
+    run_names = info_dict['runs']
+
+    # Make the destination directory
+    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    for run in run_names:
+
+        # move data into the corresponding session folder
+        src = (f'{participant_id}_run-{run}.nii')
+        dest = (f'/{participant_id}_{ses_id}_run-{run}.nii')
+
+        try:
+            shutil.copyfile(source_dir + src,
+                            dest_dir + dest)
+        except:
+            print('skipping ' + src)
+        
+        # Make reginfo
+        create_reginfo(dest_dir, participant_id, ses_id=ses_id, reginfo_general=info_dict['reginfo_general'])
+
+
+    # import mask
+    src = f'/{participant_id}_{ses_id}_mask.nii'
+    dest = f'/{participant_id}_{ses_id}_mask.nii'
+    try:
+        shutil.copyfile(source_dir + src,
+                        dest_dir + dest)
+    except:
+        print('skipping ' + src)
+

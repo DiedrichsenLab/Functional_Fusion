@@ -1,26 +1,20 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
 import os
 import pandas as pd
-import shutil
 from pathlib import Path
-import mat73
 import numpy as np
-import atlas_map as am
-from dataset import DataSetMDTB
+import Functional_Fusion.atlas_map as am
+from Functional_Fusion.dataset import DataSetMDTB
 import nibabel as nb
-import SUITPy as suit
-import matplotlib.pyplot as plt
 import subprocess
+import scripts.paths as pt
+import Functional_Fusion.connectivity as conn
 
-base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
-if not Path(base_dir).exists():
-    base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-if not Path(base_dir).exists():
-    base_dir = 'Y:/data/FunctionalFusion'
-if not Path(base_dir).exists():
-    raise(NameError('Could not find base_dir'))
 
-data_dir = base_dir + '/MDTB'
+base_dir = pt.set_base_dir()
+atlas_dir = pt.set_atlas_dir(base_dir)
+dname = 'MDTB'
+data_dir = base_dir + '/' + dname
 atlas_dir = base_dir + '/Atlases'
 
 
@@ -28,9 +22,6 @@ def group_mtdb(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
     mdtb_dataset = DataSetMDTB(data_dir)
     mdtb_dataset.group_average_data(ses_id,type, atlas)
 
-def extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='SUIT3', smooth=2.0):
-    mdtb_dataset = DataSetMDTB(data_dir)
-    mdtb_dataset.extract_all(ses_id,type,atlas, smooth=smooth)
 
 def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
     # Make the atlas object
@@ -111,22 +102,35 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
 
 
 if __name__ == "__main__":
-    extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
-    # extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
-    # extract_mdtb(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
+    mdtb_dataset = DataSetMDTB(data_dir)
+    # mdtb_dataset.extract_all(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
+    # mdtb_dataset.extract_all(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
+    # mdtb_dataset.extract_all(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
     # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
 
     # for s in [1,2,3]:
     #     smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=s)
     #     smooth_mdtb_fs32k(ses_id='ses-s2', type='CondHalf', smooth=s)
 
-    # dataset = DataSetMDTB(data_dir)
-    # # dataset.group_average_data(atlas='MNISymC3')
-    # dataset.group_average_data(atlas='MNISymC3', ses_id='ses-s2')
+    # # mdtb_dataset.group_average_data(atlas='MNISymC3')
+    # mdtb_dataset.group_average_data(atlas='MNISymC3', ses_id='ses-s2')
     #
-    # dataset.plot_cerebellum(savefig=True, atlas='MNISymC3',
+    # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC3',
     #                         colorbar=True, sessions=['ses-s2'])
     #
-    # pass
 
+    # -- Extract resting-state timeseries --
+    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC2', smooth=2.0)
+    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='fs32k', smooth=2.0)
+
+    # -- Get connectivity fingerprint --
+    conn.get_connectivity_fingerprint(dname,
+        type='Net69Run', space='MNISymC2', ses_id='ses-rest')
+    conn.get_connectivity_fingerprint(dname,
+        type='Net69Run', space='SUIT3', ses_id='ses-rest')
+    conn.get_connectivity_fingerprint(dname,
+        type='Net300Run', space='MNISymC2', ses_id='ses-rest')
+    conn.get_connectivity_fingerprint(dname,
+        type='Net300Run', space='SUIT3', ses_id='ses-rest')
+    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2', smooth=2.0)
 

@@ -1,0 +1,179 @@
+ /usr/bin/env /home/ROBARTS/cnetteko/code/Python/Functional_Fusion/env/bin/python /home/ROBARTS/c
+netteko/.vscode/extensions/ms-python.python-2022.4.1/pythonFiles/lib/python/debugpy/launcher 43897 -- /home/ROBARTS/cnetteko/code/Python/Fun
+ctional_Fusion/preprocessing/rest_mdtb.py 
+Matplotlib is building the font cache; this may take a moment.
+FIX Training classifier with output training file: ./mdtb_rest and Melodic outputs list: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s02/run01_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s02/run02_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s03/run01_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run02_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run02_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run01_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run01_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s12/run02_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s14/run02_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s18/run01_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s20/run01_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s22/run02_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s23/run01_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s24/run02_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s25/run02_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s26/run01_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s27/run01_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s28/run02_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s30/run02_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s31/run01_smoothed.ica /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run01.feat /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run01.feat /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run02.feat /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run02.feat
+ copy true labels and features into training directory
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s02/run01_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s03/run01_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run02_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run02_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run01_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run01_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s12/run02_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s14/run02_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s18/run01_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s20/run01_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s22/run02_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s23/run01_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s24/run02_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s25/run02_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s26/run01_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s27/run01_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s28/run02_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s30/run02_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s31/run01_smoothed.ica
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run01.feat
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run01.feat
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run02.feat
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+FIX features not already generated, so creating them now.
+FIX Feature extraction for Melodic output directory: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run02.feat
+ create edge masks
+ run FAST
+ registration of standard space masks
+ extract features
+ running classifier training
+ running classifier training
+ running classifier training
+ running classifier training
+ running classifier training
+ running classifier training
+ running classifier training
+ running classifier training
+ running classifier training
+ running classifier training
+ running LOO accuracy testing
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s02/run01_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s02/run02_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s03/run01_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run02_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run02_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run01_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run01_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s12/run02_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s14/run02_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s18/run01_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s20/run01_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s22/run02_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s23/run01_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s24/run02_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s25/run02_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s26/run01_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s27/run01_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s28/run02_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s30/run02_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s31/run01_smoothed.ica
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s06/run01.feat
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s07/run01.feat
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s08/run02.feat
+leaving-out: /srv/diedrichsen/data/FunctionalFusion/../Cerebellum/super_cerebellum/resting_state/imaging_data/s10/run02.feat

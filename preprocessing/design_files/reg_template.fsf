@@ -3,7 +3,7 @@
 set fmri(version) 6.00
 
 # Are we in MELODIC?
-set fmri(inmelodic) 0
+set fmri(inmelodic) 1
 
 # Analysis level
 # 1 : First-level analysis
@@ -15,7 +15,7 @@ set fmri(level) 1
 # 7 : Full first-level analysis
 # 1 : Pre-processing
 # 2 : Statistics
-set fmri(analysis) 1
+set fmri(analysis) 7
 
 # Use relative filenames
 set fmri(relative_yn) 0
@@ -33,10 +33,10 @@ set fmri(sscleanup_yn) 0
 set fmri(outputdir) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/runYY"
 
 # TR(s)
-set fmri(tr) 1.0
+set fmri(tr) 1
 
 # Total volumes
-set fmri(npts) 598
+set fmri(npts) 0
 
 # Delete volumes
 set fmri(ndelete) 0
@@ -118,7 +118,7 @@ set fmri(norm_yn) 0
 set fmri(perfsub_yn) 0
 
 # Highpass temporal filtering
-set fmri(temphp_yn) 0
+set fmri(temphp_yn) 1
 
 # Lowpass temporal filtering
 set fmri(templp_yn) 0
@@ -127,7 +127,7 @@ set fmri(templp_yn) 0
 set fmri(melodic_yn) 1
 
 # Carry out main stats?
-set fmri(stats_yn) 0
+set fmri(stats_yn) 1
 
 # Carry out prewhitening?
 set fmri(prewhiten_yn) 1
@@ -154,7 +154,7 @@ set fmri(randomisePermutations) 5000
 
 # Number of EVs
 set fmri(evs_orig) 1
-set fmri(evs_real) 1
+set fmri(evs_real) 2
 set fmri(evs_vox) 0
 
 # Number of contrasts
@@ -169,7 +169,7 @@ set fmri(nftests_real) 0
 set fmri(constcol) 0
 
 # Carry out post-stats steps?
-set fmri(poststats_yn) 0
+set fmri(poststats_yn) 1
 
 # Pre-threshold masking?
 set fmri(threshmask) ""
@@ -212,7 +212,7 @@ set fmri(rendertype) 1
 set fmri(bgimage) 1
 
 # Create time series plots
-set fmri(tsplot_yn) 0
+set fmri(tsplot_yn) 1
 
 # Registration to initial structural
 set fmri(reginitial_highres_yn) 0
@@ -251,13 +251,13 @@ set fmri(regstandard) "/software/fsl/6.0.4/data/standard/MNI152_T1_2mm_brain"
 # 0   : No search
 # 90  : Normal search
 # 180 : Full search
-set fmri(regstandard_search) 90
+set fmri(regstandard_search) 180
 
 # Degrees of Freedom for registration to standard space
 set fmri(regstandard_dof) 12
 
 # Do nonlinear registration from structural to standard space?
-set fmri(regstandard_nonlinear_yn) 1
+set fmri(regstandard_nonlinear_yn) 0
 
 # Control nonlinear warp field resolution
 set fmri(regstandard_nonlinear_warpres) 10
@@ -265,15 +265,11 @@ set fmri(regstandard_nonlinear_warpres) 10
 # High pass filter cutoff
 set fmri(paradigm_hp) 100
 
-# Total voxels
-set fmri(totalVoxels) 202535424
-
-
 # Number of lower-level copes feeding into higher-level analysis
 set fmri(ncopeinputs) 0
 
 # 4D AVW data or FEAT directory (1)
-set feat_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/rrun_YY_hdr"
+set feat_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/rrun_YY_hdr.nii.gz"
 
 # Add confound EVs text file
 set fmri(confoundevs) 0
@@ -354,6 +350,9 @@ set fmri(conname_real.1) ""
 
 # Real contrast_real vector 1 element 1
 set fmri(con_real1.1) 1
+
+# Real contrast_real vector 1 element 2
+set fmri(con_real1.2) 0
 
 # Display images for contrast_orig 1
 set fmri(conpic_orig.1) 1

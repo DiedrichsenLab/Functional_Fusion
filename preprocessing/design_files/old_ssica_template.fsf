@@ -15,7 +15,7 @@ set fmri(level) 1
 # 7 : Full first-level analysis
 # 1 : Pre-processing
 # 2 : Statistics
-set fmri(analysis) 1
+set fmri(analysis) 7
 
 # Use relative filenames
 set fmri(relative_yn) 0
@@ -30,7 +30,7 @@ set fmri(featwatcher_yn) 1
 set fmri(sscleanup_yn) 0
 
 # Output directory
-set fmri(outputdir) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/runYY"
+set fmri(outputdir) ""
 
 # TR(s)
 set fmri(tr) 1.0
@@ -70,7 +70,7 @@ set fmri(noisear) 0.34
 # Motion correction
 # 0 : None
 # 1 : MCFLIRT
-set fmri(mc) 0
+set fmri(mc) 1
 
 # Spin-history (currently obsolete)
 set fmri(sh_yn) 0
@@ -106,7 +106,7 @@ set fmri(st) 0
 set fmri(st_file) ""
 
 # BET brain extraction
-set fmri(bet_yn) 0
+set fmri(bet_yn) 1
 
 # Spatial smoothing FWHM (mm)
 set fmri(smooth) 0
@@ -118,16 +118,16 @@ set fmri(norm_yn) 0
 set fmri(perfsub_yn) 0
 
 # Highpass temporal filtering
-set fmri(temphp_yn) 0
+set fmri(temphp_yn) 1
 
 # Lowpass temporal filtering
 set fmri(templp_yn) 0
 
 # MELODIC ICA data exploration
-set fmri(melodic_yn) 1
+set fmri(melodic_yn) 0
 
 # Carry out main stats?
-set fmri(stats_yn) 0
+set fmri(stats_yn) 1
 
 # Carry out prewhitening?
 set fmri(prewhiten_yn) 1
@@ -169,7 +169,7 @@ set fmri(nftests_real) 0
 set fmri(constcol) 0
 
 # Carry out post-stats steps?
-set fmri(poststats_yn) 0
+set fmri(poststats_yn) 1
 
 # Pre-threshold masking?
 set fmri(threshmask) ""
@@ -212,7 +212,7 @@ set fmri(rendertype) 1
 set fmri(bgimage) 1
 
 # Create time series plots
-set fmri(tsplot_yn) 0
+set fmri(tsplot_yn) 1
 
 # Registration to initial structural
 set fmri(reginitial_highres_yn) 0
@@ -279,7 +279,7 @@ set feat_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_sta
 set fmri(confoundevs) 0
 
 # Subject's structural image for analysis 1
-set highres_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/sc1/anatomicals/sXX/anatomical_brain"
+set highres_files(1) "/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/sc1/anatomicals/s02/anatomical"
 
 # EV 1 title
 set fmri(evtitle1) ""

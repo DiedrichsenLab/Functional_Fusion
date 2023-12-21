@@ -554,18 +554,21 @@ class DataSet:
             info (DataFramw): Data frame with common descriptor
         """
         T = self.get_participants()
+        if type == 'Tseries':
+            subj = T[T['ses-rest'] == 1].participant_id.tolist()
 
         # Deal with subset of subject option
         if subj is None:
             subj = np.arange(T.shape[0])
+        else:
+            subj = [T.participant_id.tolist().index(i) for i in subj]
 
         if type is None:
             type = self.default_type
 
         max = 0
-
         # Loop over the different subjects to find the most complete info
-        for s in T.participant_id.iloc:
+        for s in T.participant_id.iloc[subj]:
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
@@ -574,6 +577,8 @@ class DataSet:
                 info = info_raw[fields]
             else:
                 info = info_raw
+            # Reduce tsv file to the subset of subjects
+            info_raw = info_raw.iloc[subj, :]
 
             # Keep the most complete info
             if info.shape[0] > max:
@@ -599,6 +604,8 @@ class DataSet:
             info (DataFramw): Data frame with common descriptor
         """
         T = self.get_participants()
+        if type == 'Tseries':
+            subj = T[T['ses-rest'] == 1].participant_id.tolist()
         # Assemble the data
         Data = None
         # Deal with subset of subject option
@@ -771,12 +778,13 @@ class DataSetNative(DataSet):
     nifti-files in Native space.
     """
 
-    def get_data_fnames(self, participant_id, session_id=None):
+    def get_data_fnames(self, participant_id, session_id=None, type='Cond'):
         """ Gets all raw data files
 
         Args:
             participant_id (str): Subject
             session_id (str): Session ID. Defaults to None.
+            type (str): Type of data. Defaults to 'Cond' for task-based data. For rest data use 'Tseries'.
         Returns:
             fnames (list): List of fnames, last one is the resMS image
             T (pd.DataFrame): Info structure for regressors (reginfo)
@@ -784,9 +792,12 @@ class DataSetNative(DataSet):
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
         T = pd.read_csv(
             dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
-        fnames = [
-            f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
-        fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
+        if type[:4] == 'Cond' or type[:4] == 'Task':
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
+            fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
+        elif type == 'Tseries':
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
+        
         return fnames, T
 
     def get_indiv_atlasmaps(self, atlas, sub, ses_id, smooth=None):
@@ -807,7 +818,7 @@ class DataSetNative(DataSet):
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             if atlas.name[0:4] != 'SUIT':
                 deform1, m = am.get_deform(
-                    self.atlas_dir, atlas.name, source='SUIT2')
+                    target = atlas.name, source='SUIT2', atlas_dir = self.atlas_dir)
                 deform = [deform1, deform]
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
@@ -849,13 +860,15 @@ class DataSetNative(DataSet):
         myatlas, _ = am.get_atlas(atlas, self.atlas_dir)
         # create and calculate the atlas map for each participant
         T = self.get_participants()
+        if type == 'Tseries':
+            T = T[T['ses-rest'] == 1]
         for s in T.participant_id:
 
             print(f'Atlasmap {s}')
             atlas_maps = self.get_indiv_atlasmaps(myatlas, s, ses_id,
                                                   smooth=smooth)
             print(f'Extract {s}')
-            fnames, info = self.get_data_fnames(s, ses_id)
+            fnames, info = self.get_data_fnames(s, ses_id, type=type)
 
             data = am.get_data_nifti(fnames, atlas_maps)
             data, info = self.condense_data(data, info, type,
@@ -1053,50 +1066,56 @@ class DataSetMDTB(DataSetNative):
 
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 9)
-        n_cond = np.max(info.cond_num)
-        if type == 'CondHalf':
-            data_info, C = agg_data(info,
-                                    ['half', 'cond_num'],
-                                    ['run', 'reg_num'],
-                                    subset=(info.instruction == 0))
-            data_info['names'] = [
-                f'{d.cond_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+        if type == 'Tseries':
+            info['names'] = info['timepoint']
+            data_new, data_info = data, info
 
-        elif type == 'CondRun':
-            data_info, C = agg_data(info,
-                                    ['run', 'cond_num'],
-                                    [],
-                                    subset=(info.instruction == 0))
-            data_info['names'] = [
-                f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
+        else:
+            if type == 'CondHalf':
+                data_info, C = agg_data(info,
+                                        ['half', 'cond_num'],
+                                        ['run', 'reg_num'],
+                                        subset=(info.instruction == 0))
+                data_info['names'] = [
+                    f'{d.cond_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
-            # Baseline substraction
-            B = matrix.indicator(data_info.run, positive=True)
-        elif type == 'CondAll':
+            elif type == 'CondRun':
+                data_info, C = agg_data(info,
+                                        ['run', 'cond_num'],
+                                        [],
+                                        subset=(info.instruction == 0))
+                data_info['names'] = [
+                    f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
 
-            data_info, C = agg_data(info,
-                                    ['cond_num'],
-                                    ['run', 'half', 'reg_num'],
-                                    subset=(info.instruction == 0))
-            data_info['names'] = [
-                f'{d.cond_name}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.run, positive=True)
+            elif type == 'CondAll':
 
-            # Baseline substraction
-            B = np.ones((data_info.shape[0],))
+                data_info, C = agg_data(info,
+                                        ['cond_num'],
+                                        ['run', 'half', 'reg_num'],
+                                        subset=(info.instruction == 0))
+                data_info['names'] = [
+                    f'{d.cond_name}' for i, d in data_info.iterrows()]
 
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
+                # Baseline substraction
+                B = np.ones((data_info.shape[0],))
+            
 
-        # Load the designmatrix and perform optimal contrast
-        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
-        reg_in = np.arange(C.shape[1], dtype=int)
-        #  contrast for all instructions
-        CI = matrix.indicator(info.run * info.instruction, positive=True)
-        C = np.c_[C, CI]
-        data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
+
+            # Prewhiten the data
+            data_n = prewhiten_data(data)
+
+            # Load the designmatrix and perform optimal contrast
+            dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+            X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+            reg_in = np.arange(C.shape[1], dtype=int)
+            #  contrast for all instructions
+            CI = matrix.indicator(info.run * info.instruction, positive=True)
+            C = np.c_[C, CI]
+            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
 
         return data_new, data_info
 
@@ -1134,100 +1153,10 @@ class DataSetHcpResting(DataSetCifti):
         return fnames, T
 
     def condense_data(self, data, info, type, participant_id=None, ses_id=None):
-        """Empty function to be overwritten by child classes."""
         if type == 'Tseries':
             info['names'] = info['timepoint']
         return data, info
 
-    def regress_networks(self, X, Y):
-        """Regresses a spatial map (X) into data (Y).
-        Returns the network timecourses.
-
-        Args:
-            X (np.arry): 4D Network data of the signal components
-                (default input networks are in fs32k Space: 59518 vertices x nComponents )
-            Y (<nibabel CIFTI image object>): fMRI timeseries in volume
-                Has to be in the same space as networks (59518 vertices x nTimepoints )
-        Returns:
-            network_timecourse (np.ndarray):
-                A numpy array (nTimepoints x nNetworks) with the fMRI timecourse for
-                each resting-state network
-        """
-        X = X.T
-        Y = Y.T.squeeze()
-        d_excluded = np.where(np.isnan(Y))[0].shape[0]
-        v_excluded = np.unique(np.where(np.isnan(Y))[0]).shape[0]
-        print(
-            f'Setting nan datapoints ({v_excluded} unique vertices) to zero. Entire timeseries: {d_excluded/v_excluded == Y.shape[1]}')
-        Y[np.isnan(Y)] = 0
-        network_timecourse = np.matmul(np.linalg.pinv(X), Y)
-
-        return network_timecourse
-
-    def average_within_Icos(self, label_file, data, atlas="fs32k"):
-        """Average the raw time course for voxels within a parcel
-
-        Args:
-            label_file (str): cortical parcellation label file
-            Y (np.ndarray): fMRI timeseries in volume
-                Has to be in the same space as networks (59518 vertices x nTimepoints)
-        Returns:
-            A numpy array (nNetworks x nTimepoints) with the fMRI timecourse for
-            each resting-state network
-        """
-
-        # create an instance of atlas to get the label vector
-        atlas, ainfo = am.get_atlas(atlas, self.atlas_dir)
-
-        # create label_vector by passing on the label file
-        # Set unite_struct to true if you want to integrate over left and right hemi
-        atlas.get_parcel(label_file, unite_struct=False)
-
-        # use agg_parcel to aggregate data over parcels and get the list of unique parcels
-        parcel_data, parcels = agg_parcels(
-            data, atlas.label_vector, fcn=np.nanmean)
-
-        # fill nan value in Y to zero
-        print("Setting nan datapoints (%d unique vertices) to zero"
-              % np.unique(np.where(np.isnan(parcel_data))[1]).shape[0])
-        # Y = np.nan_to_num(np.transpose(Y))
-        parcel_data = np.nan_to_num(parcel_data)
-
-        # return np.matmul(np.linalg.pinv(indicator_mat.T), Y)
-        return parcel_data, parcels
-
-    def correlate(self, X, Y):
-        """ Correlate X and Y numpy arrays after standardizing them"""
-        X = util.zstandarize_ts(X)
-        Y = util.zstandarize_ts(Y)
-        return Y.T @ X / X.shape[0]
-
-    def connectivity_fingerprint(self, source, target, info, type):
-        """ Calculate the connectivity fingerprint of a target region
-
-        Args:
-            source (np.ndarray): Source data
-            target (np.nzdarray): Target timecourse
-            info (pandas.DataFrame): Information about the source data
-            type (str): Type of fingerprint to calculate ('Run' or 'All').
-                        Estimates fingerprint from each run seperately or from all concatenated runs.
-
-        Returns:
-            coef (np.ndarray): Connectivity fingerprint
-        """
-        coefs = []
-        if type == 'Run':
-            for run in info.run.unique():
-                data_run = source[info.run == run]
-                net_run = target.T[info.run == run]
-                coef = self.correlate(data_run, net_run)
-                coefs.append(coef)
-
-        elif type == 'All':
-            coef = self.correlate(source, target)
-            coefs.append(coef)
-
-        return np.vstack(coefs)
 
 
 class DataSetPontine(DataSetNative):

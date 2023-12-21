@@ -142,3 +142,12 @@ scripts/run_pipeline.py
 ff.code-workspace
 scripts/.vscode/launch.json
 
+preprocessing/mdtb_rest_LOO/
+preprocessing/mdtb_rest/
+settings.sh
+
+hcp3t/
+hcp3t_results
+standard/
+standard_results
+errorLog.txt
