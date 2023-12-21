@@ -8,7 +8,7 @@ from itertools import product
 import pandas as pd
 from datetime import datetime
 import os
-
+import shutil
 
 data_dir = f'{ut.base_dir}/../Cerebellum/super_cerebellum/'
 rest_dir = Path(f'{data_dir}/resting_state/imaging_data/')
@@ -268,6 +268,26 @@ def copy_motionparams(subject_path, run):
             ['cp', rp_file, f"{ica_path}/mc/prefiltered_func_data_mcf.par"])
 
 
+def move_cleaned(subject, run):
+    # dest_dir = f"{str(subject_path)}/run{run}_smoothed.ica"
+    # src = f"{str(subject)}/run{run}.feat/filtered_func_data_clean.nii.gz"
+    # dest_file = f"{str(subject_path)}/rp_run_{run}.txt"
+    
+    # move data into the corresponding session folder
+    src = 'filtered_func_data_clean.nii.gz'
+    dest = (f'/sub-{subject[1:]}_run-{run}.nii.gz')
+
+    source_dir = f"{rest_dir}/{subject}/run{run}.feat/"
+    dest_dir = f"{rest_dir}/../imaging_data_fix/"
+    try:
+        shutil.copyfile(source_dir + src,
+                        dest_dir + dest)
+        gunzip_cmd = f"gunzip {dest_dir + dest}"
+        subprocess.run(gunzip_cmd, shell=True)
+    except:
+        print('skipping ' + src)
+
+
 if __name__ == "__main__":
 
     # --- Brain-extract anatomical to be used in registration ---
@@ -320,13 +340,13 @@ if __name__ == "__main__":
     #     ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/Standard.RData', 'standard'] + labelled_folders)
 
     # --- Run FIX cleanup---
-    chosen_threshold = 20
-    # # For those scans that have hand-labelled components, clean noise components from the data
-    labelled_folders = [f"{folder}/run{run}.feat" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if op.exists(
-        f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
-    for folder in labelled_folders:
-        subprocess.run(
-            ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/hand_labels_noise.txt'])
+    # chosen_threshold = 20
+    # # # For those scans that have hand-labelled components, clean noise components from the data
+    # labelled_folders = [f"{folder}/run{run}.feat" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if op.exists(
+    #     f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
+    # for folder in labelled_folders:
+    #     subprocess.run(
+    #         ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/hand_labels_noise.txt'])
 
     # For the rest, automatically classify labelled components using mdtb training set, then clean noise components from the data
     # automatic_folders = [f"{folder}/run{run}.feat" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if not op.exists(
@@ -336,3 +356,13 @@ if __name__ == "__main__":
     #     #     ['/srv/software/fix/1.06.15/fix', '-c', folder, f'{str(rest_dir)}/../fix_ica/mdtb_rest.RData', str(chosen_threshold)])
     #     subprocess.run(
     #         ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/fix4melview_mdtb_rest_thr{chosen_threshold}.txt'])
+        
+    # --- Move files ---
+    # Move files to imaging_data_fix
+    folders = rest_dir.glob('s[0-9][0-9]')
+    for folder in folders:
+        folder = str(folder)
+        subject = folder.split('/')[-1]
+        for run in runs:
+            move_cleaned(subject, run)
+    

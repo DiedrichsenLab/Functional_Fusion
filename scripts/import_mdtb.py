@@ -48,10 +48,9 @@ if __name__ == "__main__":
     # fix_sc2_reginfo()
     T= pd.read_csv(target_dir + '/participants.tsv',delimiter='\t')
     participants = T.participant_id
-    # only take participants who have rest data
-    participants = participants[T['ses-rest']==1]
-    for s in participants:
-        old_id = s.replace('sub-','s',1)
+
+    # for s in participants:
+        # old_id = s.replace('sub-','s',1)
         # dir1 = orig_dir + f'/sc1/suit/anatomicals/{old_id}'
         # dir2 = target_dir + f'/derivatives/{s}/suit'
         # id.import_suit(dir1,dir2,'anatomical',s)
@@ -72,6 +71,25 @@ if __name__ == "__main__":
         #dir2 = target_dir + f'/derivatives/{s}/estimates/ses-s1'
         # id.import_spm_glm(dir1,dir2,s,'ses-s2',info_dict)
         # id.import_spm_designmatrix(dir1,dir2,s,'ses-s1')
+
+    # Import resting-state session
+    # (only take participants who have rest data)
+    participants = participants[T['ses-rest']==1]
+    for s in participants[3:]:
+        old_id = s.replace('sub-','s',1)
         dir1 = orig_dir + f'/resting_state/imaging_data_fix/{old_id}'
         dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
-        id.import_spm_glm(dir1,dir2,s,'ses-rest',info_dict)
+        info_dict = {
+            'runs': ['01', '02'],
+            'reginfo_general': 'sub-02',
+        }
+        id.import_rest(dir1,dir2,s,'ses-rest', info_dict)
+
+    # T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+    # for s in T.participant_id:
+    #     print(f"-Start importing subject {s}")
+    #     # old_id = s.replace('sub-','s',1)
+    #     dir1 = os.path.join(orig_dir, str(s))
+    #     dir2 = os.path.join(target_dir, 'derivatives/%s/func' % str(s))
+    #     import_func_resting(dir1, dir2, str(s))
+    #     print(f"-Done subject {s}")
