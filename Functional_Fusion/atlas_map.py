@@ -49,7 +49,10 @@ def get_atlas(atlas_str, atlas_dir=default_atlas_dir):
 
 def get_deform(target, source="MNIAsym2",atlas_dir = default_atlas_dir):
     """Get name of group deformation map between two volumetric atlas spaces
+    In image mode. That is, the xfm file will be in the voxels space of the target, and contain the xyz coordinates of the source space (pull). 
 
+    If you want to deform points (ROI centers, surfaces) from the target to the source, you need mode-point xfm file. Note that 
+    tpl-A_form_B-mode-point_xfm.nii =  tpl-B_form_A-mode-image_xfm.nii
     Args:
         target (str/atlas): Target space
         source (str): Source space
@@ -68,7 +71,7 @@ def get_deform(target, source="MNIAsym2",atlas_dir = default_atlas_dir):
         raise (NameError(f"Unknown Atlas: {source}"))
     tar = atlases[target.name]
     src = atlases[source]
-    deform = f"{atlas_dir}/{src['dir']}/tpl-{src['space']}_from-{tar['space']}_xfm.nii"
+    deform = f"{atlas_dir}/{tar['dir']}/tpl-{tar['space']}_from-{src['space']}_mode-image_xfm.nii"
     mask = f"{atlas_dir}/{src['dir']}/{src['mask']}"
     return deform, mask
 
