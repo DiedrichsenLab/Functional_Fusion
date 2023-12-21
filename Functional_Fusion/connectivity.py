@@ -1,10 +1,19 @@
 import numpy as np
 from numpy.linalg import inv, pinv
 import nibabel as nb
-import util as ut
-import atlas_map as am
+import Functional_Fusion.util as ut
+import Functional_Fusion.atlas_map as am
+import pandas as pd
+from pathlib import Path
+import re
+import Functional_Fusion.dataset as ds
+import scripts.paths as pt
 
-def regress_networks(self, X, Y):
+
+base_dir = pt.set_base_dir()
+atlas_dir = pt.set_atlas_dir(base_dir)
+
+def regress_networks(X, Y):
     """Regresses a spatial map (X) into data (Y).
     Returns the network timecourses.
 
@@ -22,14 +31,15 @@ def regress_networks(self, X, Y):
     Y = Y.T.squeeze()
     d_excluded = np.where(np.isnan(Y))[0].shape[0]
     v_excluded = np.unique(np.where(np.isnan(Y))[0]).shape[0]
-    print(
-        f'Setting nan datapoints ({v_excluded} unique vertices) to zero. Entire timeseries: {d_excluded/v_excluded == Y.shape[1]}')
+    if not v_excluded == 0:
+        print(
+            f'Setting nan datapoints ({v_excluded} unique vertices) to zero. Entire timeseries: {d_excluded/v_excluded == Y.shape[1]}')
     Y[np.isnan(Y)] = 0
     network_timecourse = np.matmul(np.linalg.pinv(X), Y)
 
     return network_timecourse
 
-def average_within_Icos(self, label_file, data, atlas="fs32k"):
+def average_within_Icos(label_file, data, atlas="fs32k"):
     """Average the raw time course for voxels within a parcel
 
     Args:
@@ -62,7 +72,7 @@ def average_within_Icos(self, label_file, data, atlas="fs32k"):
     return parcel_data, parcels
 
 
-def connectivity_fingerprint(self, source, target, info, type):
+def connectivity_fingerprint(source, target, info, type):
     """ Calculate the connectivity fingerprint of a target region
 
     Args:
@@ -87,4 +97,63 @@ def connectivity_fingerprint(self, source, target, info, type):
         coef = ut.correlate(source, target)
         coefs.append(coef)
 
-    return np.vstack(coefs)
+    return np.vstack(coefs) 
+
+
+
+def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1'):
+    """Extracts the connectivity fingerprint for each network in the HCP data
+    Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse
+            Step 2: Get the correlation of each voxel with each network timecourse (connectivity fingerprint)
+            Step 3: Save the data.
+    """
+
+    dset = ds.get_dataset_class(base_dir, dname)
+
+    # Load the networks
+    target, type = re.findall('[A-Z][^A-Z]*', type)
+    net = nb.load(dset.base_dir +
+                  f'/../targets/{target}_space-fs32k.dscalar.nii')
+
+    atlas, _ = am.get_atlas(space, dset.atlas_dir)
+
+    T = pd.read_csv(dset.base_dir + '/participants.tsv', sep='\t')
+    for p, participant_id in enumerate(T.participant_id):
+        # Get cortical data
+        data_cortex, _ = dset.get_data(
+            space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
+
+        # Regress each network into the fs32k cortical data to get a run-specific network timecourse
+        network_timecourse = regress_networks(
+            net.get_fdata(), data_cortex)
+
+        # Calculate the connectivity fingerprint
+        data_cereb, info = dset.get_data(
+            space=space, ses_id=ses_id, type='Tseries', subj=[p])
+        data_cereb = data_cereb.squeeze()
+
+        coef = connectivity_fingerprint(
+            data_cereb, network_timecourse, info, type)
+        # Make info
+        names = [f'Network_{i}' for i in range(1, 70)]
+        runs = np.repeat([info.run.unique()], len(names))
+        net_id = np.tile(np.arange(len(names)),
+                         int(coef.shape[0] / len(names))) + 1
+        info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+                             'sess': [ses_id] * coef.shape[0],
+                             'run': runs,
+                             'half': 2 - (runs < runs[-1]),
+                             'net_id': net_id,
+                             'names': names * int(coef.shape[0] / len(names))})
+
+        # Save the data
+
+        C = atlas.data_to_cifti(coef, info.names)
+        dest_dir = dset.base_dir + \
+            f'/derivatives/{participant_id}/data/'
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+
+        nb.save(C, dest_dir +
+                f'{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
+        info.to_csv(
+            dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)

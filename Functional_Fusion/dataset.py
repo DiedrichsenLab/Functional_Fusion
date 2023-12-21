@@ -554,6 +554,8 @@ class DataSet:
             info (DataFramw): Data frame with common descriptor
         """
         T = self.get_participants()
+        if type == 'Tseries':
+            T = T[T['ses-rest'] == 1]
 
         # Deal with subset of subject option
         if subj is None:
@@ -599,6 +601,8 @@ class DataSet:
             info (DataFramw): Data frame with common descriptor
         """
         T = self.get_participants()
+        if type == 'Tseries':
+            T = T[T['ses-rest'] == 1]
         # Assemble the data
         Data = None
         # Deal with subset of subject option

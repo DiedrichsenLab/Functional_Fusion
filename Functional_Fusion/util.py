@@ -117,7 +117,7 @@ def zstandarize_ts(X):
     return X
 
 
-def correlate(self, X, Y):
+def correlate(X, Y):
     """ Correlate X and Y numpy arrays after standardizing them"""
     X = zstandarize_ts(X)
     Y = zstandarize_ts(Y)

@@ -8,11 +8,13 @@ from Functional_Fusion.dataset import DataSetMDTB
 import nibabel as nb
 import subprocess
 import scripts.paths as pt
+import Functional_Fusion.connectivity as conn
 
 
 base_dir = pt.set_base_dir()
 atlas_dir = pt.set_atlas_dir(base_dir)
-data_dir = base_dir + '/MDTB'
+dname = 'MDTB'
+data_dir = base_dir + '/' + dname
 atlas_dir = base_dir + '/Atlases'
 
 
@@ -117,8 +119,14 @@ if __name__ == "__main__":
     #                         colorbar=True, sessions=['ses-s2'])
     #
 
-    
+    # -- Extract resting-state timeseries --
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC2', smooth=2.0)
-    mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='fs32k', smooth=2.0)
+    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='fs32k', smooth=2.0)
+
+    # -- Get connectivity fingerprint --
+    conn.get_connectivity_fingerprint(dname,
+        type='Net69Run', space='MNISymC2', ses_id='ses-rest')
+    conn.get_connectivity_fingerprint(dname,
+        type='Net300Run', space='MNISymC2', ses_id='ses-rest')
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2', smooth=2.0)
 
