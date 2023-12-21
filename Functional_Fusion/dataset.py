@@ -555,19 +555,20 @@ class DataSet:
         """
         T = self.get_participants()
         if type == 'Tseries':
-            T = T[T['ses-rest'] == 1]
+            subj = T[T['ses-rest'] == 1].participant_id.tolist()
 
         # Deal with subset of subject option
         if subj is None:
             subj = np.arange(T.shape[0])
+        else:
+            subj = [T.participant_id.tolist().index(i) for i in subj]
 
         if type is None:
             type = self.default_type
 
         max = 0
-
         # Loop over the different subjects to find the most complete info
-        for s in T.participant_id.iloc:
+        for s in T.participant_id.iloc[subj]:
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
@@ -576,6 +577,8 @@ class DataSet:
                 info = info_raw[fields]
             else:
                 info = info_raw
+            # Reduce tsv file to the subset of subjects
+            info_raw = info_raw.iloc[subj, :]
 
             # Keep the most complete info
             if info.shape[0] > max:
@@ -602,7 +605,7 @@ class DataSet:
         """
         T = self.get_participants()
         if type == 'Tseries':
-            T = T[T['ses-rest'] == 1]
+            subj = T[T['ses-rest'] == 1].participant_id.tolist()
         # Assemble the data
         Data = None
         # Deal with subset of subject option
