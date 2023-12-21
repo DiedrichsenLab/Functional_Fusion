@@ -253,7 +253,7 @@ def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict):
 
         # move data into the corresponding session folder
         src = (f'{participant_id}_run-{run}.nii')
-        dest = (f'/{participant_id}_run-{run}.nii')
+        dest = (f'/{participant_id}_{ses_id}_run-{run}.nii')
 
         try:
             shutil.copyfile(source_dir + src,
