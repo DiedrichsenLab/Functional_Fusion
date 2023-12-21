@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import Functional_Fusion.atlas_map as am
 import Functional_Fusion.dataset as ds
 import HierarchBayesParcel.arrangements as ar
+import HierarchBayesParcel.emissions as em
 import HierarchBayesParcel.full_model as fm
 from FusionModel.util import plot_data_flat
 
@@ -73,28 +74,31 @@ if __name__ == "__main__":
     atlas, _ = am.get_atlas('MNISymC3')
 
     ## Step 2a: Load the probabilstic group atlas from a _probseg.nii file
-    atlas_dir = 'Y:/data/FunctionalFusion/Atlases/tpl-MNI152NLin2009cSymC'
-    model_name = f'/atl-NettekovenAsym32_space-MNI152NLin2009cSymC_probseg.nii'
-    U = atlas.read_data(atlas_dir + model_name)
-    U = U.T
+    # atlas_dir = 'Y:/data/FunctionalFusion/Atlases/tpl-MNI152NLin2009cSymC'
+    # model_name = f'/atl-NettekovenAsym32_space-MNI152NLin2009cSymC_probseg.nii'
+    # U = atlas.read_data(atlas_dir + model_name)
+    # U = U.T
 
     ## Step 2b: Or Load the group prior from a pre-trained model
-    # model_dir = 'Y:/data/Cerebellum/ProbabilisticParcellationModel/Models'
-    # model_name = f'/Models_03/asym_Md_space-MNISymC3_K-17'
-    # fname = model_dir + model_name
-    # U, _ = ar.load_group_parcellation(fname, device='cuda')
+    model_dir = 'Y:/data/Cerebellum/ProbabilisticParcellationModel/Models'
+    model_name = f'/Models_03/asym_Md_space-MNISymC3_K-17'
+    fname = model_dir + model_name
+    U, _ = ar.load_group_parcellation(fname, device='cuda')
+    Vs, _ = em.load_emission_params(fname, 'V', device='cuda')
 
     ## Step 3: Build the arrangement model
-    ar_model = ar.build_arrangement_model(U, prior_type='prob', atlas=atlas)
+    ar_model = ar.build_arrangement_model(U, prior_type='logpi', atlas=atlas,
+                                          sym_type='asym')
 
     ## Step 4a: Load the individual localizing data / info from Fusion project
     # Step 4a.1: Load the data into 3d tensor
     data, info, tds = ds.get_dataset('Y:/data/FunctionalFusion', 'MDTB',
                                      atlas=atlas.name, subj=None)
     # Step 4a.2: Prepare the data into the right format
-    tdata, cond_v, part_v, sub_ind = fm.prep_datasets(data, info,
-                                                      cond_ind='cond_num_uni',
-                                                      part_ind='half', join_sess=False,
+    tdata, cond_v, part_v, sub_ind = fm.prep_datasets(data, info.sess,
+                                                      info['cond_num_uni'].values,
+                                                      info['half'].values,
+                                                      join_sess=False,
                                                       join_sess_part=False)
 
     # ## Step 4b: Build custom individual localizing data / info
@@ -119,15 +123,15 @@ if __name__ == "__main__":
     #     sub_ind.append(np.arange(0, len(subj)))
 
     ## Step 5: Compute the individual parcellations
-    indiv_par, _ = fm.get_indiv_parcellation(ar_model, tdata, atlas, cond_v, part_v,
-                                             sub_ind)
+    indiv_par, _, _ = fm.get_indiv_parcellation(ar_model, tdata, atlas,
+                                                cond_v, part_v, sub_ind, Vs=Vs)
 
     # Step 3: Save the individual parcellations as a nifti/gifti file
     # Step 3.1: Convert the individual parcellations to gifti file
-    gii_file = nt.make_label_gifti(indiv_par.cpu().numpy().transpose(),
-                                   labels=["label_{}".format(i) for i in range(K)],
-                                   column_names=["subj_{}".format(i+1)
-                                                 for i in range(indiv_par.shape[0])])
+    # gii_file = nt.make_label_gifti(indiv_par.cpu().numpy().transpose(),
+    #                                labels=["label_{}".format(i) for i in range(K)],
+    #                                column_names=["subj_{}".format(i+1)
+    #                                              for i in range(indiv_par.shape[0])])
     # nb.save(gii_file, '/Md_Asym_17.dlabel.gii')
     # TODO: here we need to write a function to convert the
     #       individual parcellations to nifti file
