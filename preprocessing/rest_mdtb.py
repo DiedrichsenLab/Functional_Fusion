@@ -269,9 +269,7 @@ def copy_motionparams(subject_path, run):
 
 
 def move_cleaned(subject, run):
-    # dest_dir = f"{str(subject_path)}/run{run}_smoothed.ica"
-    # src = f"{str(subject)}/run{run}.feat/filtered_func_data_clean.nii.gz"
-    # dest_file = f"{str(subject_path)}/rp_run_{run}.txt"
+    """Move the cleaned data into the imaging_data_fix folder."""
     
     # move data into the corresponding session folder
     src = 'filtered_func_data_clean.nii.gz'
@@ -287,6 +285,19 @@ def move_cleaned(subject, run):
     except:
         print('skipping ' + src)
 
+
+def move_mask(subject):    
+    """Move the functional space grey matter mask into the imaging_data_fix folder."""
+    src = 'rmask_noskull.nii'
+    dest = (f'/sub-{subject[1:]}_ses-rest_mask.nii')
+
+    source_dir = f"{rest_dir}/{subject}/"
+    dest_dir = f"{rest_dir}/../imaging_data_fix/"
+    try:
+        shutil.copyfile(source_dir + src,
+                        dest_dir + dest)
+    except:
+        print('skipping ' + src)
 
 if __name__ == "__main__":
 
@@ -363,6 +374,8 @@ if __name__ == "__main__":
     for folder in folders:
         folder = str(folder)
         subject = folder.split('/')[-1]
-        for run in runs:
-            move_cleaned(subject, run)
+        move_mask(subject)
+        # for run in runs:
+        #     move_cleaned(subject, run)
+        
     

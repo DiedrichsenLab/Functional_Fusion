@@ -20,9 +20,6 @@ def group_mtdb(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
     mdtb_dataset = DataSetMDTB(data_dir)
     mdtb_dataset.group_average_data(ses_id,type, atlas)
 
-def extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='SUIT3', smooth=2.0):
-    mdtb_dataset = DataSetMDTB(data_dir)
-    mdtb_dataset.extract_all(ses_id,type,atlas, smooth=smooth)
 
 def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
     # Make the atlas object
@@ -103,25 +100,25 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
 
 
 if __name__ == "__main__":
-    # extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
-    # extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
-    # extract_mdtb(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
+    mdtb_dataset = DataSetMDTB(data_dir)
+    # mdtb_dataset.extract_all(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
+    # mdtb_dataset.extract_all(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
+    # mdtb_dataset.extract_all(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
     # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
 
     # for s in [1,2,3]:
     #     smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=s)
     #     smooth_mdtb_fs32k(ses_id='ses-s2', type='CondHalf', smooth=s)
 
-    # dataset = DataSetMDTB(data_dir)
-    # # dataset.group_average_data(atlas='MNISymC3')
-    # dataset.group_average_data(atlas='MNISymC3', ses_id='ses-s2')
+    # # mdtb_dataset.group_average_data(atlas='MNISymC3')
+    # mdtb_dataset.group_average_data(atlas='MNISymC3', ses_id='ses-s2')
     #
-    # dataset.plot_cerebellum(savefig=True, atlas='MNISymC3',
+    # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC3',
     #                         colorbar=True, sessions=['ses-s2'])
     #
-    # pass
-    extract_mdtb(ses_id='ses-rest', type='Tseries', atlas='MNISymC2',smooth=2.0)
-    # extract_mdtb(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2',smooth=2.0)
 
-
+    
+    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC2', smooth=2.0)
+    mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='fs32k', smooth=2.0)
+    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2', smooth=2.0)
 

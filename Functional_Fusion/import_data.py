@@ -263,3 +263,14 @@ def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict):
         
         # Make reginfo
         create_reginfo(dest_dir, participant_id, ses_id=ses_id, reginfo_general=info_dict['reginfo_general'])
+
+
+    # import mask
+    src = f'/{participant_id}_{ses_id}_mask.nii'
+    dest = f'/{participant_id}_{ses_id}_mask.nii'
+    try:
+        shutil.copyfile(source_dir + src,
+                        dest_dir + dest)
+    except:
+        print('skipping ' + src)
+
