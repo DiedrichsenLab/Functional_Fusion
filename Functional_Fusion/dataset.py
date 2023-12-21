@@ -853,6 +853,8 @@ class DataSetNative(DataSet):
         myatlas, _ = am.get_atlas(atlas, self.atlas_dir)
         # create and calculate the atlas map for each participant
         T = self.get_participants()
+        if type == 'Tseries':
+            T = T[T['ses-rest'] == 1]
         for s in T.participant_id:
 
             print(f'Atlasmap {s}')
@@ -1060,7 +1062,7 @@ class DataSetMDTB(DataSetNative):
         if type == 'Tseries':
             info['names'] = info['timepoint']
             data_new, data_info = data, info
-            
+
         else:
             if type == 'CondHalf':
                 data_info, C = agg_data(info,
