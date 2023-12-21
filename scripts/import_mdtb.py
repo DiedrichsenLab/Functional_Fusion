@@ -77,7 +77,7 @@ if __name__ == "__main__":
     participants = participants[T['ses-rest']==1]
     for s in participants[3:]:
         old_id = s.replace('sub-','s',1)
-        dir1 = orig_dir + f'/resting_state/imaging_data_fix/{old_id}'
+        dir1 = orig_dir + '/resting_state/imaging_data_fix/'
         dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
         info_dict = {
             'runs': ['01', '02'],

@@ -249,10 +249,10 @@ def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict):
 
     # Make the destination directory
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
-    for run, run_n in enumerate(run_names):
+    for run in run_names:
 
         # move data into the corresponding session folder
-        src = (f'/run-{run_n}/{participant_id}_run-{run}.nii.gz')
+        src = (f'{participant_id}_run-{run}.nii')
         dest = (f'/{participant_id}_run-{run}.nii')
 
         try:
