@@ -1,25 +1,23 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
 import os
 import pandas as pd
-import shutil
 from pathlib import Path
-import mat73
 import numpy as np
-import atlas_map as am
-from dataset import DataSetMDTB
+import Functional_Fusion.atlas_map as am
+from Functional_Fusion.dataset import DataSetMDTB
 import nibabel as nb
-import SUITPy as suit
-import matplotlib.pyplot as plt
 import subprocess
+import scripts.paths as pt
 
-base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
-if not Path(base_dir).exists():
-    base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-if not Path(base_dir).exists():
-    base_dir = 'Y:/data/FunctionalFusion'
-if not Path(base_dir).exists():
-    raise(NameError('Could not find base_dir'))
-
+# base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
+# if not Path(base_dir).exists():
+#     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
+# if not Path(base_dir).exists():
+#     base_dir = 'Y:/data/FunctionalFusion'
+# if not Path(base_dir).exists():
+#     raise(NameError('Could not find base_dir'))
+base_dir = pt.set_base_dir()
+atlas_dir = pt.set_atlas_dir(base_dir)
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
 
@@ -111,7 +109,7 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
 
 
 if __name__ == "__main__":
-    extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
+    # extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
     # extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
     # extract_mdtb(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
     # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
@@ -128,5 +126,8 @@ if __name__ == "__main__":
     #                         colorbar=True, sessions=['ses-s2'])
     #
     # pass
+    extract_mdtb(ses_id='ses-rest', type='Tseries', atlas='MNISymC2',smooth=2.0)
+    # extract_mdtb(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2',smooth=2.0)
+
 
 

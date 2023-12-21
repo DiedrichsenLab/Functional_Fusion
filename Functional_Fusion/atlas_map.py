@@ -68,7 +68,7 @@ def get_deform(target, source="MNIAsym2",atlas_dir = default_atlas_dir):
         raise (NameError(f"Unknown Atlas: {source}"))
     tar = atlases[target.name]
     src = atlases[source]
-    deform = f"{atlas_dir}/{src['dir']}/tpl-{src['space']}_space-{tar['space']}_xfm.nii"
+    deform = f"{atlas_dir}/{src['dir']}/tpl-{src['space']}_from-{tar['space']}_xfm.nii"
     mask = f"{atlas_dir}/{src['dir']}/{src['mask']}"
     return deform, mask
 
