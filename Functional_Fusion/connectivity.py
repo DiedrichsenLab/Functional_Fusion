@@ -13,6 +13,7 @@ import scripts.paths as pt
 base_dir = pt.set_base_dir()
 atlas_dir = pt.set_atlas_dir(base_dir)
 
+
 def regress_networks(X, Y):
     """Regresses a spatial map (X) into data (Y).
     Returns the network timecourses.
@@ -39,6 +40,7 @@ def regress_networks(X, Y):
 
     return network_timecourse
 
+
 def average_within_Icos(label_file, data, atlas="fs32k"):
     """Average the raw time course for voxels within a parcel
 
@@ -64,7 +66,7 @@ def average_within_Icos(label_file, data, atlas="fs32k"):
 
     # fill nan value in Y to zero
     print("Setting nan datapoints (%d unique vertices) to zero"
-            % np.unique(np.where(np.isnan(parcel_data))[1]).shape[0])
+          % np.unique(np.where(np.isnan(parcel_data))[1]).shape[0])
     # Y = np.nan_to_num(np.transpose(Y))
     parcel_data = np.nan_to_num(parcel_data)
 
@@ -97,11 +99,10 @@ def connectivity_fingerprint(source, target, info, type):
         coef = ut.correlate(source, target)
         coefs.append(coef)
 
-    return np.vstack(coefs) 
+    return np.vstack(coefs)
 
 
-
-def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1'):
+def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None):
     """Extracts the connectivity fingerprint for each network in the HCP data
     Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse
             Step 2: Get the correlation of each voxel with each network timecourse (connectivity fingerprint)
@@ -118,6 +119,11 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     atlas, _ = am.get_atlas(space, dset.atlas_dir)
 
     T = pd.read_csv(dset.base_dir + '/participants.tsv', sep='\t')
+
+    # Deal with subset of subjects
+    if subj is not None:
+        T = T.iloc[T.participant_id.tolist().index(i) for i in subj]
+
     for p, participant_id in enumerate(T.participant_id):
         # Get cortical data
         data_cortex, _ = dset.get_data(

@@ -20,18 +20,18 @@ atlas_dir = base_dir + '/Atlases'
 
 def group_mtdb(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
     mdtb_dataset = DataSetMDTB(data_dir)
-    mdtb_dataset.group_average_data(ses_id,type, atlas)
+    mdtb_dataset.group_average_data(ses_id, type, atlas)
 
 
-def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
+def parcel_mdtb_fs32k(res=162, ses_id='ses-s1', type='condHalf'):
     # Make the atlas object
-    surf_parcel =[]
-    hem_name = ['cortex_left','cortex_right']
+    surf_parcel = []
+    hem_name = ['cortex_left', 'cortex_right']
     # Get the parcelation
-    for i,h in enumerate(['L','R']):
+    for i, h in enumerate(['L', 'R']):
         dir = atlas_dir + '/tpl-fs32k'
         gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
-        surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i],gifti))
+        surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i], gifti))
 
     # initialize the data set object
     mdtb_dataset = DataSetMDTB(data_dir)
@@ -45,16 +45,19 @@ def parcel_mdtb_fs32k(res=162,ses_id='ses-s1',type='condHalf'):
         bmf = C.header.get_axis(1)
         bmp = []
         R = []
-        for idx, (nam,slc,bm) in enumerate(bmf.iter_structures()):
-            D = np.asanyarray(C.dataobj[:,slc])
-            X = np.zeros((D.shape[0],surf_parcel[0].label_vec.shape[0]))
-            X[:,bm.vertex]=D
+        for idx, (nam, slc, bm) in enumerate(bmf.iter_structures()):
+            D = np.asanyarray(C.dataobj[:, slc])
+            X = np.zeros((D.shape[0], surf_parcel[0].label_vec.shape[0]))
+            X[:, bm.vertex] = D
             R.append(surf_parcel[idx].agg_data(X))
             bmp.append(surf_parcel[idx].get_parcel_axis())
-        header = nb.Cifti2Header.from_axes((C.header.get_axis(0),bmp[0]+bmp[1]))
-        cifti_img = nb.Cifti2Image(dataobj=np.c_[R[0],R[1]],header=header)
-        nb.save(cifti_img,s_dir + f'/{s}_space-fs32k_{ses_id}_{type}_Iso-{res}.pscalar.nii')
+        header = nb.Cifti2Header.from_axes(
+            (C.header.get_axis(0), bmp[0] + bmp[1]))
+        cifti_img = nb.Cifti2Image(dataobj=np.c_[R[0], R[1]], header=header)
+        nb.save(cifti_img, s_dir +
+                f'/{s}_space-fs32k_{ses_id}_{type}_Iso-{res}.pscalar.nii')
         pass
+
 
 def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
     myatlas, _ = am.get_atlas('fs32k', atlas_dir)
@@ -71,7 +74,8 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
         C = nb.load(mdtb_dataset.data_dir.format(s)
                     + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
         mask = np.isnan(C.get_fdata())
-        C = nb.Cifti2Image(dataobj=np.nan_to_num(C.get_fdata()), header=C.header)
+        C = nb.Cifti2Image(dataobj=np.nan_to_num(
+            C.get_fdata()), header=C.header)
         nb.save(C, 'tmp.dscalar.nii')
 
         dest_dir = mdtb_dataset.data_smooth_dir.format(s, smooth)
@@ -124,13 +128,15 @@ if __name__ == "__main__":
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='fs32k', smooth=2.0)
 
     # -- Get connectivity fingerprint --
+    T = pd.read_csv(
+        data_dir + '/participants.tsv', delimiter='\t')
+    subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
     conn.get_connectivity_fingerprint(dname,
-        type='Net69Run', space='MNISymC2', ses_id='ses-rest')
+                                      type='Net69Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Net69Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
-    #     type='Net69Run', space='SUIT3', ses_id='ses-rest')
-    conn.get_connectivity_fingerprint(dname,
-        type='Net300Run', space='MNISymC2', ses_id='ses-rest')
-    conn.get_connectivity_fingerprint(dname,
-        type='Net300Run', space='SUIT3', ses_id='ses-rest')
-    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2', smooth=2.0)
-
+    #                                   type='Net300Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net300Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2', smooth=2.0, subj=subject_subset)
