@@ -554,8 +554,9 @@ class DataSet:
             info (DataFramw): Data frame with common descriptor
         """
         T = self.get_participants()
+
         if type == 'Tseries':
-            subj = T[T['ses-rest'] == 1].participant_id.tolist()
+                subj = T[T['ses-rest'] == 1].participant_id.tolist()
 
         # Deal with subset of subject option
         if subj is None:
@@ -604,13 +605,13 @@ class DataSet:
             info (DataFramw): Data frame with common descriptor
         """
         T = self.get_participants()
-        if type == 'Tseries':
-            subj = T[T['ses-rest'] == 1].participant_id.tolist()
         # Assemble the data
         Data = None
         # Deal with subset of subject option
         if subj is None:
             subj = T.participant_id
+            if type == 'Tseries':
+                subj = T[T['ses-rest'] == 1].participant_id.tolist()
         elif isinstance(subj, str):
             subj = [subj]
         elif isinstance(subj, (int,np.integer)):
