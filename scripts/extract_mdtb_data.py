@@ -135,8 +135,15 @@ if __name__ == "__main__":
     #                                   type='Net69Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net69Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #     type='Net69Run', space='MNISymC2', ses_id='ses-rest')
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net300Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net300Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2', smooth=2.0, subj=subject_subset)
 
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Net50Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Net50Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+
+    # -- Group Average Data --
+    # mdtb_dataset.group_average_data(atlas='MNISymC2', ses_id='ses-rest', type='Net69Run', subj=subject_subset)
+    mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=['ses-rest'], type='Net69Run')

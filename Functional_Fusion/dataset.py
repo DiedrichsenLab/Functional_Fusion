@@ -674,39 +674,43 @@ class DataSet:
 
 
     def group_average_data(self, ses_id=None,
-                           type=None,
-                           atlas='SUIT3'):
-        """Loads group data in SUIT space from a standard experiment structure
-        averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
+                               type=None,
+                               atlas='SUIT3', 
+                               subj=None):
+            """Loads group data in SUIT space from a standard experiment structure
+            averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
 
-        Args:
-            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
-            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
-        """
-        if ses_id is None:
-            ses_id = self.sessions[0]
-        if type is None:
-            type = self.default_type
+            Args:
+                ses_id (str, optional): Session ID. If not provided, the first session ID in the dataset will be used.
+                type (str, optional): Type of data. If not provided, the default type will be used.
+                atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+                subj (list or None, optional): Subset of subjects to include in the group average. If None, all subjects will be included.
 
-        data, info = self.get_data(space=atlas, ses_id=ses_id,
-                                   type=type)
-        # average across participants
-        X = np.nanmean(data, axis=0)
-        # make output cifti
-        s = self.get_participants().participant_id[0]
-        C = nb.load(self.data_dir.format(s) +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-        C = nb.Cifti2Image(dataobj=X, header=C.header)
-        # save output
-        dest_dir = op.join(self.data_dir.format('group'))
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        nb.save(C, dest_dir +
-                f'/group_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-        if 'sn' in info.columns:
-            info = info.drop(columns=['sn'])
+            """
+            if ses_id is None:
+                ses_id = self.sessions[0]
+            if type is None:
+                type = self.default_type
 
-        info.to_csv(dest_dir +
-                    f'/group_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+            data, info = self.get_data(space=atlas, ses_id=ses_id,
+                                       type=type, subj=subj)
+            # average across participants
+            X = np.nanmean(data, axis=0)
+            # make output cifti
+            s = self.get_participants().participant_id[0]
+            C = nb.load(self.data_dir.format(s) +
+                        f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            C = nb.Cifti2Image(dataobj=X, header=C.header)
+            # save output
+            dest_dir = op.join(self.data_dir.format('group'))
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir +
+                    f'/group_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            if 'sn' in info.columns:
+                info = info.drop(columns=['sn'])
+
+            info.to_csv(dest_dir +
+                        f'/group_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
     def plot_cerebellum(self, subject='group', sessions=None, atlas='SUIT3', type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
         """Loads group data in SUIT3 space from a standard experiment structure
@@ -749,19 +753,24 @@ class DataSet:
                 limes = [np.percentile(X[np.where(~np.isnan(X))], 5), np.percentile(
                     X[np.where(~np.isnan(X))], 95)]
 
-                if cond == 'all':
-                    conditions = D[self.cond_name]
+                if session == 'ses-rest':
+                    cond_col = 'names'
                 else:
-                    conditions = D[self.cond_name][cond]
+                    cond_col = 'cond_names'
+
+                if cond == 'all':
+                    conditions = D[cond_col]
+                else:
+                    conditions = D[cond_col]
 
                 # -- Plot each condition in seperate figures --
                 dest_dir = self.data_dir.split('/{0}')[0] + f'/{sub}/figures/'
                 Path(dest_dir).mkdir(parents=True, exist_ok=True)
                 for c in conditions:
                     condition_name = c.strip()
-                    D[D[self.cond_name] == c].index
+                    D[D[cond_col] == c].index
                     Nifti = atlasmap.data_to_nifti(
-                        X[D[D[self.cond_name] == c].index, :].mean(axis=0))
+                        X[D[D[cond_col] == c].index, :].mean(axis=0))
                     surf_data = suit.flatmap.vol_to_surf(
                         Nifti, space=atlasinfo['normspace'])
                     fig = suit.flatmap.plot(
