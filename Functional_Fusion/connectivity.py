@@ -122,9 +122,13 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 
     # Deal with subset of subjects
     if subj is not None:
-        T = T.iloc[T.participant_id.tolist().index(i) for i in subj]
+        subj = [T.participant_id.tolist().index(s) for s in subj]
+        T = T.iloc[subj]
 
-    for p, participant_id in enumerate(T.participant_id):
+        
+    for p, row in T.iterrows():
+        participant_id = row.participant_id
+
         # Get cortical data
         data_cortex, _ = dset.get_data(
             space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
@@ -163,3 +167,34 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
                 f'{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
         info.to_csv(
             dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
+
+
+    # orig = nb.load(base_dir +
+    #               f'/targets/{target}')
+    # # extract left hemisphere and right hemisphere from the cifti file
+    # lh, rh = orig.dataobj[..., :59412], orig.dataobj[..., 59412:]
+    # orig.header.get_axis(1).name
+
+    # # Get all data from cifti structure cortex left
+    # axis = orig.header.get_axis(1)
+    # surf_name = 'CIFTI_STRUCTURE_CORTEX_LEFT'
+    # # Get data indices for the structure
+    # orig.header.get_axis(1).name == surf_name
+    # data_indices = orig.header.get_axis(1).get_index(surf_name)
+    # orig[orig.name == 'CIFTI_STRUCTURE_CORTEX_LEFT']
+    # # get the data array with all the time points, for surf_name
+
+    # for idx, (name, slc, bm) in enumerate(orig.header.get_axis(1).iter_structures()):
+    #     print((str(name), slc))
+    
+    # data = []
+    # assert isinstance(axis, nb.cifti2.BrainModelAxis)
+
+
+    # for name, data_indices, model in axis.iter_structures():  # Iterates over volumetric and surface structures
+    #     if name == surf_name:
+    #         data.append(orig.dataobj[..., data_indices])
+
+    # assert isinstance(axis, nb.cifti2.BrainModelAxis)
+    # for name, data_indices, model in axis.iter_structures():  # Iterates over volumetric and surface structures
+    #     if name == surf_name:

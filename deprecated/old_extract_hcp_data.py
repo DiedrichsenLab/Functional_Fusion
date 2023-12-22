@@ -1,4 +1,163 @@
 
+
+
+def extract_connectivity_fingerprint(type='Net69Run', space='MNISymC3', ses_id='ses-rest1'):
+    """Extracts the connectivity fingerprint for each network in the HCP data
+    Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse
+            Step 2: Get the correlation of each voxel with each network timecourse (connectivity fingerprint)
+            Step 3: Save the data.
+    """
+
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+
+    # Load the networks
+    target, type = re.findall('[A-Z][^A-Z]*', type)
+    net = nb.load(hcp_dataset.base_dir +
+                  f'/targets/{target}_space-fs32k.dscalar.nii')
+
+    atlas, _ = am.get_atlas(space, hcp_dataset.atlas_dir)
+
+    T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
+    for p, participant_id in enumerate(T.participant_id):
+        # Get cortical data
+        data_cortex, _ = hcp_dataset.get_data(
+            space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
+
+        # Regress each network into the fs32k cortical data to get a run-specific network timecourse
+        network_timecourse = hcp_dataset.regress_networks(
+            net.get_fdata(), data_cortex)
+
+        # Calculate the connectivity fingerprint
+        data_cereb, info = hcp_dataset.get_data(
+            space=space, ses_id=ses_id, type='Tseries', subj=[p])
+        data_cereb = data_cereb.squeeze()
+
+        coef = hcp_dataset.connectivity_fingerprint(
+            data_cereb, network_timecourse, info, type)
+        # Make info
+        names = [f'Network_{i}' for i in range(1, 70)]
+        runs = np.repeat([info.run.unique()], len(names))
+        net_id = np.tile(np.arange(len(names)),
+                         int(coef.shape[0] / len(names))) + 1
+        info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+                             'sess': [ses_id] * coef.shape[0],
+                             'run': runs,
+                             'half': 2 - (runs < runs[-1]),
+                             'net_id': net_id,
+                             'names': names * int(coef.shape[0] / len(names))})
+
+        # Save the data
+
+        C = atlas.data_to_cifti(coef, info.names)
+        dest_dir = hcp_dataset.base_dir + \
+            f'/derivatives/{participant_id}/data/'
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+
+        nb.save(C, dest_dir +
+                f'{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
+        info.to_csv(
+            dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
+
+
+def extract_connectivity_fingerprint_da(type='Ico162Run', space='MNISymC3', ses_id='ses-rest1'):
+    """Extracts the connectivity fingerprint for each network in the HCP data
+
+    Args:
+        type: data extraction type, 'IcoXXXRun', 'IcoXXXAll', 'NetXXXRun', or
+              'NetXXXRun', where XXX indicates the number of networks
+        space: the space of cerebellar time series
+        ses_id: session ID
+
+    Returns:
+        Write in the extracted data to CIFTI format along with its .tsv info file
+
+    Steps:  Step 1: Regress each network into the fs32k cortical data to get
+                    a run-specific network timecourse
+            Step 2: Get the correlation of each voxel with each network
+                    timecourse (connectivity fingerprint)
+            Step 3: Save the data.
+    """
+
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+
+    # Load the networks
+    target, type = re.findall('[A-Z][^A-Z]*', type)
+
+    # 1. Extract connectivity from ICA Network
+    if target.startswith('Net'):
+        net = nb.load(hcp_dataset.base_dir +
+                      f'/targets/tpl-fs32k_{target}.dscalar.nii')
+        names = [f'Network_{i}' for i in range(1, net.shape[0] + 1)]
+
+    # 2. Extract connectivity from Icosahedrons
+    elif target.startswith('Ico'):
+        res = ''.join(re.findall('\d+', target))
+        # Get cortical parcelation
+        labels, masks = [], []
+        for i, h in enumerate(['L', 'R']):
+            dir = atlas_dir + '/tpl-fs32k'
+            labels += [dir + f'/Icosahedron-{res}_Sym.32k.{h}.label.gii']
+            masks += [dir + f'/tpl-fs32k_hemi-{h}_mask.label.gii']
+
+        surf_parcel = am.AtlasSurface(
+            'Coretex', masks, ['cortex_left', 'cortex_right'])
+
+        net = surf_parcel.get_parcel(labels, None)[0]
+        bpa = surf_parcel.get_parcel_axis()
+        names = list(bpa.name)
+
+    atlas, _ = am.get_atlas(space, hcp_dataset.atlas_dir)
+
+    T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
+    for p, participant_id in enumerate(T.participant_id):
+        print(
+            f'-Extracting sub {participant_id} using Network: {target}, Type: {type} ...')
+        # Get cortical data
+        data_cortex, _ = hcp_dataset.get_data(
+            space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
+
+        if target.startswith('Net'):
+            # Regress each network into the fs32k cortical data to get a run-specific network timecourse
+            network_timecourse = hcp_dataset.regress_networks(
+                net.get_fdata(), data_cortex)
+        elif target.startswith('Ico'):
+            # Average
+            network_timecourse = hcp_dataset.average_within_Icos(
+                net - 1, data_cortex.squeeze())
+
+        # Calculate the connectivity fingerprint
+        data_cereb, info = hcp_dataset.get_data(
+            space=space, ses_id=ses_id, type='Tseries', subj=[p])
+        data_cereb = data_cereb.squeeze()
+        coef = hcp_dataset.connectivity_fingerprint(
+            data_cereb, network_timecourse, info, type)
+
+        # Make info
+        runs = np.repeat([info.run.unique()], len(names))
+        net_id = np.tile(np.arange(len(names)),
+                         int(coef.shape[0] / len(names))) + 1
+        info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+                             'sess': [ses_id] * coef.shape[0],
+                             'run': runs,
+                             'half': 2 - (runs < runs[-1]),
+                             'net_id': net_id,
+                             'names': names * int(coef.shape[0] / len(names))})
+
+        # Save the data
+
+        C = atlas.data_to_cifti(coef, info.names)
+        dest_dir = hcp_dataset.base_dir + \
+            f'/derivatives/{participant_id}/data/'
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+
+        nb.save(C, dest_dir +
+                f'{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
+        info.to_csv(
+            dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
+
+
+
+
 def show_hcp_group(ses_id='ses-s1', type='Run', atlas='MNISymC3', cond=0, info_column='names', savefig=True):
     hcp_dataset = DataSetHcpResting(hcp_dir)
     C = nb.load(hcp_dataset.data_dir.split('/{0}')[0] +
@@ -77,88 +236,6 @@ def extract_hcp_data(res=162):
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
         nb.save(cifti_img, dest_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
 
-
-def get_hcp_fs32k(res=162, index=range(0, 100), refix=False):
-    # Make the atlas object
-    mask_L = atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-L_mask.label.gii'
-    mask_R = atlas_dir + '/tpl-fs32k/tpl-fs32k_hemi-R_mask.label.gii'
-    fs32k_L_atlas = am.AtlasSurface('CORTEX_LEFT', mask_gii=mask_L)
-    fs32k_R_atlas = am.AtlasSurface('CORTEX_RIGHT', mask_gii=mask_R)
-
-    # initialize the data set object
-    hcp_dataset = DataSetHcpResting(hcp_dir)
-
-    # Get the parcelation
-    surf_parcel = []
-    for i, h in enumerate(['L', 'R']):
-        dir = atlas_dir + '/tpl-fs32k'
-        gifti = dir + f'/Icosahedron-{res}.32k.{h}.label.gii'
-        surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i], gifti))
-
-    T = hcp_dataset.get_participants()
-    for i, s in enumerate(T.participant_id):
-        data_dir = hcp_dataset.data_dir.format(s)
-        Ci = nb.load(data_dir + f'/sub-{s}_tessel-{res}.dpconn.nii')
-        if i == 0:
-            R = np.empty((T.shape[0], Ci.shape[0], Ci.shape[1]))
-
-        R[i, :, :] = np.asanyarray(Ci.dataobj)
-    Rm = np.nanmean(R, axis=0)
-    Cm = nb.Cifti2Image(Rm, Ci.header)
-    if refix:
-        nb.save(Cm, hcp_dir + f'/group_tessel-{res}-ReFIX.dpconn.nii')
-    else:
-        nb.save(Cm, hcp_dir + f'/group_tessel-{res}.dpconn.nii')
-
-    pass
-
-
-def avrg_hcp_dpconn_cortex(res=162, index=range(0, 100), refix=False):
-    # initialize the data set object
-    hcp_dataset = DataSetHcpResting(hcp_dir)
-    T = hcp_dataset.get_participants()
-    subjects_id = T.participant_id[index]
-
-    for h in range(2):
-        for i, s in enumerate(subjects_id):
-            data_dir = hcp_dataset.data_dir.format(s)
-            if refix:
-                Ci = nb.load(
-                    data_dir + f'/sub-{s}_tessel-{res}_{hem_name[h]}-ReFIX.dpconn.nii')
-            else:
-                Ci = nb.load(
-                    data_dir + f'/sub-{s}_tessel-{res}_{hem_name[h]}.dpconn.nii')
-
-            if i == 0:
-                R = np.empty((subjects_id.shape[0], Ci.shape[0], Ci.shape[1]))
-            R[i, :, :] = np.asanyarray(Ci.dataobj)
-        Rm = np.nanmean(R, axis=0)
-        Cm = nb.Cifti2Image(Rm, Ci.header)
-        if refix:
-            nb.save(Cm, hcp_dir +
-                    f'/group_tessel-{res}_{hem_name[h]}-ReFIX.dpconn.nii')
-        else:
-            nb.save(Cm, hcp_dir +
-                    f'/group_tessel-{res}_{hem_name[h]}.dpconn.nii')
-
-    pass
-
-
-def parcel_hcp_dpconn(dpconn_file):
-    """
-    Args:
-        dpconn_file (_type_): _description_
-    """
-    C = nb.load(dpconn_file)
-    mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-    label = atlas_dir + '/tpl-SUIT/atl-MDTB10_space-SUIT_dseg.nii'
-    mdtb_atlas = am.AtlasVolumeParcel('MDTB10', label_img=label, mask_img=mask)
-    R = mdtb_atlas.agg_data(np.asanyarray(C.dataobj))
-    bm_cortex = C.header.get_axis(0)
-    names = [f'MDTB {r+1:02}' for r in range(R.shape[1])]
-    row_axis = nb.cifti2.ScalarAxis(names)
-    cifti_img = nb.Cifti2Image(R.T, [row_axis, bm_cortex])
-    return cifti_img
 
 
 def parcel_hcp_dpconn_cortex(dpconn_file):

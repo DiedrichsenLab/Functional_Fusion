@@ -136,6 +136,8 @@ if __name__ == "__main__":
     conn.get_connectivity_fingerprint(dname,
                                       type='Net69Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
+    #     type='Net69Run', space='MNISymC2', ses_id='ses-rest')
+    # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net300Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net300Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
