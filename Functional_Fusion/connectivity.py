@@ -169,32 +169,38 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
             dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
 
 
-    # orig = nb.load(base_dir +
-    #               f'/targets/{target}')
-    # # extract left hemisphere and right hemisphere from the cifti file
-    # lh, rh = orig.dataobj[..., :59412], orig.dataobj[..., 59412:]
-    # orig.header.get_axis(1).name
+def get_cortical_target(target):
 
-    # # Get all data from cifti structure cortex left
-    # axis = orig.header.get_axis(1)
-    # surf_name = 'CIFTI_STRUCTURE_CORTEX_LEFT'
-    # # Get data indices for the structure
-    # orig.header.get_axis(1).name == surf_name
-    # data_indices = orig.header.get_axis(1).get_index(surf_name)
-    # orig[orig.name == 'CIFTI_STRUCTURE_CORTEX_LEFT']
-    # # get the data array with all the time points, for surf_name
-
-    # for idx, (name, slc, bm) in enumerate(orig.header.get_axis(1).iter_structures()):
-    #     print((str(name), slc))
+    orig = nb.load(base_dir +
+                  f'/targets/{target}')
     
-    # data = []
-    # assert isinstance(axis, nb.cifti2.BrainModelAxis)
+    lh, rh = ut.surf_from_cifti(orig)
+    seed_names = ['Network_{}'.format(i)
+                  for i in range(1, len(orig.header.get_axis(0).name) + 1)]
+    
+    bpa = nb.cifti2.ScalarAxis(seed_names)
+    # lh = cifti2.Cifti2Image(lh, transforms.get_cifti2_axes('32k'))
+    target_name = target.split('/')[-1].split('_space')[0]
+    print(f'Writing {target_name} ...')
 
+    # Remove medial wall
+    atlas, _ = am.get_atlas('fs32k', atlas_dir)
+    bmc = atlas.get_brain_model_axis()
+    lh_masked = [data[atlas.mask[0]] for data in lh]
+    rh_masked = [data[atlas.mask[1]] for data in rh]
 
-    # for name, data_indices, model in axis.iter_structures():  # Iterates over volumetric and surface structures
-    #     if name == surf_name:
-    #         data.append(orig.dataobj[..., data_indices])
+    # --- Build a connectivity CIFTI-file and save ---
+    # Make the object
+    header = nb.Cifti2Header.from_axes((bpa, bmc))
+    cifti_img = nb.Cifti2Image(
+        dataobj=np.c_[lh_masked, rh_masked], header=header)
+    dest_dir = base_dir + '/targets/'
+    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    nb.save(cifti_img, dest_dir + f'/{target_name}_space-fs32k.dscalar.nii')
 
-    # assert isinstance(axis, nb.cifti2.BrainModelAxis)
-    # for name, data_indices, model in axis.iter_structures():  # Iterates over volumetric and surface structures
-    #     if name == surf_name:
+        
+
+if __name__ == "__main__":
+    # get_cortical_target('orig/hcp_1200/Net300_space-fs32k.dscalar.nii')
+    get_cortical_target('orig/hcp_1200/Net100_space-fs32k.dscalar.nii')
+    get_cortical_target('orig/hcp_1200/Net50_space-fs32k.dscalar.nii')
