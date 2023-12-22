@@ -32,21 +32,10 @@ def regress_networks(X, Y):
     Y = Y.T.squeeze()
     d_excluded = np.where(np.isnan(Y))[0].shape[0]
     v_excluded = np.unique(np.where(np.isnan(Y))[0]).shape[0]
-
-    # Deal with nan in fMRI data
     if not v_excluded == 0:
         print(
-            f'Setting nan datapoints ({v_excluded} unique vertices) in Y to zero. Entire timeseries: {d_excluded/v_excluded == Y.shape[1]}')
-
-    # Deal with nan in target maps
-    d_excluded = np.where(np.isnan(X))[0].shape[0]
-    v_excluded = np.unique(np.where(np.isnan(X))[0]).shape[0]
-    if not v_excluded == 0:
-        print(
-            f'Setting nan datapoints ({v_excluded} unique vertices) in X to zero. Entire timeseries: {d_excluded/v_excluded == X.shape[1]}')
-    X[np.isnan(X)] = 0
-
-    # Regress
+            f'Setting nan datapoints ({v_excluded} unique vertices) to zero. Entire timeseries: {d_excluded/v_excluded == Y.shape[1]}')
+    Y[np.isnan(Y)] = 0
     network_timecourse = np.matmul(np.linalg.pinv(X), Y)
 
     return network_timecourse
@@ -136,6 +125,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         subj = [T.participant_id.tolist().index(s) for s in subj]
         T = T.iloc[subj]
 
+        
     for p, row in T.iterrows():
         participant_id = row.participant_id
 
@@ -182,12 +172,12 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 def get_cortical_target(target):
 
     orig = nb.load(base_dir +
-                   f'/targets/{target}')
-
+                  f'/targets/{target}')
+    
     lh, rh = ut.surf_from_cifti(orig)
     seed_names = ['Network_{}'.format(i)
                   for i in range(1, len(orig.header.get_axis(0).name) + 1)]
-
+    
     bpa = nb.cifti2.ScalarAxis(seed_names)
     # lh = cifti2.Cifti2Image(lh, transforms.get_cifti2_axes('32k'))
     target_name = target.split('/')[-1].split('_space')[0]
@@ -208,6 +198,7 @@ def get_cortical_target(target):
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     nb.save(cifti_img, dest_dir + f'/{target_name}_space-fs32k.dscalar.nii')
 
+        
 
 if __name__ == "__main__":
     # get_cortical_target('orig/hcp_1200/Net300_space-fs32k.dscalar.nii')

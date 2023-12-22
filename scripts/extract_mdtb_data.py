@@ -136,12 +136,7 @@ if __name__ == "__main__":
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net69Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
 
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Net300All', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Net300All', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-
     conn.get_connectivity_fingerprint(dname,
-                                      type='Net15All', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+                                      type='Net50Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     conn.get_connectivity_fingerprint(dname,
-                                      type='Net15All', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+                                      type='Net50Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
