@@ -202,5 +202,6 @@ def get_cortical_target(target):
 
 if __name__ == "__main__":
     # get_cortical_target('orig/hcp_1200/Net300_space-fs32k.dscalar.nii')
-    get_cortical_target('orig/hcp_1200/Net100_space-fs32k.dscalar.nii')
-    get_cortical_target('orig/hcp_1200/Net50_space-fs32k.dscalar.nii')
+    # get_cortical_target('orig/hcp_1200/Net100_space-fs32k.dscalar.nii')
+    # get_cortical_target('orig/hcp_1200/Net50_space-fs32k.dscalar.nii')
+    get_cortical_target('orig/hcp_1200/Net15_space-fs32k.dscalar.nii')
