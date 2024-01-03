@@ -85,3 +85,16 @@ Additionally, you need to save the non-linear transformation between SUIT and in
 .. code-block:: matlab
 
     suit_save_darteldef(<c_anat_name>,'wdir',workingdirectory)
+
+Then you can run ,,import_suit`` in Python to copy and rename. 
+
+Import functional estimates and design matrix from SPM
+------------------------------------------------------
+
+
+
+
+Add new dataset
+---------------
+
+Add the information to dataset_description.
