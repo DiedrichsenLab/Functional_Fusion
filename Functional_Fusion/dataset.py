@@ -1618,3 +1618,13 @@ class DataSetSomatotopic(DataSetMNIVol):
         for i in range(len(data_n)):
             data_n[i] = pinv(C) @ data_n[i]
         return data_n, data_info
+
+
+class DataSetLanguageLocalizer(DataSetNative):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.sessions = ['ses-01']
+        self.default_type = 'TaskHalf'
+        self.cond_ind = 'task_num'
+        self.cond_name = 'task_name'
+        self.part_ind = 'half'
