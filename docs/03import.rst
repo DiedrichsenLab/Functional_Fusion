@@ -68,7 +68,19 @@ Import Cortical surfaces from Freesurfer reconstruction
 
 Import SUIT normalization
 -------------------------
-Run SUIT isolation, and normalization outside of the Funtional Fusion framework. Additionally, you need to save the non-linear transformation between SUIT and individual subject space as a deformation file.
+Run SUIT isolation, and normalization outside of the Functional Fusion framework. 
+To produce the cerebellar mask in functional space, you need to combine the functional mask from the GLM (mask.nii), the cerebellar mask from suit (c_anatimical_pcerebe(_corr).nii) and the gray matter segmentation (c_anatomical_seg1.nii) 
+
+.. code-block:: matlab
+
+    mask  = fullfile(glm_dir, 'mask.nii'); % mask for functional image
+    suitm  = fullfile(suit_dir, 'c_anatomical_pcereb_corr.nii');
+    gray  = fullfile(suit_dir, c_anatomical_seg1.nii)); % 
+    omask = fullfile(suit_glm_dir, 'maskbrainSUITGrey.nii'); %
+    spm_imcalc({mask,suitm,gray}, omask, 'i1>0 & i2>0 & i3>0.01', {});
+
+
+Additionally, you need to save the non-linear transformation between SUIT and individual subject space as a deformation file.
 
 .. code-block:: matlab
 

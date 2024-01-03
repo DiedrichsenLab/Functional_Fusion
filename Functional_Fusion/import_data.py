@@ -21,12 +21,17 @@ def import_suit(source_dir, dest_dir, anat_name, participant_id):
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     src = []
     dest = []
+    # Cerebellar Gray matter and white matter probability maps (full anatomical space) 
     src.append(f'/c1{anat_name}.nii')
     dest.append(f'/{participant_id}_label-GMc_probseg.nii')
     src.append(f'/c2{anat_name}.nii')
     dest.append(f'/{participant_id}_label-WMc_probseg.nii')
+    
+    # Gray-matter mask image in functional space
     src.append('/maskbrainSUITGrey.nii')
     dest.append(f'/{participant_id}_desc-cereb_mask.nii')
+    
+    # Deformation file: See Documentation for import 
     src.append(f'/y_{anat_name}_suitdef.nii')
     dest.append(f'/{participant_id}_space-SUIT_xfm.nii')
     for i in range(len(src)):
