@@ -188,9 +188,9 @@ def import_spm_designmatrix(source_dir, dest_dir, sub_id, sess_id):
         sess_id (_type_): ID of the session to import
     """
 
-    X = sio.loadmat(source_dir + '/design_matrix_unf.mat')
+    X = sio.loadmat(source_dir + '/design_matrix.mat')
     DM = X['X']
-    filename = dest_dir + f'/{sub_id}_{sess_id}_designmatrix_unf.npy'
+    filename = dest_dir + f'/{sub_id}_{sess_id}_designmatrix.npy'
     np.save(filename, DM)
 
 
