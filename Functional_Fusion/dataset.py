@@ -886,6 +886,7 @@ class DataSetNative(DataSet):
             # Write out data as CIFTI file
             C = myatlas.data_to_cifti(data, info.names)
             dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir +
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
@@ -1628,3 +1629,87 @@ class DataSetSomatotopic(DataSetMNIVol):
         for i in range(len(data_n)):
             data_n[i] = pinv(C) @ data_n[i]
         return data_n, data_info
+
+
+class DataSetLangloc(DataSetNative):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.sessions = ['ses-01']
+        self.default_type = 'TaskHalf'
+        self.cond_ind = 'task_num'
+        self.cond_name = 'task_name'
+        self.part_ind = 'half'
+
+    def condense_data(self, data, info,
+                      type='TaskHalf',
+                      participant_id=None,
+                      ses_id=None):
+        """ Condense the data from the language localizer project after extraction
+
+        Args:
+            data (list of ndarray)
+            info (dataframe)
+            type (str): Type of extraction:
+                'TaskHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'TaskRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
+            participant_id (str): ID of participant
+            ses_id (str): Name of session
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+
+        # Depending on the type, make a new contrast
+        info['half'] = 2 - (info.run < 5)
+        n_cond = np.max(info.reg_id)
+
+        if type == 'TaskHalf':
+            data_info, C = agg_data(info,
+                                    ['half', 'reg_id'],
+                                    ['run', 'reg_num'],
+                                    subset=(info.reg_id > 0))
+            data_info['names'] = [
+                f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+            # Baseline substraction
+            B = matrix.indicator(data_info.half, positive=True)
+
+        elif type == 'TaskRun':
+
+            data_info, C = agg_data(info,
+                                    ['run', 'reg_id'],
+                                    ['reg_num'],
+                                    subset=(info.reg_id > 0))
+            data_info['names'] = [
+                f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+            # Baseline substraction
+            B = matrix.indicator(data_info.half, positive=True)
+
+        elif type == 'TaskAll':
+            data_info, C = agg_data(info,
+                                    ['reg_id'],
+                                    ['run', 'half', 'reg_num'],
+                                    subset=(info.reg_id > 0))
+            data_info['names'] = [
+                f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
+            # Baseline substraction
+            B = matrix.indicator(data_info.half, positive=True)
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+
+        # Load the designmatrix and perform optimal contrast
+        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+        reg_in = np.arange(C.shape[1], dtype=int)
+        CI = matrix.indicator(info.run * info.inst, positive=True)
+        C = np.c_[C, CI]
+
+        data_new = optimal_contrast(data_n, C, X, reg_in)
+
+        return data_new, data_info
