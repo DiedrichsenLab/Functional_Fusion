@@ -7,12 +7,12 @@ import Functional_Fusion.atlas_map as am
 from Functional_Fusion.dataset import DataSetMDTB
 import nibabel as nb
 import subprocess
-import scripts.paths as pt
+import paths as paths
 import Functional_Fusion.connectivity as conn
 
 
-base_dir = pt.set_base_dir()
-atlas_dir = pt.set_atlas_dir(base_dir)
+base_dir = paths.set_base_dir()
+atlas_dir = paths.set_atlas_dir(base_dir)
 dname = 'MDTB'
 data_dir = base_dir + '/' + dname
 atlas_dir = base_dir + '/Atlases'
@@ -146,4 +146,8 @@ if __name__ == "__main__":
 
     # -- Group Average Data --
     # mdtb_dataset.group_average_data(atlas='MNISymC2', ses_id='ses-rest', type='Net69Run', subj=subject_subset)
+    # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=['ses-rest'], type='Net69Run')
+
+    # -- Variance decomposition --
+    mdtb_dataset.group_average_data(atlas='MNISymC2', ses_id='ses-rest', type='Net69Run', subj=subject_subset)
     mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=['ses-rest'], type='Net69Run')

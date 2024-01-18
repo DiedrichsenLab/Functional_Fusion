@@ -7,11 +7,11 @@ import pandas as pd
 from pathlib import Path
 import re
 import Functional_Fusion.dataset as ds
-import scripts.paths as pt
+import paths as paths
 
 
-base_dir = pt.set_base_dir()
-atlas_dir = pt.set_atlas_dir(base_dir)
+base_dir = paths.set_base_dir()
+atlas_dir = paths.set_atlas_dir(base_dir)
 
 
 def regress_networks(X, Y):

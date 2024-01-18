@@ -153,7 +153,7 @@ fsleyes \
 
 
 # Pull the images up automatically
-for i in /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/imaging_data/*; do
+for i in /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/imaging_data/s1*; do
     echo $i;
     subject=${i##*imaging_data/}
     subject=${subject%/}
