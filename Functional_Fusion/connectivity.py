@@ -7,11 +7,12 @@ import pandas as pd
 from pathlib import Path
 import re
 import Functional_Fusion.dataset as ds
-import scripts.paths as pt
+import paths as paths
 
 
-base_dir = pt.set_base_dir()
-atlas_dir = pt.set_atlas_dir(base_dir)
+base_dir = paths.set_base_dir()
+atlas_dir = paths.set_atlas_dir(base_dir)
+
 
 def regress_networks(X, Y):
     """Regresses a spatial map (X) into data (Y).
@@ -39,6 +40,7 @@ def regress_networks(X, Y):
 
     return network_timecourse
 
+
 def average_within_Icos(label_file, data, atlas="fs32k"):
     """Average the raw time course for voxels within a parcel
 
@@ -64,7 +66,7 @@ def average_within_Icos(label_file, data, atlas="fs32k"):
 
     # fill nan value in Y to zero
     print("Setting nan datapoints (%d unique vertices) to zero"
-            % np.unique(np.where(np.isnan(parcel_data))[1]).shape[0])
+          % np.unique(np.where(np.isnan(parcel_data))[1]).shape[0])
     # Y = np.nan_to_num(np.transpose(Y))
     parcel_data = np.nan_to_num(parcel_data)
 
@@ -97,11 +99,10 @@ def connectivity_fingerprint(source, target, info, type):
         coef = ut.correlate(source, target)
         coefs.append(coef)
 
-    return np.vstack(coefs) 
+    return np.vstack(coefs)
 
 
-
-def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1'):
+def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None):
     """Extracts the connectivity fingerprint for each network in the HCP data
     Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse
             Step 2: Get the correlation of each voxel with each network timecourse (connectivity fingerprint)
@@ -118,7 +119,16 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     atlas, _ = am.get_atlas(space, dset.atlas_dir)
 
     T = pd.read_csv(dset.base_dir + '/participants.tsv', sep='\t')
-    for p, participant_id in enumerate(T.participant_id):
+
+    # Deal with subset of subjects
+    if subj is not None:
+        subj = [T.participant_id.tolist().index(s) for s in subj]
+        T = T.iloc[subj]
+
+        
+    for p, row in T.iterrows():
+        participant_id = row.participant_id
+
         # Get cortical data
         data_cortex, _ = dset.get_data(
             space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
@@ -157,3 +167,41 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
                 f'{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
         info.to_csv(
             dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
+
+
+def get_cortical_target(target):
+
+    orig = nb.load(base_dir +
+                  f'/targets/{target}')
+    
+    lh, rh = ut.surf_from_cifti(orig)
+    seed_names = ['Network_{}'.format(i)
+                  for i in range(1, len(orig.header.get_axis(0).name) + 1)]
+    
+    bpa = nb.cifti2.ScalarAxis(seed_names)
+    # lh = cifti2.Cifti2Image(lh, transforms.get_cifti2_axes('32k'))
+    target_name = target.split('/')[-1].split('_space')[0]
+    print(f'Writing {target_name} ...')
+
+    # Remove medial wall
+    atlas, _ = am.get_atlas('fs32k', atlas_dir)
+    bmc = atlas.get_brain_model_axis()
+    lh_masked = [data[atlas.mask[0]] for data in lh]
+    rh_masked = [data[atlas.mask[1]] for data in rh]
+
+    # --- Build a connectivity CIFTI-file and save ---
+    # Make the object
+    header = nb.Cifti2Header.from_axes((bpa, bmc))
+    cifti_img = nb.Cifti2Image(
+        dataobj=np.c_[lh_masked, rh_masked], header=header)
+    dest_dir = base_dir + '/targets/'
+    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    nb.save(cifti_img, dest_dir + f'/{target_name}_space-fs32k.dscalar.nii')
+
+        
+
+if __name__ == "__main__":
+    # get_cortical_target('orig/hcp_1200/Net300_space-fs32k.dscalar.nii')
+    # get_cortical_target('orig/hcp_1200/Net100_space-fs32k.dscalar.nii')
+    # get_cortical_target('orig/hcp_1200/Net50_space-fs32k.dscalar.nii')
+    get_cortical_target('orig/hcp_1200/Net15_space-fs32k.dscalar.nii')

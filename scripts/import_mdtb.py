@@ -2,11 +2,11 @@
 import pandas as pd
 import numpy as np
 import Functional_Fusion.import_data as id
-import scripts.paths as pt
+import scripts.paths as paths
 
 
-base_dir = pt.set_base_dir()
-atlas_dir = pt.set_atlas_dir(base_dir)
+base_dir = paths.set_base_dir()
+atlas_dir = paths.set_atlas_dir(base_dir)
 
 orig_dir = base_dir + '/../Cerebellum/super_cerebellum'
 target_dir = base_dir + '/MDTB'
