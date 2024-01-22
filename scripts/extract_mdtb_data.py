@@ -210,7 +210,7 @@ if __name__ == "__main__":
     # vars_rest_g, vars_rest_s, vars_rest_e = vars_rest.flatten()
 
     # data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun', space='MNISymC2', subj=subject_subset)
-    data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun', space='fs32k', subj=subject_subset)
+    data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun', space='fs32k')
     data_reshaped_task = reshape_data(data_task, info_task, cond_column=mdtb_dataset.cond_ind, mean_centering=mean_centering)
     data_reshaped_task = reshape_data(data_task, info_task, cond_column=mdtb_dataset.cond_ind, mean_centering=False)
     vars_task = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task, criterion='global')
