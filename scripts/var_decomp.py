@@ -96,9 +96,8 @@ if __name__ == "__main__":
     
     # --- Task Neocortex ---
     data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun', space='fs32k')
-    data_reshaped_task_mc = reshape_data(data_task, info_task, cond_column=mdtb_dataset.cond_ind, mean_centering=mean_centering)
+    data_reshaped_task = reshape_data(data_task, info_task, cond_column=mdtb_dataset.cond_ind, mean_centering=mean_centering)
     data_reshaped_task = reshape_data(data_task, info_task, cond_column=mdtb_dataset.cond_ind, mean_centering=False)
-    vars_task_mc = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task_mc, criterion='global')
     vars_task = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task, criterion='global')
     vars_task_g, vars_task_s, vars_task_e = vars_task.flatten()
     pass
