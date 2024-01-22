@@ -84,8 +84,9 @@ if __name__ == "__main__":
     mean_centering = True
     # --- Resting-state ---
     data_rest, info_rest = mdtb_dataset.get_data(ses_id='ses-rest', type='Net69Run', space='MNISymC2', subj=subject_subset)
-    data_reshaped_rest = reshape_data(data_rest, info_rest, cond_column='net_id')
-    vars_rest = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_rest, criterion='global', mean_centering=mean_centering)
+    data_reshaped_rest = reshape_data(
+        data_rest, info_rest, cond_column='net_id', mean_centering=mean_centering)
+    vars_rest = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_rest, criterion='global')
     print(f'Task variance\nGroup: {vars_rest[0][0]:.2f}\nSubject: {vars_rest[0][1]:.2f}\nError: {vars_rest[0][2]:.2f}')
 
     # --- Task ---
@@ -122,7 +123,6 @@ if __name__ == "__main__":
     vars_task = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task_neocortex, criterion='global')
     # Swap the second and third dimension of data_reshaped_task
     # data_reshaped_task_2 = np.swapaxes(data_reshaped_task_neocortex, 1, 2)
-    
     
     print(f'Neocortical task variance\nGroup: {vars_task[0][0]:.2f}\nSubject: {vars_task[0][1]:.2f}\nError: {vars_task[0][2]:.2f}')
     vars_task_g, vars_task_s, vars_task_e = vars_task.flatten()
