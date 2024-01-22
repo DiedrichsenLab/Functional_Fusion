@@ -202,18 +202,5 @@ if __name__ == "__main__":
     # mdtb_dataset.group_average_data(atlas='MNISymC2', ses_id='ses-rest', type='Net69Run', subj=subject_subset)
     # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=['ses-rest'], type='Net69Run')
 
-    # -- Variance decomposition --
-    mean_centering = True
-    # data_rest, info_rest = mdtb_dataset.get_data(ses_id='ses-rest', type='Net69Run', space='MNISymC2', subj=subject_subset)
-    # data_reshaped_rest = reshape_data(data_rest, info_rest, cond_column='net_id')
-    # vars_rest = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_rest, criterion='global', mean_centering=mean_centering)
-    # vars_rest_g, vars_rest_s, vars_rest_e = vars_rest.flatten()
-
-    # data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun', space='MNISymC2', subj=subject_subset)
-    data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun', space='fs32k', subj=subject_subset)
-    data_reshaped_task = reshape_data(data_task, info_task, cond_column=mdtb_dataset.cond_ind, mean_centering=mean_centering)
-    data_reshaped_task = reshape_data(data_task, info_task, cond_column=mdtb_dataset.cond_ind, mean_centering=False)
-    vars_task = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task, criterion='global')
-    vars_task_g, vars_task_s, vars_task_e = vars_task.flatten()
     pass
     
