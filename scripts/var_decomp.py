@@ -52,10 +52,11 @@ def flat2ndarray(flat_data, part_vec, cond_vec):
 
 def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean_centering=False):
     """Reshape data from (n_subjects, n_trials, n_voxels) to (n_subjects, n_runs, n_conditions, n_voxels) to comply with the decompose_pattern_into_group_indiv_noise function."""
-    # Extract each run and concatenate in third dimension
+    # Extract each partition and concatenate in third dimension
     data_reshaped = np.zeros((data.shape[0], info[part_column].max(), info[cond_column].max(), data.shape[-1]))
-    for i in range(1, info.run.max()+1):
-        part_data = data[:, info.run == i, :]
+    for i in range(1, info[part_column].max()+1):
+        print(i)
+        part_data = data[:, info[part_column] == i, :]
         data_reshaped[:, i-1, :, :] = part_data
 
     # Set nans to number and print number of nans
@@ -64,13 +65,15 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
     
     # Mean centering
     if mean_centering:
-        # Subtract the mean across subjects and runs from each voxel
+        # Subtract the mean across subjects and partition from each voxel
         mean_across_conditions = np.mean(data_reshaped, axis=(2))
         # Repeat the mean across conditions for each condition
         mean_across_conditions = np.repeat(mean_across_conditions[:, :, np.newaxis, :], data_reshaped.shape[2], axis=2)
         data_reshaped = data_reshaped - mean_across_conditions
     
     return data_reshaped
+
+
 
 if __name__ == "__main__":
     mdtb_dataset = DataSetMDTB(data_dir)
@@ -80,9 +83,52 @@ if __name__ == "__main__":
         data_dir + '/participants.tsv', delimiter='\t')
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
 
+    # Reproduce derricks results
+    # X_individuals, info_individuals, dataset_obj_individuals = ds.get_dataset(base_dir,
+    #                                                                           dataset='MDTB',
+    #                                                                           atlas='fs32k',
+    #                                                                           subj=None,
+    #                                                                           sess='all',
+    #                                                                           type='CondHalf')
+    X_individuals, info_individuals, dataset_obj_individuals = ds.get_dataset(base_dir,
+                                                                              dataset='MDTB',
+                                                                              atlas='MNISymC2',
+                                                                              subj=subject_subset,
+                                                                              sess='ses-rest',
+                                                                              type='Net69Run')
+    
+    X_individuals_t, info_individuals_t, dataset_obj_individuals_t = ds.get_dataset(base_dir,
+                                                                              dataset='MDTB',
+                                                                              atlas='MNISymC2',
+                                                                              subj=subject_subset,
+                                                                              sess='ses-s1',
+                                                                              type='CondHalf')
+    
+    task_conds = list(info_individuals_t.names)
+    half1_inds = np.array([x for x in np.arange(len(task_conds)) if task_conds[x].__contains__('half1')])
+    half2_inds = np.setdiff1d(np.arange(len(task_conds)), half1_inds)
+
+    X_individuals_half_1 = X_individuals[:, half1_inds, :]
+    X_individuals_half_2 = X_individuals_t[:, half2_inds, :]
+
+    data = np.array([X_individuals_half_1, X_individuals_half_2])
+    data = data.transpose([1, 0, 2, 3])
+
+
+    # fill nans with 0
+    data[np.isnan(data)] = 0
+
+    criterion = 'global'
+    variances = ds.decompose_pattern_into_group_indiv_noise(data, criterion=criterion)
+    output = dict()
+    output[criterion] = variances/ (variances.sum())
+    print(f'Global variance\nGroup: {output[criterion][0][0]:.2f}\nSubject: {output[criterion][0][1]:.2f}\nError: {output[criterion][0][2]:.2f}')
+
+    
+
     # -- Variance decomposition --
     mean_centering = True
-    type='CondRun'
+    type='CondHalf'
     part_column='half'
     # --- Resting-state ---
     data_rest, info_rest = mdtb_dataset.get_data(ses_id='ses-rest', type='Net69Run', space='MNISymC2', subj=subject_subset)
