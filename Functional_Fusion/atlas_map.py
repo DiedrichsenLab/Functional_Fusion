@@ -246,8 +246,8 @@ class AtlasVolumetric(Atlas):
         return cifti_img
 
     def data_to_nifti(self, data):
-        """Transforms data in atlas space into 3d or 4d nifti image depending on data type, the empty parts of the image will be NaNs or zeros.
-
+        """Transforms data in atlas space into 3d or 4d nifti image, depending on data type, the empty parts of the image will be NaNs or zeros.
+        Nifti data type will be dictated by the data type of the input data.
         Args:
             data (np.ndarray): Data to be mapped into nifti
         Returns:
@@ -259,23 +259,17 @@ class AtlasVolumetric(Atlas):
         if p != self.P:
             raise (NameError("Data needs to be a P vector or NxP matrix"))
         if N > 1:
-            if np.issubdtype(data.dtype, np.floating):
-                X = np.empty(self.mask_img.shape + (N,), dtype=float)
-                X.fill(np.nan)
-            elif np.issubdtype(data.dtype, np.integer):
-                X = np.zeros(self.mask_img.shape + (N,), dtype=int)
-            else:
-                raise ValueError("Data type not supported")
-            X[self.vox[0], self.vox[1], self.vox[2]] = data.T
+            X = np.empty(self.mask_img.shape + (N,), dtype=data.dtype)
         else:
-            if np.issubdtype(data.dtype, np.floating):
-                X = np.empty(self.mask_img.shape, dtype=float)
-                X.fill(np.nan)
-            elif np.issubdtype(data.dtype, np.integer):
-                X = np.zeros(self.mask_img.shape, dtype=int).astype(np.int8)
-            else:
-                raise ValueError("Data type not supported")
-            X[self.vox[0], self.vox[1], self.vox[2]] = data
+            X = np.empty(self.mask_img.shape, dtype=data.dtype)
+        # Fill with Nans or zeros 
+        if np.issubdtype(data.dtype, np.floating):
+            X.fill(np.nan)
+        else:
+            X.fill(0)
+        # Insert data into the right locations
+        X[self.vox[0], self.vox[1], self.vox[2]] = data.T
+        # Make a nifti image
         img = nb.Nifti1Image(X, self.mask_img.affine)
         return img
 
