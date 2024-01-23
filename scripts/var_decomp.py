@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 import Functional_Fusion.atlas_map as am
-from Functional_Fusion.dataset import DataSetMDTB
+from Functional_Fusion.dataset import DataSetMDTB, DataSetPontine
 import Functional_Fusion.dataset as ds
 import nibabel as nb
 import subprocess
@@ -76,7 +76,7 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
 
 
 if __name__ == "__main__":
-    mdtb_dataset = DataSetMDTB(data_dir)
+    
 
     # -- Get resting-state subjects --
     T = pd.read_csv(
@@ -84,32 +84,44 @@ if __name__ == "__main__":
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
 
     # Reproduce derricks results
-    # X_individuals, info_individuals, dataset_obj_individuals = ds.get_dataset(base_dir,
-    #                                                                           dataset='MDTB',
-    #                                                                           atlas='fs32k',
-    #                                                                           subj=None,
-    #                                                                           sess='all',
-    #                                                                           type='CondHalf')
-    X_individuals, info_individuals, dataset_obj_individuals = ds.get_dataset(base_dir,
+    X_individuals_task, info_individuals_task, dataset_obj_individuals = ds.get_dataset(base_dir,
+                                                                              dataset='MDTB',
+                                                                              atlas='MNISymC2',
+                                                                              subj=None,
+                                                                              sess='all',
+                                                                              type='CondHalf')
+    X_individuals_rest, info_individuals_rest, dataset_obj_individuals = ds.get_dataset(base_dir,
                                                                               dataset='MDTB',
                                                                               atlas='MNISymC2',
                                                                               subj=subject_subset,
                                                                               sess='ses-rest',
                                                                               type='Net69Run')
-    
-    X_individuals_t, info_individuals_t, dataset_obj_individuals_t = ds.get_dataset(base_dir,
-                                                                              dataset='MDTB',
-                                                                              atlas='MNISymC2',
-                                                                              subj=subject_subset,
-                                                                              sess='ses-s1',
-                                                                              type='CondHalf')
-    
-    task_conds = list(info_individuals_t.names)
+
+    #  -- Task s1 --
+    # X_individuals_task_ses1 = X_individuals_task[:, info_individuals_task['sess'] == 'ses-s1', :]
+    # data = X_individuals_task_ses1
+    # task_conds = list(info_individuals_task[info_individuals_task['sess'] == 'ses-s1'].names)
+
+    # half1_inds = np.array([x for x in np.arange(len(task_conds)) if task_conds[x].__contains__('half1')])
+    # half2_inds = np.setdiff1d(np.arange(len(task_conds)), half1_inds)
+
+    #  -- Task all --
+    data = X_individuals_task
+    task_conds = list(info_individuals_task.names)
+
     half1_inds = np.array([x for x in np.arange(len(task_conds)) if task_conds[x].__contains__('half1')])
     half2_inds = np.setdiff1d(np.arange(len(task_conds)), half1_inds)
+    # -- Rest --
+    # data = X_individuals_rest
+    # task_conds = list(info_individuals_rest.names)
 
-    X_individuals_half_1 = X_individuals[:, half1_inds, :]
-    X_individuals_half_2 = X_individuals_t[:, half2_inds, :]
+    # half1_inds = np.array([x for x in np.arange(len(task_conds)) if info_individuals_rest.iloc[x].run == 1])
+    # half2_inds = np.setdiff1d(np.arange(len(task_conds)), half1_inds)
+
+
+
+    X_individuals_half_1 = data[:, half1_inds, :]
+    X_individuals_half_2 = data[:, half2_inds, :]
 
     data = np.array([X_individuals_half_1, X_individuals_half_2])
     data = data.transpose([1, 0, 2, 3])
@@ -121,15 +133,16 @@ if __name__ == "__main__":
     criterion = 'global'
     variances = ds.decompose_pattern_into_group_indiv_noise(data, criterion=criterion)
     output = dict()
-    output[criterion] = variances/ (variances.sum())
-    print(f'Global variance\nGroup: {output[criterion][0][0]:.2f}\nSubject: {output[criterion][0][1]:.2f}\nError: {output[criterion][0][2]:.2f}')
+    output[criterion] = variances
+    print(f'Task variance all task sessions\nGroup: {output[criterion][0][0]:.2f}\nSubject: {output[criterion][0][1]:.2f}\nError: {output[criterion][0][2]:.2f}')
 
     
 
-    # -- Variance decomposition --
+    # -- MDTB Variance decomposition --
     mean_centering = True
     type='CondHalf'
     part_column='half'
+    mdtb_dataset = DataSetMDTB(data_dir)
     # --- Resting-state ---
     data_rest, info_rest = mdtb_dataset.get_data(ses_id='ses-rest', type='Net69Run', space='MNISymC2', subj=subject_subset)
     data_reshaped_rest = reshape_data(data_rest, info_rest, cond_column='net_id', mean_centering=mean_centering)
@@ -137,13 +150,13 @@ if __name__ == "__main__":
     print(f'Rest variance\nGroup: {vars_rest[0][0]:.2f}\nSubject: {vars_rest[0][1]:.2f}\nError: {vars_rest[0][2]:.2f}')
 
     # --- Task ---
-    data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun', space='MNISymC2', subj=subject_subset)
+    data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondHalf', space='MNISymC2', subj=subject_subset)
     data_reshaped_task = reshape_data(data_task, info_task, cond_column=mdtb_dataset.cond_ind, part_column=part_column, mean_centering=mean_centering)
     vars_task = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task, criterion='global')
     print(f'Task variance\nGroup: {vars_task[0][0]:.2f}\nSubject: {vars_task[0][1]:.2f}\nError: {vars_task[0][2]:.2f}')
     
     # --- Task Neocortex ---
-    data_task_neocortex, info_task_neocortex = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun', space='fs32k')
+    data_task_neocortex, info_task_neocortex = mdtb_dataset.get_data(ses_id='ses-s1', type='CondHalf', space='fs32k')
     data_reshaped_task_neocortex = reshape_data(data_task_neocortex, info_task, cond_column=mdtb_dataset.cond_ind, part_column=part_column, mean_centering=mean_centering)
     data_reshaped_task_neocortex = reshape_data(data_task_neocortex, info_task, cond_column=mdtb_dataset.cond_ind, part_column=part_column, mean_centering=False)
     
@@ -171,5 +184,17 @@ if __name__ == "__main__":
 
 
     
+    # -- Pontine Variance decomposition --
+    mean_centering = False
+    type='CondHalf'
+    part_column='half'
+    pontine = DataSetPontine(data_dir)
+
+    # --- Task ---
+    data_task, info_task = pontine.get_data(type='CondHalf', space='MNISymC2')
+    data_reshaped_task = reshape_data(data_task, info_task, cond_column=pontine.cond_ind, part_column=part_column, mean_centering=mean_centering)
+    vars_task = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task, criterion='global')
+    print(f'Task variance\nGroup: {vars_task[0][0]:.2f}\nSubject: {vars_task[0][1]:.2f}\nError: {vars_task[0][2]:.2f}')
+
     pass
     
