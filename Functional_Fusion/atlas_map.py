@@ -260,13 +260,16 @@ class AtlasVolumetric(Atlas):
             raise (NameError("Data needs to be a P vector or NxP matrix"))
         if N > 1:
             X = np.empty(self.mask_img.shape + (N,), dtype=data.dtype)
-            # Fill with Nans - note that if integer, this will fill the array with zeros  automatically
-            X.fill(np.nan)  
-            X[self.vox[0], self.vox[1], self.vox[2]] = data.T
         else:
             X = np.empty(self.mask_img.shape, dtype=data.dtype)
+        # Fill with Nans or zeros 
+        if np.issubdtype(data.dtype, np.floating):
             X.fill(np.nan)
-            X[self.vox[0], self.vox[1], self.vox[2]] = data
+        else:
+            X.fill(0)
+        # Insert data into the right locations
+        X[self.vox[0], self.vox[1], self.vox[2]] = data.T
+        # Make a nifti image
         img = nb.Nifti1Image(X, self.mask_img.affine)
         return img
 
