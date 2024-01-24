@@ -106,36 +106,6 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
-def flat2ndarray(flat_data, part_vec, cond_vec):
-    """
-    convert flat data (n_subjects x n_trials x n_voxels) into a 4d ndarray (n_subjects x n_partitions x n_conditions x n_voxels)
-
-    Args:
-        flat_data:
-        part_vec:
-        cond_vec:
-
-    Returns:
-        data
-
-    """
-
-    [n_subjects, n_trials, n_voxels] = flat_data.shape
-
-    unique_partitions = np.unique(part_vec)
-    n_partitions = unique_partitions.size
-
-    unique_conditions = np.unique(cond_vec)
-    n_conditions = unique_conditions.size
-
-    data = np.zeros((n_subjects, n_partitions, n_conditions, n_voxels))
-
-    for partI in np.arange(n_partitions):
-        for condI in np.arange(n_conditions):
-            trial_inds = np.where(np.logical_and(cond_vec == unique_conditions[condI], part_vec == unique_partitions[partI]))
-            data[:, partI, condI, :] = np.nanmean(flat_data[:, trial_inds, :], axis=1).squeeze()
-
-    return data
 
 def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean_centering=False):
     """Reshape data from (n_subjects, n_trials, n_voxels) to (n_subjects, n_runs, n_conditions, n_voxels) to comply with the decompose_pattern_into_group_indiv_noise function."""
@@ -195,6 +165,11 @@ if __name__ == "__main__":
     #                                   type='Net300Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net300Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='IcoRun', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='IcoRun', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2', smooth=2.0, subj=subject_subset)
 
 

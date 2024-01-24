@@ -111,7 +111,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 
     dset = ds.get_dataset_class(base_dir, dname)
 
-    # Load the networks
+    # Load the cortical networks
     target, type = re.findall('[A-Z][^A-Z]*', type)
     net = nb.load(dset.base_dir +
                   f'/../targets/{target}_space-fs32k.dscalar.nii')
@@ -129,6 +129,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     for p, row in T.iterrows():
         participant_id = row.participant_id
 
+        # TODO: Move the loading of cortical data & cerebellar data out of the loop and only subset data within loop
         # Get cortical data
         data_cortex, _ = dset.get_data(
             space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])

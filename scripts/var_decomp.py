@@ -83,71 +83,17 @@ if __name__ == "__main__":
         data_dir + '/participants.tsv', delimiter='\t')
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
 
-    # Reproduce derricks results
-    # X_individuals_task, info_individuals_task, dataset_obj_individuals = ds.get_dataset(base_dir,
-    #                                                                           dataset='MDTB',
-    #                                                                           atlas='MNISymC2',
-    #                                                                           subj=None,
-    #                                                                           sess='all',
-    #                                                                           type='CondHalf')
-    # X_individuals_rest, info_individuals_rest, dataset_obj_individuals = ds.get_dataset(base_dir,
-    #                                                                           dataset='MDTB',
-    #                                                                           atlas='MNISymC2',
-    #                                                                           subj=subject_subset,
-    #                                                                           sess='ses-rest',
-    #                                                                           type='Net69Run')
-
-    # #  -- Task s1 --
-    # # X_individuals_task_ses1 = X_individuals_task[:, info_individuals_task['sess'] == 'ses-s1', :]
-    # # data = X_individuals_task_ses1
-    # # task_conds = list(info_individuals_task[info_individuals_task['sess'] == 'ses-s1'].names)
-
-    # # half1_inds = np.array([x for x in np.arange(len(task_conds)) if task_conds[x].__contains__('half1')])
-    # # half2_inds = np.setdiff1d(np.arange(len(task_conds)), half1_inds)
-
-    # #  -- Task all --
-    # data = X_individuals_task
-    # task_conds = list(info_individuals_task.names)
-
-    # half1_inds = np.array([x for x in np.arange(len(task_conds)) if task_conds[x].__contains__('half1')])
-    # half2_inds = np.setdiff1d(np.arange(len(task_conds)), half1_inds)
-    # # -- Rest --
-    # # data = X_individuals_rest
-    # # task_conds = list(info_individuals_rest.names)
-
-    # # half1_inds = np.array([x for x in np.arange(len(task_conds)) if info_individuals_rest.iloc[x].run == 1])
-    # # half2_inds = np.setdiff1d(np.arange(len(task_conds)), half1_inds)
-
-
-
-    # X_individuals_half_1 = data[:, half1_inds, :]
-    # X_individuals_half_2 = data[:, half2_inds, :]
-
-    # data = np.array([X_individuals_half_1, X_individuals_half_2])
-    # data = data.transpose([1, 0, 2, 3])
-
-
-    # # fill nans with 0
-    # data[np.isnan(data)] = 0
-
-    # criterion = 'global'
-    # variances = ds.decompose_pattern_into_group_indiv_noise(data, criterion=criterion)
-    # output = dict()
-    # output[criterion] = variances
-    # print(f'Task variance all task sessions\nGroup: {output[criterion][0][0]:.2f}\nSubject: {output[criterion][0][1]:.2f}\nError: {output[criterion][0][2]:.2f}')
-
-    
 
     # # -- MDTB Variance decomposition --
-    # mean_centering = True
-    # type='CondHalf'
-    # part_column='half'
-    # mdtb_dataset = DataSetMDTB(data_dir)
+    mean_centering = True
+    type='CondHalf'
+    part_column='half'
+    mdtb_dataset = DataSetMDTB(data_dir)
     # # --- Resting-state ---
-    # data_rest, info_rest = mdtb_dataset.get_data(ses_id='ses-rest', type='Net69Run', space='MNISymC2', subj=subject_subset)
-    # data_reshaped_rest = reshape_data(data_rest, info_rest, cond_column='net_id', mean_centering=mean_centering)
-    # vars_rest = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_rest, criterion='global')
-    # print(f'Rest variance\nGroup: {vars_rest[0][0]:.2f}\nSubject: {vars_rest[0][1]:.2f}\nError: {vars_rest[0][2]:.2f}')
+    data_rest, info_rest = mdtb_dataset.get_data(ses_id='ses-rest', type='Net69Run', space='MNISymC2', subj=subject_subset)
+    data_reshaped_rest = reshape_data(data_rest, info_rest, cond_column='net_id', mean_centering=mean_centering)
+    vars_rest = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_rest, criterion='global')
+    print(f'Rest variance\nGroup: {vars_rest[0][0]:.2f}\nSubject: {vars_rest[0][1]:.2f}\nError: {vars_rest[0][2]:.2f}')
 
     # # --- Task ---
     # data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondHalf', space='MNISymC2', subj=subject_subset)
@@ -190,20 +136,6 @@ if __name__ == "__main__":
     part_column='half'
     pontine = DataSetPontine(base_dir + '/Pontine')
 
-    # Plot barplot of data with seaborn
-    import seaborn as sb
-    # make dataframe out of data_pon
-    data_pon_mean = data_pon.mean(axis=2)
-    data_pon_mean = pd.DataFrame(data_pon_mean)
-    sb.barplot(data=data_pon_mean)
-    plt.figure()
-    sb.barplot(data=data_pon_mean.T)
-
-    data_pon_mean = data_pon.mean(axis=2)
-    data_pon_mean = pd.DataFrame(data_pon_mean.T, columns=['sub01', 'sub02','sub03', 'sub04','sub05', 'sub06','sub07', 'sub08'])
-    plt.figure()
-    sb.scatterplot(data=data_pon_mean, x='sub01', y='sub02')
-    
 
     
 
