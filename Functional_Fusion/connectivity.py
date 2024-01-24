@@ -166,14 +166,13 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
             # Average within each parcel
             network_timecourse, names = average_within_Icos(
                 net, data_cortex_subj)
+            network_timecourse = network_timecourse.T
             sides = np.repeat(['L', 'R'], len(names) / 2)
-            names = [f'Ico_{sides[i]}{name}' for i,name in enumerate(names)]
-            # tile res times for each hemisphere
-            
+            names = [f'Ico_{sides[i]}{name}' for i,name in enumerate(names)]            
 
         # Calculate the connectivity fingerprint
         coef = connectivity_fingerprint(
-            data_cereb_subj, network_timecourse, info, type)
+            data_cereb_subj, network_timecourse, info_cortex, type)
         # Make info
         names = [f'Network_{i}' for i in range(1, 70)]
         runs = np.repeat([info.run.unique()], len(names))
