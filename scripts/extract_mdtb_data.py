@@ -166,9 +166,9 @@ if __name__ == "__main__":
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net300Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
     conn.get_connectivity_fingerprint(dname,
-                                      type='IcoRun', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+                                      type='Ico42Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     conn.get_connectivity_fingerprint(dname,
-                                      type='IcoRun', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+                                      type='Ico42Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
 
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2', smooth=2.0, subj=subject_subset)
 
