@@ -55,8 +55,12 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
     # Extract each partition and concatenate in third dimension
     data_reshaped = np.zeros((data.shape[0], info[part_column].max(), info[cond_column].max(), data.shape[-1]))
     for i in range(1, info[part_column].max()+1):
+<<<<<<< Updated upstream
         print(i)
         part_data = data[:, info[part_column] == i, :]
+=======
+        part_data = data[:, info.run == i, :]
+>>>>>>> Stashed changes
         data_reshaped[:, i-1, :, :] = part_data
 
     # Set nans to number and print number of nans
