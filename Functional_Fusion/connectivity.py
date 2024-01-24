@@ -132,7 +132,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         T = T.iloc[subj]
     
     # Get cortical data
-    data_cortex, info_cortex = dset.get_data(
+    data_cortex, _ = dset.get_data(
         space='fs32k', ses_id=ses_id, type='Tseries', subj=subj)
 
     # Get cerebellar data
@@ -140,12 +140,12 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
             space=space, ses_id=ses_id, type='Tseries', subj=subj)
 
     # Load the cortical networks
-    target, type = re.findall('[A-Z][^A-Z]*', type)
+    target, type = re.findall('[A-Z][^A-Z]*', type)        
+    res = target[3:]
     if target[:3] == 'Net':
         net = nb.load(dset.base_dir +
                     f'/../targets/{target}_space-fs32k.dscalar.nii')
-    elif target[:3] == 'Ico':        
-        res = target[3:]
+    elif target[:3] == 'Ico':
         net = [atlas_dir + f'/tpl-fs32k/Icosahedron{res}.L.label.gii',
             atlas_dir + f'/tpl-fs32k/Icosahedron{res}.R.label.gii']
 
@@ -162,6 +162,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
             # Regress each network into the fs32k cortical data to get a run-specific network timecourse
             network_timecourse = regress_networks(
                 net.get_fdata(), data_cortex_subj)
+            names = [f'Network_{i}' for i in range(1, int(res)+1)]
         elif target[:3] == 'Ico':
             # Average within each parcel
             network_timecourse, names = average_within_Icos(
@@ -172,10 +173,9 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 
         # Calculate the connectivity fingerprint
         coef = connectivity_fingerprint(
-            data_cereb_subj, network_timecourse, info_cortex, type)
+            data_cereb_subj, network_timecourse, info_cereb, type)
         # Make info
-        names = [f'Network_{i}' for i in range(1, 70)]
-        runs = np.repeat([info.run.unique()], len(names))
+        runs = np.repeat([info_cereb.run.unique()], len(names))
         net_id = np.tile(np.arange(len(names)),
                          int(coef.shape[0] / len(names))) + 1
         info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
