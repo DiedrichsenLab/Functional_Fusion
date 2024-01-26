@@ -61,7 +61,7 @@ def average_within_Icos(label_file, data, atlas="fs32k"):
     atlas.get_parcel(label_file, unite_struct=False)
 
     # use agg_parcel to aggregate data over parcels and get the list of unique parcels
-    parcel_data, parcels = agg_parcels(
+    parcel_data, parcels = ds.agg_parcels(
         data, atlas.label_vector, fcn=np.nanmean)
 
     # fill nan value in Y to zero
@@ -104,19 +104,25 @@ def connectivity_fingerprint(source, target, info, type):
 
 def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None):
     """Extracts the connectivity fingerprint for each network in the HCP data
-    Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse
+    Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse 
+                    Alternatively, average cortical timecourse within each Icosahedron parcel to get network timecourse
             Step 2: Get the correlation of each voxel with each network timecourse (connectivity fingerprint)
             Step 3: Save the data.
+
+    Args:
+        dname (str): Name of the dataset
+        type (str): Type of fingerprint to calculate (e.g. 'Net69Run' or 'Ico42All').
+                    Estimates fingerprint from each run seperately or from all concatenated runs.
+                    Net69Run: 69 networks, estimated from each run seperately
+                    Net69All: 69 networks, estimated from all concatenated runs
+                    Ico42All: 42 Icosahedron parcels, estimated from all concatenated runs
+                    Ico162All: 162 Icosahedron parcels, estimated from all concatenated runs
+        space (str): Space of the cortical data ('MNISymC2', 'MNISymC3', 'fs32k')
+        ses_id (str): Session ID
+        subj (list): List of subjects to extract the fingerprint for
     """
-
+    # Load dataset
     dset = ds.get_dataset_class(base_dir, dname)
-
-    # Load the networks
-    target, type = re.findall('[A-Z][^A-Z]*', type)
-    net = nb.load(dset.base_dir +
-                  f'/../targets/{target}_space-fs32k.dscalar.nii')
-
-    atlas, _ = am.get_atlas(space, dset.atlas_dir)
 
     T = pd.read_csv(dset.base_dir + '/participants.tsv', sep='\t')
 
@@ -124,29 +130,52 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     if subj is not None:
         subj = [T.participant_id.tolist().index(s) for s in subj]
         T = T.iloc[subj]
+    
+    # Get cortical data
+    data_cortex, _ = dset.get_data(
+        space='fs32k', ses_id=ses_id, type='Tseries', subj=subj)
 
+    # Get cerebellar data
+    data_cereb, info_cereb = dset.get_data(
+            space=space, ses_id=ses_id, type='Tseries', subj=subj)
+
+    # Load the cortical networks
+    target, type = re.findall('[A-Z][^A-Z]*', type)        
+    res = target[3:]
+    if target[:3] == 'Net':
+        net = nb.load(dset.base_dir +
+                    f'/../targets/{target}_space-fs32k.dscalar.nii')
+    elif target[:3] == 'Ico':
+        net = [atlas_dir + f'/tpl-fs32k/Icosahedron{res}.L.label.gii',
+            atlas_dir + f'/tpl-fs32k/Icosahedron{res}.R.label.gii']
+
+    atlas, _ = am.get_atlas(space, dset.atlas_dir)
         
-    for p, row in T.iterrows():
+    for p, row in enumerate(T.itertuples()):
         participant_id = row.participant_id
 
-        # Get cortical data
-        data_cortex, _ = dset.get_data(
-            space='fs32k', ses_id=ses_id, type='Tseries', subj=[p])
+        # Get the subject's data
+        data_cortex_subj = data_cortex[p,:,:]
+        data_cereb_subj = data_cereb[p,:,:]
 
-        # Regress each network into the fs32k cortical data to get a run-specific network timecourse
-        network_timecourse = regress_networks(
-            net.get_fdata(), data_cortex)
+        if target[:3] == 'Net':
+            # Regress each network into the fs32k cortical data to get a run-specific network timecourse
+            network_timecourse = regress_networks(
+                net.get_fdata(), data_cortex_subj)
+            names = [f'Network_{i}' for i in range(1, int(res)+1)]
+        elif target[:3] == 'Ico':
+            # Average within each parcel
+            network_timecourse, names = average_within_Icos(
+                net, data_cortex_subj)
+            network_timecourse = network_timecourse.T
+            sides = np.repeat(['L', 'R'], len(names) / 2)
+            names = [f'Ico_{sides[i]}{name}' for i,name in enumerate(names)]            
 
         # Calculate the connectivity fingerprint
-        data_cereb, info = dset.get_data(
-            space=space, ses_id=ses_id, type='Tseries', subj=[p])
-        data_cereb = data_cereb.squeeze()
-
         coef = connectivity_fingerprint(
-            data_cereb, network_timecourse, info, type)
+            data_cereb_subj, network_timecourse, info_cereb, type)
         # Make info
-        names = [f'Network_{i}' for i in range(1, 70)]
-        runs = np.repeat([info.run.unique()], len(names))
+        runs = np.repeat([info_cereb.run.unique()], len(names))
         net_id = np.tile(np.arange(len(names)),
                          int(coef.shape[0] / len(names))) + 1
         info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
@@ -157,7 +186,6 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
                              'names': names * int(coef.shape[0] / len(names))})
 
         # Save the data
-
         C = atlas.data_to_cifti(coef, info.names)
         dest_dir = dset.base_dir + \
             f'/derivatives/{participant_id}/data/'

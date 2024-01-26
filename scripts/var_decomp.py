@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 import Functional_Fusion.atlas_map as am
-from Functional_Fusion.dataset import DataSetMDTB
+from Functional_Fusion.dataset import DataSetMDTB, DataSetPontine
 import Functional_Fusion.dataset as ds
 import nibabel as nb
 import subprocess
@@ -52,11 +52,12 @@ def flat2ndarray(flat_data, part_vec, cond_vec):
 
 def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean_centering=False):
     """Reshape data from (n_subjects, n_trials, n_voxels) to (n_subjects, n_runs, n_conditions, n_voxels) to comply with the decompose_pattern_into_group_indiv_noise function."""
-    # Extract each run and concatenate in third dimension
+    # Extract each partition and concatenate in third dimension
     data_reshaped = np.zeros((data.shape[0], info[part_column].max(), info[cond_column].max(), data.shape[-1]))
-    for i in range(1, info.run.max()+1):
-        run_data = data[:, info.run == i, :]
-        data_reshaped[:, i-1, :, :] = run_data
+    for i in range(1, info[part_column].max()+1):
+        print(i)
+        part_data = data[:, info[part_column] == i, :]
+        data_reshaped[:, i-1, :, :] = part_data
 
     # Set nans to number and print number of nans
     print(f'Setting {np.sum(np.isnan(data_reshaped))} nan values to zero.')
@@ -64,7 +65,7 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
     
     # Mean centering
     if mean_centering:
-        # Subtract the mean across subjects and runs from each voxel
+        # Subtract the mean across subjects and partition from each voxel
         mean_across_conditions = np.mean(data_reshaped, axis=(2))
         # Repeat the mean across conditions for each condition
         mean_across_conditions = np.repeat(mean_across_conditions[:, :, np.newaxis, :], data_reshaped.shape[2], axis=2)
@@ -72,59 +73,100 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
     
     return data_reshaped
 
+
+
 if __name__ == "__main__":
-    mdtb_dataset = DataSetMDTB(data_dir)
+    
 
     # -- Get resting-state subjects --
     T = pd.read_csv(
         data_dir + '/participants.tsv', delimiter='\t')
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
 
-    # -- Variance decomposition --
+
+    # # -- MDTB Variance decomposition --
     mean_centering = True
-    # --- Resting-state ---
+    type='CondHalf'
+    part_column='half'
+    mdtb_dataset = DataSetMDTB(data_dir)
+    # # --- Resting-state ---
     data_rest, info_rest = mdtb_dataset.get_data(ses_id='ses-rest', type='Net69Run', space='MNISymC2', subj=subject_subset)
-    data_reshaped_rest = reshape_data(data_rest, info_rest, cond_column='net_id')
-    vars_rest = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_rest, criterion='global', mean_centering=mean_centering)
-    print(f'Task variance\nGroup: {vars_rest[0][0]:.2f}\nSubject: {vars_rest[0][1]:.2f}\nError: {vars_rest[0][2]:.2f}')
+    data_reshaped_rest = reshape_data(data_rest, info_rest, cond_column='net_id', mean_centering=mean_centering)
+    vars_rest = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_rest, criterion='global')
+    print(f'Rest variance\nGroup: {vars_rest[0][0]:.2f}\nSubject: {vars_rest[0][1]:.2f}\nError: {vars_rest[0][2]:.2f}')
+
+    # # --- Task ---
+    # data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondHalf', space='MNISymC2', subj=subject_subset)
+    # data_reshaped_task = reshape_data(data_task, info_task, cond_column=mdtb_dataset.cond_ind, part_column=part_column, mean_centering=mean_centering)
+    # vars_task = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task, criterion='global')
+    # print(f'Task variance\nGroup: {vars_task[0][0]:.2f}\nSubject: {vars_task[0][1]:.2f}\nError: {vars_task[0][2]:.2f}')
+    
+    # # --- Task Neocortex ---
+    # data_task_neocortex, info_task_neocortex = mdtb_dataset.get_data(ses_id='ses-s1', type='CondHalf', space='fs32k')
+    # data_reshaped_task_neocortex = reshape_data(data_task_neocortex, info_task, cond_column=mdtb_dataset.cond_ind, part_column=part_column, mean_centering=mean_centering)
+    # data_reshaped_task_neocortex = reshape_data(data_task_neocortex, info_task, cond_column=mdtb_dataset.cond_ind, part_column=part_column, mean_centering=False)
+    
+    # vars_task_neo = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task_neocortex, criterion='global')
+    # print(f'Neocortical task variance\nGroup: {vars_task_neo[0][0]:.2f}\nSubject: {vars_task_neo[0][1]:.2f}\nError: {vars_task_neo[0][2]:.2f}')
+
+    # Create dataset all runs are data from the first run for each subject (to maximize subject variance)
+    # data_max_subject_variance = np.zeros_like(data_reshaped_task)
+    # for i in range(data_reshaped_task.shape[1]):
+    #     data_max_subject_variance[:, i, :, :] = data_reshaped_task[:, 0, :, :]
+    # vars_subject = ds.decompose_pattern_into_group_indiv_noise(data_max_subject_variance, criterion='global')
+    # print(f'Same runs variance\nGroup: {vars_subject[0][0]:.2f}\nSubject: {vars_subject[0][1]:.2f}\nError: {vars_subject[0][2]:.2f}')
+
+    # # Create dataset where all 24 subjects are data from the first subject (to maximize group variance)
+    # data_max_group_variance = np.zeros_like(data_reshaped_task)
+    # for i in range(data_reshaped_task.shape[0]):
+    #     data_max_group_variance[i, :, :, :] = data_reshaped_task[0, :, :, :]
+    # vars_group = ds.decompose_pattern_into_group_indiv_noise(data_max_group_variance, criterion='global')
+    # print(f'Same subjects variance\nGroup: {vars_group[0][0]:.2f}\nSubject: {vars_group[0][1]:.2f}\nError: {vars_group[0][2]:.2f}')
+
+    # # Create dataset where error variance is maximized
+    # data_max_error_variance = np.random.rand(*data_reshaped_task.shape)
+    # vars_error = ds.decompose_pattern_into_group_indiv_noise(data_max_error_variance, criterion='global')
+    # print(f'Random numbers variance\nGroup: {vars_error[0][0]:.2f}\nSubject: {vars_error[0][1]:.2f}\nError: {vars_error[0][2]:.2f}')
+
+
+    
+    # -- Pontine Variance decomposition --
+    mean_centering = False
+    type='CondHalf'
+    part_column='half'
+    pontine = DataSetPontine(base_dir + '/Pontine')
+
+
+    
+
+
+
+
+    
+    
 
     # --- Task ---
-    data_task, info_task = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun', space='MNISymC2', subj=subject_subset)
-    data_reshaped_task = reshape_data(data_task, info_task, cond_column=mdtb_dataset.cond_ind, mean_centering=mean_centering)
-    vars_task = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task, criterion='global')
-    print(f'Task variance\nGroup: {vars_task[0][0]:.2f}\nSubject: {vars_task[0][1]:.2f}\nError: {vars_task[0][2]:.2f}')
+    data_pon, info_pon = pontine.get_data(type='TaskHalf', space='MNISymC2', ses_id='ses-01')
+    data_reshaped_task_pon = reshape_data(data_pon, info_pon, cond_column=pontine.cond_ind, part_column=part_column, mean_centering=mean_centering)
+    vars_task_pon = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task_pon, criterion='global')
+    print(f'Task variance\nGroup: {vars_task_pon[0][0]:.2f}\nSubject: {vars_task_pon[0][1]:.2f}\nError: {vars_task_pon[0][2]:.2f}')
     
-    # --- Task Neocortex ---
-    data_task_neocortex, info_task_neocortex = mdtb_dataset.get_data(ses_id='ses-s1', type='CondRun', space='fs32k')
-    data_reshaped_task_neocortex = reshape_data(data_task_neocortex, info_task, cond_column=mdtb_dataset.cond_ind, mean_centering=mean_centering)
-    data_reshaped_task_neocortex = reshape_data(data_task_neocortex, info_task, cond_column=mdtb_dataset.cond_ind, mean_centering=False)
-    
-    # Create dataset all runs are data from the first run for each subject (to maximize subject variance)
-    data_max_subject_variance = np.zeros_like(data_reshaped_task)
-    for i in range(data_reshaped_task.shape[1]):
-        data_max_subject_variance[:, i, :, :] = data_reshaped_task[:, 0, :, :]
-    vars_subject = ds.decompose_pattern_into_group_indiv_noise(data_max_subject_variance, criterion='global')
-    print(f'Same runs variance\nGroup: {vars_subject[0][0]:.2f}\nSubject: {vars_subject[0][1]:.2f}\nError: {vars_subject[0][2]:.2f}')
 
-    # Create dataset where all 24 subjects are data from the first subject (to maximize group variance)
-    data_max_group_variance = np.zeros_like(data_reshaped_task)
-    for i in range(data_reshaped_task.shape[0]):
-        data_max_group_variance[i, :, :, :] = data_reshaped_task[0, :, :, :]
-    vars_group = ds.decompose_pattern_into_group_indiv_noise(data_max_group_variance, criterion='global')
-    print(f'Same subjects variance\nGroup: {vars_group[0][0]:.2f}\nSubject: {vars_group[0][1]:.2f}\nError: {vars_group[0][2]:.2f}')
-
-    # Create dataset where error variance is maximized
-    data_max_error_variance = np.random.rand(*data_reshaped_task.shape)
-    vars_error = ds.decompose_pattern_into_group_indiv_noise(data_max_error_variance, criterion='global')
-    print(f'Random numbers variance\nGroup: {vars_error[0][0]:.2f}\nSubject: {vars_error[0][1]:.2f}\nError: {vars_error[0][2]:.2f}')
-
-
-    vars_task = ds.decompose_pattern_into_group_indiv_noise(data_reshaped_task_neocortex, criterion='global')
-    # Swap the second and third dimension of data_reshaped_task
-    # data_reshaped_task_2 = np.swapaxes(data_reshaped_task_neocortex, 1, 2)
-    
-    
-    print(f'Neocortical task variance\nGroup: {vars_task[0][0]:.2f}\nSubject: {vars_task[0][1]:.2f}\nError: {vars_task[0][2]:.2f}')
-    vars_task_g, vars_task_s, vars_task_e = vars_task.flatten()
     pass
     
+
+
+    plt.imshow(data_rest[-1,:,:])
+    plt.imshow(data_rest[-1, :,-200:])
+    plt.imshow(data_rest[-1, :,-300:])
+    plt.imshow(data_rest[0, :,-300:])
+    plt.imshow(data_rest[8, :69,-300:])
+    plt.imshow(data_rest[0, :69,-300:])
+
+    plt.imshow(data_task[0,:,-300:])
+    plt.plot(np.nanmean(data_rest[8, :69,:], axis=1))
+    plt.plot(np.nanmean(data_rest[-1, :69,:], axis=1))
+    plt.plot(np.nanmean(data_rest[0, :69,:], axis=1))
+    plt.plot(np.nanmean(np.nanmean(data_rest[:, :69,:], axis=0), axis=1))
+
+    plt.imshow(data_task[8, :,-300:])
