@@ -333,7 +333,7 @@ def reliability_within_subj(X, part_vec, cond_vec,
 def reliability_between_subj(X, cond_vec=None,
                              voxel_wise=False,
                              subtract_mean=True):
-    """ Calculates the correlation of the responses of each of the subjects with the mean of the other subjects. 
+    """ Calculates the correlation of the responses of each of the subjects with the mean of the other subjects.
     If cond_vec is given, the data is averaged across multiple measurem
     first.
 
@@ -407,18 +407,19 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
 def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
     """
     this function decompose a collection of (across subjects and partitions) activity patterns (N condition x P voxels)
-    into group, individual and noise components, returns the variance estimates of each component. 
+    into group, individual and noise components, returns the variance estimates of each component.
 
     Args:
-        data (list,ndarray): 
+        data (list,ndarray):
             * either a list of numpy ndarrays [sub-01: (n_partitions_01 x n_conditions x n_voxels), sub-02: (n_partitions_02 x n_conditions x n_voxels), ...]
             * or an ndarray of shape n_subjects x n_partitions x n_conditions x n_voxels, i.e., S x R x N x P
         criterion (str):
-            * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels   
-            * 'condition_wise': partition variance components for each condition separately -> returns as many rows as conditions
             * 'global':         partition variance components for the whole pattern (N x P) -> returns a single row
+            * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
+            * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
+            * 'subject_wise':   partition variance components for the whole pattern (NxP) -> but return split by Subjects
     Returns:
-        variances: (K x 3 ndarray): v_g, v_s, v_e (variance for group, subject, and noise), where K is the number of voxels or conditions or 1
+        variances: (K x 3 ndarray): v_g, v_s, v_e (variance for group, subject, and noise), where K is the number of voxels, conditions, subjects, or 1
     """
 
     if isinstance(data, list):
@@ -438,65 +439,83 @@ def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
         [n_subjects, n_partitions, n_conditions, n_voxels] = data.shape
         X = data
 
+    # rearrange the data to be in the form of (n_split, n_subjects,n_partitions, n_features)
     if criterion == 'voxel_wise':
         Y = X.transpose([3, 0, 1, 2])
-        n_obs = n_conditions
     elif criterion == 'condition_wise':
         Y = X.transpose([2, 0, 1, 3])
-        n_obs = n_voxels
-    elif criterion == 'global':
+    elif criterion in ['global','subject_wise']:
         Y = X.reshape((1, n_subjects, n_partitions, n_conditions * n_voxels))
-        n_obs = n_conditions * n_voxels
     else:
         Y = np.empty(1)
         print('invalid criterion')
+    [n_split, _, _, n_features] = Y.shape
 
-    [n_reps, _, _, n_features] = Y.shape
-    variances = np.zeros((n_reps, 3))
+    # reshape the data to be in the form of (n_split, n_subjects*n_partitions, n_features)
+    Y = Y.reshape((n_split, n_subjects * n_partitions, n_features))
+    subj_vec = np.kron(np.arange(n_subjects), np.ones(n_partitions))
+    part_vec = np.kron(np.ones(n_subjects), np.arange(n_partitions))
+    N = n_subjects * n_partitions
+    same_subj = np.equal(subj_vec.reshape(N,1),subj_vec.reshape(1,N))
+    same_part = np.equal(part_vec.reshape(N,1),part_vec.reshape(1,N))
 
-    for repI in np.arange(n_reps):
-        Z = np.zeros((n_subjects * n_partitions, n_features))
-        indx = 0
-        indx_mat_1 = np.zeros((Z.shape[0], Z.shape[0]))     # for across subjects
-        indx_mat_2 = np.zeros(indx_mat_1.shape)             # for within subject, across partitions
-        indx_mat_3 = np.zeros(indx_mat_1.shape)             # for within-observations
+    # This computes the sums of squares-matrix for each split separately (broadcasting)
+    YY = np.matmul(Y,Y.transpose((0,2,1)))
 
-        for subjI in np.arange(n_subjects):
-            subj_start_indx = subjI * n_partitions
-            subj_end_indx = (subjI + 1) * n_partitions
-            indx_mat_2[subj_start_indx: subj_end_indx, subj_start_indx: subj_end_indx] = 1
-            other_subj_inds = np.setdiff1d(np.arange(Z.shape[0]), np.arange(subj_start_indx, subj_end_indx))
-            indx_mat_1[subj_start_indx: subj_end_indx, other_subj_inds] = 1
-            for partI in np.arange(n_partitions):
-                Z[indx] = Y[repI, subjI, partI]
-                indx_mat_3[indx, indx] = 1
-                indx = indx + 1
+    # Find cross-products of same subject and same partition
+    if criterion == 'subject_wise':
+        SS_1 = np.zeros((n_subjects,))
+        SS_2 = np.zeros((n_subjects,))
+        SS_3 = np.zeros((n_subjects,))
+        for s in np.arange(n_subjects):
+            # Get the rows pertaining to the subject
+            YYs = YY[:,subj_vec==s,:]
+            same_subj_s = same_subj[subj_vec==s,:]
+            same_part_s = same_part[subj_vec==s,:]
+            SS_1[s] = np.nanmean(YYs[:,~same_subj_s],axis=1)
+            SS_2[s] = np.nanmean(YYs[:,same_subj_s & ~same_part_s],axis=1)
+            SS_3[s] = np.nanmean(YYs[:,same_subj_s & same_part_s],axis=1)
+    else:
+        SS_1 = np.nanmean(YY[:,~same_subj],axis=1)
+        SS_2 = np.nanmean(YY[:,same_subj & ~same_part],axis=1)
+        SS_3 = np.nanmean(YY[:,same_subj & same_part],axis=1)
 
-        variance_mat = np.matmul(Z, Z.T)
-
-        # indices for across subjects (i.e., v_g)
-        indx_mat_1 = np.triu(indx_mat_1, 1)
-        where_across_subject = np.where(indx_mat_1 > 0)
-        SS_1 = np.nanmean(variance_mat[where_across_subject])
-
-        # indices for within subject across partitions (i.e., v_g + v_s)
-        indx_mat_2 = np.triu(indx_mat_2, 1)
-        where_within_subject_across_partitions = np.where(indx_mat_2 > 0)
-        SS_2 = np.nanmean(variance_mat[where_within_subject_across_partitions])
-
-        # indices for within-observation pairs (i.e., v_g + v_s + v_e)
-        indx_mat_3 = np.triu(indx_mat_3, 0)
-        where_within_observation = np.where(indx_mat_3 > 0)
-        SS_3 = np.nanmean(variance_mat[where_within_observation])
-
-        v_e = (SS_3 - SS_2) / n_obs
-        v_s = (SS_2 - SS_1) / n_obs
-        v_g = SS_1 / n_obs
-        variances[repI] = np.array([v_g, v_s, v_e]) / (v_g + v_s + v_e)
+    # Compute the variances from the sums of squares
+    v_e = (SS_3 - SS_2) / n_features
+    v_s = (SS_2 - SS_1) / n_features
+    v_g = SS_1 / n_features
+    variances = np.c_[v_g, v_s, v_e]
 
     return variances
 
 
+def flat2ndarray(flat_data, part_vec, cond_vec):
+    """
+    convert flat data (n_subjects x n_trials x n_voxels) into a 4d ndarray (n_subjects x n_partitions x n_conditions x n_voxels)
+
+    Args:
+        flat_data (nd-array): n_subjects x n_obs x n_voxels array
+        part_vec: (nd-array): n_obs -vector for partition index
+        cond_vec: (nd-array): n_obs -vector for condition index
+
+    Returns:
+        data: (nd-array): n_subjects x n_partitions x n_conditions x n_voxels
+    """
+
+    [n_subjects, n_obs, n_voxels] = flat_data.shape
+
+    unique_partitions = np.unique(part_vec)
+    n_partitions = unique_partitions.size
+
+    unique_conditions = np.unique(cond_vec)
+    n_conditions = unique_conditions.size
+
+    data = np.zeros((n_subjects, n_partitions, n_conditions, n_voxels))
+
+    for partI in np.arange(n_partitions):
+        for condI in np.arange(n_conditions):
+            trial_inds = np.where(cond_vec == unique_conditions[condI] and part_vec == unique_partitions[partI])
+            data[:, partI, condI, :] = np.mean(flat_data[:, trial_inds, :], axis=1)
 
 class DataSet:
     def __init__(self, base_dir):
@@ -675,7 +694,7 @@ class DataSet:
 
     def group_average_data(self, ses_id=None,
                                type=None,
-                               atlas='SUIT3', 
+                               atlas='SUIT3',
                                subj=None):
             """Loads group data in SUIT space from a standard experiment structure
             averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
@@ -807,18 +826,18 @@ class DataSetNative(DataSet):
             fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         elif type == 'Tseries':
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
-        
+
         return fnames, T
 
     def get_indiv_atlasmaps(self, atlas, sub, ses_id, smooth=None):
-        """Get Atlasmap for the transform of an individual subject to the space in which the atlas is defined. 
+        """Get Atlasmap for the transform of an individual subject to the space in which the atlas is defined.
 
         Args:
             atlas (Atlas): Atlas object
-            sub (int): Subject number 
-            ses_id (str): 
+            sub (int): Subject number
+            ses_id (str):
                 Session for dataset for datasets, for which not all sessions are aligned to the same space
-            smooth (float): Smoothing kernel width. Defaults to None = nearest neighbor. 
+            smooth (float): Smoothing kernel width. Defaults to None = nearest neighbor.
 
         Returns:
             _type_: _description_
@@ -1113,7 +1132,7 @@ class DataSetMDTB(DataSetNative):
 
                 # Baseline substraction
                 B = np.ones((data_info.shape[0],))
-            
+
 
 
             # Prewhiten the data

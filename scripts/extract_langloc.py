@@ -24,7 +24,7 @@ atlas_dir = base_dir + '/Atlases'
 #     LL_dataset = DataSetLangloc(data_dir)
 #     LL_dataset.group_average_data(type, atlas)
 
-def extract_langloc_suit(atlas='MNISymC3'):
+def extract_langloc_suit(atlas='MNISymC2'):
     LL_dataset = DataSetLangloc(data_dir)
     LL_dataset.extract_all(ses_id = 'ses-01',type = 'TaskHalf', atlas = atlas)
 
