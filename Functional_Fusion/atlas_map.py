@@ -268,7 +268,7 @@ class AtlasVolumetric(Atlas):
         else:
             X.fill(0)
         # Insert data into the right locations
-        X[self.vox[0], self.vox[1], self.vox[2]] = data.T.squeeze()
+        X[self.vox[0], self.vox[1], self.vox[2]] = data.T
         # Make a nifti image
         img = nb.Nifti1Image(X, self.mask_img.affine)
         return img
