@@ -226,10 +226,31 @@ def get_cortical_target(target):
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     nb.save(cifti_img, dest_dir + f'/{target_name}_space-fs32k.dscalar.nii')
 
+def make_net67():
+
+    net = nb.load(base_dir +
+                    f'/targets/Net69_space-fs32k.dscalar.nii')
+    # Remove the first and 10th network
+    net_data = np.delete(net.get_fdata(), [0, 10], axis=0)
+
+    # Add the new networks to header
+    bpa = nb.cifti2.ScalarAxis(['Network_{}'.format(i)
+                                for i in range(1, net_data.shape[0] + 1)])
+    bmc = net.header.get_axis(1)
+    header = nb.cifti2.Cifti2Header.from_axes((bpa, bmc))
+    cifti_img = nb.cifti2.Cifti2Image(dataobj=net_data, header=header)
+
+    # Save the new network
+    dest_dir = base_dir + '/targets/'
+    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    nb.save(cifti_img, dest_dir + f'/Net67_space-fs32k.dscalar.nii')
+
+    pass
         
 
 if __name__ == "__main__":
     # get_cortical_target('orig/hcp_1200/Net300_space-fs32k.dscalar.nii')
     # get_cortical_target('orig/hcp_1200/Net100_space-fs32k.dscalar.nii')
     # get_cortical_target('orig/hcp_1200/Net50_space-fs32k.dscalar.nii')
-    get_cortical_target('orig/hcp_1200/Net15_space-fs32k.dscalar.nii')
+    # get_cortical_target('orig/hcp_1200/Net15_space-fs32k.dscalar.nii')
+    make_net67()
