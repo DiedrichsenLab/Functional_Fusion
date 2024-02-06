@@ -227,7 +227,9 @@ def get_cortical_target(target):
     nb.save(cifti_img, dest_dir + f'/{target_name}_space-fs32k.dscalar.nii')
 
 def make_net67():
-
+    """Script to remove two networks (first and 11th network) from the 69 network set
+    First and 11th network are cerebellar-only networks and do not have substantial cortical weights. Therefore they are removed."""
+    
     net = nb.load(base_dir +
                     f'/targets/Net69_space-fs32k.dscalar.nii')
     # Remove the first and 10th network
