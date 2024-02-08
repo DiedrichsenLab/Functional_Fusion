@@ -4,8 +4,9 @@ import shutil
 from pathlib import Path
 import mat73
 import numpy as np
-import atlas_map as am
-from dataset import DataSetHcpResting
+import Functional_Fusion.atlas_map as am
+from Functional_Fusion.dataset import DataSetHcpResting
+import Functional_Fusion.dataset as ds
 import nibabel as nb
 import SUITPy as suit
 import os
@@ -13,6 +14,7 @@ import sys
 import matplotlib.pyplot as plt
 from ProbabilisticParcellation.util import plot_multi_flat, plot_data_flat
 import re
+import Functional_Fusion.connectivity as conn
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -89,10 +91,13 @@ if __name__ == "__main__":
     # extract_hcp_timeseries(ses_id='ses-rest2', type='Tseries', atlas='fs32k')
 
     # -- Get connectivity fingerprint --
-    extract_connectivity_fingerprint(
-        type='Net69Run', space='MNISymC2', ses_id='ses-rest1')
-    extract_connectivity_fingerprint(
-        type='Net69Run', space='MNISymC2', ses_id='ses-rest2')
+    dname = 'HCP'
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Net67Run', space='MNISymC2', ses_id='ses-rest1')
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Net67Run', space='MNISymC2', ses_id='ses-rest2')
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
 
     # extract_hcp_timeseries(
     #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')

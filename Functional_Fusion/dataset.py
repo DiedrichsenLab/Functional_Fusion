@@ -574,7 +574,8 @@ class DataSet:
         """
         T = self.get_participants()
 
-        if type == 'Tseries':
+        # only get data from subjects that have rest, if specified in dataset description
+        if type == 'Tseries' and 'ses-rest' in T.columns:
                 subj = T[T['ses-rest'] == 1].participant_id.tolist()
 
         # Deal with subset of subject option
@@ -629,7 +630,8 @@ class DataSet:
         # Deal with subset of subject option
         if subj is None:
             subj = T.participant_id
-            if type == 'Tseries':
+            # only get data from subjects that have rest, if specified in dataset description
+            if type == 'Tseries' and 'ses-rest' in T.columns:
                 subj = T[T['ses-rest'] == 1].participant_id.tolist()
         elif isinstance(subj, str):
             subj = [subj]
