@@ -2,6 +2,14 @@ function [ output_args ] = dmcc_imana_mni( what, varargin )
 
 % %========================================================================================================================
 %% ----- Initialize suit toolbox -----
+% Add dependencies to path
+if isdir('/Volumes/diedrichsen_data$/data')
+    workdir='/Volumes/diedrichsen_data$/data';
+elseif isdir('/srv/diedrichsen/data')
+    workdir='/srv/diedrichsen/data';
+else
+    fprintf('Workdir not found. Mount or connect to server and try again.');
+end
 % check for SUIT installation
 if isempty(which('suit_isolate_seg')) % this function is only visible while SPM is actually "running" (not just on the path). This needs to happen for SUIT to run.
     warning('Cannot find SUIT, starting SPM12.'); % this should not happen since checked for in the beginning. Still leaving this snippet for robustnes (e.g. if someone closes SPM between starting Lead and pressing run).
@@ -23,16 +31,16 @@ base_dir = "/srv/diedrichsen/data/Cerebellum/DMCC"; % this is where tsv files ar
 base_dir_mni = "/srv/diedrichsen/data/Cerebellum/DMCC/derivatives/fmriprep-1.3.2"; % parent directory of MNI space 
 
 %%% Freesurfer stuff
-% path1 = getenv('PATH');
-% path1 = [path1, sprintf('%s/freesurfer/6.0.0/bin', workdir)];
-% setenv('PATH', path1);
-% path1 = [path1, ':/srv/software/freesurfer/6.0.0/fsfast/bin'];
-% setenv('PATH', path1);
-% path1 = [path1, ':/srv/software/freesurfer/6.0.0/mni/bin'];
-% setenv('PATH', path1);
-% setenv('FREESURFER_HOME','/srv/software/freesurfer/6.0.0');
-% setenv(fullfile(base_dir, 'surfaceFreesurfer'))
-% setenv('SUBJECTS_DIR',fullfile(base_dir, 'surfaceFreesurfer'));
+path1 = getenv('PATH');
+path1 = [path1, sprintf('%s/freesurfer/6.0.0/bin', workdir)];
+setenv('PATH', path1);
+path1 = [path1, ':/srv/software/freesurfer/6.0.0/fsfast/bin'];
+setenv('PATH', path1);
+path1 = [path1, ':/srv/software/freesurfer/6.0.0/mni/bin'];
+setenv('PATH', path1);
+setenv('FREESURFER_HOME','/srv/software/freesurfer/6.0.0');
+setenv(fullfile(base_dir_mni, 'surfaceFreesurfer'))
+setenv('SUBJECTS_DIR',fullfile(base_dir_mni, 'surfaceFreesurfer'));
 % setenv('PERL5LIB','/Applications/freesurfer/mni/Library/Perl/Updates/5.10.0');
 % setenv('PERL5LIB', '/Applications/freesurfer/mni/System/Library/Perl/5.8.6');
 
@@ -343,7 +351,7 @@ switch what
         end % s (sn),
     case 'GLM:T_contrast'    % make T contrasts for each condition
         %%% Calculating contrast images.
-        % Example usage: dmcc_imana('GLM:T_contrast', 'sn', 3, 'glm', 1)
+        % Example usage: dmcc_imana_mni('GLM:T_contrast', 'sn', 3, 'glm', 1)
         
         sn             = subj_id;    % subjects list
         glm            = 1;          % glm number
@@ -357,7 +365,7 @@ switch what
             for task_id = 1:length(task_str)
                 % get the subject id folder name
                 fprintf('Contrasts for task %s %s\n', task_str{task_id}, subj_str{s})
-                glm_dir = fullfile(base_dir, subj_str{s}, sprintf('ses-wave1bas'), est_dir, sprintf('glm%02d', glm), task_str{task_id});
+                glm_dir = fullfile(base_dir_mni, subj_str{s}, sprintf('ses-wave1bas'), est_dir, sprintf('glm%02d', glm), task_str{task_id});
                 
                 cd(glm_dir);
                 
@@ -504,168 +512,48 @@ switch what
     case 'SURF:reconall'       % Freesurfer reconall routine
         % Calls recon-all, which performs, all of the
         % FreeSurfer cortical reconstruction process
-        % Example usage: nishimoto_imana('SURF:reconall', 'sn', 1)
+        % Example usage: dmcc_imana_mni('SURF:reconall', 'sn', 1)
+        % NOTE: if you get textScalar error, open freesurfer_reconall and
+        % change the system comman line to:
+        % system(sprintf('recon-all -s %s  -i  %s  -all -cw256', subj_name, anatomical));
         
         sn   = subj_id; % subject list
         
         vararginoptions(varargin, {'sn'});
         % set freesurfer directory
-        subj_fs_dir = fullfile(base_dir, fs_dir);
+        subj_fs_dir = fullfile(base_dir_mni, fs_dir);
         
         for s = sn
             fprintf('- recon-all %s\n', subj_str{s});
-            subj_dir = fullfile(base_dir, subj_str{s}, anat_dir);
+            subj_dir = fullfile(base_dir_mni, subj_str{s}, anat_dir);
             freesurfer_reconall(subj_fs_dir, subj_str{s}, ...
-                                fullfile(subj_dir,sprintf('%s_T1w_lpi.nii', subj_str{s})));
-        end % s (sn)
-    case 'SURF:xhemireg'       % Cross-register surfaces left / right hem
-        % surface-based interhemispheric registration
-        % example: nishimoto_imana('SURF:xhemireg', 'sn', [1, 2, 3, 4, 5])
-        
-        sn   = subj_id; % list of subjects
-
-        vararginoptions(varargin, {'sn'})
-        
-        % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
-        
-        for s = sn
-            fprintf('- xhemiregl %s\n', subj_str{s});
-            freesurfer_registerXhem(subj_str(s), fs_dir,'hemisphere', [1 2]); % For debug... [1 2] orig
-        end % s (sn)
-    case 'SURF:map_ico'        % Align to the new atlas surface (map icosahedron)
-        % Resampels a registered subject surface to a regular isocahedron
-        % This allows things to happen in atlas space - each vertex number
-        % corresponds exactly to an anatomical location
-        % Makes a new folder, called ['x' subj] that contains the remapped subject
-        % Uses function mri_surf2surf
-        % mri_surf2surf: resamples one cortical surface onto another
-        % Example usage: nishimoto_imana('SURF:map_ico', 'sn', [1, 2, 3, 4, 5, 6])
-        
-        sn = subj_id; % list of subjects
-        
-        vararginoptions(varargin, {'sn'});
-        
-        % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
-        for s = sn
-            fprintf('- map_ico %s\n', subj_str{s});
-            freesurfer_mapicosahedron_xhem(subj_str{s}, fs_dir ,'smoothing',1,'hemisphere',[1, 2]);
+                                fullfile(subj_dir,sprintf('%s_desc-preproc_T1w.nii', subj_str{s})));
         end % s (sn)
     case 'SURF:fs2wb'          % Resampling subject from freesurfer fsaverage to fs_LR
-        % Example usage: nishimoto_imana('SURF:fs2wb', 'sn', [1], 'res', 32)
+        % Example usage: dmcc_imana_mni('SURF:fs2wb', 'sn', [1], 'res', 32)
         
         sn   = subj_id; % list of subjects
-        res  = 32;          % resolution of the atlas. options are: 32, 164
         hemi = [1, 2];      % list of hemispheres
         
-        vararginoptions(varargin, {'sn', 'res', 'hemi'});
+        vararginoptions(varargin, {'sn', 'hemi'});
         
         % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
+        fs_dir = fullfile(base_dir_mni, 'surfaceFreeSurfer');
         
         for s = sn 
             fprintf('- fs2wb %s\n', subj_str{s});
-            wb_subj_dir  = fullfile(base_dir, wb_dir, 'data', subj_str{s});
-            surf_resliceFS2WB(subj_str{s}, fs_dir, wb_subj_dir, 'hemisphere', hemi, 'resolution', sprintf('%dk', res))
+            wb_subj_dir  = char(fullfile(base_dir_mni, wb_dir, 'data', subj_str{s}));
+            surf_resliceFS2WB(subj_str{s}, fs_dir, wb_subj_dir, 'hemisphere', hemi, 'resolution', '32k')
         end % s (sn)
     case 'SURF:run_all'        % Pipeline running all of surface preprocessing routines
-        % Example usage: nishimoto_imana('SURF:run_all')
+        % Example usage: dmcc_imana_mni('SURF:run_all', 'sn', 1:20)
         
         sn = subj_id;
         
         vararginoptions(varargin, {'sn'});
-%         nishimoto_imana('SURF:reconall')
-        nishimoto_imana('SURF:xhemireg', 'sn', sn);
-        nishimoto_imana('SURF:map_ico', 'sn', sn);
-        nishimoto_imana('SURF:fs2wb', 'sn', sn);
-    case 'SURF:vol2surf'       % Mapping volumetric data to surface
-        % first univariately whiten data and then map to surface
-        % Example usage: nishimoto_imana('SURF:vol2surf', 'sn', 1, 'group', 0)
-        
-        sn             = subj_id;        % subjects list
-        ses            = 1;              % task number
-        glm            = 1;              % glm number
-        type           = 'con';          % type of data to be mapped. Options are: 'con', 'beta'
-        baseline       = 'rest';         % contrast will be calculated against base (available options: 'rest')
-        kernel         = 1;              % smoothing kernel 
-        group          = 1;
-        
-        vararginoptions(varargin, {'sn', 'glm', 'ses', 'baseline', 'type', 'kernel', 'group'})
-        
-        % loop over hemispheres
-        for h = 1:2
-            for s = sn
-                
-                % get directory where subject surfaces are saved
-                surf_dir = fullfile(base_dir, wb_dir, sprintf('glm%02d', glm), subj_str{s});
-                dircheck(surf_dir);
-                glm_dir = fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses));
-                
-                % file containing the giftis for the current subject
-                filename{s} = fullfile(surf_dir, sprintf('%s.w%s-%s.ses-%02d.%s.func.gii', subj_str{s}, type, baseline, ses, hem{h}));
-                
-                white   = fullfile(base_dir, wb_dir, 'data', subj_str{s}, sprintf('%s.%s.white.32k.surf.gii', subj_str{s}, hem{h}));
-                pial    = fullfile(base_dir, wb_dir, 'data', subj_str{s}, sprintf('%s.%s.pial.32k.surf.gii', subj_str{s}, hem{h}));
-                C1      = gifti(white);
-                C2      = gifti(pial);% map the files
-                
-                switch type
-                    case 'con'
-                        % get all the contrasts
-                        files2map = dir(fullfile(glm_dir, sprintf('con_*-%s.nii', baseline)));
-                    case 'beta'
-                        files = dir(fullfile(base_dir, subj_str{s}, est_dir, sprintf('glm%02d', glm), sprintf('ses-%02d', ses), 'beta*.nii'));
-                        files2map = cat(1, {files(:).name});
-                        names = string(1:length(files2map));
-                end % switch type
-                %%% get file paths and names of contrasts
-                for i= 1:length(files2map)
-                    name{i} = fullfile(glm_dir, files2map(i).name);
-                    column_names{i} = files2map(i).name(5:end-4);
-                end % i (contrast names)
-                
-                
-                % % if the subj specific gifti files have not been created, then
-                % create them
-                if group ~=1
-                    fprintf('- Transforming %s for %s hemi %s\n', type, subj_str{s}, hem{h});
-                    maps = surf_vol2surf(C1.vertices, C2.vertices, name, 'column_names', column_names, ...
-                        'anatomicalStruct', hemName{h});
+        dmcc_imana_mni('SURF:reconall', 'sn', sn)
+        dmcc_imana_mni('SURF:fs2wb', 'sn', sn);
                     
-                    % map ResMS (will be used for univariate prewhitening)
-                    Gres = surf_vol2surf(C1.vertices, C2.vertices, {fullfile(glm_dir, 'ResMS.nii')}, ...
-                        'anatomicalStruct', hemName{h});
-                    
-                    % do univariate prewhitening
-                    data    = bsxfun(@rdivide, maps.cdata, Gres.cdata);
-                    
-                    % create one single gifti file containing all the contrasts
-                    data(:, length(files2map)+1) = Gres.cdata;
-                    column_names{length(files2map)+1} = 'ResMS';
-                    G = surf_makeFuncGifti(data,'anatomicalStruct', hemName{h}, 'columnNames', column_names);
-                    
-                    % save the single gifti file
-                    %%% a cell array containing the filenames.
-                    %%% will be used in creating group maps and summary
-                    save(G, filename{s});
-                    fprintf('- Done %s %s map2surf\n', subj_str{s}, type);
-                    % smooth the single gifti
-                    atlas_dir = fullfile(base_dir, 'fs_LR_32');
-                    atlas_file = fullfile(atlas_dir, sprintf('fs_LR.32k.%s.inflated.surf.gii',hem{h}));
-                    surf_smooth(filename{s},'surf',atlas_file,'kernel',kernel); % smooth outfilenames - it will prefix an 's'
-                end % if not group
-            end % s (subjects)
-            
-            % create group and group summary
-            if group == 1
-                wb_group_dir = fullfile(base_dir, wb_dir, sprintf('glm%02d', glm), 'group');dircheck(wb_group_dir);
-                cd(wb_group_dir)
-                summaryname     = fullfile(wb_group_dir,sprintf('wgroup.%s-%s.ses-%02d.glm%02d.%s.func.gii', type, baseline, ses, glm, hem{h}));
-                surf_groupGiftis(filename, 'groupsummary', summaryname, 'replaceNaNs', 1, 'outcolnames', subj_str, 'outfilenamePattern', ['%s.', hem{h}, '.func.gii']);
-            end % if group
-        end % hemisphere
-                       
     case 'SUIT:isolate_segment'    % Segment cerebellum into grey and white matter
         % Example usage: dmcc_imana('SUIT:isolate_segment', 'sn', 1);
         
