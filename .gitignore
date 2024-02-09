@@ -142,3 +142,4 @@ scripts/run_pipeline.py
 ff.code-workspace
 scripts/.vscode/launch.json
 
+todolist.md
