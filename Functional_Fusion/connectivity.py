@@ -154,6 +154,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         # Get cerebellar data
         data_cereb_subj, info_cereb = dset.get_data(
                 space=space, ses_id=ses_id, type='Tseries', subj=[row.Index])
+        data_cereb_subj = data_cereb_subj.squeeze()
 
         if target[:3] == 'Net':
             # Regress each network into the fs32k cortical data to get a run-specific network timecourse
