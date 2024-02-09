@@ -130,14 +130,6 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     if subj is not None:
         subj = [T.participant_id.tolist().index(s) for s in subj]
         T = T.iloc[subj]
-    
-    # Get cortical data
-    data_cortex, _ = dset.get_data(
-        space='fs32k', ses_id=ses_id, type='Tseries', subj=subj)
-
-    # Get cerebellar data
-    data_cereb, info_cereb = dset.get_data(
-            space=space, ses_id=ses_id, type='Tseries', subj=subj)
 
     # Load the cortical networks
     target, type = re.findall('[A-Z][^A-Z]*', type)        
@@ -155,8 +147,13 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         participant_id = row.participant_id
 
         # Get the subject's data
-        data_cortex_subj = data_cortex[p,:,:]
-        data_cereb_subj = data_cereb[p,:,:]
+        # Get cortical data
+        data_cortex_subj, _ = dset.get_data(
+            space='fs32k', ses_id=ses_id, type='Tseries', subj=[row.Index])
+
+        # Get cerebellar data
+        data_cereb_subj, info_cereb = dset.get_data(
+                space=space, ses_id=ses_id, type='Tseries', subj=[row.Index])
 
         if target[:3] == 'Net':
             # Regress each network into the fs32k cortical data to get a run-specific network timecourse
