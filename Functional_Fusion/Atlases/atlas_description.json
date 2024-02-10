@@ -94,5 +94,12 @@
             "res": 2,
             "mask": "tpl-MNI152NLin6Asym_res-2_bgmask.nii",
             "structure": "other",
-            "type": "AtlasVolumetric"}
+            "type": "AtlasVolumetric"}, 
+     "MNI2009cAsymBg2": {
+               "dir": "tpl-MNI152NLin2009cAsym",
+               "space": "MNI152NLin2009cAsym",
+               "res": 2,
+               "mask": "tpl-MNI152NLin2009cAsym_res-2_bgmask.nii",
+               "structure": "other",
+               "type": "AtlasVolumetric"}
 }
