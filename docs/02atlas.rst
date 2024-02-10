@@ -14,9 +14,24 @@ Subclasses are ``AtlasVolumetric``, and ``AtlasSurface``. Each Atlas contains  `
 * ``MNISymC2``: Cerebellum in MNI152NLin2009cSym space (2mm voxels)
 * ``fs32k``: Left and Right hemisphere, using identical Medial wall mask
 * ``fs32kAsym``: Left and Right hemisphere, using asymmetric medial wall mask  from HCP.
+* ``fs32kAsym``: Left and Right hemisphere, using asymmetric medial wall mask  from HCP.
+* ``fs32kAsym``: Left and Right hemisphere, using asymmetric medial wall mask  from HCP.
+* ``MNIAsymBg1``: Basal Ganglia in MNI152NLin6Asym space (1mm voxels)
+* ``MNIAsymBg2``: Basal Ganglia in MNI152NLin6Asym space (2mm voxels)
 
-These atlases are defined in ``Functional_Fusion/Atlases/atlas_rescription.json``.
-You can modify this file if you want to add new atlases.
+These atlases are defined in ``Functional_Fusion/Atlases/atlas_description.json``.
+To add a new atlas, you need to add a entry into that json file. The Atlas needs the following information:
+
+* ``type``: Class-name for the atlas object ("AtlasVolumetric", "AtlasSurface", ...)
+* ``dir``: Directory where the atlas files are stored: Functional_Fusion/Atlases/<dir>)
+* ``mask``: Name(s) of mask niftis/gifti files that define the atlas space.
+* ``space``: Space in which coordinates are defined (e.g. "MNI152NLin6AsymC")
+* ``structure``: cifti-structure name - needs to be a valid, predefined cifti structure (e.g. "cerebellum")
+
+Optional fields:
+
+* ``res``: resolution (not used yet) -voxel locations are defined by mask image
+* ``normspace``: Norm space for suit.vol2surf -
 
 Getting atlases
 ---------------

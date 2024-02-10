@@ -333,7 +333,7 @@ def reliability_within_subj(X, part_vec, cond_vec,
 def reliability_between_subj(X, cond_vec=None,
                              voxel_wise=False,
                              subtract_mean=True):
-    """ Calculates the correlation of the responses of each of the subjects with the mean of the other subjects. 
+    """ Calculates the correlation of the responses of each of the subjects with the mean of the other subjects.
     If cond_vec is given, the data is averaged across multiple measurem
     first.
 
@@ -407,14 +407,14 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
 def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
     """
     this function decompose a collection of (across subjects and partitions) activity patterns (N condition x P voxels)
-    into group, individual and noise components, returns the variance estimates of each component. 
+    into group, individual and noise components, returns the variance estimates of each component.
 
     Args:
-        data (list,ndarray): 
+        data (list,ndarray):
             * either a list of numpy ndarrays [sub-01: (n_partitions_01 x n_conditions x n_voxels), sub-02: (n_partitions_02 x n_conditions x n_voxels), ...]
             * or an ndarray of shape n_subjects x n_partitions x n_conditions x n_voxels, i.e., S x R x N x P
         criterion (str):
-            * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels   
+            * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
             * 'condition_wise': partition variance components for each condition separately -> returns as many rows as conditions
             * 'global':         partition variance components for the whole pattern (N x P) -> returns a single row
     Returns:
@@ -791,13 +791,22 @@ class DataSetNative(DataSet):
 
     def get_indiv_atlasmaps(self, atlas, sub, ses_id, smooth=None):
         atlas_maps = []
-        if atlas.structure == 'cerebellum':
+        if atlas.space == 'SUIT':
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
-            if atlas.name[0:4] != 'SUIT':
-                deform1, m = am.get_deform(
-                    self.atlas_dir, atlas.name, source='SUIT2')
-                deform = [deform1, deform]
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']: # This is nornmalization over SUIT->MNI (cerebellum only)
+            deform1, m = am.get_deform(self.atlas_dir, atlas.name, source='SUIT2')
+            deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
+            deform = [deform1, deform2]
+            mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        elif atlas.space== 'MNI152NLin6Asym': # This is for MNI standard space)
+            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+            edir = self.estimates_dir.format(sub)
+            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
         elif atlas.name == 'fs32k':
@@ -808,17 +817,6 @@ class DataSetNative(DataSet):
                 white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
                 mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
                 atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
-                                                  white, pial, mask))
-                atlas_maps[i].build()
-
-        elif atlas.name == 'fs32k_Asym':
-            for i, hem in enumerate(['L', 'R']):
-                adir = self.anatomical_dir.format(sub)
-                edir = self.estimates_dir.format(sub)
-                pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
-                white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
-                mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
-                atlas_maps.append(am.AtlasMapSurf(atlas.vertex_mask[i],
                                                   white, pial, mask))
                 atlas_maps[i].build()
         return atlas_maps
@@ -834,7 +832,7 @@ class DataSetNative(DataSet):
             type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        myatlas, _ = am.get_atlas(atlas, self.atlas_dir)
+        myatlas, _ = am.get_atlas(atlas)
         # create and calculate the atlas map for each participant
         T = self.get_participants()
         for s in T.participant_id:
@@ -924,7 +922,7 @@ class DataSetMNIVol(DataSet):
             type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        myatlas, _ = am.get_atlas(atlas, self.atlas_dir)
+        myatlas, _ = am.get_atlas(atlas)
 
         # extract and save data for each participant
         T = self.get_participants()
@@ -979,7 +977,7 @@ class DataSetCifti(DataSet):
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        myatlas, _ = am.get_atlas(atlas, self.atlas_dir)
+        myatlas, _ = am.get_atlas(atlas)
         # Get the correct map into CIFTI-format
         if isinstance(myatlas, am.AtlasVolumetric):
             deform, mask = am.get_deform(self.atlas_dir,
@@ -1072,7 +1070,7 @@ class DataSetMDTB(DataSetNative):
                 f'{d.cond_name}' for i, d in data_info.iterrows()]
 
             # Baseline substraction
-            B = np.ones((data_info.shape[0],))
+            B = np.ones((data_info.shape[0],)).reshape(-1, 1)
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
@@ -1165,7 +1163,7 @@ class DataSetHcpResting(DataSetCifti):
         """
 
         # create an instance of atlas to get the label vector
-        atlas, ainfo = am.get_atlas(atlas, self.atlas_dir)
+        atlas, ainfo = am.get_atlas(atlas)
 
         # create label_vector by passing on the label file
         # Set unite_struct to true if you want to integrate over left and right hemi
@@ -1465,7 +1463,7 @@ class DataSetIBC(DataSetNative):
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
         """
-        suit_atlas, _ = am.get_atlas(atlas, self.atlas_dir)
+        suit_atlas, _ = am.get_atlas(atlas)
         # create and calculate the atlas map for each participant
         T = self.get_participants()
         for s in T.participant_id:

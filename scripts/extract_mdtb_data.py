@@ -1,12 +1,10 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
 import os
 import pandas as pd
-import shutil
 from pathlib import Path
-import mat73
 import numpy as np
-import atlas_map as am
-from dataset import DataSetMDTB
+import Functional_Fusion.atlas_map as am
+from Functional_Fusion.dataset import DataSetMDTB
 import nibabel as nb
 import SUITPy as suit
 import matplotlib.pyplot as plt
@@ -111,7 +109,8 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
 
 
 if __name__ == "__main__":
-    extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
+    # extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
+    extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNIAsymBg2',smooth=2.0)
     # extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
     # extract_mdtb(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
     # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
