@@ -1677,3 +1677,7 @@ class DataSetSomatotopic(DataSetMNIVol):
         for i in range(len(data_n)):
             data_n[i] = pinv(C) @ data_n[i]
         return data_n, data_info
+
+
+class DataSetDmcc(DataSetMNIVol):
+    pass
