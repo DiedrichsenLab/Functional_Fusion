@@ -272,6 +272,7 @@ class AtlasVolumetric(Atlas):
                 X = np.zeros(self.mask_img.shape, dtype=int).astype(np.int8)
             else:
                 raise ValueError("Data type not supported")
+        
             X[self.vox[0], self.vox[1], self.vox[2]] = data
         img = nb.Nifti1Image(X, self.mask_img.affine)
         return img
@@ -631,7 +632,7 @@ class AtlasSurfaceSymmetric(AtlasSurface):
     """
     """
 
-    def __init__(self, name, mask_gii, structure):
+    def __init__(self, name, mask_gii, structure = ["cortex_left","cortex_right"]):
         """ Surface atlas with left-right symmetry
         The atlas behaves like AtlasSurface, but provides
         a reduced (symmetric) representation of size Psym.AtlasSurfaceSymmeytric
