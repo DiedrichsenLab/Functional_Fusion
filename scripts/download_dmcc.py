@@ -54,6 +54,18 @@ def get_download_list(subj_id = subjects):
         for anat in anatomicals:
             anat_files.append(f"derivatives/fmriprep-1.3.2/{subj}/anat/{subj}{anat}.nii.gz")
     
+
+    # get the list of freesurfer files
+    surf_list = ["inflated", "midthickness", "pial", "smoothwm"]
+    hemis = ["L", "R"]
+    fs_files = []
+    for subj in subj_id:
+        print(subj)
+        for hemi in hemis:
+            for surf in surf_list:
+                fs_files.append(f"derivatives/fmriprep-1.3.2/{subj}/anat/{subj}_hemi-{hemi}_{surf}.surf.gii")
+
+
     # the folowing is a list of functionals (native and MNI152NLin2009cAsym) to be downloaded from the derivatives folder
     # NOTE that functionals are under ses-wave1bas folder
     # example:  sub-f1027ao_ses-wave1bas_task-Axcpt_acq-mb4AP_run-1_space-MNI152NLin2009cAsym_desc-brain_mask.nii.gz
@@ -72,7 +84,7 @@ def get_download_list(subj_id = subjects):
                 for bold in bolds:
                     func_files.append(f"derivatives/fmriprep-1.3.2/{subj}/ses-wave1bas/func/{subj}_ses-wave1bas_task-{task}_acq-{run}_{bold}.nii.gz")
     
-    return anat_files, func_files, event_files
+    return anat_files, fs_files, func_files, event_files
 
 def download_filelist(download_dir = target_dir, download_include = subjects):
     """
@@ -99,15 +111,10 @@ def move_event_tsv():
                 os.rename(f"{source_dir}/{subj}/ses-wave1bas/func/{event_name}", f"{dest_dir}/{subj}/ses-wave1bas/func/{event_name}")                
     return
 
-def main():
-    anat_list, func_list = get_download_list(subj_id = subjects[1:20])
-    download_dmcc(download_dir = target_dir, download_include = anat_list)
-    download_dmcc(download_dir = target_dir, download_include = func_list)
-    return
 
 if __name__ == "__main__":
     anat_list, func_list = get_download_list(subj_id = subjects[0:2])
-    download_dmcc(download_dir = target_dir, download_include = anat_list)
+    download_filelist(download_dir = target_dir, download_include = anat_list)
     pass
 
 
