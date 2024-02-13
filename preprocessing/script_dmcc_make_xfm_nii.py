@@ -1,6 +1,9 @@
 # code to generate deformation field nifti image from fmriprep outputs
 # This was specifically written for the DMCC data but can be used with other data coming out
 # of fmriprep with proper naming based on the atlas space
+# see this link for more details on how to get xfm nifti from .h5 transformation saved in fmriprep:
+# https://neurostars.org/t/h5-to-affine-warpfield-nifti/7276
+
 import numpy as np
 import pandas as pd
 import os
