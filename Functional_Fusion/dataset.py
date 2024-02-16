@@ -582,6 +582,37 @@ class DataSet:
 
         return info_com
 
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+        atlas_maps = []
+        if atlas.space == 'SUIT':
+            deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
+            mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']: # This is nornmalization over SUIT->MNI (cerebellum only)
+            deform1, m = am.get_deform(self.atlas_dir, atlas.name, source='SUIT2')
+            deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
+            deform = [deform1, deform2]
+            mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        elif atlas.space in ['MNI152NLin6Asym', 'MNI152NLin2009cAsym']: # This is for MNI standard space)
+            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+            edir = self.estimates_dir.format(sub)
+            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        elif atlas.name == 'fs32k':
+            for i, hem in enumerate(['L', 'R']):
+                adir = self.anatomical_dir.format(sub)
+                edir = self.estimates_dir.format(sub)
+                pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
+                white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
+                mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+                atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
+                                                  white, pial, mask))
+                atlas_maps[i].build()
+        return atlas_maps
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
                  subj=None, fields=None, smooth=None, verbose=False):
@@ -663,8 +694,7 @@ class DataSet:
         # Ensure that infinite values (from div / 0) show up as NaNs
         Data[np.isinf(Data)] = np.nan
         return Data, info_com
-
-
+    
     def group_average_data(self, ses_id=None,
                            type=None,
                            atlas='SUIT3'):
@@ -789,38 +819,6 @@ class DataSetNative(DataSet):
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
-    def get_indiv_atlasmaps(self, atlas, sub, ses_id, smooth=None):
-        atlas_maps = []
-        if atlas.space == 'SUIT':
-            deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
-            mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
-            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
-        elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']: # This is nornmalization over SUIT->MNI (cerebellum only)
-            deform1, m = am.get_deform(self.atlas_dir, atlas.name, source='SUIT2')
-            deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
-            deform = [deform1, deform2]
-            mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
-            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
-        elif atlas.space== 'MNI152NLin6Asym': # This is for MNI standard space)
-            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
-            edir = self.estimates_dir.format(sub)
-            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
-            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
-        elif atlas.name == 'fs32k':
-            for i, hem in enumerate(['L', 'R']):
-                adir = self.anatomical_dir.format(sub)
-                edir = self.estimates_dir.format(sub)
-                pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
-                white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
-                mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
-                atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
-                                                  white, pial, mask))
-                atlas_maps[i].build()
-        return atlas_maps
-
     def extract_all(self,
                     ses_id='ses-s1',
                     type='CondHalf',
@@ -838,7 +836,7 @@ class DataSetNative(DataSet):
         for s in T.participant_id:
 
             print(f'Atlasmap {s}')
-            atlas_maps = self.get_indiv_atlasmaps(myatlas, s, ses_id,
+            atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
                                                   smooth=smooth)
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id)
@@ -878,39 +876,6 @@ class DataSetMNIVol(DataSet):
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
-    def get_group_atlasmaps(self, atlas, sub=None, smooth=None):
-        """ Gets group atlasmaps.
-        Assumes that all scans are in the same space (self.group_space)
-
-        Args:
-            sub (str; optional): Subject
-        Returns:
-            atlas_maps (list): List of atlasmaps
-
-        """
-        atlas_maps = []
-        if atlas.structure == 'cerebellum':
-            deform = self.atlas_dir + \
-                f'/{self.group_space}/{self.group_space}_space-SUIT_xfm.nii'
-            if atlas.name[0:4] != 'SUIT':
-                deform1, m = am.get_deform(self.atlas_dir, atlas.name, 'SUIT2')
-                deform = [deform1, deform]
-            mask = self.atlas_dir + \
-                f'/{self.group_space}/{self.group_space}_desc-cereb_mask.nii'
-            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
-        elif atlas.name == 'fs32k':
-            for i, hem in enumerate(['L', 'R']):
-                adir = self.anatomical_dir.format(sub)
-                pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
-                white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
-                mask = self.atlas_dir + \
-                    f'/{self.group_space}/{self.group_space}_mask.nii'
-                atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
-                                                  white, pial, mask))
-                atlas_maps[i].build()
-        return atlas_maps
-
     def extract_all(self,
                     ses_id='ses-01',
                     type='CondHalf',
@@ -926,14 +891,8 @@ class DataSetMNIVol(DataSet):
 
         # extract and save data for each participant
         T = self.get_participants()
-        for idx, s in enumerate(T.participant_id):
-            if idx == 0 and myatlas.structure == 'cerebellum':
-                print(f'Atlasmap group')
-                atlas_maps = self.get_group_atlasmaps(myatlas,
-                                                      smooth=smooth)
-            elif myatlas.name == 'fs32k':
-                atlas_maps = self.get_group_atlasmaps(myatlas, sub=s,
-                                                      smooth=smooth)
+        for idx, s in enumerate(T.participant_id[0:1]):
+            atlas_maps = self.get_atlasmaps(atlas = myatlas, sub=s, ses_id=ses_id, smooth=smooth)
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id)
             data = am.get_data_nifti(fnames, atlas_maps)
@@ -1630,6 +1589,41 @@ class DataSetSomatotopic(DataSetMNIVol):
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
 
+    def get_atlasmaps(self, atlas, sub=None, ses_id = None, smooth=None):
+        """ Gets group atlasmaps.
+        Assumes that all scans are in the same space (self.group_space)
+
+        Args:
+            sub (str; optional): Subject
+        Returns:
+            atlas_maps (list): List of atlasmaps
+
+        """
+        # if you have group xfm file, then you get it from the atlas directory
+        # if you have xfm files per subject, then you can get it from the anat dir under individual subject
+        atlas_maps = []
+        if atlas.structure == 'cerebellum':
+            deform = self.atlas_dir + \
+                f'/{self.group_space}/{self.group_space}_space-SUIT_xfm.nii'
+            if atlas.name[0:4] != 'SUIT':
+                deform1, m = am.get_deform(self.atlas_dir, atlas.name, 'SUIT2')
+                deform = [deform1, deform]
+            mask = self.atlas_dir + \
+                f'/{self.group_space}/{self.group_space}_desc-cereb_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        elif atlas.name == 'fs32k':
+            for i, hem in enumerate(['L', 'R']):
+                adir = self.anatomical_dir.format(sub)
+                pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
+                white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
+                mask = self.atlas_dir + \
+                    f'/{self.group_space}/{self.group_space}_mask.nii'
+                atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
+                                                  white, pial, mask))
+                atlas_maps[i].build()
+        return atlas_maps
+
     def condense_data(self, data, info,
                       type='CondHalf'):
         """ Extract data in a specific atlas space
@@ -1678,4 +1672,57 @@ class DataSetSomatotopic(DataSetMNIVol):
 
 
 class DataSetDmcc(DataSetMNIVol):
-    pass
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.group_space = 'tpl-MNI152NLin2009cAsym'
+        self.sessions = ['ses-axcpt_bas', 'ses-cuedts_bas', 'ses-stern_bas', 'ses-stroop_bas']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'reg_id'
+        self.cond_name = 'cond_name'
+        self.part_ind = 'run'
+
+    def condense_data(self, data, info,
+                      type='CondHalf'):
+        """ Extract data in a specific atlas space
+        Args:
+            participant_id (str): ID of participant
+            atlas_maps (list): List of atlasmaps
+            ses_id (str): Name of session
+            type (str): Type of extraction:
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+
+        N.B.: Because some runs are missing for session 1-3, CondRun can only be run for session 04 (which has all runs for all subjects).
+        Missing runs are: S3_sess03_MOTOR6, S3_sess01_MOTOR3, S3_sess01_MOTOR4, S3_sess01_MOTOR5, S4_sess01_MOTOR6, S4_sess02_MOTOR6 & S6_sess02_MOTOR2
+        """
+        # Depending on the type, make a new contrast
+        info['half'] = (info.run % 2) + 1
+        n_cond = np.max(info.reg_id)
+        if type == 'CondHalf':
+            data_info, C = agg_data(info, ['half', 'reg_id'], ['run'])
+            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
+                                  for i, d in data_info.iterrows()]
+        elif type == 'CondAll':
+            data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
+            data_info['names'] = [
+                f'{d.cond_name}' for i, d in data_info.iterrows()]
+        elif type == 'CondRun':
+            data_info, C = agg_data(info, ['run', 'half', 'reg_id'], [])
+            data_info['names'] = [f'{d.cond_name.strip()}-run{d.run}'
+                                  for i, d in data_info.iterrows()]
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Combine with contrast
+        for i in range(len(data_n)):
+            data_n[i] = pinv(C) @ data_n[i]
+        return data_n, data_info
