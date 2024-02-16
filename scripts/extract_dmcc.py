@@ -36,19 +36,19 @@ if __name__ == "__main__":
     # extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
     
     extract_dmcc(ses_id='ses-axcpt_bas', type='CondAll', atlas='SUIT3', smooth=2)
-    extract_dmcc(ses_id='ses-axcpt_bas', type='CondAll', atlas='fs32k', smooth=0)
+    extract_dmcc(ses_id='ses-axcpt_bas', type='CondAll', atlas='fs32k', smooth=2)
     extract_dmcc(ses_id='ses-axcpt_bas', type='CondAll', atlas='MNI2009cAsymBg2', smooth=2)
 
     extract_dmcc(ses_id='ses-cuedts_bas', type='CondAll', atlas='SUIT3', smooth=2)
-    extract_dmcc(ses_id='ses-cuedts_bas', type='CondAll', atlas='fs32k', smooth=0)
+    extract_dmcc(ses_id='ses-cuedts_bas', type='CondAll', atlas='fs32k', smooth=2)
     extract_dmcc(ses_id='ses-cuedts_bas', type='CondAll', atlas='MNI2009cAsymBg2', smooth=2)
 
     extract_dmcc(ses_id='ses-stern_bas', type='CondAll', atlas='SUIT3', smooth=2)
-    extract_dmcc(ses_id='ses-stern_bas', type='CondAll', atlas='fs32k', smooth=0)
+    extract_dmcc(ses_id='ses-stern_bas', type='CondAll', atlas='fs32k', smooth=2)
     extract_dmcc(ses_id='ses-stern_bas', type='CondAll', atlas='MNI2009cAsymBg2', smooth=2)
 
     extract_dmcc(ses_id='ses-stroop_bas', type='CondAll', atlas='SUIT3', smooth=2)
-    extract_dmcc(ses_id='ses-stroop_bas', type='CondAll', atlas='fs32k', smooth=0)
+    extract_dmcc(ses_id='ses-stroop_bas', type='CondAll', atlas='fs32k', smooth=2)
     extract_dmcc(ses_id='ses-stroop_bas', type='CondAll', atlas='MNI2009cAsymBg2', smooth=2)
 
 
