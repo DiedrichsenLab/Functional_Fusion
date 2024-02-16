@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 
-target_dir = Path("/srv/diedrichsen/data/Cerebellum/DMCC")
+target_dir = Path("/srv/diedrichsen/data/Cerebellum/DMCC/derivatives/fmriprep-1.3.2")
 data_onid = "ds003465"
 
 subjects = ['sub-f1027ao', 'sub-f1031ax', 'sub-f1342ku', 'sub-f1550bc',
@@ -84,7 +84,15 @@ def get_download_list(subj_id = subjects):
                 for bold in bolds:
                     func_files.append(f"derivatives/fmriprep-1.3.2/{subj}/ses-wave1bas/func/{subj}_ses-wave1bas_task-{task}_acq-{run}_{bold}.nii.gz")
     
-    return anat_files, fs_files, func_files, event_files
+
+    # get the deformations from subject to mni
+    ants_files = []
+    for subj in subj_id:
+        ants_files.append(f"derivatives/fmriprep-1.3.2/{subj}/anat/{subj}_from-MNI152NLin2009cAsym_to-T1w_mode-image_xfm.h5")
+        ants_files.append(f"derivatives/fmriprep-1.3.2/{subj}/anat/{subj}_from-T1w_to-MNI152NLin2009cAsym_mode-image_xfm.h5")
+
+
+    return anat_files, fs_files, func_files, event_files, ants_files
 
 def download_filelist(download_dir = target_dir, download_include = subjects):
     """
@@ -111,10 +119,15 @@ def move_event_tsv():
                 os.rename(f"{source_dir}/{subj}/ses-wave1bas/func/{event_name}", f"{dest_dir}/{subj}/ses-wave1bas/func/{event_name}")                
     return
 
+def main():
+    anat_list, func_list = get_download_list(subj_id = subjects[1:20])
+    download_filelist(download_dir = target_dir, download_include = anat_list)
+    download_filelist(download_dir = target_dir, download_include = func_list)
+    return
 
 if __name__ == "__main__":
     anat_list, func_list = get_download_list(subj_id = subjects[0:2])
-    download_filelist(download_dir = target_dir, download_include = anat_list)
+    download_dmcc(download_dir = target_dir, download_include = anat_list)
     pass
 
 
