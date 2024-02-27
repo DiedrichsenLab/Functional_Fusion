@@ -686,12 +686,12 @@ class AtlasSurfaceSymmetric(AtlasSurface):
 class AtlasMapDeform:
     def __init__(self, world, deform_img, mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
-        to the desired atlas space in form of a voxel list
+        to the desired atlas space in form of a voxel list from source space
 
         Args:
             worlds (ndarray): 3xP ND array of world locations
             deform_img (str/list): Name of deformation map image(s)
-            mask_img (str): Name of masking image that defines the functional data space.
+            mask_img (str): Name of masking image that defines the functional source space.
         """
         self.P = world.shape[1]
         self.world = world

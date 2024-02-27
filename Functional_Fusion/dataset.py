@@ -583,20 +583,37 @@ class DataSet:
         return info_com
 
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+        """This function generates atlas map for the data of a specific subject into a specific atlas space. 
+        
+        Args:
+            atlas (FunctionFusion.Atlas): 
+                Functional Fusion atlas object 
+            sub (str): 
+                Subject_id for the individual subject
+            ses_id (str):
+                Session_id for the individual subject if atlasmap is session dependent. (defaults to none)
+            smooth (float): 
+                Width of smoothing kernel for extraction. Defaults to None.
+
+        Returns:
+            AtlasMap: Built AtlasMap object 
+        """
         atlas_maps = []
         if atlas.space == 'SUIT':
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
-        elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']: # This is nornmalization over SUIT->MNI (cerebellum only)
+        elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']:
+            # This is nornmalization over SUIT->MNI (cerebellum only)
             deform1, m = am.get_deform(self.atlas_dir, atlas.name, source='SUIT2')
             deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             deform = [deform1, deform2]
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
-        elif atlas.space in ['MNI152NLin6Asym', 'MNI152NLin2009cAsym']: # This is for MNI standard space)
+        elif atlas.space in ['MNI152NLin6Asym', 'MNI152NLin2009cAsym']: 
+            # This is for MNI standard space)
             deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
             edir = self.estimates_dir.format(sub)
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
