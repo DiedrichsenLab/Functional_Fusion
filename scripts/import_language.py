@@ -74,7 +74,7 @@ def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
 if __name__ == '__main__':
     src_base_dir = base_dir + '/Cerebellum/Language/Language_7TT'
     dest_base_dir = base_dir + '/FunctionalFusion/Language'
-    ses = 'ses-01'
+    ses = 'ses-02'
     for participant_id in ['sub-02']:
         # '01', '03', '04', '07', '95', '96', '97',
 
@@ -85,10 +85,10 @@ if __name__ == '__main__':
         # import_suit(source_dir,dest_dir,anat_name, participant_id)
 
         # # # # --- Importing ANAT ---
-        source_dir = '{}/anatomicals/{}'.format(src_base_dir, participant_id)
-        dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
-        anat_name = 'anatomical'
-        import_anat(source_dir,dest_dir,anat_name,participant_id)
+        # source_dir = '{}/anatomicals/{}'.format(src_base_dir, participant_id)
+        # dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
+        # anat_name = 'anatomical'
+        # import_anat(source_dir,dest_dir,anat_name,participant_id)
 
         # # --- Importing Freesurfer ---
         # source_dir = '{}/surfaceWB/data/{}/'.format(src_base_dir, participant_id)
@@ -98,16 +98,16 @@ if __name__ == '__main__':
         # import_freesurfer(source_dir,dest_dir,old_id,new_id)
 
         # --- Importing Estimates ---
-        # source_dir = '{}/GLM_firstlevel/glm_1/{}/'.format(src_base_dir, participant_id)
-        # dest_dir = '{}/derivatives/{}/estimates/ses-01'.format(dest_base_dir, participant_id)
+        # source_dir = '{}/GLM_firstlevel/glm_21/{}/'.format(src_base_dir, participant_id)
+        # dest_dir = '{}/derivatives/{}/estimates/ses-02'.format(dest_base_dir, participant_id)
         # subj_id = '{}'.format(participant_id)
-        # ses_id = 'ses-01'
+        # ses_id = 'ses-02'
         # import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
 
         # # Importing design matrix
-        # source_dir = f'{src_base_dir}/GLM_firstlevel/glm_1/{participant_id}'
-        # dest_dir = f'{dest_base_dir}/derivatives/{participant_id}/estimates/{ses}'
-        # import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
+        source_dir = f'{src_base_dir}/GLM_firstlevel/glm_21/{participant_id}'
+        dest_dir = f'{dest_base_dir}/derivatives/{participant_id}/estimates/{ses}'
+        import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
 
         # Creating reginfo for functional fusion
         # create_reginfo(dest_dir, participant_id, ses_id='ses-rest', reginfo_general='sub-01')

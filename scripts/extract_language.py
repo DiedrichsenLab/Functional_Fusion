@@ -2,11 +2,11 @@
 import pandas as pd
 import shutil
 from pathlib import Path
-import mat73
+# import mat73
 import numpy as np
 import sys
 import Functional_Fusion.atlas_map as am
-from Functional_Fusion.dataset import DataSetLangloc, DataSetPontine
+from Functional_Fusion.dataset import DataSetLanguage, DataSetPontine
 import nibabel as nb
 import SUITPy as suit
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/cifs/diedrichsen/data/FunctionalFusion'
 
-data_dir = base_dir + '/Langloc'
+data_dir = base_dir + '/Language'
 atlas_dir = base_dir + '/Atlases'
 
 
@@ -24,9 +24,9 @@ atlas_dir = base_dir + '/Atlases'
 #     LL_dataset = DataSetLangloc(data_dir)
 #     LL_dataset.group_average_data(type, atlas)
 
-def extract_langloc_suit(atlas='MNISymC2'):
-    LL_dataset = DataSetLangloc(data_dir)
-    LL_dataset.extract_all(ses_id = 'ses-01',type = 'TaskHalf', atlas = atlas)
+def extract_language(atlas='MNISymC2'):
+    LL_dataset = DataSetLanguage(data_dir)
+    LL_dataset.extract_all(ses_id = 'ses-01',type = 'CondRun', atlas = atlas)
 
 # def extract_langloc_fs32k(ses_id='ses-01',type='TaskHalf'):
 #     LL_dataset = DataSetPontine(data_dir)
@@ -60,5 +60,5 @@ if __name__ == "__main__":
     # dataset.group_average_data(atlas='MNISymC3')
     # dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)
 
-    extract_langloc_suit()
+    extract_language()
     pass
