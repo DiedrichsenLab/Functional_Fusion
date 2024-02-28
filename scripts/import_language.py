@@ -1,72 +1,117 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Script for importing the Language data set to general format.
-Created on 4/25/2022 at 12:18 PM
-Author: dzhi
+Script for importing the Language localizer dataset to general format.
+
+Created Dec 2023
+Author: Bassel Arafat
 """
+
 import pandas as pd
 import shutil
 from pathlib import Path
-import os
-import sys
+import mat73
+import numpy as np
+import scipy.io as sio
+from Functional_Fusion.import_data import *
 
-base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Language'
-if sys.platform == "win32":  # for windows user
-    base_dir = 'Y:/data'
+base_dir = '/Volumes/diedrichsen_data$/data'
+if not Path(base_dir).exists():
+    base_dir = '/cifs/diedrichsen/data'
 
-orig_dir = os.path.join(base_dir, 'raw')
-target_dir = os.path.join(base_dir, 'derivatives')
 
-def import_func_task(source_dir, dest_dir, participant_id):
-    """Imports the Language preprocessed task state files
-       into a BIDS/derivative structure
-    Args:
-        source_dir (str): source directory
-        dest_dir (str): destination directory
-        participant_id (str): ID of participant
+def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
     """
-    task_name = ['langloc_S-N', 'MDloc_H-E',
-                'ProdE1_NProd', 'ProdE1_SComp', 'ProdE1_SProd', 'ProdE1_VisEvSem', 'ProdE1_WComp', 'ProdE1_WProd',
-                'ProdE2_SProd', 'ProdE2_WProd',
-                'ProdE3_NProd', 'ProdE3_SComp', 'ProdE3_SProd', 'ProdE3_VisEvSem', 'ProdE3_WComp', 'ProdE3_WProd']
-    sessions = ['ses-01', 'ses-01',
-                'ses-02', 'ses-02', 'ses-02', 'ses-02', 'ses-02', 'ses-02',
-                'ses-03', 'ses-03',
-                'ses-04', 'ses-04', 'ses-04', 'ses-04', 'ses-04', 'ses-04']
-    
-    for task,task_n in enumerate(task_name):
-        dest_dir = os.path.join(dest_dir, sessions[task])
-        
+    Imports the output of the SPM GLM with an SPM_info.mat
+    structure into BIDS deriviatie (Functional Fusion) framework.
+    It assumes that a single GLM corresponds to single session.
 
-        if 'loc' in task_n:
-            new_task_n = task_n.split('_')[0]
-        elif 'ProdE' in task_n:
-            new_task_n = task_n.split('_')[1]
+    See readme for output structure.
+    Args:
+        source_dir (_type_): Directory of the SPM GLM
+        dest_dir (_type_): Destination directory for that
+                           subject / session
+        new_id (_type_): New name for the subject
+        info_dict (_type_): Dictionary with the old field names and the
+			                new field names for the information
+    """
 
-        task_id = sessions[task]
+    Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    src = []
+    dest = []
+    # Generate new dictionary from SPM info
+    D = pd.read_csv(source_dir + f'/{sub_id}_reginfo.tsv',sep='\t')
 
-        # move data into the corresponding session folder
-        src = (f'/{participant_id}_{task_n}_t.nii')
-        dest = (
-            f'/{participant_id}_run-99_con-{task_id:02}_space-MNI.nii')
+    N = len(D)
 
-        # Make the destination directory
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+    if 'reg_id' not in D.columns:
+        n = sum(D['run'] == 1)
+        D['reg_num'] = np.arange(N)
+        D['reg_id'] = D['reg_num'] % n
 
+    D.to_csv(dest_dir + f'/{sub_id}_{sess_id}_reginfo.tsv', sep='\t')
+
+    # Prepare beta files for transfer
+    src = []
+    dest = []
+    for i in range(N):
+        src.append(f'/beta_{i+1:04d}.nii')
+        dest.append(f'/{sub_id}_{sess_id}_run-{D.run[i]:02}_' +
+                    f'reg-{D.reg_id[i]:02d}_beta.nii')
+    # Mask
+    src.append('/mask.nii')
+    dest.append(f'/{sub_id}_{sess_id}_mask.nii')
+
+    # ResMS
+    src.append('/resms.nii')
+    dest.append(f'/{sub_id}_{sess_id}_resms.nii')
+
+    # Copy those files over
+    for i in range(len(src)):
         try:
-            shutil.copyfile(source_dir+src, 
-                    dest_dir+dest)
-        except:
-            print('skipping ' + src)
+            shutil.copyfile(source_dir+src[i], dest_dir+dest[i])
+        except FileNotFoundError:
+            print('skipping ' + src[i])
+
+if __name__ == '__main__':
+    src_base_dir = base_dir + '/Cerebellum/Language/Language_7TT'
+    dest_base_dir = base_dir + '/FunctionalFusion/Language'
+    ses = 'ses-01'
+    for participant_id in ['sub-02']:
+        # '01', '03', '04', '07', '95', '96', '97',
+
+        # --- Importing SUIT ---
+        # source_dir = '{}/suit/anatomicals/{}'.format(src_base_dir, participant_id)
+        # dest_dir = '{}/derivatives/{}/suit'.format(dest_base_dir, participant_id)
+        # anat_name = 'anatomical'
+        # import_suit(source_dir,dest_dir,anat_name, participant_id)
+
+        # # # # --- Importing ANAT ---
+        source_dir = '{}/anatomicals/{}'.format(src_base_dir, participant_id)
+        dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
+        anat_name = 'anatomical'
+        import_anat(source_dir,dest_dir,anat_name,participant_id)
+
+        # # --- Importing Freesurfer ---
+        # source_dir = '{}/surfaceWB/data/{}/'.format(src_base_dir, participant_id)
+        # dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
+        # old_id = '{}'.format(participant_id)
+        # new_id = '{}'.format(participant_id)
+        # import_freesurfer(source_dir,dest_dir,old_id,new_id)
+
+        # --- Importing Estimates ---
+        # source_dir = '{}/GLM_firstlevel/glm_1/{}/'.format(src_base_dir, participant_id)
+        # dest_dir = '{}/derivatives/{}/estimates/ses-01'.format(dest_base_dir, participant_id)
+        # subj_id = '{}'.format(participant_id)
+        # ses_id = 'ses-01'
+        # import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
+
+        # # Importing design matrix
+        # source_dir = f'{src_base_dir}/GLM_firstlevel/glm_1/{participant_id}'
+        # dest_dir = f'{dest_base_dir}/derivatives/{participant_id}/estimates/{ses}'
+        # import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
+
+        # Creating reginfo for functional fusion
+        # create_reginfo(dest_dir, participant_id, ses_id='ses-rest', reginfo_general='sub-01')
+
+        pass
 
 
-if __name__ == "__main__":
-    T = pd.read_csv(base_dir + '/participants.tsv', delimiter='\t')
-    for s in T.participant_id:
-        print(f"-Start importing subject {s}")
-        # old_id = s.replace('sub-','s',1)
-        source_dir = os.path.join(orig_dir, '%s/' % str(s))
-        dest_dir = os.path.join(target_dir, '%s/estimates/' % str(s))
-        import_func_task(source_dir, dest_dir, str(s))
-        print(f"-Done subject {s}")
