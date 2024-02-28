@@ -29,7 +29,7 @@ for i in $subjects; do
     # test if subject is in ${design_dir}/classified_subjects.tsv
     if grep -q s${subject} ${design_dir}/classified_subjects.tsv; then
         run=`grep s${subject} ${design_dir}/classified_subjects.tsv | awk '{print $2}'`
-        if [ -d $i/run${run}.ica/filtered_func_data.ica ] && [ ! -f $i/run${run}.ica/filtered_func_data.ica/classifications.txt ]; then
+        if [ -d $i/run${run}.feat/filtered_func_data.ica ] && [ ! -f $i/run${run}.feat/filtered_func_data.ica/hand_labels_noise.txt ]; then
                 echo CLassifying $i ${run}
                 
                 # Open motion parameter plots either from report_prestats.html or generate them from rp_run_${run}.txt
@@ -41,10 +41,10 @@ for i in $subjects; do
                 if [ -f $i/rot_trans_${run}.png ]; then
                     open $i/*_${run}.png
                 else 
-                    open $i/run${run}.ica/report_prestats.html
+                    open $i/run${run}.feat/report_prestats.html
                 fi
                 
-                fsleyes --scene melodic -ad $i/run${run}.ica/filtered_func_data.ica
+                fsleyes --scene melodic -ad $i/run${run}.feat/filtered_func_data.ica
 
             else
                 echo "Already classified $i ${run}"

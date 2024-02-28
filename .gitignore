@@ -142,4 +142,12 @@ scripts/run_pipeline.py
 ff.code-workspace
 scripts/.vscode/launch.json
 
-todolist.md
+preprocessing/mdtb_rest_LOO/
+preprocessing/mdtb_rest/
+settings.sh
+
+hcp3t/
+hcp3t_results
+standard/
+standard_results
+errorLog.txt

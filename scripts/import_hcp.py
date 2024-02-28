@@ -33,53 +33,6 @@ orig_dir = os.path.join(base_dir, 'HCP_UR100_rfMRI')
 target_dir = os.path.join(base_dir, 'FunctionalFusion/HCP')
 
 
-def create_reginfo(log_message=False, ses_id='ses-rest1'):
-    dataset = ds.DataSetHcpResting(str(target_dir))
-
-    # Import general info
-    info = pd.read_csv(
-        target_dir + f'/{ses_id}_reginfo.tsv', sep='\t')
-
-    T = dataset.get_participants()
-    for _, id in T.iterrows():
-        print(f'Creating reginfo for {id.participant_id}')
-
-        # Ammend the reginfo.tsv file from the general file
-        reginfo = deepcopy(info)
-        reginfo.insert(loc=0, column='sn', value=[
-            id.participant_id] * info.shape[0])
-
-        # Make folder
-        dest = target_dir + \
-            f'/derivatives/{id.participant_id}/func/{id.participant_id}_{ses_id}_reginfo.tsv'
-        Path(dest).parent.mkdir(parents=True, exist_ok=True)
-
-        # Save reginfo.tsv file
-        reginfo.to_csv(dest, sep='\t', index=False)
-
-
-def import_func_resting(source_dir, dest_dir, participant_id):
-    """Imports the HCP preprocessed resting state files
-       into a BIDS/derivative structure
-    Args:
-        source_dir (str): source directory
-        dest_dir (str): destination directory
-        participant_id (str): ID of participant
-    """
-    run_name = ['REST1_LR', 'REST1_RL', 'REST2_LR', 'REST2_RL']
-    # Make the destination directory
-    Path(dest_dir).mkdir(parents=True, exist_ok=True)
-    for run, run_n in enumerate(run_name):
-
-        # move data into the corresponding session folder
-        src = (f'/rfMRI_{run_n}/rfMRI_{run_n}_Atlas_hp2000_clean.dtseries.nii')
-        dest = (f'/sub-{participant_id}_run-{run}_space-MSMSulc.dtseries.nii')
-
-        try:
-            shutil.copyfile(source_dir + '/MNINonLinear/Results' + src,
-                            dest_dir + dest)
-        except:
-            print('skipping ' + src)
 
 
 def import_FIX_extended(source_dir, dest_dir, participant_id):
