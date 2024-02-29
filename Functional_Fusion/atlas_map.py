@@ -51,7 +51,7 @@ def get_atlas(atlas_str, atlas_dir=default_atlas_dir):
 
 def get_deform(target, source="MNIAsym2",atlas_dir = default_atlas_dir):
     """Get name of group deformation map between two volumetric atlas spaces
-    In image mode. That is, the xfm file will be in the voxels space of the target, and contain the xyz coordinates of the source space (pull). 
+    In image mode. That is, the xfm file will be in the voxels space of the target, and contain the xyz coordinates of the source space (pull).
 
     If you want to deform points (ROI centers, surfaces) from the target to the source, you need mode-point xfm file (push).
     Note that: tpl-A_from_B-mode-point_xfm.nii = tpl-B_from_A-mode-image_xfm.nii
@@ -265,7 +265,7 @@ class AtlasVolumetric(Atlas):
             X = np.empty(self.mask_img.shape + (N,), dtype=data.dtype)
         else:
             X = np.empty(self.mask_img.shape, dtype=data.dtype)
-        # Fill with Nans or zeros 
+        # Fill with Nans or zeros
         if np.issubdtype(data.dtype, np.floating):
             X.fill(np.nan)
         else:
@@ -686,16 +686,17 @@ class AtlasMapDeform:
 
         Args:
             worlds (ndarray): 3xP ND array of world locations
-            deform_img (str/list): Name of deformation map image(s)
+            deform_img (str/list): Name of deformation map image(s). If None, no deformation is applied.s
             mask_img (str): Name of masking image that defines the functional source space.
         """
         self.P = world.shape[1]
         self.world = world
-        if type(deform_img) is not list:
-            deform_img = [deform_img]
         self.deform_img = []
-        for di in deform_img:
-            self.deform_img.append(nb.load(di))
+        if deform_img is not None:
+            if type(deform_img) is not list:
+                deform_img = [deform_img]
+            for di in deform_img:
+                self.deform_img.append(nb.load(di))
         self.mask_img = nb.load(mask_img)
 
     def build(self, smooth=None, additional_mask=None):
@@ -712,9 +713,9 @@ class AtlasMapDeform:
         # Caluculate locations of atlas in individual (deformed) coordinates
         # Apply possible multiple deformation maps sequentially
         xyz = self.world.copy()
+        # Pass through the list of deformations
         for i, di in enumerate(self.deform_img):
             xyz = nt.sample_image(di, xyz[0], xyz[1], xyz[2], 1).squeeze().T
-            pass
         atlas_ind = xyz
         N = atlas_ind.shape[1]  # Number of locations in atlas
 
@@ -767,7 +768,6 @@ class AtlasMapDeform:
             mw[mw == 0] = np.nan
             self.vox_weight = self.vox_weight / mw
         pass
-
 
 class AtlasMapSurf:
     def __init__(self, vertex, white_surf, pial_surf, mask_img):

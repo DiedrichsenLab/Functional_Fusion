@@ -558,6 +558,26 @@ class DataSet:
             self.base_dir + '/participants.tsv', delimiter='\t')
         return self.part_info
 
+    def get_data_fnames(self, participant_id, session_id=None, type='Cond'):
+        """ Gets all raw data files
+        Args:
+            participant_id (str): Subject
+            session_id (str): Session ID. Defaults to None.
+            type (str): Type of data. Defaults to 'Cond' for task-based data. For rest data use 'Tseries'.
+        Returns:
+            fnames (list): List of fnames, last one is the resMS image
+            T (pd.DataFrame): Info structure for regressors (reginfo)
+        """
+        dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
+        T = pd.read_csv(
+            dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+        if type[:4] == 'Cond' or type[:4] == 'Task':
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
+            fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
+        elif type == 'Tseries':
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
+        return fnames, T
+
     def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
@@ -605,24 +625,27 @@ class DataSet:
             if info.shape[0] > max:
                 info_com = info
                 max = info.shape[0]
-
         return info_com
 
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
-        """This function generates atlas map for the data of a specific subject into a specific atlas space. 
-        
+        """This function generates atlas map for the data of a specific subject into a specific atlas space.
+        The general DataSet.get_atlasmaps defines atlas maps for
+            SUIT: Using individual normalization from source space
+            MNI152NLin2009cSymC & MNI152NLin6AsymC:
+                Via indivual SUIT normalization and the to MNI over group deformation
+            fs32k: Via individual pial and white surfaces (need to be in source space)
+        Other dataset classes will overwrite and extend this function.
         Args:
-            atlas (FunctionFusion.Atlas): 
-                Functional Fusion atlas object 
-            sub (str): 
+            atlas (FunctionFusion.Atlas):
+                Functional Fusion atlas object
+            sub (str):
                 Subject_id for the individual subject
             ses_id (str):
                 Session_id for the individual subject if atlasmap is session dependent. (defaults to none)
-            smooth (float): 
+            smooth (float):
                 Width of smoothing kernel for extraction. Defaults to None.
-
         Returns:
-            AtlasMap: Built AtlasMap object 
+            AtlasMap: Built AtlasMap object
         """
         atlas_maps = []
         if atlas.space == 'SUIT':
@@ -638,24 +661,90 @@ class DataSet:
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
-        elif atlas.space in ['MNI152NLin6Asym', 'MNI152NLin2009cAsym']: 
-            # This is for MNI standard space)
-            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+        elif atlas.space == 'fs32k':
+            adir = self.anatomical_dir.format(sub)
             edir = self.estimates_dir.format(sub)
-            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
-            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
-        elif atlas.name == 'fs32k':
-            for i, hem in enumerate(['L', 'R']):
-                adir = self.anatomical_dir.format(sub)
-                edir = self.estimates_dir.format(sub)
+            for i, struc in enumerate(atlas.structure):
+                if struc=='cortex_left':
+                    hem = 'L'
+                elif struc=='cortex_right':
+                    hem = 'R'
+                else:
+                    raise ValueError('Structure for fs32k needs to be cortex_left or cortex_right.')
                 pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
                 white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
                 mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
                 atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
                                                   white, pial, mask))
                 atlas_maps[i].build()
+        else:
+            raise ValueError(f'Atlas space {atlas.space} not supported for extraction')
         return atlas_maps
+
+    def extract_all_suit(self, ses_id='ses-archi', type='CondHalf', atlas='SUIT3'):
+        """Extracts data in SUIT space - we need to overload this from the standard,
+        as the voxel-orientation (and therefore the atlasmap) is different from session to session in IBC.
+        Args:
+            ses_id (str, optional): Session. Defaults to 'ses-s1'.
+            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
+            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+        """
+        suit_atlas, _ = am.get_atlas(atlas)
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        for s in T.participant_id:
+            print(f'Atlasmap {s}')
+            deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
+            if atlas[0:7] == 'MNISymC':
+                xfm_name = self.atlas_dir + \
+                    '/tpl-SUIT/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
+                deform = [xfm_name, deform]
+
+            mask = self.estimates_dir.format(
+                s) + f'/{ses_id}/{s}_{ses_id}_mask.nii'
+            add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
+            atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
+            atlas_map.build(smooth=2.0, additional_mask=add_mask)
+
+
+    def extract_all(self,
+                    ses_id='ses-s1',
+                    type='CondHalf',
+                    atlas='SUIT3',
+                    smooth=2.0,
+                    subj='all'):
+        """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
+        Args:
+            ses_id (str, optional): Session. Defaults to 'ses-s1'.
+            type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
+            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+            smooth (float, optional): Smoothing kernel. Defaults to 2.0.
+            subj (list / str): List of Subject numbers to get use. Default = 'all'
+        """
+        myatlas, _ = am.get_atlas(atlas)
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        if subj != 'all':
+            T = T.iloc[subj]
+        for s in T.participant_id:
+            print(f'Atlasmap {s}')
+            atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
+                                                  smooth=smooth)
+            print(f'Extract {s}')
+            fnames, info = self.get_data_fnames(s, ses_id, type=type)
+            data = am.get_data_nifti(fnames, atlas_maps)
+            data, info = self.condense_data(data, info, type,
+                                            participant_id=s, ses_id=ses_id)
+            # Write out data as CIFTI file
+            C = myatlas.data_to_cifti(data, info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir +
+                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(
+                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+
+
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
                  subj=None, fields=None, smooth=None, verbose=False):
@@ -729,18 +818,13 @@ class DataSet:
                         incomplete = np.insert(
                             np.asarray(incomplete), j, np.nan)
                         this_data = np.insert(this_data, j, np.nan, axis=0)
-
-            # if Data is None:
-            #     Data = np.zeros((len(subj), C.shape[0], C.shape[1]))
-            # Data[i, :, :] = this_data
             Data_list.append(this_data[np.newaxis, ...])
-
         # concatenate along the first dimension (subjects)
         Data = np.concatenate(Data_list, axis=0)
         # Ensure that infinite values (from div / 0) show up as NaNs
         Data[np.isinf(Data)] = np.nan
         return Data, info_com
-    
+
     def group_average_data(self, ses_id=None,
                                type=None,
                                atlas='SUIT3',
@@ -785,118 +869,66 @@ class DataSetNative(DataSet):
     nifti-files in Native space.
     """
 
-    def get_data_fnames(self, participant_id, session_id=None, type='Cond'):
-        """ Gets all raw data files
-
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+        """This function generates atlas map for the data of a specific subject into a specific atlas space.
+        For Native space, we are using indivdual maps for SUIT and surface space.
+        Addtiionally, we defines deformations MNI space via the individual normalization into MNI152NLin6Asym (FSL, SPM Segement).
+        Other MNI space (symmetric etc) are not implemented yet.
         Args:
-            participant_id (str): Subject
-            session_id (str): Session ID. Defaults to None.
-            type (str): Type of data. Defaults to 'Cond' for task-based data. For rest data use 'Tseries'.
+            atlas (FunctionFusion.Atlas):
+                Functional Fusion atlas object
+            sub (str):
+                Subject_id for the individual subject
+            ses_id (str):
+                Session_id for the individual subject if atlasmap is session dependent. (defaults to none)
+            smooth (float):
+                Width of smoothing kernel for extraction. Defaults to None.
         Returns:
-            fnames (list): List of fnames, last one is the resMS image
-            T (pd.DataFrame): Info structure for regressors (reginfo)
+            AtlasMap: Built AtlasMap object
         """
-        dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
-        T = pd.read_csv(
-            dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
-        if type[:4] == 'Cond' or type[:4] == 'Task':
-            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
-            fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
-        elif type == 'Tseries':
-            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
-
-        return fnames, T
-
-    def extract_all(self,
-                    ses_id='ses-s1',
-                    type='CondHalf',
-                    atlas='SUIT3',
-                    smooth=2.0):
-        """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
-        Args:
-            ses_id (str, optional): Session. Defaults to 'ses-s1'.
-            type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
-            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
-        """
-        myatlas, _ = am.get_atlas(atlas)
-        # create and calculate the atlas map for each participant
-        T = self.get_participants()
-        if type == 'Tseries':
-            T = T[T['ses-rest'] == 1]
-        for s in T.participant_id:
-
-            print(f'Atlasmap {s}')
-            atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
-                                                  smooth=smooth)
-            print(f'Extract {s}')
-            fnames, info = self.get_data_fnames(s, ses_id, type=type)
-
-            data = am.get_data_nifti(fnames, atlas_maps)
-            data, info = self.condense_data(data, info, type,
-                                            participant_id=s, ses_id=ses_id)
-            # Write out data as CIFTI file
-            C = myatlas.data_to_cifti(data, info.names)
-            dest_dir = self.data_dir.format(s)
-            Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-            info.to_csv(
-                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
-
+        atlas_maps = []
+        if atlas.space == 'MNI152NLin6Asym':
+            # This is for MNI standard space)
+            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+            edir = self.estimates_dir.format(sub)
+            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        else:
+            atlas_maps = super().get_atlasmaps(self,atlas,sub,ses_id,smooth=smooth)
+        return atlas_maps
 
 class DataSetMNIVol(DataSet):
     """Data set with estimates data stored as
-    nifti-files in MNI space.
+    nifti-files in 'MNI152NLin6Asym' space.
     """
-
-    def get_data_fnames(self, participant_id, session_id=None):
-        """ Gets all raw data files
-
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+        """This function generates atlas map for the data stored in MNI space.
+        For SUIT and surface space, it goes over deformations estimated on the individual anatomy.
+        For MNI152NLin6Asym (the source space), it uses no deformation, but a direct readout.
+        Other MNI space (symmetric etc) are not implemented yet.
         Args:
-            participant_id (str): Subject
-            session_id (str): Session ID. Defaults to None.
+            atlas (FunctionFusion.Atlas):
+                Functional Fusion atlas object
+            sub (str):
+                Subject_id for the individual subject
+            ses_id (str):
+                Session_id for the individual subject if atlasmap is session dependent. (defaults to none)
+            smooth (float):
+                Width of smoothing kernel for extraction. Defaults to None.
         Returns:
-            fnames (list): List of fnames, last one is the resMS image
-            T (pd.DataFrame): Info structure for regressors (reginfo)
+            AtlasMap: Built AtlasMap object
         """
-        dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
-        T = pd.read_csv(
-            dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
-        fnames = [
-            f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
-        fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
-        return fnames, T
-
-    def extract_all(self,
-                    ses_id='ses-01',
-                    type='CondHalf',
-                    atlas='SUIT3',
-                    smooth=None):
-        """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
-
-        Args:
-            type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
-            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
-        """
-        myatlas, _ = am.get_atlas(atlas)
-
-        # extract and save data for each participant
-        T = self.get_participants()
-        for idx, s in enumerate(T.participant_id[0:1]):
-            atlas_maps = self.get_atlasmaps(atlas = myatlas, sub=s, ses_id=ses_id, smooth=smooth)
-            print(f'Extract {s}')
-            fnames, info = self.get_data_fnames(s, ses_id)
-            data = am.get_data_nifti(fnames, atlas_maps)
-            data, info = self.condense_data(data, info, type)
-            # Write out data as CIFTI file
-            C = myatlas.data_to_cifti(data, info.names)
-            dest_dir = self.data_dir.format(s)
-            Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-            info.to_csv(
-                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
-
+        atlas_maps = []
+        if atlas.space == 'MNI152NLin6Asym':
+            # This is for MNI standard space)
+            edir = self.estimates_dir.format(sub)
+            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, None, mask))
+            atlas_maps[0].build(smooth=smooth)
+        else:
+            atlas_maps = super().get_atlasmaps(self,atlas,sub,ses_id,smooth=smooth)
+        return atlas_maps
 
 class DataSetCifti(DataSet):
     """Data set that comes in HCP-format in already pre-extracted cifti files.
@@ -1025,8 +1057,6 @@ class DataSetMDTB(DataSetNative):
 
                 # Baseline substraction
                 B = np.ones((data_info.shape[0],))
-
-
 
             # Prewhiten the data
             data_n = prewhiten_data(data)
@@ -1372,6 +1402,41 @@ class DataSetIBC(DataSetNative):
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+        """This function generates atlas map for the data of a specific subject into a specific atlas space.
+        Uses the general ones, but overwrites the choice of masks
+        Args:
+            atlas (FunctionFusion.Atlas):
+                Functional Fusion atlas object
+            sub (str):
+                Subject_id for the individual subject
+            ses_id (str):
+                Session_id for the individual subject if atlasmap is session dependent. (defaults to none)
+            smooth (float):
+                Width of smoothing kernel for extraction. Defaults to None.
+        Returns:
+            AtlasMap: Built AtlasMap object
+        """
+        atlas_maps = []
+        if atlas.space == 'SUIT':
+            deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
+            mask = self.estimates_dir.format(sub) + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+            add_mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
+            atlas_map = am.AtlasMapDeform(atlas.world, deform, mask)
+            atlas_map.build(smooth=2.0, additional_mask=add_mask)
+        elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']:
+            # This is nornmalization over SUIT->MNI (cerebellum only)
+            deform1, m = am.get_deform(self.atlas_dir, atlas.name, source='SUIT2')
+            deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
+            deform = [deform1, deform2]
+            mask = self.estimates_dir.format(sub) + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+            add_mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth,additional_mask=add_mask)
+        else:
+            atlas_maps=super().get_atlasmaps(self, atlas, sub, ses_id, smooth=None)
+        return atlas_maps
+
     def condense_data(self, data, info,
                       type='CondHalf',
                       participant_id=None,
@@ -1409,45 +1474,6 @@ class DataSetIBC(DataSetNative):
         for i in range(len(data_n)):
             data_n[i] = pinv(C) @ data_n[i]
         return data_n, data_info
-
-    def extract_all_suit(self, ses_id='ses-archi', type='CondHalf', atlas='SUIT3'):
-        """Extracts data in SUIT space - we need to overload this from the standard,
-        as the voxel-orientation (and therefore the atlasmap) is different from session to session in IBC.
-        Args:
-            ses_id (str, optional): Session. Defaults to 'ses-s1'.
-            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
-            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
-        """
-        suit_atlas, _ = am.get_atlas(atlas)
-        # create and calculate the atlas map for each participant
-        T = self.get_participants()
-        for s in T.participant_id:
-            print(f'Atlasmap {s}')
-            deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
-            if atlas[0:7] == 'MNISymC':
-                xfm_name = self.atlas_dir + \
-                    '/tpl-SUIT/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
-                deform = [xfm_name, deform]
-
-            mask = self.estimates_dir.format(
-                s) + f'/{ses_id}/{s}_{ses_id}_mask.nii'
-            add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-            atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
-            atlas_map.build(smooth=2.0, additional_mask=add_mask)
-
-            print(f'Extract {s}')
-            fnames, info = self.get_data_fnames(s, ses_id)
-            data = am.get_data_nifti(fnames, [atlas_map])
-            data, info = self.condense_data(data, info, type,
-                                            participant_id=s, ses_id=ses_id)
-            C = suit_atlas.data_to_cifti(data[0], info.names)
-            dest_dir = self.data_dir.format(s)
-            Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-            info.to_csv(
-                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
-
 
 class DataSetDemand(DataSetCifti):
     def __init__(self, dir):
