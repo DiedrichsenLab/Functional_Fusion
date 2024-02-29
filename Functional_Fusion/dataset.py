@@ -628,13 +628,10 @@ class DataSet:
         return info_com
 
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
-        """This function generates atlas map for the data of a specific subject into a specific atlas space.
-        The general DataSet.get_atlasmaps defines atlas maps for
-            SUIT: Using individual normalization from source space
-            MNI152NLin2009cSymC & MNI152NLin6AsymC:
-                Via indivual SUIT normalization and the to MNI over group deformation
-            fs32k: Via individual pial and white surfaces (need to be in source space)
+        """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for
+        SUIT: Using individual normalization from source space. MNI152NLin2009cSymC & MNI152NLin6AsymC: Via indivual SUIT normalization and the to MNI over group deformation, fs32k: Via individual pial and white surfaces (need to be in source space)
         Other dataset classes will overwrite and extend this function.
+
         Args:
             atlas (FunctionFusion.Atlas):
                 Functional Fusion atlas object
@@ -645,7 +642,8 @@ class DataSet:
             smooth (float):
                 Width of smoothing kernel for extraction. Defaults to None.
         Returns:
-            AtlasMap: Built AtlasMap object
+            AtlasMap:
+                Built AtlasMap object
         """
         atlas_maps = []
         if atlas.space == 'SUIT':
@@ -680,32 +678,6 @@ class DataSet:
         else:
             raise ValueError(f'Atlas space {atlas.space} not supported for extraction')
         return atlas_maps
-
-    def extract_all_suit(self, ses_id='ses-archi', type='CondHalf', atlas='SUIT3'):
-        """Extracts data in SUIT space - we need to overload this from the standard,
-        as the voxel-orientation (and therefore the atlasmap) is different from session to session in IBC.
-        Args:
-            ses_id (str, optional): Session. Defaults to 'ses-s1'.
-            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
-            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
-        """
-        suit_atlas, _ = am.get_atlas(atlas)
-        # create and calculate the atlas map for each participant
-        T = self.get_participants()
-        for s in T.participant_id:
-            print(f'Atlasmap {s}')
-            deform = self.suit_dir.format(s) + f'/{s}_space-SUIT_xfm.nii'
-            if atlas[0:7] == 'MNISymC':
-                xfm_name = self.atlas_dir + \
-                    '/tpl-SUIT/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
-                deform = [xfm_name, deform]
-
-            mask = self.estimates_dir.format(
-                s) + f'/{ses_id}/{s}_{ses_id}_mask.nii'
-            add_mask = self.suit_dir.format(s) + f'/{s}_desc-cereb_mask.nii'
-            atlas_map = am.AtlasMapDeform(suit_atlas.world, deform, mask)
-            atlas_map.build(smooth=2.0, additional_mask=add_mask)
-
 
     def extract_all(self,
                     ses_id='ses-s1',
@@ -743,7 +715,6 @@ class DataSet:
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
-
 
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
