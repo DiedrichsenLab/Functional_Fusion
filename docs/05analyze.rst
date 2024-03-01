@@ -48,7 +48,8 @@ Decomposing variances
 
 A more general way of looking at reliability within and across subjects is to decompose the variance into components related to the group, the subject and the measurement error.
 
-We have activity patterns or sets of activity patterns in a collection of :math:`NxP` matrices. You can have P=1 (activity profile), N=1 (activity pattern) or both >1 (sets or activity pattern). Let's call these :math:`\mathbf{y}_{i,j}`.  These can be either uncenterd (relative to rest) or centered to the mean of each voxel (condition difference). 
+We have activity patterns or sets of activity patterns in a collection of :math:`NxP` matrices. You can have P=1 (activity profile), N=1 (activity pattern) or N>1 and P>1 (activity matrix). Now we have measurements of these activity patterns from different subjects (i) and different runs or repetitions (j). 
+Let's call these :math:`\mathbf{y}_{i,j}`.  These can be either uncentered (relative to rest) or centered to the mean of each voxel (condition difference). 
 
 .. math::
     \mathbf{y}_{i,j} = \mathbf{g} + \mathbf{s}_i + \boldsymbol{\epsilon}_{i,j}
@@ -82,7 +83,7 @@ Within subject, across runs:
 Within observation:
 
 .. math::
-    E(\mathbf{y}_{i,j}^T\mathbf{y}_{i,k}) =  v_{g} + v_{s} + v_{\epsilon}
+    E(\mathbf{y}_{i,j}^T\mathbf{y}_{i,j}) =  v_{g} + v_{s} + v_{\epsilon}
 
 To develop estimators for these quantities we replace the Expectation with the mean **over all possible pairings**.
 

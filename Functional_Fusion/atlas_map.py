@@ -51,7 +51,10 @@ def get_atlas(atlas_str, atlas_dir=default_atlas_dir):
 
 def get_deform(target, source="MNIAsym2",atlas_dir = default_atlas_dir):
     """Get name of group deformation map between two volumetric atlas spaces
+    In image mode. That is, the xfm file will be in the voxels space of the target, and contain the xyz coordinates of the source space (pull).
 
+    If you want to deform points (ROI centers, surfaces) from the target to the source, you need mode-point xfm file (push).
+    Note that: tpl-A_from_B-mode-point_xfm.nii = tpl-B_from_A-mode-image_xfm.nii
     Args:
         target (str/atlas): Target space
         source (str): Source space
@@ -70,7 +73,7 @@ def get_deform(target, source="MNIAsym2",atlas_dir = default_atlas_dir):
         raise (NameError(f"Unknown Atlas: {source}"))
     tar = atlases[target.name]
     src = atlases[source]
-    deform = f"{atlas_dir}/{src['dir']}/tpl-{src['space']}_space-{tar['space']}_xfm.nii"
+    deform = f"{atlas_dir}/{tar['dir']}/tpl-{tar['space']}_from-{src['space']}_mode-image_xfm.nii"
     mask = f"{atlas_dir}/{src['dir']}/{src['mask']}"
     return deform, mask
 
@@ -246,8 +249,8 @@ class AtlasVolumetric(Atlas):
         return cifti_img
 
     def data_to_nifti(self, data):
-        """Transforms data in atlas space into 3d or 4d nifti image depending on data type, the empty parts of the image will be NaNs or zeros.
-
+        """Transforms data in atlas space into 3d or 4d nifti image, depending on data type, the empty parts of the image will be NaNs or zeros.
+        Nifti data type will be dictated by the data type of the input data.
         Args:
             data (np.ndarray): Data to be mapped into nifti
         Returns:
@@ -259,24 +262,17 @@ class AtlasVolumetric(Atlas):
         if p != self.P:
             raise (NameError("Data needs to be a P vector or NxP matrix"))
         if N > 1:
-            if np.issubdtype(data.dtype, np.floating):
-                X = np.empty(self.mask_img.shape + (N,), dtype=float)
-                X.fill(np.nan)
-            elif np.issubdtype(data.dtype, np.integer):
-                X = np.zeros(self.mask_img.shape + (N,), dtype=int)
-            else:
-                raise ValueError("Data type not supported")
-            X[self.vox[0], self.vox[1], self.vox[2]] = data.T
+            X = np.empty(self.mask_img.shape + (N,), dtype=data.dtype)
         else:
-            if np.issubdtype(data.dtype, np.floating):
-                X = np.empty(self.mask_img.shape, dtype=float)
-                X.fill(np.nan)
-            elif np.issubdtype(data.dtype, np.integer):
-                X = np.zeros(self.mask_img.shape, dtype=int).astype(np.int8)
-            else:
-                raise ValueError("Data type not supported")
-        
-            X[self.vox[0], self.vox[1], self.vox[2]] = data
+            X = np.empty(self.mask_img.shape, dtype=data.dtype)
+        # Fill with Nans or zeros
+        if np.issubdtype(data.dtype, np.floating):
+            X.fill(np.nan)
+        else:
+            X.fill(0)
+        # Insert data into the right locations
+        X[self.vox[0], self.vox[1], self.vox[2]] = data.T
+        # Make a nifti image
         img = nb.Nifti1Image(X, self.mask_img.affine)
         return img
 
@@ -686,20 +682,21 @@ class AtlasSurfaceSymmetric(AtlasSurface):
 class AtlasMapDeform:
     def __init__(self, world, deform_img, mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
-        to the desired atlas space in form of a voxel list
+        to the desired atlas space in form of a voxel list from source space
 
         Args:
             worlds (ndarray): 3xP ND array of world locations
-            deform_img (str/list): Name of deformation map image(s)
-            mask_img (str): Name of masking image that defines the functional data space.
+            deform_img (str/list): Name of deformation map image(s). If None, no deformation is applied.s
+            mask_img (str): Name of masking image that defines the functional source space.
         """
         self.P = world.shape[1]
         self.world = world
-        if type(deform_img) is not list:
-            deform_img = [deform_img]
         self.deform_img = []
-        for di in deform_img:
-            self.deform_img.append(nb.load(di))
+        if deform_img is not None:
+            if type(deform_img) is not list:
+                deform_img = [deform_img]
+            for di in deform_img:
+                self.deform_img.append(nb.load(di))
         self.mask_img = nb.load(mask_img)
 
     def build(self, smooth=None, additional_mask=None):
@@ -716,9 +713,9 @@ class AtlasMapDeform:
         # Caluculate locations of atlas in individual (deformed) coordinates
         # Apply possible multiple deformation maps sequentially
         xyz = self.world.copy()
+        # Pass through the list of deformations
         for i, di in enumerate(self.deform_img):
             xyz = nt.sample_image(di, xyz[0], xyz[1], xyz[2], 1).squeeze().T
-            pass
         atlas_ind = xyz
         N = atlas_ind.shape[1]  # Number of locations in atlas
 
@@ -771,7 +768,6 @@ class AtlasMapDeform:
             mw[mw == 0] = np.nan
             self.vox_weight = self.vox_weight / mw
         pass
-
 
 class AtlasMapSurf:
     def __init__(self, vertex, white_surf, pial_surf, mask_img):

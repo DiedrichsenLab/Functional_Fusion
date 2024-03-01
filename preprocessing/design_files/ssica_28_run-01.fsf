@@ -3,7 +3,7 @@
 set fmri(version) 6.00
 
 # Are we in MELODIC?
-set fmri(inmelodic) 1
+set fmri(inmelodic) 0
 
 # Analysis level
 # 1 : First-level analysis
@@ -15,7 +15,7 @@ set fmri(level) 1
 # 7 : Full first-level analysis
 # 1 : Pre-processing
 # 2 : Statistics
-set fmri(analysis) 7
+set fmri(analysis) 1
 
 # Use relative filenames
 set fmri(relative_yn) 0
@@ -30,10 +30,10 @@ set fmri(featwatcher_yn) 1
 set fmri(sscleanup_yn) 0
 
 # Output directory
-set fmri(outputdir) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/runYY"
+set fmri(outputdir) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/s28/run01"
 
 # TR(s)
-set fmri(tr) 1.000000
+set fmri(tr) 1.0
 
 # Total volumes
 set fmri(npts) 598
@@ -118,16 +118,16 @@ set fmri(norm_yn) 0
 set fmri(perfsub_yn) 0
 
 # Highpass temporal filtering
-set fmri(temphp_yn) 1
+set fmri(temphp_yn) 0
 
 # Lowpass temporal filtering
 set fmri(templp_yn) 0
 
 # MELODIC ICA data exploration
-set fmri(melodic_yn) 0
+set fmri(melodic_yn) 1
 
 # Carry out main stats?
-set fmri(stats_yn) 1
+set fmri(stats_yn) 0
 
 # Carry out prewhitening?
 set fmri(prewhiten_yn) 1
@@ -169,7 +169,7 @@ set fmri(nftests_real) 0
 set fmri(constcol) 0
 
 # Carry out post-stats steps?
-set fmri(poststats_yn) 1
+set fmri(poststats_yn) 0
 
 # Pre-threshold masking?
 set fmri(threshmask) ""
@@ -212,7 +212,7 @@ set fmri(rendertype) 1
 set fmri(bgimage) 1
 
 # Create time series plots
-set fmri(tsplot_yn) 1
+set fmri(tsplot_yn) 0
 
 # Registration to initial structural
 set fmri(reginitial_highres_yn) 0
@@ -273,46 +273,102 @@ set fmri(totalVoxels) 202535424
 set fmri(ncopeinputs) 0
 
 # 4D AVW data or FEAT directory (1)
-set feat_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/sXX/rrun_YY"
+set feat_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/resting_state/imaging_data/s28/rrun_01_hdr"
 
 # Add confound EVs text file
 set fmri(confoundevs) 0
 
 # Subject's structural image for analysis 1
-set highres_files(1) "/Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/sc1/anatomicals/s02/anatomical.nii"
+set highres_files(1) "/srv/diedrichsen/data/Cerebellum/super_cerebellum/sc1/anatomicals/s28/anatomical_brain"
 
-# Resampling resolution
-set fmri(regstandard_res) 4
+# EV 1 title
+set fmri(evtitle1) ""
 
-# Variance-normalise timecourses
-set fmri(varnorm) 1
+# Basic waveform shape (EV 1)
+# 0 : Square
+# 1 : Sinusoid
+# 2 : Custom (1 entry per volume)
+# 3 : Custom (3 column format)
+# 4 : Interaction
+# 10 : Empty (all zeros)
+set fmri(shape1) 0
 
-# Automatic dimensionality estimation
-set fmri(dim_yn) 1
+# Convolution (EV 1)
+# 0 : None
+# 1 : Gaussian
+# 2 : Gamma
+# 3 : Double-Gamma HRF
+# 4 : Gamma basis functions
+# 5 : Sine basis functions
+# 6 : FIR basis functions
+# 8 : Alternate Double-Gamma
+set fmri(convolve1) 2
 
-# Output components
-set fmri(dim) 1
+# Convolve phase (EV 1)
+set fmri(convolve_phase1) 0
 
-# 1 : Single-session ICA
-# 2 : Multi-session temporal concatenation
-# 3 : Multi-session tensor TICA
-set fmri(icaopt) 1
+# Apply temporal filtering (EV 1)
+set fmri(tempfilt_yn1) 1
 
-# Threshold IC maps
-set fmri(thresh_yn) 1
+# Add temporal derivative (EV 1)
+set fmri(deriv_yn1) 1
 
-# Mixture model threshold
-set fmri(mmthresh) 0.5
+# Skip (EV 1)
+set fmri(skip1) 0
 
-# Output full stats folder
-set fmri(ostats) 0
+# Off (EV 1)
+set fmri(off1) 30
 
-# Timeseries and subject models
-set fmri(ts_model_mat) ""
-set fmri(ts_model_con) ""
-set fmri(subject_model_mat) ""
-set fmri(subject_model_con) ""
+# On (EV 1)
+set fmri(on1) 30
 
+# Phase (EV 1)
+set fmri(phase1) 0
+
+# Stop (EV 1)
+set fmri(stop1) -1
+
+# Gamma sigma (EV 1)
+set fmri(gammasigma1) 3
+
+# Gamma delay (EV 1)
+set fmri(gammadelay1) 6
+
+# Orthogonalise EV 1 wrt EV 0
+set fmri(ortho1.0) 0
+
+# Orthogonalise EV 1 wrt EV 1
+set fmri(ortho1.1) 0
+
+# Contrast & F-tests mode
+# real : control real EVs
+# orig : control original EVs
+set fmri(con_mode_old) orig
+set fmri(con_mode) orig
+
+# Display images for contrast_real 1
+set fmri(conpic_real.1) 1
+
+# Title for contrast_real 1
+set fmri(conname_real.1) ""
+
+# Real contrast_real vector 1 element 1
+set fmri(con_real1.1) 1
+
+# Display images for contrast_orig 1
+set fmri(conpic_orig.1) 1
+
+# Title for contrast_orig 1
+set fmri(conname_orig.1) ""
+
+# Real contrast_orig vector 1 element 1
+set fmri(con_orig1.1) 1
+
+# Contrast masking - use >0 instead of thresholding?
+set fmri(conmask_zerothresh_yn) 0
+
+# Do contrast masking at all?
+set fmri(conmask1_1) 0
 
 ##########################################################
 # Now options that don't appear in the GUI

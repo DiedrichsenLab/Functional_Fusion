@@ -1164,40 +1164,7 @@ switch what
             freesurfer_reconall(subj_fs_dir, subj_str{s}, ...
                                 fullfile(subj_dir,sprintf('%s_T1w_lpi.nii', subj_str{s})));
         end % s (sn)
-    case 'SURF:xhemireg'       % Cross-register surfaces left / right hem
-        % surface-based interhemispheric registration
-        % example: nishimoto_imana('SURF:xhemireg', 'sn', [1, 2, 3, 4, 5])
-        
-        sn   = subj_id; % list of subjects
 
-        vararginoptions(varargin, {'sn'})
-        
-        % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
-        
-        for s = sn
-            fprintf('- xhemiregl %s\n', subj_str{s});
-            freesurfer_registerXhem(subj_str(s), fs_dir,'hemisphere', [1 2]); % For debug... [1 2] orig
-        end % s (sn)
-    case 'SURF:map_ico'        % Align to the new atlas surface (map icosahedron)
-        % Resampels a registered subject surface to a regular isocahedron
-        % This allows things to happen in atlas space - each vertex number
-        % corresponds exactly to an anatomical location
-        % Makes a new folder, called ['x' subj] that contains the remapped subject
-        % Uses function mri_surf2surf
-        % mri_surf2surf: resamples one cortical surface onto another
-        % Example usage: nishimoto_imana('SURF:map_ico', 'sn', [1, 2, 3, 4, 5, 6])
-        
-        sn = subj_id; % list of subjects
-        
-        vararginoptions(varargin, {'sn'});
-        
-        % set freesurfer directory
-        fs_dir = fullfile(base_dir, 'surfaceFreeSurfer');
-        for s = sn
-            fprintf('- map_ico %s\n', subj_str{s});
-            freesurfer_mapicosahedron_xhem(subj_str{s}, fs_dir ,'smoothing',1,'hemisphere',[1, 2]);
-        end % s (sn)
     case 'SURF:fs2wb'          % Resampling subject from freesurfer fsaverage to fs_LR
         % Example usage: nishimoto_imana('SURF:fs2wb', 'sn', [1], 'res', 32)
         
@@ -1222,8 +1189,6 @@ switch what
         
         vararginoptions(varargin, {'sn'});
 %         nishimoto_imana('SURF:reconall')
-        nishimoto_imana('SURF:xhemireg', 'sn', sn);
-        nishimoto_imana('SURF:map_ico', 'sn', sn);
         nishimoto_imana('SURF:fs2wb', 'sn', sn);
     case 'SURF:vol2surf'       % Mapping volumetric data to surface
         % first univariately whiten data and then map to surface
