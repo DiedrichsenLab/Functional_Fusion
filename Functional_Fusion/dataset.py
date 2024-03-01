@@ -372,7 +372,7 @@ def reliability_between_subj(X, cond_vec=None,
             r[i] = nansum(X1 * X2) / sqrt(nansum(X1 * X1) * nansum(X2 * X2))
     return r
 
-def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
+def reliability_maps(base_dir, dataset_name, atlas='MNISymC3', type='CondHalf',
                      subtract_mean=True, voxel_wise=True, subject_wise=False):
     """    Calculates the average within subject reliability maps across sessions for a single dataset
 
@@ -385,7 +385,7 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
     Returns:
         _type_: _description_
     """
-    data, info, dataset = get_dataset(base_dir, dataset_name, atlas=atlas)
+    data, info, dataset = get_dataset(base_dir, dataset_name, atlas=atlas, type = type)
     n_sess = len(dataset.sessions)
     n_vox = data.shape[2]
     Rel = np.zeros((n_sess, n_vox))
@@ -557,7 +557,11 @@ class DataSet:
 
         # Deal with subset of subject option
         if subj is None:
-            subj = np.arange(T.shape[0])
+            print(f"subj is None")
+            # subj = np.arange(T.shape[0])
+            subj = T.participant_id
+        elif isinstance(subj, str):
+            subj = [subj]
 
         if type is None:
             type = self.default_type
@@ -565,7 +569,7 @@ class DataSet:
         max = 0
 
         # Loop over the different subjects to find the most complete info
-        for s in T.participant_id.iloc:
+        for i, s in enumerate(subj):
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
                                    + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
@@ -729,72 +733,6 @@ class DataSet:
 
         info.to_csv(dest_dir +
                     f'/group_{ses_id}_info-{type}.tsv', sep='\t', index=False)
-
-    def plot_cerebellum(self, subject='group', sessions=None, atlas='SUIT3', type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
-        """Loads group data in SUIT3 space from a standard experiment structure
-        averaged across all subjects and projects to SUIT flatmap. Saves the results as .png figures in the data/group/figures directory.
-
-        Args:
-            sub (str, optional): Subject string. Defaults to group to plot data averaged across all subjects.
-            session (str, optional): Session string. Defaults to first session of in session list of dataset.
-            atlas (str, optional): Atlas string. Defaults to 'SUIT3'.
-            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
-            cond (str or list): List of condition indices (e.g. [0,1,2] for the first three conditions) or 'all'. Defaults to 'all'.
-            savefig (str, optional): Boolean indicating whether figure should be saved. Defaults to 'False'.
-            cmap (str, optional): Matplotlib colour map. Defaults to 'hot'.
-            colorbar (str, optional): Boolean indicating whether colourbar should be plotted in figure. Defaults to 'False'.
-        """
-        if sessions is None:
-            sessions = self.sessions
-        if type is None:
-            type = self.default_type
-        if subject == 'all':
-            subjects = self.get_participants().participant_id.tolist()
-        else:
-            subjects = [subject]
-
-        atlasmap, atlasinfo = am.get_atlas(atlas, self.atlas_dir)
-
-        for sub in subjects:
-            print(f'Plotting {sub}')
-            for session in sessions:
-                info = self.data_dir.split(
-                    '/{0}')[0] + f'/{sub}/data/{sub}_{session}_info-{type}.tsv'
-                data = self.data_dir.split(
-                    '/{0}')[0] + f'/{sub}/data/{sub}_space-{atlas}_{session}_{type}.dscalar.nii'
-
-                # Load average
-                C = nb.load(data)
-                D = pd.read_csv(info, sep='\t')
-                X = C.get_fdata()
-                # limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
-                limes = [np.percentile(X[np.where(~np.isnan(X))], 5), np.percentile(
-                    X[np.where(~np.isnan(X))], 95)]
-
-                if cond == 'all':
-                    conditions = D[self.cond_name]
-                else:
-                    conditions = D[self.cond_name][cond]
-
-                # -- Plot each condition in seperate figures --
-                dest_dir = self.data_dir.split('/{0}')[0] + f'/{sub}/figures/'
-                Path(dest_dir).mkdir(parents=True, exist_ok=True)
-                for c in conditions:
-                    condition_name = c.strip()
-                    D[D[self.cond_name] == c].index
-                    Nifti = atlasmap.data_to_nifti(
-                        X[D[D[self.cond_name] == c].index, :].mean(axis=0))
-                    surf_data = suit.flatmap.vol_to_surf(
-                        Nifti, space=atlasinfo['normspace'])
-                    fig = suit.flatmap.plot(
-                        surf_data, render='matplotlib', new_figure=True, cscale=limes, cmap=cmap, colorbar=colorbar)
-                    fig.set_title(condition_name)
-
-                    # save figure
-                    if savefig:
-                        plt.savefig(
-                            dest_dir + f'{sub}_{session}_{condition_name}.png')
-                    plt.clf()
 
 class DataSetNative(DataSet):
     """Data set with estimates data stored as
@@ -1726,3 +1664,7 @@ class DataSetDmcc(DataSetMNIVol):
         for i in range(len(data_n)):
             data_n[i] = pinv(C) @ data_n[i]
         return data_n, data_info
+
+
+if __name__ == "__main__":
+    pass
