@@ -686,12 +686,18 @@ class DataSet:
                     smooth=2.0,
                     subj='all'):
         """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
+
         Args:
-            ses_id (str, optional): Session. Defaults to 'ses-s1'.
-            type (str, optional): Type for condense_data. Defaults to 'CondHalf'.
-            atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
-            smooth (float, optional): Smoothing kernel. Defaults to 2.0.
-            subj (list / str): List of Subject numbers to get use. Default = 'all'
+            ses_id (str): 
+                Session. Defaults to 'ses-s1'.
+            type (str): 
+                Type for condense_data. Defaults to 'CondHalf'.
+            atlas (str): 
+                Short atlas string. Defaults to 'SUIT3'.
+            smooth (float): 
+                Smoothing kernel. Defaults to 2.0.
+            subj (list / str): 
+                List of Subject numbers to get use. Default = 'all'
         """
         myatlas, _ = am.get_atlas(atlas)
         # create and calculate the atlas map for each participant
@@ -866,7 +872,7 @@ class DataSetNative(DataSet):
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
         else:
-            atlas_maps = super().get_atlasmaps(self,atlas,sub,ses_id,smooth=smooth)
+            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth)
         return atlas_maps
 
 class DataSetMNIVol(DataSet):
@@ -898,7 +904,7 @@ class DataSetMNIVol(DataSet):
             atlas_maps.append(am.AtlasMapDeform(atlas.world, None, mask))
             atlas_maps[0].build(smooth=smooth)
         else:
-            atlas_maps = super().get_atlasmaps(self,atlas,sub,ses_id,smooth=smooth)
+            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth)
         return atlas_maps
 
 class DataSetCifti(DataSet):
@@ -1027,7 +1033,7 @@ class DataSetMDTB(DataSetNative):
                     f'{d.cond_name}' for i, d in data_info.iterrows()]
 
                 # Baseline substraction
-                B = np.ones((data_info.shape[0],))
+                B = np.ones((data_info.shape[0],1))
 
             # Prewhiten the data
             data_n = prewhiten_data(data)
@@ -1405,7 +1411,7 @@ class DataSetIBC(DataSetNative):
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth,additional_mask=add_mask)
         else:
-            atlas_maps=super().get_atlasmaps(self, atlas, sub, ses_id, smooth=None)
+            atlas_maps=super().get_atlasmaps(atlas, sub, ses_id, smooth=None)
         return atlas_maps
 
     def condense_data(self, data, info,
