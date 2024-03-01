@@ -81,8 +81,3 @@ Finally, we are dividing the beta estimates by the estimate of the noise standar
 Output format
 -------------
 The resulting data for each subject and session is stored in a cifti-file in the ``basedir/derivatives/<subj_id>/data`` directory under the name ``sub-xx_space-xxxx_ses-xx_<type>.dscalar.nii``. The description of the data-axis in the cifti-file is stored in ``sub-xx_ses-xx_<type>.tsv`` (note that there is of course only one of these files for all atlas spaces). 
-
-
-
-
-
