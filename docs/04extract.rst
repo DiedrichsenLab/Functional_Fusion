@@ -21,7 +21,7 @@ The specific mapping rules for the dataset are defined in the dataset method :py
 
          .. code-block:: python
 
-            deform1, _ = am.get_deform(self.atlas_dir, atlas.name, source='SUIT2')
+            deform1 = am.get_deform(atlas.space, source='SUIT')
             deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
 
