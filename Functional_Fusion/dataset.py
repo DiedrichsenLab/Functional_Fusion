@@ -879,6 +879,10 @@ class DataSetMNIVol(DataSet):
     """Data set with estimates data stored as
     nifti-files in 'MNI152NLin6Asym' space.
     """
+    def __init__(self, base_dir,space='MNI152NLin6Asym'):
+        super().__init__(base_dir)
+        self.space = space
+
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
         """This function generates atlas map for the data stored in MNI space.
         For SUIT and surface space, it goes over deformations estimated on the individual anatomy.
@@ -897,10 +901,14 @@ class DataSetMNIVol(DataSet):
             AtlasMap: Built AtlasMap object
         """
         atlas_maps = []
-        if atlas.space == 'MNI152NLin6Asym':
+        edir = self.estimates_dir.format(sub)
+        mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+        if atlas.space == self.space:
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, None, mask))
+            atlas_maps[0].build(smooth=smooth)
+        elif atlas.space in ['MNI152NLin6Asym','MNI152NLin2009cAsym']:
+            'MNI152NLin6Asym':
             # This is for MNI standard space)
-            edir = self.estimates_dir.format(sub)
-            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, None, mask))
             atlas_maps[0].build(smooth=smooth)
         else:
