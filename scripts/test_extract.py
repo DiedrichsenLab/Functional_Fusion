@@ -30,9 +30,17 @@ def test_extract_dmcc():
                         subj=[0])
     pass
 
+def test_extract_somatotopic():
+    dataset = ds.DataSetSomatotopic(base_dir + '/Somatotopic')
+    dataset.extract_all(ses_id='ses-motor',
+                        type='CondAll',
+                        atlas='MNIAsymBg2',
+                        smooth=1,
+                        subj=[0])
+    pass
 
 
 if __name__ == "__main__":
     # test_extract_mdtb()
-    test_extract_dmcc()
-
+    # test_extract_dmcc()
+    test_extract_somatotopic()
