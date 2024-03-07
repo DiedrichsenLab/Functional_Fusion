@@ -245,8 +245,10 @@ class AtlasVolumetric(Atlas):
             Nifti1Image(nb.Nifti1Image): NiftiImage object
         """
         if data.ndim == 1:
-            data = data.reshape(1, -1)
-        N, p = data.shape
+            N, p = 1, data.shape[0]
+        else:
+            N, p = data.shape
+        
         if p != self.P:
             raise (NameError("Data needs to be a P vector or NxP matrix"))
         if N > 1:

@@ -8,7 +8,7 @@ from Functional_Fusion.dataset import DataSetMDTB, DataSetPontine
 import Functional_Fusion.dataset as ds
 import nibabel as nb
 import subprocess
-import paths as paths
+import scripts.paths as paths
 import Functional_Fusion.connectivity as conn
 import matplotlib.pyplot as plt
 
