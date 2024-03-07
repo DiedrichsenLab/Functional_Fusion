@@ -653,7 +653,7 @@ class DataSet:
             atlas_maps[0].build(smooth=smooth)
         elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']:
             # This is nornmalization over SUIT->MNI (cerebellum only)
-            deform1, m = am.get_deform(self.atlas_dir, atlas.name, source='SUIT2')
+            deform1  = am.get_deform(atlas.space, 'SUIT')
             deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             deform = [deform1, deform2]
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
@@ -688,15 +688,15 @@ class DataSet:
         """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
 
         Args:
-            ses_id (str): 
+            ses_id (str):
                 Session. Defaults to 'ses-s1'.
-            type (str): 
+            type (str):
                 Type for condense_data. Defaults to 'CondHalf'.
-            atlas (str): 
+            atlas (str):
                 Short atlas string. Defaults to 'SUIT3'.
-            smooth (float): 
+            smooth (float):
                 Smoothing kernel. Defaults to 2.0.
-            subj (list / str): 
+            subj (list / str):
                 List of Subject numbers to get use. Default = 'all'
         """
         myatlas, _ = am.get_atlas(atlas)
@@ -876,14 +876,19 @@ class DataSetNative(DataSet):
         return atlas_maps
 
 class DataSetMNIVol(DataSet):
-    """Data set with estimates data stored as
-    nifti-files in 'MNI152NLin6Asym' space.
-    """
+    def __init__(self, base_dir,space='MNI152NLin6Asym'):
+        """Data set with estimates data stored as nifti-files in a standard group space. The exact MNI template should be indicated in the space-argument ('MNI152NLin6Asym','MNI152N2009cAsym','MNI152N2009cSym'). The small deformations between the different MNI spaces are implemented when extracting the data.
+
+        Args:
+            basedir (str): basis directory
+            space (str): Group Space in which data is stored (Defaults to 'MNI152NLin6Asym').
+        """
+        super().__init__(base_dir)
+        self.space = space
+
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
         """This function generates atlas map for the data stored in MNI space.
-        For SUIT and surface space, it goes over deformations estimated on the individual anatomy.
-        For MNI152NLin6Asym (the source space), it uses no deformation, but a direct readout.
-        Other MNI space (symmetric etc) are not implemented yet.
+        For SUIT and surface space, it goes over deformations estimated on the individual anatomy. If atlas.space matches dataset.space, it uses no deformation, but a direct readout. For mismatching MNI space it tries to find the correct transformation file.
         Args:
             atlas (FunctionFusion.Atlas):
                 Functional Fusion atlas object
@@ -896,13 +901,20 @@ class DataSetMNIVol(DataSet):
         Returns:
             AtlasMap: Built AtlasMap object
         """
+        atlas_spaces = ['MNI152NLin6Asym','MNI152NLin2009cAsym','MNI152NLin2009cSym']
         atlas_maps = []
-        if atlas.space == 'MNI152NLin6Asym':
-            # This is for MNI standard space)
-            edir = self.estimates_dir.format(sub)
-            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+        edir = self.estimates_dir.format(sub)
+        mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+        # Matching MNI space
+        if atlas.space == self.space:
             atlas_maps.append(am.AtlasMapDeform(atlas.world, None, mask))
             atlas_maps[0].build(smooth=smooth)
+        # Mis-matching MNI space
+        elif atlas.space in atlas_spaces:
+            deform = am.get_deform(atlas.space, self.space)
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        # Any other space (SUIT + fs32k)
         else:
             atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth)
         return atlas_maps
@@ -939,11 +951,9 @@ class DataSetCifti(DataSet):
         myatlas, _ = am.get_atlas(atlas)
         # Get the correct map into CIFTI-format
         if isinstance(myatlas, am.AtlasVolumetric):
-            deform, mask = am.get_deform(self.atlas_dir,
-                                         target=myatlas,
-                                         source='MNIAsymC2')
+            deform = am.get_deform(myatlas.space,'MNI152NLin6Asym')
             atlas_map = am.AtlasMapDeform(myatlas.world,
-                                          deform, mask)
+                                          deform, None)
             atlas_map.build(smooth=2.0)
         elif isinstance(myatlas, am.AtlasSurface):
             atlas_map = myatlas
@@ -1403,7 +1413,7 @@ class DataSetIBC(DataSetNative):
             atlas_map.build(smooth=2.0, additional_mask=add_mask)
         elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']:
             # This is nornmalization over SUIT->MNI (cerebellum only)
-            deform1, m = am.get_deform(self.atlas_dir, atlas.name, source='SUIT2')
+            deform1, m = am.get_deform(atlas.space, 'SUIT')
             deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             deform = [deform1, deform2]
             mask = self.estimates_dir.format(sub) + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
@@ -1581,7 +1591,7 @@ class DataSetWMFS(DataSetNative):
 class DataSetSomatotopic(DataSetMNIVol):
     def __init__(self, dir):
         super().__init__(dir)
-        self.group_space = 'tpl-MNI152NLin6Asym'
+        self.space = 'MNI152NLin6Asym'
         self.sessions = ['ses-motor']
         self.default_type = 'CondHalf'
         self.cond_ind = 'reg_id'
@@ -1590,7 +1600,7 @@ class DataSetSomatotopic(DataSetMNIVol):
 
     def get_atlasmaps(self, atlas, sub=None, ses_id = None, smooth=None):
         """ Gets group atlasmaps.
-        Assumes that all scans are in the same space (self.group_space)
+        Assumes that all scans are in the same space (self.space)
 
         Args:
             sub (str; optional): Subject
@@ -1603,28 +1613,30 @@ class DataSetSomatotopic(DataSetMNIVol):
         atlas_maps = []
         if atlas.structure == 'cerebellum':
             deform = self.atlas_dir + \
-                f'/{self.group_space}/{self.group_space}_space-SUIT_xfm.nii'
+                f'/tpl-{self.space}/tpl-{self.space}_from-SUIT_xfm.nii'
             if atlas.name[0:4] != 'SUIT':
-                deform1, m = am.get_deform(self.atlas_dir, atlas.name, 'SUIT2')
+                deform1 = am.get_deform(atlas.space, 'SUIT')
                 deform = [deform1, deform]
             mask = self.atlas_dir + \
-                f'/{self.group_space}/{self.group_space}_desc-cereb_mask.nii'
+                f'/{self.space}/{self.space}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
-        elif atlas.name == 'fs32k':
+        elif atlas.space == 'fs32k':
             for i, hem in enumerate(['L', 'R']):
                 adir = self.anatomical_dir.format(sub)
                 pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
                 white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
                 mask = self.atlas_dir + \
-                    f'/{self.group_space}/{self.group_space}_mask.nii'
+                    f'/{self.space}/{self.space}_mask.nii'
                 atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
                                                   white, pial, mask))
                 atlas_maps[i].build()
         return atlas_maps
 
     def condense_data(self, data, info,
-                      type='CondHalf'):
+                      type='CondHalf',
+                      participant_id=None,
+                      ses_id=None):
         """ Extract data in a specific atlas space
         Args:
             participant_id (str): ID of participant
@@ -1673,7 +1685,7 @@ class DataSetSomatotopic(DataSetMNIVol):
 class DataSetDmcc(DataSetMNIVol):
     def __init__(self, dir):
         super().__init__(dir)
-        self.group_space = 'tpl-MNI152NLin2009cAsym'
+        self.space = 'MNI152NLin2009cAsym'
         self.sessions = ['ses-axcpt_bas', 'ses-cuedts_bas', 'ses-stern_bas', 'ses-stroop_bas']
         self.default_type = 'CondHalf'
         self.cond_ind = 'reg_id'
@@ -1681,7 +1693,9 @@ class DataSetDmcc(DataSetMNIVol):
         self.part_ind = 'run'
 
     def condense_data(self, data, info,
-                      type='CondHalf'):
+                      type='CondHalf',
+                      participant_id=None,
+                      ses_id=None):
         """ Extract data in a specific atlas space
         Args:
             participant_id (str): ID of participant

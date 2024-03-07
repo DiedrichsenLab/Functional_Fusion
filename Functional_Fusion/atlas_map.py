@@ -49,33 +49,21 @@ def get_atlas(atlas_str, atlas_dir=default_atlas_dir):
     atlas.space = ainf["space"]
     return atlas, ainf
 
-def get_deform(target, source="MNIAsym2",atlas_dir = default_atlas_dir):
-    """Get name of group deformation map between two volumetric atlas spaces
+def get_deform(target_space, source_space,atlas_dir = default_atlas_dir):
+    """Get name of group deformation map between two volumetric spaces
     In image mode. That is, the xfm file will be in the voxels space of the target, and contain the xyz coordinates of the source space (pull).
 
     If you want to deform points (ROI centers, surfaces) from the target to the source, you need mode-point xfm file (push).
     Note that: tpl-A_from_B-mode-point_xfm.nii = tpl-B_from_A-mode-image_xfm.nii
     Args:
-        target (str/atlas): Target space
-        source (str): Source space
+        target_space (str): Target space
+        source_space (str): Source space
         atlas_dir (str): Atlas Directory (defaults to Functional_Fusion/Atlases)
     Returns:
         deform (str): Name of deformation map
-        mask (str): Name of mask for the source space
     """
-    if isinstance(target, str):
-        target, _ = get_atlas(target, atlas_dir)
-    with open(atlas_dir + "/atlas_description.json") as file:
-        atlases = json.load(file)
-    if target.name not in atlases:
-        raise (NameError(f"Unknown Atlas: {target.name}"))
-    if source not in atlases:
-        raise (NameError(f"Unknown Atlas: {source}"))
-    tar = atlases[target.name]
-    src = atlases[source]
-    deform = f"{atlas_dir}/{tar['dir']}/tpl-{tar['space']}_from-{src['space']}_mode-image_xfm.nii"
-    mask = f"{atlas_dir}/{src['dir']}/{src['mask']}"
-    return deform, mask
+    deform = f"{atlas_dir}/tpl-{target_space}/tpl-{target_space}_from-{source_space}_mode-image_xfm.nii"
+    return deform
 
 def parcel_recombine(label_vector,parcels_selected,label_id=None,label_name=None):
     """ Recombines and selects different parcels into a new label vector for ROI analysis.
@@ -257,8 +245,10 @@ class AtlasVolumetric(Atlas):
             Nifti1Image(nb.Nifti1Image): NiftiImage object
         """
         if data.ndim == 1:
-            data = data.reshape(1, -1)
-        N, p = data.shape
+            N, p = 1, data.shape[0]
+        else:
+            N, p = data.shape
+        
         if p != self.P:
             raise (NameError("Data needs to be a P vector or NxP matrix"))
         if N > 1:
