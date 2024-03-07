@@ -62,7 +62,7 @@ def get_deform(target_space, source_space,atlas_dir = default_atlas_dir):
     Returns:
         deform (str): Name of deformation map
     """
-    deform = f"{atlas_dir}/{target_space}/tpl-{target_space}_from-{source_space}_mode-image_xfm.nii"
+    deform = f"{atlas_dir}/tpl-{target_space}/tpl-{target_space}_from-{source_space}_mode-image_xfm.nii"
     return deform
 
 def parcel_recombine(label_vector,parcels_selected,label_id=None,label_name=None):

@@ -12,7 +12,7 @@ import nibabel as nb
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 
 
-def test_extract_mdtb(): 
+def test_extract_mdtb():
     dataset = ds.DataSetMDTB(base_dir + '/MDTB')
     dataset.extract_all(ses_id='ses-s1',
                         type='CondAll',
@@ -21,7 +21,18 @@ def test_extract_mdtb():
                         subj=[0])
     pass
 
+def test_extract_dmcc():
+    dataset = ds.DataSetDmcc(base_dir + '/DMCC')
+    dataset.extract_all(ses_id='ses-axcpt_bas',
+                        type='CondAll',
+                        atlas='MNIAsymBg2',
+                        smooth=1,
+                        subj=[0])
+    pass
+
+
 
 if __name__ == "__main__":
-    test_extract_mdtb()
- 
+    # test_extract_mdtb()
+    test_extract_dmcc()
+

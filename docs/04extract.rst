@@ -35,7 +35,14 @@ The specific mapping rules for the dataset are defined in the dataset method :py
 
 * Defined in ``DataSetNative``
 
-    * ``MNI152NLin6Asym``: We use the individual deformation into MNI space and the functional mask image for that subject and session.
+    * ``MNI152NLin6Asym``: We use the individual deformation into MNI152NLin6Asym (SPM segmentation) space and the functional mask image for that subject and session.
+
+            .. code-block:: python
+
+                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+                mask = self.estimates_dir.format(sub) + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+
+    * ``MNI152NLin2009cSym,MNI152NLin2009cAsym``: here we use first the individual deformation into MNI152NLin6Asym space and the functional mask image for that subject and session. Then we use the deformation from MNI152NLin6Asym to MNI152NLin2009cSym or MNI152NLin2009cAsym.
 
             .. code-block:: python
 
@@ -44,7 +51,7 @@ The specific mapping rules for the dataset are defined in the dataset method :py
 
 * Defined in ``DataSetMNIVol``
 
-    * ``MNI152NLin6Asym``: We use no deformation (already in correct space) and the functional mask image for that subject and session.
+    * ``MNI152NLin6Asym,MNI152NLin2009cSym,MNI152NLin2009cAsym``: For any deformation into an MNI space, we either use no deformation (if the atlas.space and dataset.space match), or we use the deformation between the two MNI spaces.
 
             .. code-block:: python
 
@@ -53,9 +60,9 @@ The specific mapping rules for the dataset are defined in the dataset method :py
 
 Datafile specification
 ----------------------
-Depending on the type and dataset, the filenames of the raw datafiles need to be correctly specified. This is done in the method  :py:meth:`dataset.DataSet.get_data_fnames`. 
+Depending on the type and dataset, the filenames of the raw datafiles need to be correctly specified. This is done in the method  :py:meth:`dataset.DataSet.get_data_fnames`.
 
-The default behavior is: 
+The default behavior is:
 
 * For ``type == 'TSeries'``: ``derivaties/estimates/{participant_id}_{session_id}_run-01.nii'``
 * For ``type == 'task / cond'``: ``derivaties/estimates/{participant_id}_{session_id}_reg_00_beta.nii'``
@@ -65,19 +72,19 @@ If the naming convention differs, your Dataset class needs to overwrite this fun
 
 Data aggregation
 ----------------
-After the data has been sampled into atlas space, it is (potentially) aggregated across different runs and conditions. This dataset-specific function is done in the function :py:meth:`dataset.DataSet.condense_data`. 
+After the data has been sampled into atlas space, it is (potentially) aggregated across different runs and conditions. This dataset-specific function is done in the function :py:meth:`dataset.DataSet.condense_data`.
 
-Typically, there are different `type`s: 
+Typically, there are different `type`s:
 
 * ``'TSeries'``: No aggregation (or z-standardization).
 * ``'CondAll'``: A single estimate per condition, averaged across all runs.
 * ``'CondHalf'``: Two estimates per condition, one per half
 * ``'CondRun'``: A separate estimate per condition and run.
 
-The averaging is done in the function :py:meth:`dataset.optimal_contrast`, which can take into account the first-level design matrix. This procedure will result in the same estimate that you would have gotten if you had defined a design matrix with a regressor for each condition across runs. 
+The averaging is done in the function :py:meth:`dataset.optimal_contrast`, which can take into account the first-level design matrix. This procedure will result in the same estimate that you would have gotten if you had defined a design matrix with a regressor for each condition across runs.
 
-Finally, we are dividing the beta estimates by the estimate of the noise standard-deviation per voxel, using :py:meth:`dataset.prewhiten`, coming from the resms.nii. 
+Finally, we are dividing the beta estimates by the estimate of the noise standard-deviation per voxel, using :py:meth:`dataset.prewhiten`, coming from the resms.nii.
 
 Output format
 -------------
-The resulting data for each subject and session is stored in a cifti-file in the ``basedir/derivatives/<subj_id>/data`` directory under the name ``sub-xx_space-xxxx_ses-xx_<type>.dscalar.nii``. The description of the data-axis in the cifti-file is stored in ``sub-xx_ses-xx_<type>.tsv`` (note that there is of course only one of these files for all atlas spaces). 
+The resulting data for each subject and session is stored in a cifti-file in the ``basedir/derivatives/<subj_id>/data`` directory under the name ``sub-xx_space-xxxx_ses-xx_<type>.dscalar.nii``. The description of the data-axis in the cifti-file is stored in ``sub-xx_ses-xx_<type>.tsv`` (note that there is of course only one of these files for all atlas spaces).
