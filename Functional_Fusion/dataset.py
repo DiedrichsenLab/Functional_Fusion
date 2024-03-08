@@ -372,7 +372,7 @@ def reliability_between_subj(X, cond_vec=None,
             r[i] = nansum(X1 * X2) / sqrt(nansum(X1 * X1) * nansum(X2 * X2))
     return r
 
-def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
+def reliability_maps(base_dir, dataset_name, atlas='MNISymC3', type='CondHalf',
                      subtract_mean=True, voxel_wise=True, subject_wise=False):
     """    Calculates the average within subject reliability maps across sessions for a single dataset
 
@@ -385,7 +385,7 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3',
     Returns:
         _type_: _description_
     """
-    data, info, dataset = get_dataset(base_dir, dataset_name, atlas=atlas)
+    data, info, dataset = get_dataset(base_dir, dataset_name, atlas=atlas, type = type)
     n_sess = len(dataset.sessions)
     n_vox = data.shape[2]
     Rel = np.zeros((n_sess, n_vox))
@@ -1308,27 +1308,27 @@ class DataSetNishi(DataSetNative):
 
         if type == 'CondHalf':
             data_info, C = agg_data(info,
-                                    ['half', 'cond_num'],
+                                    ['half', 'reg_id'],
                                     ['run', 'reg_num'])
             data_info['names'] = [
-                f'{d.cond_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
 
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
         elif type == 'CondRun':
             data_info, C = agg_data(info,
-                                    ['run', 'cond_num'],
-                                    [])
+                                    ['run', 'reg_id'],
+                                    ['reg_num'])
 
             data_info['names'] = [
-                f'{d.cond_name.strip()}-run{d.run:02d}' for i, d in data_info.iterrows()]
+                f'{d.task_name.strip()}-run{d.run:02d}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.run, positive=True)
         elif type == 'CondAll':
             data_info, C = agg_data(info,
-                                    ['cond_num'],
-                                    ['run', 'half', 'reg_num'])
+                                    ['reg_id'],
+                                    ['run', 'half'])
             # Baseline substraction
             B = np.ones((data_info.shape[0],))
 
@@ -1336,7 +1336,7 @@ class DataSetNishi(DataSetNative):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
-        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+        X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy')
         reg_in = np.arange(C.shape[1], dtype=int)
         data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
 
@@ -1371,7 +1371,7 @@ class DataSetIBC(DataSetNative):
             self.base_dir + '/participants.tsv', delimiter='\t')
         return self.part_info[self.part_info.complete == 1]
 
-    def get_data_fnames(self, participant_id, session_id=None):
+    def get_data_fnames(self, participant_id, session_id=None, type = "CondHalf"):
         """ Gets all raw data files
 
         Args:
