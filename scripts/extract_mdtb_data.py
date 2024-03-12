@@ -8,7 +8,7 @@ from Functional_Fusion.dataset import DataSetMDTB
 import Functional_Fusion.dataset as ds
 import nibabel as nb
 import subprocess
-import paths as paths
+import scripts.fusion_paths as paths
 import Functional_Fusion.connectivity as conn
 import matplotlib.pyplot as plt
 
@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 base_dir = paths.set_base_dir()
 atlas_dir = paths.set_atlas_dir(base_dir)
 dname = 'MDTB'
-data_dir = base_dir + '/' + dname
+data_dir = paths.set_fusion_dir(base_dir)
 atlas_dir = base_dir + '/Atlases'
 
 
