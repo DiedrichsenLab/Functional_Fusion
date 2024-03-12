@@ -134,7 +134,8 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     # Load the cortical networks
     target, type = re.findall('[A-Z][^A-Z]*', type)        
     res = target[3:]
-    if target[:3] == 'Net':
+    
+    if target[:3] == 'Net' or target[:3] == 'Fus':
         net = nb.load(dset.base_dir +
                     f'/../targets/{target}_space-fs32k.dscalar.nii')
     elif target[:3] == 'Ico':

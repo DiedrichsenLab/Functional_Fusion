@@ -155,10 +155,10 @@ if __name__ == "__main__":
     T = pd.read_csv(
         data_dir + '/participants.tsv', delimiter='\t')
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Net67Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
     #     type='Net69Run', space='MNISymC2', ses_id='ses-rest')
     # conn.get_connectivity_fingerprint(dname,
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Ico162Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
 
-    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2', smooth=2.0, subj=subject_subset)
+    mdtb_dataset.extract_all(ses_id='ses-rest', type='Fusion06Run', atlas='MNISymC2', smooth=2.0, subj=subject_subset)
 
 
     # -- Group Average Data --
