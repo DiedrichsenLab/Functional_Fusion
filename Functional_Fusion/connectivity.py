@@ -7,7 +7,7 @@ import pandas as pd
 from pathlib import Path
 import re
 import Functional_Fusion.dataset as ds
-import scripts.paths as paths
+import scripts.fusion_paths as paths
 
 
 base_dir = paths.set_base_dir()

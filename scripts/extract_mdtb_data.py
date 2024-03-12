@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
     # -- Get connectivity fingerprint --
     T = pd.read_csv(
-        data_dir + '/participants.tsv', delimiter='\t')
+        data_dir + '/MDTB/participants.tsv', delimiter='\t')
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
     # get indices of subjects
     subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist()
