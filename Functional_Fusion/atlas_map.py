@@ -13,7 +13,7 @@ import warnings
 import nitools as nt
 import json
 import re
-import os 
+import os
 
 # Need to do self import here to get Atlas directory
 import Functional_Fusion.atlas_map as am
@@ -44,36 +44,26 @@ def get_atlas(atlas_str, atlas_dir=default_atlas_dir):
             mask.append(atlas_dir + f"/{ainf['dir']}/{m}")
     else:
         mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
-    atlas = At(atlas_str, mask, ainf["structure"])
+    atlas = At(atlas_str, mask)
+    atlas.structure = ainf["structure"]
+    atlas.space = ainf["space"]
     return atlas, ainf
 
-def get_deform(target, source="MNIAsym2",atlas_dir = default_atlas_dir):
-    """Get name of group deformation map between two volumetric atlas spaces
-    In image mode. That is, the xfm file will be in the voxels space of the target, and contain the xyz coordinates of the source space (pull). 
+def get_deform(target_space, source_space,atlas_dir = default_atlas_dir):
+    """Get name of group deformation map between two volumetric spaces
+    In image mode. That is, the xfm file will be in the voxels space of the target, and contain the xyz coordinates of the source space (pull).
 
     If you want to deform points (ROI centers, surfaces) from the target to the source, you need mode-point xfm file (push).
     Note that: tpl-A_from_B-mode-point_xfm.nii = tpl-B_from_A-mode-image_xfm.nii
     Args:
-        target (str/atlas): Target space
-        source (str): Source space
+        target_space (str): Target space
+        source_space (str): Source space
         atlas_dir (str): Atlas Directory (defaults to Functional_Fusion/Atlases)
     Returns:
         deform (str): Name of deformation map
-        mask (str): Name of mask for the source space
     """
-    if isinstance(target, str):
-        target, _ = get_atlas(target, atlas_dir)
-    with open(atlas_dir + "/atlas_description.json") as file:
-        atlases = json.load(file)
-    if target.name not in atlases:
-        raise (NameError(f"Unknown Atlas: {target.name}"))
-    if source not in atlases:
-        raise (NameError(f"Unknown Atlas: {source}"))
-    tar = atlases[target.name]
-    src = atlases[source]
-    deform = f"{atlas_dir}/{tar['dir']}/tpl-{tar['space']}_from-{src['space']}_mode-image_xfm.nii"
-    mask = f"{atlas_dir}/{src['dir']}/{src['mask']}"
-    return deform, mask
+    deform = f"{atlas_dir}/tpl-{target_space}/tpl-{target_space}_from-{source_space}_mode-image_xfm.nii"
+    return deform
 
 def parcel_recombine(label_vector,parcels_selected,label_id=None,label_name=None):
     """ Recombines and selects different parcels into a new label vector for ROI analysis.
@@ -119,7 +109,7 @@ def parcel_recombine(label_vector,parcels_selected,label_id=None,label_name=None
     return label_vector_new, label_id_new, label_name_new
 
 class Atlas:
-    def __init__(self, name):
+    def __init__(self, name, structure='unknown', space='unknown'):
         """ The Atlas class implements the mapping from the P brain locations back to the defining
         Volumetric or surface space. It also allows for parcellation of these brain locations.
         Each Atlas is associated with a set of atlas maps
@@ -129,6 +119,8 @@ class Atlas:
         """
         self.name = name
         self.P = np.nan  # Number of locations in this atlas
+        self.structure = structure
+        self.space = space
 
     def get_parcel(self, label_img):
         """adds a label_vec to the atlas that assigns each voxel / node of the atlas
@@ -149,16 +141,15 @@ class Atlas:
 
 
 class AtlasVolumetric(Atlas):
-    def __init__(self, name, mask_img, structure="cerebellum"):
+    def __init__(self, name, mask_img, structure='unknown', space='unknown'):
         """Atlas Volumetric is an atlas for a Volumetric
         space / structure.
 
         Args:
             name (str): Name of atlas (atlas string)
             mask_img (str): file name of mask image defining atlas location
-            structure (str): the brain structure name for Cifti (thalamus, cerebellum)
         """
-        super().__init__(name)
+        super().__init__(name, structure=structure, space=space)
         self.mask_img = nb.load(mask_img)
         Xmask = self.mask_img.get_fdata()
         Xmask = Xmask > 0
@@ -167,7 +158,6 @@ class AtlasVolumetric(Atlas):
         self.mask = Xmask
         self.world = nt.affine_transform_mat(self.vox, self.mask_img.affine)
         self.P = self.world.shape[1]
-        self.structure = structure
 
     def get_brain_model_axis(self):
         """Returns brain model axis
@@ -264,7 +254,7 @@ class AtlasVolumetric(Atlas):
             X = np.empty(self.mask_img.shape + (N,), dtype=data.dtype)
         else:
             X = np.empty(self.mask_img.shape, dtype=data.dtype)
-        # Fill with Nans or zeros 
+        # Fill with Nans or zeros
         if np.issubdtype(data.dtype, np.floating):
             X.fill(np.nan)
         else:
@@ -318,7 +308,7 @@ class AtlasVolumetric(Atlas):
 
 
 class AtlasVolumeSymmetric(AtlasVolumetric):
-    def __init__(self, name, mask_img, structure="cerebellum"):
+    def __init__(self, name, mask_img, structure='unknown', space='unknown'):
         """Volumetric atlas with left-right symmetry. The atlas behaves like AtlasVolumetric,
         but provides mapping indices from a full representation to a
         reduced (symmetric) representation of size Psym.
@@ -337,11 +327,11 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
         | flippedFull = Full[:,index_flip]
 
         Args:
-            name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
+            name (str): Name of the atlas (e.g. 'SUIT3')
             mask_img (str): file name of mask image defining atlas location
         """
 
-        super().__init__(name, mask_img, structure)
+        super().__init__(name, mask_img, structure=structure, space=space)
         # Find left and right hemispheric voxels
         indx_left = np.where(self.world[0, :] <= 0)[0]
         indx_right = np.where(self.world[0, :] >= 0)[0]
@@ -379,7 +369,7 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
 class AtlasSurface(Atlas):
     """Surface-based altas space"""
 
-    def __init__(self, name, mask_img, structure):
+    def __init__(self, name, mask_img, structure=["cortex_left", "cortex_right"], space="fs32k"):
         """Atlas Surface class constructor
         Args:
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
@@ -390,7 +380,7 @@ class AtlasSurface(Atlas):
             only integrate surface datas in cifti brain structures so that
             the volume data shouldn't be in.   -- dzhi
         """
-        super().__init__(name)
+        super().__init__(name, structure=structure, space=space)
 
         assert len(mask_img) == len(
             structure
@@ -630,7 +620,7 @@ class AtlasSurfaceSymmetric(AtlasSurface):
     """
     """
 
-    def __init__(self, name, mask_gii, structure):
+    def __init__(self, name, mask_gii, structure = ["cortex_left","cortex_right"],space = "fs32k"):
         """ Surface atlas with left-right symmetry
         The atlas behaves like AtlasSurface, but provides
         a reduced (symmetric) representation of size Psym.AtlasSurfaceSymmeytric
@@ -654,7 +644,7 @@ class AtlasSurfaceSymmetric(AtlasSurface):
             mask_gii (list): gifti file name of mask image defining atlas locations
             structure (list): [cortex_left, cortex_right] - CIFTI brain structure names
         """
-        super().__init__(name, mask_gii, structure)
+        super().__init__(name, mask_gii, structure=structure, space=space)
         assert np.array_equal(
             self.vertex[0], self.vertex[1]
         ), "The left and right hemisphere must be symmetric!"
@@ -681,20 +671,21 @@ class AtlasSurfaceSymmetric(AtlasSurface):
 class AtlasMapDeform:
     def __init__(self, world, deform_img, mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
-        to the desired atlas space in form of a voxel list
+        to the desired atlas space in form of a voxel list from source space
 
         Args:
             worlds (ndarray): 3xP ND array of world locations
-            deform_img (str/list): Name of deformation map image(s)
-            mask_img (str): Name of masking image that defines the functional data space.
+            deform_img (str/list): Name of deformation map image(s). If None, no deformation is applied.s
+            mask_img (str): Name of masking image that defines the functional source space.
         """
         self.P = world.shape[1]
         self.world = world
-        if type(deform_img) is not list:
-            deform_img = [deform_img]
         self.deform_img = []
-        for di in deform_img:
-            self.deform_img.append(nb.load(di))
+        if deform_img is not None:
+            if type(deform_img) is not list:
+                deform_img = [deform_img]
+            for di in deform_img:
+                self.deform_img.append(nb.load(di))
         self.mask_img = nb.load(mask_img)
 
     def build(self, smooth=None, additional_mask=None):
@@ -711,9 +702,9 @@ class AtlasMapDeform:
         # Caluculate locations of atlas in individual (deformed) coordinates
         # Apply possible multiple deformation maps sequentially
         xyz = self.world.copy()
+        # Pass through the list of deformations
         for i, di in enumerate(self.deform_img):
             xyz = nt.sample_image(di, xyz[0], xyz[1], xyz[2], 1).squeeze().T
-            pass
         atlas_ind = xyz
         N = atlas_ind.shape[1]  # Number of locations in atlas
 
@@ -766,7 +757,6 @@ class AtlasMapDeform:
             mw[mw == 0] = np.nan
             self.vox_weight = self.vox_weight / mw
         pass
-
 
 class AtlasMapSurf:
     def __init__(self, vertex, white_surf, pial_surf, mask_img):

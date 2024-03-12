@@ -130,10 +130,10 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
     return data_reshaped
 
 if __name__ == "__main__":
-    mdtb_dataset = DataSetMDTB(data_dir)
-    # mdtb_dataset.extract_all(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
-    # mdtb_dataset.extract_all(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
-    # mdtb_dataset.extract_all(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
+    # extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
+    extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNIAsymBg2',smooth=2.0)
+    # extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
+    # extract_mdtb(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
     # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
 
     # for s in [1,2,3]:
