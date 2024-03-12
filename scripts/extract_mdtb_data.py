@@ -178,8 +178,8 @@ if __name__ == "__main__":
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Ico162Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
     mdtb_dataset = DataSetMDTB(mdtb_dir)
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Fus06Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     
 
     # -- Group Average Data --
