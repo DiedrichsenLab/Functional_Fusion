@@ -11,6 +11,7 @@ import scripts.paths as paths
 
 
 base_dir = paths.set_base_dir()
+data_dir = paths.set_fusion_dir(base_dir)
 atlas_dir = paths.set_atlas_dir(base_dir)
 
 
@@ -122,9 +123,9 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         subj (list): List of subjects to extract the fingerprint for
     """
     # Load dataset
-    dset = ds.get_dataset_class(base_dir, dname)
+    dset = ds.get_dataset_class(data_dir, dname)
 
-    T = pd.read_csv(dset.base_dir + '/participants.tsv', sep='\t')
+    T = pd.read_csv(f'{data_dir}/{dname}/participants.tsv', sep='\t')
 
     # Deal with subset of subjects
     if subj is not None:
@@ -134,13 +135,16 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     # Load the cortical networks
     target, type = re.findall('[A-Z][^A-Z]*', type)        
     res = target[3:]
+    
     if target[:3] == 'Net':
-        net = nb.load(dset.base_dir +
-                    f'/../targets/{target}_space-fs32k.dscalar.nii')
+        net = nb.load(data_dir +
+                    f'/targets/{target}_space-fs32k.dscalar.nii')
     elif target[:3] == 'Ico':
         net = [atlas_dir + f'/tpl-fs32k/Icosahedron{res}.L.label.gii',
             atlas_dir + f'/tpl-fs32k/Icosahedron{res}.R.label.gii']
-
+    elif target[:3] == 'Fus':
+        net = nb.load(data_dir +
+                    f'/targets/{target}_space-fs32k.pscalar.nii')
     atlas, _ = am.get_atlas(space, dset.atlas_dir)
         
     for p, row in enumerate(T.itertuples()):
@@ -151,16 +155,25 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         data_cortex_subj, _ = dset.get_data(
             space='fs32k', ses_id=ses_id, type='Tseries', subj=[row.Index])
 
+
         # Get cerebellar data
         data_cereb_subj, info_cereb = dset.get_data(
                 space=space, ses_id=ses_id, type='Tseries', subj=[row.Index])
         data_cereb_subj = data_cereb_subj.squeeze()
 
-        if target[:3] == 'Net':
+        if target[:3] == 'Net' or target[:3] == 'Fus':
+            names = [f'Network_{i}' for i in range(1, int(res)+1)]
+            if target[:3] == 'Fus':
+                icos = [atlas_dir + f'/tpl-fs32k/Icosahedron1002.L.label.gii',
+                    atlas_dir + f'/tpl-fs32k/Icosahedron1002.R.label.gii']
+                # Average the subject's cortical data within each icosahedron if using the Fusion connectivity maps (which are given at icosahedron1002 resolution)
+                data_cortex_subj, _ = average_within_Icos(
+                    icos, data_cortex_subj)
+                names = net.header.get_axis(0).name.tolist()
             # Regress each network into the fs32k cortical data to get a run-specific network timecourse
             network_timecourse = regress_networks(
                 net.get_fdata(), data_cortex_subj)
-            names = [f'Network_{i}' for i in range(1, int(res)+1)]
+                    
         elif target[:3] == 'Ico':
             # Average within each parcel
             network_timecourse, names = average_within_Icos(
@@ -185,19 +198,17 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 
         # Save the data
         C = atlas.data_to_cifti(coef, info.names)
-        dest_dir = dset.base_dir + \
-            f'/derivatives/{participant_id}/data/'
+        dest_dir = dset.data_dir.format(participant_id)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
-        nb.save(C, dest_dir +
-                f'{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
+        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
         info.to_csv(
             dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
 
 
 def get_cortical_target(target):
 
-    orig = nb.load(base_dir +
+    orig = nb.load(data_dir +
                   f'/targets/{target}')
     
     lh, rh = ut.surf_from_cifti(orig)
@@ -220,7 +231,7 @@ def get_cortical_target(target):
     header = nb.Cifti2Header.from_axes((bpa, bmc))
     cifti_img = nb.Cifti2Image(
         dataobj=np.c_[lh_masked, rh_masked], header=header)
-    dest_dir = base_dir + '/targets/'
+    dest_dir = data_dir + '/targets/'
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     nb.save(cifti_img, dest_dir + f'/{target_name}_space-fs32k.dscalar.nii')
 
@@ -228,7 +239,7 @@ def make_net67():
     """Script to remove two networks (first and 11th network) from the 69 network set
     First and 11th network are cerebellar-only networks and do not have substantial cortical weights. Therefore they are removed."""
     
-    net = nb.load(base_dir +
+    net = nb.load(data_dir +
                     f'/targets/Net69_space-fs32k.dscalar.nii')
     # Remove the first and 10th network
     net_data = np.delete(net.get_fdata(), [0, 10], axis=0)
@@ -241,7 +252,7 @@ def make_net67():
     cifti_img = nb.cifti2.Cifti2Image(dataobj=net_data, header=header)
 
     # Save the new network
-    dest_dir = base_dir + '/targets/'
+    dest_dir = data_dir + '/targets/'
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     nb.save(cifti_img, dest_dir + f'/Net67_space-fs32k.dscalar.nii')
 

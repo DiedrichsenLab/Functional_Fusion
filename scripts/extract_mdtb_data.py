@@ -131,7 +131,7 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
 
 if __name__ == "__main__":
     # extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
-    extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNIAsymBg2',smooth=2.0)
+    # extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNIAsymBg2',smooth=2.0)
     # extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
     # extract_mdtb(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
     # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
@@ -155,10 +155,12 @@ if __name__ == "__main__":
     T = pd.read_csv(
         data_dir + '/participants.tsv', delimiter='\t')
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Net67Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+    # get indices of subjects
+    subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist()
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
     #     type='Net69Run', space='MNISymC2', ses_id='ses-rest')
     # conn.get_connectivity_fingerprint(dname,
@@ -174,9 +176,10 @@ if __name__ == "__main__":
     #                                   type='Ico162Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Ico162Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-
-    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Net69Run', atlas='MNISymC2', smooth=2.0, subj=subject_subset)
-
+    mdtb_dataset = DataSetMDTB(data_dir)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    
 
     # -- Group Average Data --
     # mdtb_dataset.group_average_data(atlas='MNISymC2', ses_id='ses-rest', type='Net69Run', subj=subject_subset)
