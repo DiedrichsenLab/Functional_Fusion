@@ -13,15 +13,16 @@ import Functional_Fusion.connectivity as conn
 import matplotlib.pyplot as plt
 
 
-b_dir = paths.set_b_dir()
-atlas_dir = paths.set_atlas_dir(b_dir)
+base_dir = paths.set_base_dir()
+atlas_dir = paths.set_atlas_dir(base_dir)
 dname = 'MDTB'
-base_dir = paths.set_fusion_dir(b_dir)
-atlas_dir = b_dir + '/Atlases'
+data_dir = paths.set_fusion_dir(base_dir)
+mdtb_dir = data_dir + '/MDTB'
+atlas_dir = base_dir + '/Atlases'
 
 
 def group_mtdb(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
-    mdtb_dataset = DataSetMDTB(data_dir)
+    mdtb_dataset = DataSetMDTB(mdtb_dir)
     mdtb_dataset.group_average_data(ses_id, type, atlas)
 
 
@@ -36,13 +37,13 @@ def parcel_mdtb_fs32k(res=162, ses_id='ses-s1', type='condHalf'):
         surf_parcel.append(am.AtlasSurfaceParcel(hem_name[i], gifti))
 
     # initialize the data set object
-    mdtb_dataset = DataSetMDTB(data_dir)
+    mdtb_dataset = DataSetMDTB(mdtb_dir)
 
     # create and calculate the atlas map for each participant
     T = mdtb_dataset.get_participants()
     for s in T.participant_id[0:2]:
         print(f'Average {s}')
-        s_dir = mdtb_dataset.data_dir.format(s)
+        s_dir = mdtb_dataset.base_dir.format(s)
         C = nb.load(s_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
         bmf = C.header.get_axis(1)
         bmp = []
@@ -63,7 +64,7 @@ def parcel_mdtb_fs32k(res=162, ses_id='ses-s1', type='condHalf'):
 
 def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
     myatlas, _ = am.get_atlas('fs32k', atlas_dir)
-    mdtb_dataset = DataSetMDTB(data_dir)
+    mdtb_dataset = DataSetMDTB(mdtb_dir)
     T = mdtb_dataset.get_participants()
 
     # get the surfaces for smoothing
@@ -73,7 +74,7 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
     for s in T.participant_id:
         print(f'- Smoothing data for {s} fs32k {ses_id} in {smooth}mm ...')
         # Load the unsmoothed data and fill nan with zeros
-        C = nb.load(mdtb_dataset.data_dir.format(s)
+        C = nb.load(mdtb_dataset.base_dir.format(s)
                     + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
         mask = np.isnan(C.get_fdata())
         C = nb.Cifti2Image(dataobj=np.nan_to_num(
@@ -101,7 +102,7 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
 
         # Copy info to the corresponding /smoothed folder
         if not Path(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv').exists():
-            info = pd.read_csv(mdtb_dataset.data_dir.format(s)
+            info = pd.read_csv(mdtb_dataset.base_dir.format(s)
                                + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
@@ -153,7 +154,7 @@ if __name__ == "__main__":
 
     # -- Get connectivity fingerprint --
     T = pd.read_csv(
-        data_dir + '/MDTB/participants.tsv', delimiter='\t')
+        mdtb_dir + '/participants.tsv', delimiter='\t')
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
     # get indices of subjects
     subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist()
@@ -176,7 +177,7 @@ if __name__ == "__main__":
     #                                   type='Ico162Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Ico162Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-    mdtb_dataset = DataSetMDTB(base_dir)
+    mdtb_dataset = DataSetMDTB(mdtb_dir)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Fus06Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     
