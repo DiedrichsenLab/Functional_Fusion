@@ -13,11 +13,11 @@ import Functional_Fusion.connectivity as conn
 import matplotlib.pyplot as plt
 
 
-base_dir = paths.set_base_dir()
-atlas_dir = paths.set_atlas_dir(base_dir)
+b_dir = paths.set_b_dir()
+atlas_dir = paths.set_atlas_dir(b_dir)
 dname = 'MDTB'
-data_dir = paths.set_fusion_dir(base_dir)
-atlas_dir = base_dir + '/Atlases'
+base_dir = paths.set_fusion_dir(b_dir)
+atlas_dir = b_dir + '/Atlases'
 
 
 def group_mtdb(ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
@@ -176,9 +176,9 @@ if __name__ == "__main__":
     #                                   type='Ico162Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Ico162Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-    mdtb_dataset = DataSetMDTB(data_dir)
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    mdtb_dataset = DataSetMDTB(base_dir)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     
 
     # -- Group Average Data --
@@ -186,13 +186,13 @@ if __name__ == "__main__":
     # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=['ses-rest'], type='Net69Run')
 
     mdtb_dataset.group_average_data(
-        atlas='MNISymC2', ses_id='ses-rest', type='Ico42Run', subj=subject_subset)
+        atlas='MNISymC2', ses_id='ses-rest', type='Fus06Run', subj=subject_subset)
     mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=[
-                                 'ses-rest'], type='Ico42Run')
+                                 'ses-rest'], type='Fus06Run')
 
-    mdtb_dataset.group_average_data(
-        atlas='Ico42Run', ses_id='ses-rest', type='Ico162Run', subj=subject_subset)
-    mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=[
-                                 'ses-rest'], type='Ico162Run')
+    # mdtb_dataset.group_average_data(
+    #     atlas='Ico42Run', ses_id='ses-rest', type='Ico162Run', subj=subject_subset)
+    # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=[
+    #                              'ses-rest'], type='Ico162Run')
     pass
     
