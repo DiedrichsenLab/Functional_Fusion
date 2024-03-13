@@ -6,27 +6,37 @@ def set_base_dir():
     The function checks for the existence of the base directory in multiple locations and sets it accordingly.
     If the base directory cannot be found, a NameError is raised.
     """
-    base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
-    if not Path(base_dir).exists():
-        base_dir = '/srv/diedrichsen/data/FunctionalFusion'
-    if not Path(base_dir).exists():
-        base_dir = 'Y:\data\FunctionalFusion'
-    if not Path(base_dir).exists():
-        base_dir = '/Users/callithrix/Documents/Projects/Functional_Fusion/'
-    if not Path(base_dir).exists():
-        base_dir = '/Users/jdiedrichsen/Data/FunctionalFusion/'
-    if not Path(base_dir).exists():
-        raise (NameError('Could not find base_dir'))
 
-    return base_dir 
+    possible_dirs = [
+        '/Volumes/diedrichsen_data$/data/',
+        '/srv/diedrichsen/data/',
+        'Y:\data\\',
+        '/Users/callithrix/Documents/Projects//',
+        '/Users/jdiedrichsen/Data//',
+    ]
 
+    for directory in possible_dirs:
+        if Path(directory).exists():
+            return directory
 
-def set_atlas_dir(base_dir):
+    raise FileNotFoundError('Could not find base_dir')
+
+base_dir = set_base_dir()
+
+def set_fusion_dir(base_dir=base_dir):
     """
     Set the directory for the atlases.
     The directory is set based on the provided base directory.
     """
-    atlas_dir = base_dir + f'/Atlases'
+    fusion_dir = base_dir + f'/FunctionalFusion'
+    return fusion_dir
+
+def set_atlas_dir(base_dir=base_dir):
+    """
+    Set the directory for the atlases.
+    The directory is set based on the provided base directory.
+    """
+    atlas_dir = base_dir + f'/FunctionalFusion/Atlases'
     return atlas_dir
 
 def set_figure_dir():
