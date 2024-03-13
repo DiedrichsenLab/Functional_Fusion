@@ -1741,13 +1741,13 @@ class DataSetDmcc(DataSetMNIVol):
         return data_n, data_info
 
 
-class DataSetLangloc(DataSetNative):
+class DataSetLanguage(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
-        self.sessions = ['ses-01']
-        self.default_type = 'TaskHalf'
-        self.cond_ind = 'task_num'
-        self.cond_name = 'task_name'
+        self.sessions = ['ses-01','ses-02']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'reg_id'
+        self.cond_name = 'taskName'
         self.part_ind = 'half'
 
     def condense_data(self, data, info,
@@ -1778,34 +1778,34 @@ class DataSetLangloc(DataSetNative):
         info['half'] = 2 - (info.run < 5)
         n_cond = np.max(info.reg_id)
 
-        if type == 'TaskHalf':
+        if type == 'CondHalf':
             data_info, C = agg_data(info,
                                     ['half', 'reg_id'],
                                     ['run', 'reg_num'],
-                                    subset=(info.reg_id > 0))
+                                    subset=(info.reg_id >0))
             data_info['names'] = [
-                f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'TaskRun':
+        elif type == 'CondRun':
 
             data_info, C = agg_data(info,
                                     ['run', 'reg_id'],
                                     ['reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'TaskAll':
+        elif type == 'CondAll':
             data_info, C = agg_data(info,
                                     ['reg_id'],
                                     ['run', 'half', 'reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
