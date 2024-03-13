@@ -5,8 +5,8 @@ from pathlib import Path
 import mat73
 import numpy as np
 import atlas_map as am
-from dataset import DataSetMDTB
-from dataset import DataSetHcpResting
+from Functional_Fusion.dataset import DataSetMDTB
+from Functional_Fusion.dataset import DataSetHcpResting
 import nibabel as nb
 from matrix import indicator
 import sys
