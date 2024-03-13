@@ -3,6 +3,20 @@ Data Extraction
 
 Extraction reads out the effect-size estimates or timeseries data (the type) from a dataset out in a specific atlas space (the atlas). The result will be stored in a cifti-file in the subjects data directory, with a uniform Spatial and Data dimension.  This process is done can be done for all subject using the function :py:meth:`dataset.DataSet.extract_all`.
 
+For example, extracting sessions 1 from the MDTB dataset, with a split half-estimate for the condition in MNISymC3,  would look like this: 
+
+.. code-block:: python
+
+    dataset = ds.DataSetMDTB(base_dir + '/MDTB')
+    dataset.extract_all(ses_id='ses-s1',
+                        type='CondAll',
+                        atlas='MNISymC3',
+                        smooth=2)
+
+The resulting data for each subject and session is stored in a cifti-file in the ``basedir/derivatives/<subj_id>/data`` directory under the name ``sub-xx_space-xxxx_ses-xx_<type>.dscalar.nii``. The description of the data-axis in the cifti-file is stored in ``sub-xx_ses-xx_<type>.tsv`` (note that there is of course only one of these files for all atlas spaces). 
+
+That's all you need. The rest of documentation will explain the different steps in the extraction process in detail:
+
 Spatial resampling
 ------------------
 Along the spatial dimension, extraction reads out the data from the source space and brings them into the atlas space (``atlas.space``). Not that each atlas has a ``space`` and within this space a set of defined xyz coordinates ``atlas.world``.This mapping between different spaces is store in an ``AtlasMap`` object, and can rely either on a subject-specific deformation, a atlas-to-atlas deformation, or even a combination of both.
@@ -85,6 +99,3 @@ The averaging is done in the function :py:meth:`dataset.optimal_contrast`, which
 
 Finally, we are dividing the beta estimates by the estimate of the noise standard-deviation per voxel, using :py:meth:`dataset.prewhiten`, coming from the resms.nii.
 
-Output format
--------------
-The resulting data for each subject and session is stored in a cifti-file in the ``basedir/derivatives/<subj_id>/data`` directory under the name ``sub-xx_space-xxxx_ses-xx_<type>.dscalar.nii``. The description of the data-axis in the cifti-file is stored in ``sub-xx_ses-xx_<type>.tsv`` (note that there is of course only one of these files for all atlas spaces).

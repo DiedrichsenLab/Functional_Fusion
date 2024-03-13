@@ -2,7 +2,6 @@
 import pandas as pd
 import shutil
 from pathlib import Path
-import mat73
 import numpy as np
 import Functional_Fusion.atlas_map as am
 import Functional_Fusion.dataset as ds
@@ -16,9 +15,8 @@ def test_extract_mdtb():
     dataset = ds.DataSetMDTB(base_dir + '/MDTB')
     dataset.extract_all(ses_id='ses-s1',
                         type='CondAll',
-                        atlas='SUIT3',
-                        smooth=2,
-                        subj=[0])
+                        atlas='MNISymC3',
+                        smooth=2)
     pass
 
 def test_extract_dmcc():
@@ -41,6 +39,6 @@ def test_extract_somatotopic():
 
 
 if __name__ == "__main__":
-    # test_extract_mdtb()
+    test_extract_mdtb()
     # test_extract_dmcc()
-    test_extract_somatotopic()
+    # test_extract_somatotopic()
