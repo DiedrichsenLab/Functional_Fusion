@@ -1586,7 +1586,7 @@ class DataSetLanguage(DataSetNative):
         super().__init__(dir)
         self.sessions = ['ses-01','ses-02']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'task'
+        self.cond_ind = 'reg_id'
         self.cond_name = 'taskName'
         self.part_ind = 'half'
 
@@ -1622,7 +1622,7 @@ class DataSetLanguage(DataSetNative):
             data_info, C = agg_data(info,
                                     ['half', 'reg_id'],
                                     ['run', 'reg_num'],
-                                    subset=(info.reg_id > 0))
+                                    subset=(info.reg_id >0))
             data_info['names'] = [
                 f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
             # Baseline substraction

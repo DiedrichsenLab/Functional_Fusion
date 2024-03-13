@@ -26,7 +26,7 @@ atlas_dir = base_dir + '/Atlases'
 
 def extract_language(atlas='MNISymC2'):
     LL_dataset = DataSetLanguage(data_dir)
-    LL_dataset.extract_all(ses_id = 'ses-01',type = 'CondRun', atlas = atlas)
+    LL_dataset.extract_all(ses_id = 'ses-02',type = 'CondHalf', atlas = atlas)
 
 # def extract_langloc_fs32k(ses_id='ses-01',type='TaskHalf'):
 #     LL_dataset = DataSetPontine(data_dir)
