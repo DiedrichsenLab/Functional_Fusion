@@ -1751,7 +1751,7 @@ class DataSetLanguage(DataSetNative):
         self.part_ind = 'half'
 
     def condense_data(self, data, info,
-                      type='TaskHalf',
+                      type='CondHalf',
                       participant_id=None,
                       ses_id=None):
         """ Condense the data from the language localizer project after extraction
@@ -1775,39 +1775,37 @@ class DataSetLanguage(DataSetNative):
         """
 
         # Depending on the type, make a new contrast
-        info['half'] = 2 - (info.run < 5)
+        info['half'] = info['half'] = (info.run % 2) + 1
         n_cond = np.max(info.reg_id)
 
         if type == 'CondHalf':
             data_info, C = agg_data(info,
                                     ['half', 'reg_id'],
                                     ['run', 'reg_num'],
-                                    subset=(info.reg_id >0))
+                                    subset=(info.inst == 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+            B = np.ones((data_info.shape[0],1))
+            
 
         elif type == 'CondRun':
 
             data_info, C = agg_data(info,
                                     ['run', 'reg_id'],
                                     ['reg_num'],
-                                    subset=(info.reg_id > 0))
+                                    subset=(info.inst == 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
-            # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
         elif type == 'CondAll':
             data_info, C = agg_data(info,
                                     ['reg_id'],
                                     ['run', 'half', 'reg_num'],
-                                    subset=(info.reg_id > 0))
+                                    subset=(info.inst == 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+            B = np.ones((data_info.shape[0],1))
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
@@ -1820,6 +1818,52 @@ class DataSetLanguage(DataSetNative):
         CI = matrix.indicator(info.run * info.inst, positive=True)
         C = np.c_[C, CI]
 
-        data_new = optimal_contrast(data_n, C, X, reg_in)
+        data_new = optimal_contrast(data_n, C, X, reg_in, baseline= B)
 
         return data_new, data_info
+    
+    def extract_all(self,
+                    ses_id='ses-01',
+                    type='CondHalf',
+                    atlas='SUIT3',
+                    smooth=2.0,
+                    subj='all'):
+        """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
+
+        Args:
+            ses_id (str):
+                Session. Defaults to 'ses-s1'.
+            type (str):
+                Type for condense_data. Defaults to 'CondHalf'.
+            atlas (str):
+                Short atlas string. Defaults to 'SUIT3'.
+            smooth (float):
+                Smoothing kernel. Defaults to 2.0.
+            subj (list / str):
+                List of Subject numbers to get use. Default = 'all'
+        """
+        myatlas, _ = am.get_atlas(atlas)
+        # create and calculate the atlas map for each participant
+        T = self.get_participants()
+        if subj != 'all':
+            T = T[T['participant_id'].isin(subj)]
+
+        for s in T.participant_id:
+            print(f'Atlasmap {s}')
+            atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
+                                                  smooth=smooth)
+            print(f'Extract {s}')
+            fnames, info = self.get_data_fnames(s, ses_id, type=type)
+            data = am.get_data_nifti(fnames, atlas_maps)
+            data, info = self.condense_data(data, info, type,
+                                            participant_id=s, ses_id=ses_id)
+            # Write out data as CIFTI file
+            C = myatlas.data_to_cifti(data, info.names)
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir +
+                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(
+                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+    
+    

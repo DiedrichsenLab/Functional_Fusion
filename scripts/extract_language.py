@@ -20,45 +20,30 @@ data_dir = base_dir + '/Language'
 atlas_dir = base_dir + '/Atlases'
 
 
-# def extract_langloc_group(atlas='SUIT3'):
-#     LL_dataset = DataSetLangloc(data_dir)
-#     LL_dataset.group_average_data(type, atlas)
+types = ['CondAll']
+atlases  = ['fs32k']
+session_list = ['ses-02']
 
-def extract_language(atlas='MNISymC2'):
-    LL_dataset = DataSetLanguage(data_dir)
-    LL_dataset.extract_all(ses_id = 'ses-02',type = 'CondHalf', atlas = atlas)
 
-# def extract_langloc_fs32k(ses_id='ses-01',type='TaskHalf'):
-#     LL_dataset = DataSetPontine(data_dir)
-#     LL_dataset.extract_all_fs32k(ses_id,type)
+LL_dataset = DataSetLanguage(data_dir)
+for ses in session_list:
 
-# def show_langloc_suit(subj,sess,cond):
-#     mask = atlas_dir + '/tpl-SUIT/tpl-SUIT_res-3_gmcmask.nii'
-#     suit_atlas = am.AtlasVolumetric('cerebellum',mask_img=mask)
-#     LL_dataset = DataSetPontine(data_dir)
-#     T = LL_dataset.get_participants()
-#     s = T.participant_id[subj]
-#     ses = f'ses-{sess:02d}'
-#     C = nb.load(LL_dataset.data_dir.format(s) + f'/{s}_space-SUIT3_{ses}_TaskHalf.dscalar.nii')
-#     D = pd.read_csv(LL_dataset.data_dir.format(s) + f'/{s}_{ses}_info-TaskHalf.tsv',sep='\t')
-#     X = C.get_fdata()
-#     Nifti = suit_atlas.data_to_nifti(X)
-#     surf_data = suit.flatmap.vol_to_surf(Nifti)
-#     fig = suit.flatmap.plot(surf_data[:,cond],render='plotly')
-#     fig.show()
-#     print(f'Showing {D.cond_name[cond]}')
-#     pass
+    print(f'extracting session {ses}')
+    participants_tsv = pd.read_csv(f'{data_dir}/participants.tsv',sep = '\t')
+    if ses  == 'ses-01':
+        filtered_participants = participants_tsv[participants_tsv['ses'].str.contains('loc')]
+        subj_list = filtered_participants['participant_id'].tolist()
 
-if __name__ == "__main__":
-    # extract_langloc_group( atlas='MNISymC3')
-    # extract_langloc_fs32k(ses_id='ses-01',type='TaskHalf')
-    # extract_langloc_suit(ses_id='ses-01', type='TaskHalf', atlas='MNISymC2')
-    # show_langloc_group(type='TaskHalf', atlas='SUIT3',
-    #                    cond='all', savefig=True)
+    elif ses == 'ses-02':
+        filtered_participants = participants_tsv[participants_tsv['ses'].str.contains('sen')]
+        subj_list = filtered_participants['participant_id'].tolist()
+    else:
+        raise Exception('wrong session values')
 
-    # dataset = DataSetLanguageLocalizer(data_dir)
-    # dataset.group_average_data(atlas='MNISymC3')
-    # dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)
 
-    extract_language()
-    pass
+    for type in types:
+        print(f'extracting type {type}')
+        for atlas in atlases:
+            print(f'extracting atlas: {atlas}')
+            LL_dataset.extract_all(ses_id = ses,type = type, atlas = atlas, subj= subj_list)
+ 
