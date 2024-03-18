@@ -20,7 +20,7 @@ data_dir = base_dir + '/Language'
 atlas_dir = base_dir + '/Atlases'
 
 
-types = ['CondAll']
+types = ['CondHalf']
 atlases  = ['fs32k']
 session_list = ['ses-02']
 

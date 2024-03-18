@@ -1785,7 +1785,6 @@ class DataSetLanguage(DataSetNative):
                                     subset=(info.inst == 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
-            B = np.ones((data_info.shape[0],1))
             
 
         elif type == 'CondRun':
@@ -1796,7 +1795,6 @@ class DataSetLanguage(DataSetNative):
                                     subset=(info.inst == 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
-            B = matrix.indicator(data_info.half, positive=True)
 
         elif type == 'CondAll':
             data_info, C = agg_data(info,
@@ -1805,20 +1803,15 @@ class DataSetLanguage(DataSetNative):
                                     subset=(info.inst == 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
-            B = np.ones((data_info.shape[0],1))
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
-
-        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-
+        
         # Load the designmatrix and perform optimal contrast
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
         X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
         reg_in = np.arange(C.shape[1], dtype=int)
-        CI = matrix.indicator(info.run * info.inst, positive=True)
-        C = np.c_[C, CI]
-
-        data_new = optimal_contrast(data_n, C, X, reg_in, baseline= B)
+        data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
 
         return data_new, data_info
     
