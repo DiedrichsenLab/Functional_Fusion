@@ -7,7 +7,7 @@ import pandas as pd
 from pathlib import Path
 import re
 import Functional_Fusion.dataset as ds
-import scripts.paths as paths
+import scripts.fusion_paths as paths
 
 
 base_dir = paths.set_base_dir()
@@ -203,7 +203,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 
         nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
         info.to_csv(
-            dest_dir + f'{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
+            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
 
 
 def get_cortical_target(target):
