@@ -46,8 +46,9 @@ def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
 
     if 'reg_id' not in D.columns:
         n = sum(D['run'] == 1)
-        D['reg_num'] = np.arange(N)
-        D['reg_id'] = D['reg_num'] % n
+        D['reg_num'] = np.arange(1,N+1)
+        D['reg_id'] = ((D['reg_num'] - 1) % n) + 1
+        
 
     D.to_csv(dest_dir + f'/{sub_id}_{sess_id}_reginfo.tsv', sep='\t')
 
@@ -76,7 +77,9 @@ def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
 if __name__ == '__main__':
     src_base_dir = base_dir + '/Cerebellum/Language/Language_7T'
     dest_base_dir = base_dir + '/FunctionalFusion/Language'
-    participant_list = ['sub-01','sub-02','sub-03','sub-04','sub-06','sub-07','sub-08']
+    # participant_list = ['sub-01','sub-02','sub-03','sub-04','sub-06','sub-07','sub-08']
+    participant_list = ['sub-02']
+
 
 
     for participant_id in participant_list:
