@@ -16,6 +16,8 @@ from Functional_Fusion.import_data import *
 base_dir = '/Volumes/diedrichsen_data$/data'
 if not Path(base_dir).exists():
     base_dir = '/cifs/diedrichsen/data'
+if not Path(base_dir).exists():
+    base_dir = 'Y:/data'
 
 
 def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):

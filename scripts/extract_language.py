@@ -1,28 +1,31 @@
-# Script for importing the Pontine data set to general format.
+"""
+Script for importing the Language dataset to general format.
+
+Created Dec 2023
+Author: Bassel Arafat
+"""
+
 import pandas as pd
-import shutil
 from pathlib import Path
 # import mat73
-import numpy as np
-import sys
 import Functional_Fusion.atlas_map as am
-from Functional_Fusion.dataset import DataSetLanguage, DataSetPontine
-import nibabel as nb
-import SUITPy as suit
-import matplotlib.pyplot as plt
+from Functional_Fusion.dataset import DataSetLanguage
 
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/cifs/diedrichsen/data/FunctionalFusion'
+if not Path(base_dir).exists():
+    base_dir = 'Y:/data/FunctionalFusion'
+
 
 data_dir = base_dir + '/Language'
 atlas_dir = base_dir + '/Atlases'
 
 
-types = ['CondHalf']
-atlases  = ['fs32k']
-session_list = ['ses-02']
+types = ['CondHalf','CondAll','CondRun']
+atlases  = ['MNISymC2','fs32k','SUIT3']
+session_list = ['ses-01','ses-02']
 
 
 LL_dataset = DataSetLanguage(data_dir)
