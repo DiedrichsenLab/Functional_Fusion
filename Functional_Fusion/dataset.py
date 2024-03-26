@@ -1065,7 +1065,7 @@ class DataSetHcpResting(DataSetCifti):
         super().__init__(dir)
         self.sessions = ['ses-rest1', 'ses-rest2']
         self.hem_name = ['cortex_left', 'cortex_right']
-        self.default_type = 'Net69Run'
+        self.default_type = 'Net67Run'
         self.cond_ind = 'net_id'
         self.cond_name = 'names'
         self.part_ind = 'half'
