@@ -39,6 +39,14 @@
         "structure": "cerebellum",
         "normspace": "MNISymC",
         "type": "AtlasVolumeSymmetric"},
+     "MNIAsymC3": {
+     	"dir": "tpl-MNI152NLin6AsymC",
+        "space": "MNI152NLin6AsymC",
+        "res": 3,
+        "mask": "tpl-MNI152NLin6AsymC_res-3_gmcmask.nii",
+        "structure": "cerebellum",
+        "normspace": "FSL",
+        "type": "AtlasVolumetric"},
      "MNIAsymC2": {
      	"dir": "tpl-MNI152NLin6AsymC",
         "space": "MNI152NLin6AsymC",

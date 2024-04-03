@@ -1612,13 +1612,13 @@ class DataSetSomatotopic(DataSetMNIVol):
         # if you have xfm files per subject, then you can get it from the anat dir under individual subject
         atlas_maps = []
         if atlas.structure == 'cerebellum':
-            deform = self.atlas_dir + \
-                f'/tpl-{self.space}/tpl-{self.space}_from-SUIT_xfm.nii'
+            deform = os.path.dirname(am.__file__) + '/Atlases' + \
+                     f'/tpl-{self.space}/tpl-{self.space}_space-SUIT_xfm.nii'
             if atlas.name[0:4] != 'SUIT':
                 deform1 = am.get_deform(atlas.space, 'SUIT')
                 deform = [deform1, deform]
-            mask = self.atlas_dir + \
-                f'/{self.space}/{self.space}_desc-cereb_mask.nii'
+            mask = os.path.dirname(am.__file__) + '/Atlases' + \
+                   f'/tpl-{self.space}/tpl-{self.space}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
         elif atlas.space == 'fs32k':
@@ -1823,3 +1823,72 @@ class DataSetLanguage(DataSetNative):
         data_new = optimal_contrast(data_n, C, X, reg_in)
 
         return data_new, data_info
+
+
+class DataSetUKBResting(DataSetMNIVol):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.group_space = 'tpl-MNI152NLin6Asym'
+        self.sessions = ['ses-rest1', 'ses-rest2']
+        self.default_type = 'ICA25All'
+        self.cond_ind = 'net_id'
+        self.cond_name = 'names'
+        self.part_ind = 'half'
+    def get_data_fnames(self, participant_id, ses_id):
+        """ Gets all raw data files
+        Args:
+            participant_id (str): Subject
+        Returns:
+            fnames (list): List of fnames
+        """
+        dirw = self.func_dir.format(participant_id)
+        fnames = []
+        if ses_id == "ses-rest1":
+            runs = np.arange(0, 1)
+        elif ses_id == "ses-rest2":
+            runs = np.arange(1, 2)
+        # idx = self.sessions.index(ses_id)
+        T = pd.read_csv(
+            dirw + f'/{participant_id}_{ses_id}_reginfo.tsv', sep='\t')
+        for r in runs:
+            fnames.append(
+                f'{dirw}/sub-{participant_id}_run-{r}_space-MNIAsym2.dtseries.nii')
+        return fnames, T
+    def get_atlasmaps(self, atlas, sub=None, ses_id=None, smooth=None):
+        """ Gets group atlasmaps.
+        Assumes that all scans are in the same space (self.space)
+
+        Args:
+            sub (str; optional): Subject
+        Returns:
+            atlas_maps (list): List of atlasmaps
+        """
+        # if you have group xfm file, then you get it from the atlas directory
+        # if you have xfm files per subject, then you can get it from the anat dir under individual subject
+        atlas_maps = []
+        if atlas.structure == 'cerebellum':
+            deform = os.path.dirname(am.__file__) + '/Atlases' + \
+                     f'/tpl-{self.space}/tpl-{self.space}_space-SUIT_xfm.nii'
+            if atlas.name[0:4] != 'SUIT':
+                deform1 = am.get_deform(atlas.space, 'SUIT')
+                deform = [deform1, deform]
+            mask = os.path.dirname(am.__file__) + '/Atlases' + \
+                   f'/tpl-{self.space}/tpl-{self.space}_desc-cereb_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
+        elif atlas.space == 'fs32k':
+            for i, hem in enumerate(['L', 'R']):
+                adir = self.anatomical_dir.format(sub)
+                pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
+                white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
+                mask = self.atlas_dir + \
+                    f'/{self.space}/{self.space}_mask.nii'
+                atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
+                                                  white, pial, mask))
+                atlas_maps[i].build()
+        return atlas_maps
+
+    def condense_data(self, data, info, type, participant_id=None, ses_id=None):
+        if type == 'Tseries':
+            info['names'] = info['timepoint']
+        return data, info
