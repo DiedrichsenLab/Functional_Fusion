@@ -77,8 +77,8 @@ def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
 if __name__ == '__main__':
     src_base_dir = base_dir + '/Cerebellum/Language/Language_7T'
     dest_base_dir = base_dir + '/FunctionalFusion/Language'
-    # participant_list = ['sub-01','sub-02','sub-03','sub-04','sub-06','sub-07','sub-08']
-    participant_list = ['sub-02']
+    participant_list = ['sub-01','sub-02','sub-03','sub-04','sub-06','sub-07','sub-08']
+    # participant_list = ['sub-02']
 
 
 

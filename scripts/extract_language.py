@@ -23,9 +23,9 @@ data_dir = base_dir + '/Language'
 atlas_dir = base_dir + '/Atlases'
 
 
-types = ['CondRun']
-atlases  = ['MNISymC2']
-session_list = ['ses-02']
+types = ['CondAll']
+atlases  = ['fs32k']
+session_list = ['ses-01']
 
 
 LL_dataset = DataSetLanguage(data_dir)

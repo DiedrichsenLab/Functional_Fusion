@@ -1782,7 +1782,7 @@ class DataSetLanguage(DataSetNative):
             data_info, C = agg_data(info,
                                     ['half', 'reg_id'],
                                     ['run', 'reg_num'],
-                                    subset=(info.inst == 0))
+                                    subset=(info.reg_id > 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
             
@@ -1792,7 +1792,7 @@ class DataSetLanguage(DataSetNative):
             data_info, C = agg_data(info,
                                     ['run', 'reg_id'],
                                     ['reg_num'],
-                                    subset=(info.inst == 0))
+                                    subset=(info.reg_id > 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
 
@@ -1800,7 +1800,7 @@ class DataSetLanguage(DataSetNative):
             data_info, C = agg_data(info,
                                     ['reg_id'],
                                     ['run', 'half', 'reg_num'],
-                                    subset=(info.inst == 0))
+                                    subset=(info.reg_id > 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
 
@@ -1859,4 +1859,110 @@ class DataSetLanguage(DataSetNative):
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
     
+    def group_average_data(self, ses_id=None,
+                               type=None,
+                               atlas='SUIT3',
+                               subj=None):
+            """Loads group data in SUIT space from a standard experiment structure
+            averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
+
+            Args:
+                ses_id (str, optional): Session ID. If not provided, the first session ID in the dataset will be used.
+                type (str, optional): Type of data. If not provided, the default type will be used.
+                atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+                subj (list or None, optional): Subset of subjects to include in the group average. If None, all subjects will be included.
+
+            """
+            if ses_id is None:
+                ses_id = self.sessions[0]
+            if type is None:
+                type = self.default_type
+
+            data, info = self.get_data(space=atlas, ses_id=ses_id,
+                                       type=type, subj=subj)
+            # average across participants
+            X = np.nanmean(data, axis=0)
+            # make output cifti
+            s = self.get_participants().participant_id[0]
+
+            if subj is not None:
+                s  = subj[0]
+            C = nb.load(self.data_dir.format(s) +
+                        f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            C = nb.Cifti2Image(dataobj=X, header=C.header)
+            # save output
+            dest_dir = op.join(self.data_dir.format('group'))
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+            nb.save(C, dest_dir +
+                    f'/group_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            if 'sn' in info.columns:
+                info = info.drop(columns=['sn'])
+
+            info.to_csv(dest_dir +
+                        f'/group_{ses_id}_info-{type}.tsv', sep='\t', index=False)
     
+    def plot_cerebellum(self, subject='group', sessions=None, atlas='SUIT3', type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
+        """Loads group data in SUIT3 space from a standard experiment structure
+        averaged across all subjects and projects to SUIT flatmap. Saves the results as .png figures in the data/group/figures directory.
+
+        Args:
+            sub (str, optional): Subject string. Defaults to group to plot data averaged across all subjects.
+            session (str, optional): Session string. Defaults to first session of in session list of dataset.
+            atlas (str, optional): Atlas string. Defaults to 'SUIT3'.
+            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
+            cond (str or list): List of condition indices (e.g. [0,1,2] for the first three conditions) or 'all'. Defaults to 'all'.
+            savefig (str, optional): Boolean indicating whether figure should be saved. Defaults to 'False'.
+            cmap (str, optional): Matplotlib colour map. Defaults to 'hot'.
+            colorbar (str, optional): Boolean indicating whether colourbar should be plotted in figure. Defaults to 'False'.
+        """
+        if sessions is None:
+            sessions = self.sessions
+        if type is None:
+            type = self.default_type
+        if subject == 'all':
+            subjects = self.get_participants().participant_id.tolist()
+        else:
+            subjects = [subject]
+
+        atlasmap, atlasinfo = am.get_atlas(atlas, self.atlas_dir)
+
+        for sub in subjects:
+            print(f'Plotting {sub}')
+            for session in sessions:
+                info = self.data_dir.split(
+                    '/{0}')[0] + f'/{sub}/data/{sub}_{session}_info-{type}.tsv'
+                data = self.data_dir.split(
+                    '/{0}')[0] + f'/{sub}/data/{sub}_space-{atlas}_{session}_{type}.dscalar.nii'
+
+                # Load average
+                C = nb.load(data)
+                D = pd.read_csv(info, sep='\t')
+                X = C.get_fdata()
+                # limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
+                limes = [np.percentile(X[np.where(~np.isnan(X))], 5), np.percentile(
+                    X[np.where(~np.isnan(X))], 95)]
+
+                if cond == 'all':
+                    conditions = D[self.cond_name]
+                else:
+                    conditions = D[self.cond_name][cond]
+
+                # -- Plot each condition in seperate figures --
+                dest_dir = self.data_dir.split('/{0}')[0] + f'/{sub}/figures/'
+                Path(dest_dir).mkdir(parents=True, exist_ok=True)
+                for c in conditions:
+                    condition_name = c.strip()
+                    D[D[self.cond_name] == c].index
+                    Nifti = atlasmap.data_to_nifti(
+                        X[D[D[self.cond_name] == c].index, :].mean(axis=0))
+                    surf_data = suit.flatmap.vol_to_surf(
+                        Nifti, space=atlasinfo['normspace'])
+                    fig = suit.flatmap.plot(
+                        surf_data, render='matplotlib', new_figure=True, cscale=limes, cmap=cmap, colorbar=colorbar)
+                    fig.set_title(condition_name)
+
+                    # save figure
+                    if savefig:
+                        plt.savefig(
+                            dest_dir + f'{sub}_{session}_{condition_name}.png')
+                    plt.clf()
