@@ -618,8 +618,6 @@ class DataSet:
                 info = info_raw[fields]
             else:
                 info = info_raw
-            # Reduce tsv file to the subset of subjects
-            info_raw = info_raw.iloc[subj, :]
 
             # Keep the most complete info
             if info.shape[0] > max:
