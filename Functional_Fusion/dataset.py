@@ -417,7 +417,7 @@ def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
         criterion (str):
             * 'global':         partition variance components for the whole pattern (N x P) -> returns a single row
             * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
-            * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
+            * 'condition_wise':     partition variance components for each condition separately -> returns as many rows as conditions
             * 'subject_wise':   partition variance components for the whole pattern (NxP) -> but return split by Subjects
     Returns:
         variances: (K x 3 ndarray): v_g, v_s, v_e (variance for group, subject, and noise), where K is the number of voxels, conditions, subjects, or 1
