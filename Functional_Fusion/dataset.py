@@ -416,7 +416,7 @@ def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
         criterion (str):
             * 'global':         partition variance components for the whole pattern (N x P) -> returns a single row
             * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
-            * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
+            * 'condition_wise':     partition variance components for each condition separately -> returns as many rows as conditions
             * 'subject_wise':   partition variance components for the whole pattern (NxP) -> but return split by Subjects
     Returns:
         variances: (K x 3 ndarray): v_g, v_s, v_e (variance for group, subject, and noise), where K is the number of voxels, conditions, subjects, or 1
@@ -618,8 +618,6 @@ class DataSet:
                 info = info_raw[fields]
             else:
                 info = info_raw
-            # Reduce tsv file to the subset of subjects
-            info_raw = info_raw.iloc[subj, :]
 
             # Keep the most complete info
             if info.shape[0] > max:
@@ -1686,11 +1684,40 @@ class DataSetDmcc(DataSetMNIVol):
     def __init__(self, dir):
         super().__init__(dir)
         self.space = 'MNI152NLin2009cAsym'
-        self.sessions = ['ses-axcpt_bas', 'ses-cuedts_bas', 'ses-stern_bas', 'ses-stroop_bas']
+        self.sessions = ['ses-axcpt-bas-mixed', 'ses-cuedts-bas-mixed', 'ses-stern-bas-mixed', 'ses-stroop-bas-mixed']
         self.default_type = 'CondHalf'
         self.cond_ind = 'reg_id'
         self.cond_name = 'cond_name'
-        self.part_ind = 'run'
+        self.part_ind = 'knot_num'
+
+    def get_data_fnames(self, participant_id, session_id=None, type='Cond'):
+        """ Gets all raw data files
+        Args:
+            participant_id (str): Subject
+            session_id (str): Session ID. Defaults to None.
+            type (str): Type of data. Defaults to 'Cond' for task-based data. For rest data use 'Tseries'.
+        Returns:
+            fnames (list): List of fnames, last one is the resMS image
+            T (pd.DataFrame): Info structure for regressors (reginfo)
+        """
+        dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
+        # handle subjects with missing pro or rea sessions
+        T = pd.read_csv(
+            dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+        
+        if type == 'Contrast': # if you wanna look/work with at contrasts
+            T = pd.read_csv(
+                dirw + f'/{participant_id}_{session_id}_coninfo.tsv', sep='\t')
+        
+        
+        if type[:4] == 'Cond' or type[:4] == 'Task' or type[:4] == 'Blck':
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
+            # fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
+        elif type == 'Contrast':
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.con_id:02}_con.nii' for i, t in T.iterrows()]
+        elif type == 'Tseries':
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
+        return fnames, T
 
     def condense_data(self, data, info,
                       type='CondHalf',
@@ -1718,27 +1745,40 @@ class DataSetDmcc(DataSetMNIVol):
         """
         # Depending on the type, make a new contrast
         info['half'] = (info.run % 2) + 1
-        n_cond = np.max(info.reg_id)
-        if type == 'CondHalf':
-            data_info, C = agg_data(info, ['half', 'reg_id'], ['run'])
-            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
-                                  for i, d in data_info.iterrows()]
-        elif type == 'CondAll':
-            data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
+        # n_cond = np.max(info.reg_id)
+        
+        if type == 'CondAll':
+            data_info, C = agg_data(info, ['cond_num', 'cond_name'], ['knot_num', 'run'])
             data_info['names'] = [
                 f'{d.cond_name}' for i, d in data_info.iterrows()]
-        elif type == 'CondRun':
-            data_info, C = agg_data(info, ['run', 'half', 'reg_id'], [])
-            data_info['names'] = [f'{d.cond_name.strip()}-run{d.run}'
-                                  for i, d in data_info.iterrows()]
+        elif type == 'Contrast':
+            data_info, C = agg_data(info, ['contrast_num', 'contrast_name'], ['knot_num', 'run'])
+            data_info['names'] = [
+                f'{d.contrast_name}' for i, d in data_info.iterrows()]
+            
+        
 
         # Prewhiten the data
-        data_n = prewhiten_data(data)
+        # data_n = prewhiten_data(data)
+        # NOTE: I am currently using betas estimated using AFNI TentZero
+        # It does not output ResMS and based on the documentation, it prewhitens the data
+        # so the betas produced are already prewhitened.
+        # data_n = prewhiten_data(data)
+        data_n = data
 
-        # Combine with contrast
-        for i in range(len(data_n)):
-            data_n[i] = pinv(C) @ data_n[i]
-        return data_n, data_info
+        # Load the designmatrix and perform optimal contrast
+        if type != 'Contrast':
+            dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+            X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+            reg_in = np.arange(C.shape[1], dtype=int)
+            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
+        else:
+            data_new = data_n
+            for i in range(len(data_n)):
+                data_new[i] = pinv(C) @ data_n[i]
+
+        
+        return data_new, data_info
 
 
 class DataSetLanguage(DataSetNative):
