@@ -218,6 +218,7 @@ def agg_data(info, by, over, subset=None):
     # Build contrast matrix for averaging
     C = np.zeros((info.shape[0], data_info.shape[0]))
     for i, (k, v) in enumerate(info_gb.indices.items()):
+        print(i, k, v)
         C[indx[v], i] = 1
     return data_info, C
 
@@ -1750,22 +1751,38 @@ class DataSetDmcc(DataSetMNIVol):
         # n_cond = np.max(info.reg_id)
         
         if type == 'CondAll':
-            data_info, C = agg_data(info, ['cond_num', 'cond_name'], ['knot_num', 'run'])
+            data_info, C = agg_data(info, ['cond_num', 'cond_name'], ['knot_num', 'cond_name_knot'])
             data_info['names'] = [
                 f'{d.cond_name}' for i, d in data_info.iterrows()]
         elif type == 'Contrast':
-            data_info, C = agg_data(info, ['contrast_num', 'contrast_name'], ['knot_num', 'run'])
+            data_info, C = agg_data(info, ['contrast_num', 'contrast_name'], ['knot_num'])
             data_info['names'] = [
                 f'{d.contrast_name}' for i, d in data_info.iterrows()]
+        elif type == 'CondKnot':
+            data_info, C = agg_data(info, ['cond_name_knot', 'knot_num'], [])
+            data_info['names'] = [
+                f'{d.cond_name_knot}' for i, d in data_info.iterrows()]
+        elif type == "CondKnotIn":
+            # this is for calculating the average beta per condition by using specific knots
+            if info["task_name"][0] == "axcpt":
+                # for axcpt knot numbers 7,8, 9 will be used
+                # so first I add a flag to the data_info to indicate which knots are used
+                # then I will use this flag to filter the data
+                # then I will calculate the average beta for each condition, 
+                # by averaging across the knots of "interest" (hence the name "CondKnotIn")
+                info["knot_num_in"] = 0 
+                info.loc[info["knot_num"].isin([7,8,9]), "knot_num_in"] = 1
+                data_info, C = agg_data(info, ['cond_num', 'cond_name', 'knot_num_in'], ['knot_num', 'cond_name_knot'], subset=info.knot_num_in == 1)
+                data_info['names'] = [
+                f'{d.cond_name}_{d.knot_num_in}' for i, d in data_info.iterrows()]
+        # elif type = "CondAll":
+            
             
         
 
         # Prewhiten the data
         # data_n = prewhiten_data(data)
-        # NOTE: I am currently using betas estimated using AFNI TentZero
-        # It does not output ResMS and based on the documentation, it prewhitens the data
-        # so the betas produced are already prewhitened.
-        # data_n = prewhiten_data(data)
+        # no need to prewhiten the data since it's already prewhitened by AFNI
         data_n = data
 
         # Load the designmatrix and perform optimal contrast
@@ -1774,6 +1791,7 @@ class DataSetDmcc(DataSetMNIVol):
             X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
             reg_in = np.arange(C.shape[1], dtype=int)
             data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
+            # optimal_contrast(data, C, X, reg_in=None, baseline=None)
         else:
             data_new = data_n
             for i in range(len(data_n)):
