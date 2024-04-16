@@ -417,7 +417,7 @@ def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
         criterion (str):
             * 'global':         partition variance components for the whole pattern (N x P) -> returns a single row
             * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
-            * 'condition_wise':     partition variance components for each condition separately -> returns as many rows as conditions
+            * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
             * 'subject_wise':   partition variance components for the whole pattern (NxP) -> but return split by Subjects
     Returns:
         variances: (K x 3 ndarray): v_g, v_s, v_e (variance for group, subject, and noise), where K is the number of voxels, conditions, subjects, or 1
@@ -619,6 +619,7 @@ class DataSet:
                 info = info_raw[fields]
             else:
                 info = info_raw
+
             # Reduce tsv file to the subset of subjects
             info_raw = info_raw.iloc[subj, :]
 
@@ -722,7 +723,6 @@ class DataSet:
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
-
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
                  subj=None, fields=None, smooth=None, verbose=False):
@@ -1772,6 +1772,11 @@ class DataSetDmcc(DataSetMNIVol):
                 # by averaging across the knots of "interest" (hence the name "CondKnotIn")
                 info["knot_num_in"] = 0 
                 info.loc[info["knot_num"].isin([7,8,9]), "knot_num_in"] = 1
+<<<<<<< Updated upstream
+=======
+                # dirty: otherwise block condition will be excluded
+                info.loc[info["cond_name"] == 'block', "knot_num_in"] = 1
+>>>>>>> Stashed changes
                 data_info, C = agg_data(info, ['cond_num', 'cond_name', 'knot_num_in'], ['knot_num', 'cond_name_knot'], subset=info.knot_num_in == 1)
                 data_info['names'] = [
                 f'{d.cond_name}_{d.knot_num_in}' for i, d in data_info.iterrows()]
