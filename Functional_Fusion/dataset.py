@@ -218,7 +218,6 @@ def agg_data(info, by, over, subset=None):
     # Build contrast matrix for averaging
     C = np.zeros((info.shape[0], data_info.shape[0]))
     for i, (k, v) in enumerate(info_gb.indices.items()):
-        print(i, k, v)
         C[indx[v], i] = 1
     return data_info, C
 
@@ -620,9 +619,6 @@ class DataSet:
             else:
                 info = info_raw
 
-            # Reduce tsv file to the subset of subjects
-            info_raw = info_raw.iloc[subj, :]
-
             # Keep the most complete info
             if info.shape[0] > max:
                 info_com = info
@@ -704,8 +700,10 @@ class DataSet:
         myatlas, _ = am.get_atlas(atlas)
         # create and calculate the atlas map for each participant
         T = self.get_participants()
-        if subj != 'all':
+        if isinstance(subj, list) or (isinstance(subj, np.ndarray)):
             T = T.iloc[subj]
+        elif isinstance(subj, str)and (subj != 'all'):
+            T = T[T.participant_id == subj]
         for s in T.participant_id:
             print(f'Atlasmap {s}')
             atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
@@ -723,6 +721,7 @@ class DataSet:
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
                  subj=None, fields=None, smooth=None, verbose=False):
@@ -1772,11 +1771,6 @@ class DataSetDmcc(DataSetMNIVol):
                 # by averaging across the knots of "interest" (hence the name "CondKnotIn")
                 info["knot_num_in"] = 0 
                 info.loc[info["knot_num"].isin([7,8,9]), "knot_num_in"] = 1
-<<<<<<< Updated upstream
-=======
-                # dirty: otherwise block condition will be excluded
-                info.loc[info["cond_name"] == 'block', "knot_num_in"] = 1
->>>>>>> Stashed changes
                 data_info, C = agg_data(info, ['cond_num', 'cond_name', 'knot_num_in'], ['knot_num', 'cond_name_knot'], subset=info.knot_num_in == 1)
                 data_info['names'] = [
                 f'{d.cond_name}_{d.knot_num_in}' for i, d in data_info.iterrows()]
