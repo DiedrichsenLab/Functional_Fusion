@@ -579,6 +579,7 @@ class AtlasSurface(Atlas):
                         name=struct_name,
                     )
                     bm_list.append((pname, bm))
+            indx = indx + n_vert
         parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
         return parcel_axis
 
