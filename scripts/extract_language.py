@@ -23,9 +23,9 @@ data_dir = base_dir + '/Language'
 atlas_dir = base_dir + '/Atlases'
 
 
-types = ['CondAll']
-atlases  = ['fs32k']
-session_list = ['ses-01']
+types = ['CondAll','CondRun']
+atlases  = ['SUIT3','fs32k']
+session_list = ['ses-sencoding_sentence_01','ses-sencoding_sentence_02']
 
 
 LL_dataset = DataSetLanguage(data_dir)
@@ -33,13 +33,20 @@ for ses in session_list:
 
     print(f'extracting session {ses}')
     participants_tsv = pd.read_csv(f'{data_dir}/participants.tsv',sep = '\t')
-    if ses  == 'ses-01':
+    if ses  == 'ses-localizer_cond':
         filtered_participants = participants_tsv[participants_tsv['ses'].str.contains('loc')]
         subj_list = filtered_participants['participant_id'].tolist()
 
-    elif ses == 'ses-02':
+    elif ses == 'ses-sencoding_category':
         filtered_participants = participants_tsv[participants_tsv['ses'].str.contains('sen')]
         subj_list = filtered_participants['participant_id'].tolist()
+    elif ses == 'ses-sencoding_sentence_01':
+        filtered_participants = participants_tsv[participants_tsv['ses'].str.contains('sen')]
+        subj_list = filtered_participants['participant_id'].tolist()
+    elif ses == 'ses-sencoding_sentence_02':
+        filtered_participants = participants_tsv[participants_tsv['ses'].str.contains('sen')]
+        subj_list = filtered_participants['participant_id'].tolist()
+
     else:
         raise Exception('wrong session values')
 

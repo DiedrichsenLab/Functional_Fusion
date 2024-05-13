@@ -1822,9 +1822,11 @@ class DataSetLanguage(DataSetNative):
             data_info, C = agg_data(info,
                                     ['half', 'reg_id'],
                                     ['run', 'reg_num'],
-                                    subset=(info.reg_id > 0))
+                                    subset=(info.inst == 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+            # Baseline substraction
+            B = matrix.indicator(data_info.half, positive=True)
             
 
         elif type == 'CondRun':
@@ -1832,17 +1834,21 @@ class DataSetLanguage(DataSetNative):
             data_info, C = agg_data(info,
                                     ['run', 'reg_id'],
                                     ['reg_num'],
-                                    subset=(info.reg_id > 0))
+                                    subset=(info.inst == 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+            # Baseline substraction
+            B = matrix.indicator(data_info.run, positive=True)
 
         elif type == 'CondAll':
             data_info, C = agg_data(info,
                                     ['reg_id'],
                                     ['run', 'half', 'reg_num'],
-                                    subset=(info.reg_id > 0))
+                                    subset=(info.inst == 0))
             data_info['names'] = [
                 f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
+            # Baseline substraction
+            B = np.ones((data_info.shape[0],1))
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
@@ -1851,7 +1857,15 @@ class DataSetLanguage(DataSetNative):
         dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
         X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
         reg_in = np.arange(C.shape[1], dtype=int)
-        data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
+        if ses_id == 'ses-localizer_cond':
+            #  contrast for all instructions
+            CI = matrix.indicator(info.run * info.inst, positive=True)
+            C = np.c_[C, CI]
+            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
+        elif ses_id == 'ses-sencoding_category':
+            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
+        elif ses_id == 'ses-sencoding_sentence_01' or 'ses-sencoding_sentence_02':
+            data_new = data_n
 
         return data_new, data_info
     
@@ -1891,7 +1905,11 @@ class DataSetLanguage(DataSetNative):
             data, info = self.condense_data(data, info, type,
                                             participant_id=s, ses_id=ses_id)
             # Write out data as CIFTI file
-            C = myatlas.data_to_cifti(data, info.names)
+            if ses_id == 'ses-sencoding_sentence_01' or 'ses-sencoding_sentence_02':
+                list_of_strings = [str(i) for i in range(1, data[0].shape[0] + 1)]
+                C = myatlas.data_to_cifti(data, list_of_strings)
+            else:
+                C = myatlas.data_to_cifti(data, info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
             nb.save(C, dest_dir +
@@ -1997,8 +2015,9 @@ class DataSetLanguage(DataSetNative):
                         X[D[D[self.cond_name] == c].index, :].mean(axis=0))
                     surf_data = suit.flatmap.vol_to_surf(
                         Nifti, space=atlasinfo['normspace'])
+                    cscale = [-0.1,0.1]
                     fig = suit.flatmap.plot(
-                        surf_data, render='matplotlib', new_figure=True, cscale=limes, cmap=cmap, colorbar=colorbar)
+                        surf_data, render='matplotlib', new_figure=True, cscale=cscale, cmap=cmap, colorbar=colorbar)
                     fig.set_title(condition_name)
 
                     # save figure

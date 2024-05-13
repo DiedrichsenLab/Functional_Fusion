@@ -16,8 +16,6 @@ from Functional_Fusion.import_data import *
 base_dir = '/Volumes/diedrichsen_data$/data'
 if not Path(base_dir).exists():
     base_dir = '/cifs/diedrichsen/data'
-if not Path(base_dir).exists():
-    base_dir = 'Y:/data'
 
 
 def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
@@ -44,11 +42,13 @@ def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
 
     N = len(D)
 
+    if sess_id == 'ses-sencoding_sentence_02':
+        D['run'] = D['run']-10
+
     if 'reg_id' not in D.columns:
         n = sum(D['run'] == 1)
-        D['reg_num'] = np.arange(1,N+1)
-        D['reg_id'] = ((D['reg_num'] - 1) % n) + 1
-        
+        D['reg_num'] = np.arange(N)
+        D['reg_id'] = D['reg_num'] % n
 
     D.to_csv(dest_dir + f'/{sub_id}_{sess_id}_reginfo.tsv', sep='\t')
 
@@ -75,68 +75,75 @@ def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
             print('skipping ' + src[i])
 
 if __name__ == '__main__':
+    # src_base_dir = base_dir + '/Cerebellum/Language/Language_7T'
+    # dest_base_dir = base_dir + '/FunctionalFusion/Language'
+    # ses = 'ses-sencoding_category'
+    # glm =  'glm_sencoding_category'
+    # # participant_list = ['sub-01','sub-02','sub-03','sub-04','sub-06','sub-07','sub-08'] #localizer
+    # participant_list = ['sub-02','sub-03','sub-06','sub-07']                              # sencoding
+
+    # for participant_id in participant_list:
+    #     print(f'importing {participant_id}')
+
+        # # # # --- Importing SUIT ---
+        # source_dir = '{}/suit/anatomicals/{}'.format(src_base_dir, participant_id)
+        # dest_dir = '{}/derivatives/{}/suit'.format(dest_base_dir, participant_id)
+        # anat_name = 'anatomical'
+        # import_suit(source_dir,dest_dir,anat_name, participant_id)
+
+        # # # # # # --- Importing ANAT ---
+        # source_dir = '{}/anatomicals/{}'.format(src_base_dir, participant_id)
+        # dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
+        # anat_name = 'anatomical'
+        # import_anat(source_dir,dest_dir,anat_name,participant_id)
+
+        # # # # --- Importing Freesurfer ---
+        # source_dir = '{}/surfaceWB/data/{}/'.format(src_base_dir, participant_id)
+        # dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
+        # old_id = '{}'.format(participant_id)
+        # new_id = '{}'.format(participant_id)
+        # import_freesurfer(source_dir,dest_dir,old_id,new_id)
+
+        # # --- Importing Estimates ---
+        # source_dir = '{}/GLM_firstlevel/{}/{}/'.format(src_base_dir, glm, participant_id)
+        # dest_dir = '{}/derivatives/{}/estimates/{}'.format(dest_base_dir,participant_id,ses)
+        # subj_id = '{}'.format(participant_id)
+        # import_spm_glm(source_dir, dest_dir, subj_id, ses)
+
+        # # # # Importing design matrix
+        # source_dir = f'{src_base_dir}/GLM_firstlevel/{glm}/{participant_id}/'
+        # dest_dir = f'{dest_base_dir}/derivatives/{participant_id}/estimates/{ses}'
+        # import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
+
+
+
+
     src_base_dir = base_dir + '/Cerebellum/Language/Language_7T'
     dest_base_dir = base_dir + '/FunctionalFusion/Language'
-    participant_list = ['sub-01','sub-02','sub-03','sub-04','sub-06','sub-07','sub-08']
-    # participant_list = ['sub-02']
-
-
+    ses_origin = 'ses-03'
+    glm =  'glm_sencoding_sentence'
+    participant_list = ['sub-02','sub-03','sub-07']                              # sencoding
 
     for participant_id in participant_list:
-        print(f'importing data for {participant_id}')
+        print(f'importing {participant_id}')
 
-        print('getting suit stuff')
-        # # --- Importing SUIT ---
-        source_dir = '{}/suit/anatomicals/{}'.format(src_base_dir, participant_id)
-        dest_dir = '{}/derivatives/{}/suit'.format(dest_base_dir, participant_id)
-        anat_name = 'anatomical'
-        import_suit(source_dir,dest_dir,anat_name, participant_id)
+        if ses_origin == 'ses-02':
+            ses = 'ses-sencoding_sentence_01'
+        elif ses_origin == 'ses-03':
+            ses = 'ses-sencoding_sentence_02'
 
-        print('getting anat stuff')
-        # # # # # --- Importing ANAT ---
-        source_dir = '{}/anatomicals/{}'.format(src_base_dir, participant_id)
-        dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
-        anat_name = 'anatomical'
-        import_anat(source_dir,dest_dir,anat_name,participant_id)
+        # --- Importing Estimates ---
+        source_dir = '{}/GLM_firstlevel/{}/{}/{}'.format(src_base_dir, glm, participant_id,ses_origin)
+        dest_dir = '{}/derivatives/{}/estimates/{}'.format(dest_base_dir,participant_id,ses)
+        subj_id = '{}'.format(participant_id)
+        import_spm_glm(source_dir, dest_dir, subj_id, ses)
 
-        print('getting surface stuff')
-        # # # --- Importing Freesurfer ---
-        source_dir = '{}/surfaceWB/data/{}/'.format(src_base_dir, participant_id)
-        dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
-        old_id = '{}'.format(participant_id)
-        new_id = '{}'.format(participant_id)
-        import_freesurfer(source_dir,dest_dir,old_id,new_id)
+        # # # Importing design matrix
+        source_dir = f'{src_base_dir}/GLM_firstlevel/{glm}/{participant_id}/{ses_origin}'
+        dest_dir = f'{dest_base_dir}/derivatives/{participant_id}/estimates/{ses}'
+        import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
 
-        
-        tsv = pd.read_csv(f'{dest_base_dir}/participants.tsv', sep='\t')
-        participant_ses= tsv[tsv.participant_id == participant_id].ses.iloc[0]
-        if participant_ses == 'loc':
-            ses_list = ['ses-01']
-            glm_list = ['glm_11']
-        elif participant_ses == 'sen':
-            ses_list = ['ses-02']
-            glm_list = ['glm_22']
-        elif participant_ses == 'loc_sen':
-            ses_list = ['ses-01','ses-02']
-            glm_list = ['glm_11','glm_22']
-
-
-        for i,ses in enumerate(ses_list):
-            glm = glm_list[i]
-            print(f'getting glm for {ses}')
-            # # --- Importing Estimates ---
-            source_dir = '{}/GLM_firstlevel/{}/{}/'.format(src_base_dir, glm, participant_id)
-            dest_dir = '{}/derivatives/{}/estimates/{}'.format(dest_base_dir, participant_id,ses)
-            subj_id = '{}'.format(participant_id)
-            import_spm_glm(source_dir, dest_dir, subj_id, ses)
-
-            print(f'getting design matrix for {ses}')
-            # # # Importing design matrix
-            source_dir = f'{src_base_dir}/GLM_firstlevel/{glm}/{participant_id}'
-            dest_dir = f'{dest_base_dir}/derivatives/{participant_id}/estimates/{ses}'
-            import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
-
-
+  
         pass
 
 
