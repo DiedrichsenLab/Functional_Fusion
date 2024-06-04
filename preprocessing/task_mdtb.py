@@ -71,5 +71,5 @@ def make_tinfo_file():
             print(f'Created {tinfo_file}')
 
 if __name__ == "__main__":
-    copy_runs()
-    # make_tinfo_file()
+    # copy_runs()
+    make_tinfo_file()

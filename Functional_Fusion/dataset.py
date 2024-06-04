@@ -576,6 +576,8 @@ class DataSet:
             fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         elif type == 'Tseries':
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
+            T = pd.read_csv(
+            dirw + f'/{participant_id}_{session_id}_tinfo.tsv', sep='\t')
         return fnames, T
 
     def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None):
