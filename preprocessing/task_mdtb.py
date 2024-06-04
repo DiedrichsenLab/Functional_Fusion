@@ -16,7 +16,7 @@ fusion_dir = Path(f'{ut.base_dir}/MDTB/')
 runs = np.arange(1, 33)
 # get zeropadded numbers from 1 to 32
 runs = [f'{run:02d}' for run in runs]
-sessions = ["sc1", "sc2"]
+sessions = ["1", "2"]
 
 
 
@@ -27,10 +27,11 @@ if __name__ == "__main__":
     for subject in T.iterrows():
         subject = subject[1].participant_id
         for session in sessions:
-            task_dir = Path(f'{data_dir}/{session}/imaging_data/s{subject[-2:]}')
+            task_dir = Path(f'{data_dir}/sc{session}/imaging_data/s{subject[-2:]}')
+            # Remove 'c' from session
             for run in runs:
                 task_file = f"{str(task_dir)}/rrun_{run}.nii"
                 if op.exists(task_file):
                     subprocess.run(
-                        ['cp', task_file, f"{fusion_dir}/derivatives/{subject}/{subject}_ses-{session}_run-{run}.nii"])
+                        ['cp', task_file, f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}.nii"])
                 print(f'Copied {run} for {subject} in {session}')
