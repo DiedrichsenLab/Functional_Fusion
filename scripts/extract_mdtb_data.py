@@ -131,65 +131,55 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
     return data_reshaped
 
 if __name__ == "__main__":
-    # extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNISymC2',smooth=2.0)
-    # extract_mdtb(ses_id='ses-s1', type='CondRun', atlas='MNIAsymBg2',smooth=2.0)
-    # extract_mdtb(ses_id='ses-s1', type='CondHalf', atlas='fs32k', smooth=None)
-    # extract_mdtb(ses_id='ses-s2', type='CondHalf', atlas='fs32k', smooth=None)
-    # show_mdtb_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
-
-    # for s in [1,2,3]:
-    #     smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=s)
-    #     smooth_mdtb_fs32k(ses_id='ses-s2', type='CondHalf', smooth=s)
-
-    # # mdtb_dataset.group_average_data(atlas='MNISymC3')
-    # mdtb_dataset.group_average_data(atlas='MNISymC3', ses_id='ses-s2')
-    #
-    # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC3',
-    #                         colorbar=True, sessions=['ses-s2'])
-    #
 
     # -- Extract resting-state timeseries --
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC2', smooth=2.0)
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='fs32k', smooth=2.0)
 
-    # -- Get connectivity fingerprint --
-    T = pd.read_csv(
-        mdtb_dir + '/participants.tsv', delimiter='\t')
-    subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
-    # get indices of subjects
-    subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist()
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-    # conn.get_connectivity_fingerprint(dname,
-    #     type='Net69Run', space='MNISymC2', ses_id='ses-rest')
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Net300Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Net300Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Ico42Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Ico42Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Ico162Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Ico162Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+    # -- Extract task timeseries --
     mdtb_dataset = DataSetMDTB(mdtb_dir)
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    mdtb_dataset.extract_all(ses_id='ses-s1', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    mdtb_dataset.extract_all(ses_id='ses-s1', type='Tseries', atlas='fs32k', smooth=2.0)
+    mdtb_dataset.extract_all(ses_id='ses-s2', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    mdtb_dataset.extract_all(ses_id='ses-s2', type='Tseries', atlas='fs32k', smooth=2.0)
+    # -- Get connectivity fingerprint --
+    # T = pd.read_csv(
+    #     mdtb_dir + '/participants.tsv', delimiter='\t')
+    # subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
+    # # get indices of subjects
+    # subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist()
+    # # conn.get_connectivity_fingerprint(dname,
+    # #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    # # conn.get_connectivity_fingerprint(dname,
+    # #                                   type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+    # # conn.get_connectivity_fingerprint(dname,
+    # #     type='Net69Run', space='MNISymC2', ses_id='ses-rest')
+    # # conn.get_connectivity_fingerprint(dname,
+    # #                                   type='Net300Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    # # conn.get_connectivity_fingerprint(dname,
+    # #                                   type='Net300Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+    # # conn.get_connectivity_fingerprint(dname,
+    # #                                   type='Ico42Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    # # conn.get_connectivity_fingerprint(dname,
+    # #                                   type='Ico42Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+
+    # # conn.get_connectivity_fingerprint(dname,
+    # #                                   type='Ico162Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    # # conn.get_connectivity_fingerprint(dname,
+    # #                                   type='Ico162Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+    # mdtb_dataset = DataSetMDTB(mdtb_dir)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     
 
-    # -- Group Average Data --
-    # mdtb_dataset.group_average_data(atlas='MNISymC2', ses_id='ses-rest', type='Net69Run', subj=subject_subset)
-    # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=['ses-rest'], type='Net69Run')
+    # # -- Group Average Data --
+    # # mdtb_dataset.group_average_data(atlas='MNISymC2', ses_id='ses-rest', type='Net69Run', subj=subject_subset)
+    # # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=['ses-rest'], type='Net69Run')
 
-    mdtb_dataset.group_average_data(
-        atlas='MNISymC2', ses_id='ses-rest', type='Fus06Run', subj=subject_subset)
-    mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=[
-                                 'ses-rest'], type='Fus06Run')
+    # mdtb_dataset.group_average_data(
+    #     atlas='MNISymC2', ses_id='ses-rest', type='Fus06Run', subj=subject_subset)
+    # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=[
+    #                              'ses-rest'], type='Fus06Run')
 
     # mdtb_dataset.group_average_data(
     #     atlas='Ico42Run', ses_id='ses-rest', type='Ico162Run', subj=subject_subset)
