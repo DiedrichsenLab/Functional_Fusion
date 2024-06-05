@@ -19,6 +19,8 @@ fusion_dir = Path(f'{ut.base_dir}/MDTB/')
 design_dir = Path(
     '~/code/Python/Functional_Fusion/preprocessing/design_files/').expanduser()
 runs = np.arange(1, 17)
+# For the MDTB dataset, task session 1 and 2 (sc1 & sc2) were concatenated, so the runs are from 1 to 32 when dealing with the original data files
+runs_sessionscat = np.arange(1, 33)
 # get zeropadded numbers from 1 to 32
 runs = [f'{run:02d}' for run in runs]
 sessions = ["1", "2"]
@@ -89,14 +91,14 @@ if __name__ == "__main__":
     # --- Create the design files for each subject and run single-subject ICA ---
     for subject_path in imaging_dir.glob('s[0-9][0-9]'):
         subject = subject_path.name[1:]
-        for run in runs:
+        for run in runs_sessionscat:
             fx.make_design(subject, run, imaging_dir, design_dir, template_filstem='ssica_task')
             # fx.run_ica(subject, run, imaging_dir, design_dir, template_filstem='ssica_task')
 
     # --- Copy motion parameter files to ica folders for feature extraction ---
     for subject_path in imaging_dir.glob('s[0-9][0-9]'):
         subject = subject_path.name[1:]
-        for run in runs:
+        for run in runs_sessionscat:
             fx.copy_motionparams(subject_path, run)
 
     # # --- After classification, run fix training and leave-one-out testing ---
