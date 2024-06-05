@@ -10,20 +10,30 @@ from datetime import datetime
 import os
 import shutil
 import numpy as np
+import Functional_Fusion.scripts.fix as fx
+
 
 data_dir = f'{ut.base_dir}/../Cerebellum/super_cerebellum/'
+imaging_dir = Path(f'{data_dir}/sc1/imaging_data/')
 fusion_dir = Path(f'{ut.base_dir}/MDTB/')
+design_dir = Path(
+    '~/code/Python/Functional_Fusion/preprocessing/design_files/').expanduser()
 runs = np.arange(1, 17)
 # get zeropadded numbers from 1 to 32
 runs = [f'{run:02d}' for run in runs]
 sessions = ["1", "2"]
 
-def copy_runs():
+def copy_runs(fix=False):
+    """
+        Copies the raw runs into the estimates folder for each subject.
+        If fix is True, it will copy the FIX-cleaned runs, otherwise it will copy the raw (uncleaned) data.
+    """
     T = pd.read_csv(f'{fusion_dir}/participants.tsv', delimiter='\t')
     # --- Copy the raw runs into estimates ---
     for subject in T.iterrows():
         subject = subject[1].participant_id
         for session in sessions:
+            imaging_folder = f'imaging_data_fix' if fix else f'imaging_data'
             task_dir = Path(f'{data_dir}/sc1/imaging_data/s{subject[-2:]}')
             # Remove 'c' from session
             for run in runs:
@@ -72,4 +82,38 @@ def make_tinfo_file():
 
 if __name__ == "__main__":
     # copy_runs()
-    make_tinfo_file()
+    # make_tinfo_file()
+
+    # ================================ FIX CLEANING ================================
+    
+    # --- Create the design files for each subject and run single-subject ICA ---
+    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]
+        for run in runs:
+            fx.make_design(subject, run, design_dir, template_filstem='ssica_task')
+            fx.run_ica(subject, run, design_dir, template_filstem='ssica_task)
+
+    # --- Copy motion parameter files to ica folders for feature extraction ---
+    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]
+        for run in runs:
+            fx.copy_motionparams(subject_path, run)
+
+    # # --- After classification, run fix training and leave-one-out testing ---
+    # labelled_folders = get_labelled_folders()
+    # subprocess.run(
+    #     ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_rest', '-l'] + labelled_folders)
+
+    # # --- Run leave-one-out testing using HCP training data and standard training data to compare acccuracy ---
+    # labelled_folders = get_labelled_folders()
+    # # change working directory to output directory (this is where the fix results will be saved)
+    # os.chdir(f'{rest_dir}/../fix_ica/')
+
+    # subprocess.run(
+    #     ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/HCP_hp2000.RData', 'hcp3t'] + labelled_folders)
+    # subprocess.run(
+    #     ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/Standard.RData', 'standard'] + labelled_folders)
+
+
+    # --- Copy the FIX-cleaned runs into estimates ---
+    # copy_runs(fix=True)

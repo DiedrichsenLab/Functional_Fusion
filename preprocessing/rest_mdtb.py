@@ -9,6 +9,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import shutil
+from Functional_Fusion.scripts.fix import copy_motionparams
 
 data_dir = f'{ut.base_dir}/../Cerebellum/super_cerebellum/'
 rest_dir = Path(f'{data_dir}/resting_state/imaging_data/')
@@ -85,59 +86,6 @@ def rename_anatomical(img_file):
     subprocess.run(['mv', str(opti_file), str(out_file)])
 
 
-def make_design(subject, run):
-    """Create the design file for the single-subject ICA for the subject and run.
-
-    Args:
-        subject (string): subject ID
-        run (string): run ID
-    """
-
-    img_file = Path(f"{rest_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
-    design_template = Path(f"{design_dir}/ssica_template.fsf")
-    design_output = Path(f"{design_dir}/ssica_{subject}_run-{run}.fsf")
-
-    if img_file.is_file() and not design_output.is_file():
-        # Read the contents of the template file
-        with open(design_template, 'r') as template_file:
-            design = template_file.read()
-
-        # Replace placeholders in fsf content
-        design = design.replace('XX', str(subject))
-        design = design.replace('YY', str(run))
-
-        # Write the modified content to the output file
-        with open(design_output, 'w') as output_file:
-            output_file.write(design)
-
-    elif not img_file.is_file():
-        print(f"{subject} {run}: missing image file")
-    else:
-        print(f"{subject} {run}: design file already created")
-
-
-def run_ica(subject, run):
-    """Run the single-subject ICA on the resting state data for the subject and run.
-
-    """
-
-    img_file = Path(f"{rest_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
-    ica_dir = Path(f"{rest_dir}/s{subject}/run{run}.ica")
-    design_output = Path(f"{design_dir}/ssica_{subject}_run-{run}.fsf")
-
-    if img_file.is_file():
-        print(f"Running ssica for subject {subject} run {run}")
-        subprocess.Popen(['feat', str(design_output)])
-
-    elif not img_file.is_file():
-        print(f"{subject} {run}: missing image file")
-    else:
-        print(f"{subject} {run}: ica already run")
-        # use firefox if ut.base_dir.startswith('/Volumes') else 'open'
-        if ut.base_dir.startswith('/Volumes'):
-            subprocess.run(['open', str(ica_dir / 'report.html')])
-        else:
-            subprocess.run(['firefox', str(ica_dir / 'report.html')])
 
 
 def balanced_subset(subjects, runs, percent_data):
@@ -258,14 +206,6 @@ def get_labelled_folders():
 
     return labelled_folders
 
-
-def copy_motionparams(subject_path, run):
-    ica_path = f"{str(subject_path)}/run{run}.feat"
-    rp_file = f"{str(subject_path)}/rp_run_{run}.txt"
-    if op.exists(ica_path) and op.exists(rp_file):
-        subprocess.run(['mkdir', f"{ica_path}/mc"])
-        subprocess.run(
-            ['cp', rp_file, f"{ica_path}/mc/prefiltered_func_data_mcf.par"])
 
 
 def move_cleaned(subject, run):
