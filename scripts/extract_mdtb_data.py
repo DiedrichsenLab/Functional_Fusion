@@ -137,15 +137,20 @@ if __name__ == "__main__":
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='fs32k', smooth=2.0)
 
     # -- Extract task timeseries --
-    mdtb_dataset = DataSetMDTB(mdtb_dir)
-    mdtb_dataset.extract_all(ses_id='ses-s1', type='Tseries', atlas='MNISymC3', smooth=2.0)
-    mdtb_dataset.extract_all(ses_id='ses-s1', type='Tseries', atlas='fs32k', smooth=2.0)
-    mdtb_dataset.extract_all(ses_id='ses-s2', type='Tseries', atlas='MNISymC3', smooth=2.0)
-    mdtb_dataset.extract_all(ses_id='ses-s2', type='Tseries', atlas='fs32k', smooth=2.0)
-    # -- Get connectivity fingerprint --
-    # T = pd.read_csv(
-    #     mdtb_dir + '/participants.tsv', delimiter='\t')
-    # subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
+    # mdtb_dataset = DataSetMDTB(mdtb_dir)
+    # mdtb_dataset.extract_all(ses_id='ses-s1', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    # mdtb_dataset.extract_all(ses_id='ses-s1', type='Tseries', atlas='fs32k', smooth=2.0)
+    # mdtb_dataset.extract_all(ses_id='ses-s2', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    # mdtb_dataset.extract_all(ses_id='ses-s2', type='Tseries', atlas='fs32k', smooth=2.0)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06Run', space='MNISymC3', ses_id='ses-s1')
+    conn.get_connectivity_fingerprint(dname,
+                                    type='Fus06Run', space='MNISymC3', ses_id='ses-s2')
+    
+    # -- Get connectivity fingerprint for rest session --
+    T = pd.read_csv(
+        mdtb_dir + '/participants.tsv', delimiter='\t')
+    subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
     # # get indices of subjects
     # subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist()
     # # conn.get_connectivity_fingerprint(dname,
@@ -167,9 +172,13 @@ if __name__ == "__main__":
     # #                                   type='Ico162Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     # # conn.get_connectivity_fingerprint(dname,
     # #                                   type='Ico162Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-    # mdtb_dataset = DataSetMDTB(mdtb_dir)
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Fus06Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
+    
+    
+    # Exctract Rest timeseries & connectivity fingerprint
+    mdtb_dataset = DataSetMDTB(mdtb_dir)   
+    mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06Run', space='MNISymC3', ses_id='ses-rest', subj=subject_subset)
     
 
     # # -- Group Average Data --

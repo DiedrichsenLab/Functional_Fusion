@@ -24,6 +24,7 @@ from numpy import eye, zeros, ones, empty, nansum, sqrt
 from numpy.linalg import pinv, solve
 import warnings
 import SUITPy as suit
+import glob
 import matplotlib.pyplot as plt
 
 
@@ -569,15 +570,33 @@ class DataSet:
             T (pd.DataFrame): Info structure for regressors (reginfo)
         """
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
-        T = pd.read_csv(
-            dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+        
         if type[:4] == 'Cond' or type[:4] == 'Task':
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
             fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
-        elif type == 'Tseries':
-            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
             T = pd.read_csv(
-            dirw + f'/{participant_id}_{session_id}_tinfo.tsv', sep='\t')
+                dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+        elif type == 'Tseries':
+            # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
+            fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-*.nii')
+            runs = [int(fname.split('run-')[-1].split('_')[0].split('.')[0]) for fname in fnames]
+            runs = np.unique(runs)
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in runs]
+            try:
+                # Load timeseries info file if it exists
+                T = pd.read_csv(
+                    dirw + f'/{participant_id}_{session_id}_tinfo.tsv', sep='\t')
+            except:
+                # Create timeseries info yourself if it doesn't exist
+                timepoints = [nb.load(fname).shape[-1] for fname in fnames]
+                runs = np.repeat(runs, timepoints)
+                # Timepoints start counting at 1, not 0!
+                timepoints = np.arange(sum(timepoints))+1
+                timepoints_string = [f'T{timepoint:04d}' for timepoint in timepoints]
+                T = pd.DataFrame({'run': runs,
+                                  'timepoint': timepoints_string,
+                                  'time_id':timepoints}, index=None)
+                
         return fnames, T
 
     def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None):
