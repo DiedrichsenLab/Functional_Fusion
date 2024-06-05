@@ -10,7 +10,7 @@ from datetime import datetime
 import os
 import shutil
 import numpy as np
-import Functional_Fusion.scripts.fix as fx
+import scripts.fix as fx
 
 
 data_dir = f'{ut.base_dir}/../Cerebellum/super_cerebellum/'
@@ -90,8 +90,8 @@ if __name__ == "__main__":
     for subject_path in imaging_dir.glob('s[0-9][0-9]'):
         subject = subject_path.name[1:]
         for run in runs:
-            fx.make_design(subject, run, design_dir, template_filstem='ssica_task')
-            fx.run_ica(subject, run, design_dir, template_filstem='ssica_task)
+            fx.make_design(subject, run, imaging_dir, design_dir, template_filstem='ssica_task')
+            # fx.run_ica(subject, run, imaging_dir, design_dir, template_filstem='ssica_task')
 
     # --- Copy motion parameter files to ica folders for feature extraction ---
     for subject_path in imaging_dir.glob('s[0-9][0-9]'):
