@@ -93,7 +93,7 @@ if __name__ == "__main__":
     # --- Correct the header of the image files by inserting TR ---
     for subject_path in imaging_dir.glob('s[0-9][0-9]'):
         subject = subject_path.name[1:]  # remove the 's' prefix
-        for run in runs:
+        for run in runs_sessionscat:
             img_file = f"{str(subject_path)}/rrun_{run}.nii"
             fx.correct_header(img_file)
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     #     subject = subject_path.name[1:]
     #     for run in runs_sessionscat:
     #         # fx.make_design(subject, run, imaging_dir, design_dir, template_filestem='ssica_task')
-    #         fx.run_ica(subject, f'{run}', imaging_dir, design_dir, template_filestem='ssica_task')
+    #         fx.run_ica(subject, run, imaging_dir, design_dir, template_filestem='ssica_task')
 
     # --- Copy motion parameter files to ica folders for feature extraction ---
     # for subject_path in imaging_dir.glob('s[0-9][0-9]'):

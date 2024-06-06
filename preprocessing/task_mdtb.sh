@@ -22,22 +22,6 @@ design_dir=~/code/Python/Functional_Fusion/preprocessing/design_files/
 runs=("01" "02" "03" "04" "05" "06" "07" "08" "09" "10" "11" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20" "21" "22" "23" "24" "25" "26" "27" "28" "29" "30" "31" "32")
 # ----
 # ------------------------------------------------------------------------------
-# Step 1: Add TR to header of nifti files (needed for single-subject ICA with fsl)
-for i in ${data_dir}/s*; do
-    for run in $runs; do
-        subject=s${i#*imaging_data//s}
-        if [ ! -f ${data_dir}/${subject}/rrun_${run}.nii.gz ] && [ -f ${data_dir}/${subject}/rrun_${run}.nii ]; then
-            echo "Adding TR to header of ${subject} ${run}"
-            fslhd -x ${data_dir}/${subject}/rrun_${run}.nii > myhdr.txt
-            sed "s/dt =.*/dt = \'1\'/" myhdr.txt > myhdr2.txt
-            fslcreatehd myhdr2.txt ${data_dir}/${subject}/rrun_${run}_hdr
-            rm myhdr.txt myhdr2.txt
-            else
-            echo "${subject} ${run} incomplete"
-            echo " "
-        fi
-    done
-done    
 # ------------------------------------------------------------------------------
 
 for i in ${data_dir}/s*; do

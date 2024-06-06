@@ -19,28 +19,6 @@ design_dir = Path(
 runs = ["01", "02"]
 
 
-def correct_header(img_file):
-    """Correct the header of the image file to have a TR of 1. Saves the file as a _hdr.nii.gz file for use with fsl.
-    Args:
-        img_file (string): path to the image file to be corrected
-    """
-    out_file = Path(f"{img_file.strip('.nii')}_hdr.nii.gz")
-    img_file = Path(img_file)
-
-    if not out_file.exists() and img_file.exists():
-        print(f"Adding TR to header of {img_file}")
-
-        img = nib.load(img_file)
-
-        # Modify the TR field in the header
-        img.header['pixdim'][4] = 1
-
-        # Save the modified image as image file ending in '_hdr.nii.gz'
-        nib.save(img, out_file)
-
-    else:
-        print(f"{img_file} already processed")
-
 
 def bet_anatomical(img_file, use='opti'):
     """Brain extract the anatomical image using FSL's BET.
