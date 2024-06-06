@@ -87,8 +87,16 @@ if __name__ == "__main__":
     # copy_runs()
     # make_tinfo_file()
 
+    
     # ================================ FIX CLEANING ================================
     
+    # --- Correct the header of the image files by inserting TR ---
+    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]  # remove the 's' prefix
+        for run in runs:
+            img_file = f"{str(subject_path)}/rrun_{run}.nii"
+            fx.correct_header(img_file)
+
     # --- Create the design files for each subject and run single-subject ICA ---
     # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
     #     subject = subject_path.name[1:]
@@ -103,9 +111,8 @@ if __name__ == "__main__":
     #         fx.copy_motionparams(subject_path, run)
 
     # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
-    percent_data = 20
-    df = fx.make_classifier_sample(percent_data, imaging_dir, runs_sessionscat, outfile=f'{design_dir}/task_classifier_sample')
-    pass
+    # percent_data = 20
+    # df = fx.make_classifier_sample(percent_data, imaging_dir, runs_sessionscat, outfile=f'{design_dir}/task_classifier_sample')
 
     # # --- After classification, run fix training and leave-one-out testing ---
     # labelled_folders = get_labelled_folders()
