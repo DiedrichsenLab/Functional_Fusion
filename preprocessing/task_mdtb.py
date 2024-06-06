@@ -91,16 +91,19 @@ if __name__ == "__main__":
     
     # --- Create the design files for each subject and run single-subject ICA ---
     for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+        # Temporarily, for debugging:  Only do this for the first 2 subjects
+        if int(subject_path.name[1:]) > 2:
+            break
         subject = subject_path.name[1:]
         for run in runs_sessionscat:
             # fx.make_design(subject, run, imaging_dir, design_dir, template_filestem='ssica_task')
             fx.run_ica(subject, f'{run}', imaging_dir, design_dir, template_filestem='ssica_task')
 
     # --- Copy motion parameter files to ica folders for feature extraction ---
-    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
-        subject = subject_path.name[1:]
-        for run in runs_sessionscat:
-            fx.copy_motionparams(subject_path, run)
+    # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]
+    #     for run in runs_sessionscat:
+    #         fx.copy_motionparams(subject_path, run)
 
     # # --- After classification, run fix training and leave-one-out testing ---
     # labelled_folders = get_labelled_folders()
