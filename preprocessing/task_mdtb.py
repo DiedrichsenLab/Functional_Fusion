@@ -90,20 +90,22 @@ if __name__ == "__main__":
     # ================================ FIX CLEANING ================================
     
     # --- Create the design files for each subject and run single-subject ICA ---
-    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
-        # Temporarily, for debugging:  Only do this for the first 2 subjects
-        if int(subject_path.name[1:]) > 2:
-            break
-        subject = subject_path.name[1:]
-        for run in runs_sessionscat:
-            # fx.make_design(subject, run, imaging_dir, design_dir, template_filestem='ssica_task')
-            fx.run_ica(subject, f'{run}', imaging_dir, design_dir, template_filestem='ssica_task')
+    # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]
+    #     for run in runs_sessionscat:
+    #         # fx.make_design(subject, run, imaging_dir, design_dir, template_filestem='ssica_task')
+    #         fx.run_ica(subject, f'{run}', imaging_dir, design_dir, template_filestem='ssica_task')
 
     # --- Copy motion parameter files to ica folders for feature extraction ---
     # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
     #     subject = subject_path.name[1:]
     #     for run in runs_sessionscat:
     #         fx.copy_motionparams(subject_path, run)
+
+    # # --- Create a balanced subset of subjects and runs to classify into signal or noise ---
+    percent_data = 20
+    df = fx.make_classifier_sample(percent_data, imaging_dir, runs_sessionscat, outfile=f'{design_dir}/task_classifier_sample')
+    pass
 
     # # --- After classification, run fix training and leave-one-out testing ---
     # labelled_folders = get_labelled_folders()

@@ -71,3 +71,122 @@ def copy_motionparams(subject_path, run):
         subprocess.run(['mkdir', f"{ica_path}/mc"])
         subprocess.run(
             ['cp', rp_file, f"{ica_path}/mc/prefiltered_func_data_mcf.par"])
+
+
+# def balanced_subset(subjects, runs, percent_data):
+#     # Calculate the number of subjects to select
+#     num_scans = len(subjects) * len(runs)
+#     num_scans_to_select = int(num_scans * percent_data * 0.01)
+#     print(f"Selecting {num_scans_to_select} scans")
+
+#     # Generate all combinations of subjects and runs
+#     all_combinations = list(product(subjects, runs))
+
+#     # Shuffle the combinations to ensure randomness
+#     random.shuffle(all_combinations)
+
+#     # Initialize counters
+#     selected_subjects = set()
+#     subset = []
+
+#     # Select subjects while maintaining balance across runs
+#     while len(selected_subjects) < num_scans_to_select:
+#         for subject, run in all_combinations:
+#             if num_scans_to_select < len(subjects):
+#                 selected_subjects.add(subject)
+#                 subset.append((subject, run))
+#                 if subject not in selected_subjects:
+#                     selected_subjects.add(subject)
+#                     subset.append((subject, run))
+#             else:
+#                 selected_subjects.add(subject)
+#                 subset.append((subject, run)) 
+#             if len(selected_subjects) == num_scans_to_select:
+#                 break   
+
+#     # Separate the subset into lists of subjects and runs
+#     subset_subjects, subset_runs = zip(*subset)
+
+#     return list(subset_subjects), list(subset_runs)
+
+def balanced_subset(subjects, runs, percent_data):
+    """Create a balanced subset of subjects and runs to classify into signal or noise
+    
+    Args:
+        subjects (list): list of subjects
+        runs (list): list of runs
+        percent_data (int): percentage of data to select
+        
+    Returns:
+        list: list of subjects
+        list: list of runs
+    """
+    # Calculate the number of subjects to select
+    num_scans = len(subjects) * len(runs)
+    num_scans_to_select = int(num_scans * percent_data * 0.01)
+    print(f"Selecting {num_scans_to_select} scans")
+
+    # Generate all combinations of subjects and runs
+    all_combinations = list(product(subjects, runs))
+
+    # Shuffle the combinations to ensure randomness
+    random.shuffle(all_combinations)
+
+    # Initialize the subset
+    subset = []
+
+    # Select scans while maintaining balance
+    while len(subset) < num_scans_to_select:
+        for subject, run in all_combinations:
+            if len(subset) < num_scans_to_select:
+                subset.append((subject, run))
+            else:
+                break
+
+    # Separate the subset into lists of subjects and runs
+    subset_subjects, subset_runs = zip(*subset) if subset else ([], [])
+
+    return list(subset_subjects), list(subset_runs)
+
+def make_classifier_sample(percent_data, imaging_dir, runs, outfile, add_new_subjects=False):
+    """Create a balanced subset of subjects and runs to classify into signal or noise
+
+    Args:
+        percent_data (int): percentage of data to select
+        imaging_dir (Path): path to the imaging data
+        runs (list): list of runs
+        outfile (Path): path to the output file
+        add_new_subjects (bool): whether to add new subjects to the existing dataframe
+    """
+    # get first element of subject folders
+    subject_list = [subject.name for subject in imaging_dir.glob('s[0-9][0-9]')]
+    subset_subjects, subset_runs = balanced_subset(
+        subject_list, runs, percent_data)
+    # Save
+    df = pd.DataFrame({'subject': subset_subjects, 'run': subset_runs})
+    df = df.sort_values(by=['subject', 'run'])
+    # if file already exists, add a timestamp to the filename
+    outfile = Path(outfile)
+    if outfile.is_file():
+        outfile = Path(
+            f"{outfile}_{datetime.now().strftime('%Y%m%d')}.tsv")
+
+    if outfile.is_file() and add_new_subjects:
+        # Add the new subjects to the existing dataframe
+        akready_classified = pd.read_csv(
+            Path(f"{outfile}.tsv"), sep='\t')
+        akready_classified.run = akready_classified.run.astype(int)
+        df = pd.concat([akready_classified, df], ignore_index=True)
+        # Remove duplicates
+        df = df.drop_duplicates()
+        df = df.drop_duplicates(subset=['subject'], keep='first').sort_values(
+            by=['subject', 'run'])
+        # Check if  the subset is still balanced across runs
+        print(f"Runs : {df.groupby(['run']).size()}")
+        # Make run into zero-padded string
+        df.run = df.run.apply(lambda x: f"{x:02d}")
+
+    # Save
+    df.to_csv(outfile, sep='\t', index=False)
+
+    return df
