@@ -47,17 +47,16 @@ def run_ica(subject, run, imaging_dir, design_dir, template_filestem='ssica'):
 
     """
 
-    img_file = Path(f"{imaging_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
+    img_file = Path(f"{imaging_dir}/s{subject}/rrun_{run:02d}_hdr.nii.gz")
     ica_dir = Path(f"{imaging_dir}/s{subject}/run{run}.ica")
     design_output = Path(f"{design_dir}/{template_filestem}_{subject}_run-{run}.fsf")
 
     if img_file.is_file():
         print(f"Running ssica for subject {subject} run {run}")
         subprocess.Popen(['feat', str(design_output)])
-
     elif not img_file.is_file():
         print(f"{subject} {run}: missing image file")
-    else:
+    elif ica_dir.is_dir():
         print(f"{subject} {run}: ica already run")
         # use firefox if ut.base_dir.startswith('/Volumes') else 'open'
         if ut.base_dir.startswith('/Volumes'):
