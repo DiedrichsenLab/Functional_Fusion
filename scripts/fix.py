@@ -47,11 +47,11 @@ def run_ica(subject, run, imaging_dir, design_dir, template_filestem='ssica'):
 
     """
 
-    img_file = Path(f"{imaging_dir}/s{subject}/rrun_{run:02d}_hdr.nii.gz")
-    ica_dir = Path(f"{imaging_dir}/s{subject}/run{run}.ica")
+    img_file = Path(f"{imaging_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
+    ica_dir = Path(f"{imaging_dir}/s{subject}/run{run}.feat")
     design_output = Path(f"{design_dir}/{template_filestem}_{subject}_run-{run}.fsf")
 
-    if img_file.is_file():
+    if img_file.is_file() and not ica_dir.is_dir():
         print(f"Running ssica for subject {subject} run {run}")
         subprocess.Popen(['feat', str(design_output)])
     elif not img_file.is_file():
@@ -59,10 +59,10 @@ def run_ica(subject, run, imaging_dir, design_dir, template_filestem='ssica'):
     elif ica_dir.is_dir():
         print(f"{subject} {run}: ica already run")
         # use firefox if ut.base_dir.startswith('/Volumes') else 'open'
-        if ut.base_dir.startswith('/Volumes'):
-            subprocess.run(['open', str(ica_dir / 'report.html')])
-        else:
-            subprocess.run(['firefox', str(ica_dir / 'report.html')])
+        # if ut.base_dir.startswith('/Volumes'):
+        #     subprocess.run(['open', str(ica_dir / 'report.html')])
+        # else:
+        #     subprocess.run(['firefox', str(ica_dir / 'report.html')])
 
 def copy_motionparams(subject_path, run):
     ica_path = f"{str(subject_path)}/run{run}.feat"
