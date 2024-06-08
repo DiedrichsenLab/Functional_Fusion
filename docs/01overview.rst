@@ -12,4 +12,3 @@ There are three main steps to use the data:
 * Data Import: Bringing the data into the common framework. This includes the import of the preprocessed time series, or the import of the contrast estimates.
 * Data Extraction: Pull the data in a specific atlas space, defined by an `atlas`. The resulting data is stored in the `data` directory for each participant.
 * Data Analysis: After the data is extracted, you can simply load the data with `dataset.get_data()`. which gives you a `(nsubj x  nfeatures x voxel/vertices)` tensor. You can then perform any analysis on this data.
-

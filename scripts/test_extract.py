@@ -13,10 +13,11 @@ base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 
 def test_extract_mdtb():
     dataset = ds.DataSetMDTB(base_dir + '/MDTB')
-    dataset.extract_all(ses_id='ses-s1',
+    dataset.extract_all(ses_id='ses-s2',
                         type='CondAll',
                         atlas='MNISymC3',
-                        smooth=2)
+                        smooth=2,
+                        subj=[21,22,23])
     pass
 
 def test_extract_dmcc():
