@@ -51,3 +51,82 @@ for i in ${data_dir}/s*; do
         fi
     done
 done
+
+
+
+
+
+
+# ------- Check if melodic_IC is empty -------
+for i in `ls -d ${data_dir}/s*/*.feat/`; do
+         # File to check
+        file=${i}/filtered_func_data.ica/melodic_IC.nii.gz
+
+        # Check if the file is 0 bytes
+        if [ ! -s "$file" ]; then
+            echo "\n\n============= $file is empty. rerunning melodic...============="
+            
+            # Change directory to .feat folder
+            cd ${i}
+
+            # Run melodic
+            melodic \
+            -i filtered_func_data \
+            -o filtered_func_data+.ica \
+            -v --nobet --bgthreshold=1 --tr=1.0 -d 0 --mmthresh=0.5 
+        else 
+            echo "$file SUCCESS"
+        fi
+
+    done
+done
+
+
+
+# ------- Run Feat if no feat directory exists -------
+cd ${design_dir}
+# Only loop through subjects 02-05
+
+# for n in `seq 2 5`; do --> RUNNING last on Caro GPU
+# for n in `seq 6 10`; do --> RUNNING on Caro GPU
+# for n in `seq 11 15`; do  --> RUNNING on Marco Basic
+# for n in `seq 16 20`; do --> RUNNING on Marco Heavy
+# for n in `seq 21 25`; do --> RUNNING on Marco GPU
+# for n in `seq 26 30`; do --> RUNNING on Caro Heavy
+# for n in `seq 31 33`; do --> RUNNING on Caro Basic
+    subject=`zeropad $n 2`
+    for run in `seq 1 32`; do
+        run=`zeropad $run 2`
+        if [ -f ${data_dir}/s${subject}/rrun_${run}_hdr.nii.gz ] && [ ! -d ${data_dir}/s${subject}/run${run}.feat ] && [ ! -d ${data_dir}/s${subject}/run${run}.correct ]; then
+            echo "Running Feat for subject ${subject} run ${run}"
+            feat ssica_task_${subject}_run-${run}.fsf
+            # Remove superfluous files after feat
+            rm ${data_dir}/s${subject}/run${run}.feat/prefiltered_func_*
+        elif [ -f ${data_dir}/s${subject}/rrun_${run}_hdr.nii.gz ] ; then
+            echo "Feat already run for subject ${subject} run ${run}"
+        
+        fi
+    done
+done
+
+
+# for i in `ls ${data_dir}/s*/*hdr.nii.gz`; do
+#          # Feat folder to check
+#         run=${i#*rrun_}
+#         run=${run%_hdr.nii.gz}
+#         subject=${i#*imaging_data//s}
+#         subject=${subject%/*}
+
+#         # Check if the file is 0 bytes
+#         if [ ! -s "$file" ]; then
+#             echo "\n\n============= $file is empty. rerunning melodic...============="
+
+#             # Run feat
+#             # feat \
+#             ls ssica_task_${subject}_run-${run}.fsf
+#         else 
+#             echo "$file SUCCESS"
+#         fi
+
+# done
+
