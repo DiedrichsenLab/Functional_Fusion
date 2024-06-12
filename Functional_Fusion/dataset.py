@@ -1816,7 +1816,6 @@ class DataSetLanguage(DataSetNative):
 
         # Depending on the type, make a new contrast
         info['half'] = info['half'] = (info.run % 2) + 1
-        n_cond = np.max(info.reg_id)
 
         if type == 'CondHalf':
             data_info, C = agg_data(info,
@@ -1850,6 +1849,41 @@ class DataSetLanguage(DataSetNative):
             # Baseline substraction
             B = np.ones((data_info.shape[0],1))
 
+
+        if ses_id == 'ses-sencoding_trial_duration' or ses_id == 'ses-sencoding_trial_fixed':
+            sentence_indices = info.index[info['inst'] == 0].tolist()
+            info = info[info['inst']==0]
+            info = info.reset_index(drop = True)
+            sentence_data  = [d[sentence_indices] for d in data]
+            reordered_data = [np.zeros_like(d) for d in sentence_data]
+                
+            for j in range(len(sentence_data)):
+                # Reorder first 350 sentences
+                for i in range(0,350):
+                    task_num = info[:350].loc[i, 'task'] - 1  
+                    reordered_data[j][task_num] = sentence_data[j][i]
+                # Reorder second 350 sentences
+                for i in range(350, 699):
+                    task_num = info[350:].loc[i, 'task'] - 1 + 350  
+                    reordered_data[j][task_num] = sentence_data[j][i]
+                # add resms image
+                reordered_data[j] = np.vstack([reordered_data[j], data[j][-1]])
+            data = reordered_data
+
+            # standardize the info_file
+            info['half'] = [1 if i < 350 else 2 for i in range(len(info))] 
+            info['sentence_number'] = info['taskName'].str.extract(r'(\d+)$').astype(int)
+
+            # Split  into two halves and sort
+            info_first_half = info.iloc[:350].sort_values(by='sentence_number').reset_index(drop=True)
+            info_second_half = info.iloc[350:].sort_values(by='sentence_number').reset_index(drop=True)
+
+            # Concatenate
+            info_sorted = pd.concat([info_first_half, info_second_half]).reset_index(drop=True)
+            data_info = info_sorted.drop(columns=['sentence_number'])
+
+
+
         # Prewhiten the data
         data_n = prewhiten_data(data)
         
@@ -1862,9 +1896,9 @@ class DataSetLanguage(DataSetNative):
             CI = matrix.indicator(info.run * info.inst, positive=True)
             C = np.c_[C, CI]
             data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
-        elif ses_id == 'ses-sencoding_category':
+        elif ses_id == 'ses-sencoding_category_fixed'or ses_id =='ses-sencoding_category_fixed_adjusted':
             data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
-        elif ses_id == 'ses-sencoding_sentence_01' or 'ses-sencoding_sentence_02':
+        elif ses_id == 'ses-sencoding_trial_fixed' or ses_id =='ses-sencoding_trial_duration':
             data_new = data_n
 
         return data_new, data_info
@@ -1905,7 +1939,7 @@ class DataSetLanguage(DataSetNative):
             data, info = self.condense_data(data, info, type,
                                             participant_id=s, ses_id=ses_id)
             # Write out data as CIFTI file
-            if ses_id == 'ses-sencoding_sentence_01' or 'ses-sencoding_sentence_02':
+            if ses_id == 'ses-sencoding_trial_fixed' or 'ses-sencoding_trial_duration':
                 list_of_strings = [str(i) for i in range(1, data[0].shape[0] + 1)]
                 C = myatlas.data_to_cifti(data, list_of_strings)
             else:
