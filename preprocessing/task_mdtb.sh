@@ -94,6 +94,7 @@ cd ${design_dir}
 # for n in `seq 21 25`; do --> RUNNING on Marco GPU
 # for n in `seq 26 30`; do --> RUNNING on Caro Heavy
 # for n in `seq 31 33`; do --> RUNNING on Caro Basic
+for n in `seq 1 33`; do --> RUNNING on Caro Basic
     subject=`zeropad $n 2`
     for run in `seq 1 32`; do
         run=`zeropad $run 2`
