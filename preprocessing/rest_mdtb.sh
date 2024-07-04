@@ -174,3 +174,10 @@ for i in /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_sta
     fsleyes render -of ~/Documents/Projects/LocalizationCerebellum/figures/corrmaps/${subject}_postfix.png --voxelLoc 91 73 147 $i/run01.feat/reg/highres $i/run01.feat/reg/example_func  \
     /Volumes/diedrichsen_data$/data/Cerebellum/super_cerebellum/resting_state/fix_ica/corrmaps/o_${subject}-run01_postfix.nii.gz -dr 0.1 0.3 -cm red-yellow &
 done
+
+
+# Remove faulty runs (runs 16-32 are from session 2, not session 1)
+# for run in $(seq 17 32); do
+#     # Your code here
+#     rm sub-*/estimates/ses-s1/sub-*_ses-s1_run-${run}.nii
+# done
