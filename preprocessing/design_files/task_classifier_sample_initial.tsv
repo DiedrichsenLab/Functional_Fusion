@@ -1,16 +1,16 @@
-subject	run	classified
+subject	run classified
 s02	01
 s02	07
 s02	11
 s02	19
-s02	26	X
-s02	30	X
+s02	26  X
+s02	30  X
 s03	01
-s03	05	X
+s03	05  X
 s03	14
-s03	18	X
-s03	19	X
-s03	22	X
+s03	18  X
+s03	19  X
+s03	22  X
 s03	23
 s03	26
 s03	27
