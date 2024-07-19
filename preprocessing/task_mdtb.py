@@ -120,8 +120,9 @@ if __name__ == "__main__":
         subject = subject_path.name[1:]
         for run in runs_sessionscat:
             ica_path = f"{str(subject_path)}/run{run}.feat/filtered_func_data.ica"
-            subprocess.run(
-                ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
+            if op.exists(ica_path):
+                subprocess.run(
+                    ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
 
     
     # --- Copy the FIX-cleaned runs into estimates ---
