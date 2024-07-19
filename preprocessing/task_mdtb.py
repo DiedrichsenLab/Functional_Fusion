@@ -52,12 +52,10 @@ def get_labelled_folders():
     """
         Returns a list of the folders containing the labelled components for FIX training.
     """
-    labelled_folders = []
-    for subject in os.listdir(f'{fusion_dir}/derivatives/'):
-        for session in sessions:
-            for run in runs:
-                labelled_folders.append(
-                    f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}.nii")
+    classified = pd.read_csv(f'{design_dir}/task_classifier_sample_initial-subset.tsv', delimiter='\t')
+    checked = classified[classified['checked'] == 'X']
+    folder_pattern = '/{imaging_dir}/{subject}/run{run:02d}.feat/'
+    labelled_folders = [folder_pattern.format(imaging_dir=imaging_dir, subject=line['subject'], run=line['run']) for _, line in checked.iterrows()]
     return labelled_folders
 
 if __name__ == "__main__":
@@ -68,11 +66,11 @@ if __name__ == "__main__":
     # ================================ FIX CLEANING ================================
     
     # --- Correct the header of the image files by inserting TR ---
-    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
-        subject = subject_path.name[1:]  # remove the 's' prefix
-        for run in runs_sessionscat:
-            img_file = f"{str(subject_path)}/rrun_{run}.nii"
-            fx.correct_header(img_file)
+    # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]  # remove the 's' prefix
+    #     for run in runs_sessionscat:
+    #         img_file = f"{str(subject_path)}/rrun_{run}.nii"
+    #         fx.correct_header(img_file)
 
     # --- Create the design files for each subject and run single-subject ICA ---
     # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
@@ -91,20 +89,30 @@ if __name__ == "__main__":
     # percent_data = 20
     # df = fx.make_classifier_sample(percent_data, imaging_dir, runs_sessionscat, outfile=f'{design_dir}/task_classifier_sample')
 
+    # # --- Classify, and then name the checked classification files 'hand_labels_noise.txt' ---
+    # labelled_folders = get_labelled_folders()
+    # for folder in labelled_folders:
+    #     # Make copy of hand_labels_caro and save it as hand_labels_noise
+    #     shutil.copy(f'{folder}/filtered_func_data.ica/hand_classification_caro', f'{folder}/filtered_func_data.ica/hand_labels_noise.txt')
+
     # # --- After classification, run fix training and leave-one-out testing ---
     labelled_folders = get_labelled_folders()
+    os.chdir(f'{imaging_dir}/../fix_ica/')
     subprocess.run(
         ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_task', '-l'] + labelled_folders)
 
     # # --- Run leave-one-out testing using HCP training data and standard training data to compare acccuracy ---
-    # labelled_folders = get_labelled_folders()
-    # # change working directory to output directory (this is where the fix results will be saved)
-    # os.chdir(f'{rest_dir}/../fix_ica/')
-
-    # subprocess.run(
-    #     ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/HCP_hp2000.RData', 'hcp3t'] + labelled_folders)
-    # subprocess.run(
-    #     ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/Standard.RData', 'standard'] + labelled_folders)
+    labelled_folders = get_labelled_folders()
+    
+    # change working directory to output directory (this is where the fix results will be saved)
+    os.chdir(f'{imaging_dir}/../fix_ica/')
+    
+    subprocess.run(
+        ['/srv/software/fix/1.06.15/fix', '-C', f'{imaging_dir}/../../resting_state/fix_ica/mdtb_rest.RData', 'mdtb_rest'] + labelled_folders)
+    subprocess.run(
+        ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/HCP_hp2000.RData', 'hcp3t'] + labelled_folders)
+    subprocess.run(
+        ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/Standard.RData', 'standard'] + labelled_folders)
 
 
     # --- Copy the FIX-cleaned runs into estimates ---
