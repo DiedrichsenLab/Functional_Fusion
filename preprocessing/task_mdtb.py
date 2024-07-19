@@ -115,5 +115,14 @@ if __name__ == "__main__":
         ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/Standard.RData', 'standard'] + labelled_folders)
 
 
+    # # --- Extract features for all ICAs that have been run so far - saves time for later fix-cleaning ---
+    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]
+        for run in runs_sessionscat:
+            ica_path = f"{str(subject_path)}/run{run}.feat/filtered_func_data.ica"
+            subprocess.run(
+                ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
+
+    
     # --- Copy the FIX-cleaned runs into estimates ---
     # copy_runs(fix=True)
