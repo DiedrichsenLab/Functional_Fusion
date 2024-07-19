@@ -48,6 +48,17 @@ def copy_runs(fix=False):
                         ['cp', task_file, f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}.nii"])
                     print(f'Copied {run} for {subject} in {session}')
 
+def get_labelled_folders():
+    """
+        Returns a list of the folders containing the labelled components for FIX training.
+    """
+    labelled_folders = []
+    for subject in os.listdir(f'{fusion_dir}/derivatives/'):
+        for session in sessions:
+            for run in runs:
+                labelled_folders.append(
+                    f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}.nii")
+    return labelled_folders
 
 if __name__ == "__main__":
     # copy_runs()
@@ -81,9 +92,9 @@ if __name__ == "__main__":
     # df = fx.make_classifier_sample(percent_data, imaging_dir, runs_sessionscat, outfile=f'{design_dir}/task_classifier_sample')
 
     # # --- After classification, run fix training and leave-one-out testing ---
-    # labelled_folders = get_labelled_folders()
-    # subprocess.run(
-    #     ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_rest', '-l'] + labelled_folders)
+    labelled_folders = get_labelled_folders()
+    subprocess.run(
+        ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_task', '-l'] + labelled_folders)
 
     # # --- Run leave-one-out testing using HCP training data and standard training data to compare acccuracy ---
     # labelled_folders = get_labelled_folders()
