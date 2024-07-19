@@ -1,24 +1,24 @@
 subject	run	classified	checked
-s02	01	X	
-s02	07	X	
-s02	11	X	
-s02	19	X	
-s02	26	X	
-s02	30	X	
-s03	01	X	
-s03	05	X	
-s03	14	X	
-s03	18	X	
-s03	19	X	
-s03	22	X	
-s03	23	X	
-s03	26
-s03	27	X	
-s03	28	X	
-s03	30	X	
-s04	01	X	
-s04	04	X	
-s04	14	X	
+s02	01	X	X
+s02	07	X	X
+s02	11	X	X
+s02	19	X	X
+s02	26		
+s02	30		
+s03	01	X	X
+s03	05	X	X
+s03	14		
+s03	18		
+s03	19		
+s03	22		
+s03	23	X	X
+s03	26		X
+s03	27	X	X
+s03	28	X	X
+s03	30	X	X
+s04	01	X	X
+s04	04	X	X
+s04	14	X	X
 s04	17	X	X
 s04	18	X	X
 s04	21	X	X
