@@ -125,7 +125,7 @@ if __name__ == "__main__":
     # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
     #     subject = subject_path.name[1:]
     #     for run in runs_sessionscat:
-    #         ica_path = f"{str(subject_path)}/run{run}.feat/filtered_func_data.ica"
+    #         ica_path = f"{str(subject_path)}/run{run}.feat/"
     #         if op.exists(ica_path):
     #             subprocess.run(
     #                 ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
