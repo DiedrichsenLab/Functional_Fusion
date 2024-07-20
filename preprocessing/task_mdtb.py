@@ -93,36 +93,42 @@ if __name__ == "__main__":
     # labelled_folders = get_labelled_folders()
     # for folder in labelled_folders:
     #     # Make copy of hand_labels_caro and save it as hand_labels_noise
-    #     shutil.copy(f'{folder}/filtered_func_data.ica/hand_classification_caro', f'{folder}/filtered_func_data.ica/hand_labels_noise.txt')
+    #     shutil.copy(f'{folder}/filtered_func_data.ica/hand_classification_caro', f'{folder}/hand_labels_noise.txt')
 
-    # # --- After classification, run fix training and leave-one-out testing ---
-    labelled_folders = get_labelled_folders()
-    os.chdir(f'{imaging_dir}/../fix_ica/')
-    subprocess.run(
-        ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_task', '-l'] + labelled_folders)
-
-    # # --- Run leave-one-out testing using HCP training data and standard training data to compare acccuracy ---
-    labelled_folders = get_labelled_folders()
-    
-    # change working directory to output directory (this is where the fix results will be saved)
-    os.chdir(f'{imaging_dir}/../fix_ica/')
-    
-    subprocess.run(
-        ['/srv/software/fix/1.06.15/fix', '-C', f'{imaging_dir}/../../resting_state/fix_ica/mdtb_rest.RData', 'mdtb_rest'] + labelled_folders)
-    subprocess.run(
-        ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/HCP_hp2000.RData', 'hcp3t'] + labelled_folders)
-    subprocess.run(
-        ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/Standard.RData', 'standard'] + labelled_folders)
-
-
-    # # --- Extract features for all ICAs that have been run so far - saves time for later fix-cleaning ---
+    # # --- Copy motion parameter files to ica folders for feature extraction ---
     for subject_path in imaging_dir.glob('s[0-9][0-9]'):
         subject = subject_path.name[1:]
         for run in runs_sessionscat:
-            ica_path = f"{str(subject_path)}/run{run}.feat/filtered_func_data.ica"
-            if op.exists(ica_path):
-                subprocess.run(
-                    ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
+            fx.copy_motionparams(subject_path, run)
+
+    # --- After classification, run fix training and leave-one-out testing ---
+    # labelled_folders = get_labelled_folders()
+    # os.chdir(f'{imaging_dir}/../fix_ica/')
+    # subprocess.run(
+    #     ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_task', '-l'] + labelled_folders)
+
+    # # # --- Run leave-one-out testing using HCP training data and standard training data to compare acccuracy ---
+    # labelled_folders = get_labelled_folders()
+    
+    # # change working directory to output directory (this is where the fix results will be saved)
+    # os.chdir(f'{imaging_dir}/../fix_ica/')
+    
+    # subprocess.run(
+    #     ['/srv/software/fix/1.06.15/fix', '-C', f'{imaging_dir}/../../resting_state/fix_ica/mdtb_rest.RData', 'mdtb_rest'] + labelled_folders)
+    # subprocess.run(
+    #     ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/HCP_hp2000.RData', 'hcp3t'] + labelled_folders)
+    # subprocess.run(
+    #     ['/srv/software/fix/1.06.15/fix', '-C', '/srv/software/fix/1.06.15/training_files/Standard.RData', 'standard'] + labelled_folders)
+
+
+    # # --- Extract features for all ICAs that have been run so far - saves time for later fix-cleaning ---
+    # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]
+    #     for run in runs_sessionscat:
+    #         ica_path = f"{str(subject_path)}/run{run}.feat/filtered_func_data.ica"
+    #         if op.exists(ica_path):
+    #             subprocess.run(
+    #                 ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
 
     
     # --- Copy the FIX-cleaned runs into estimates ---
