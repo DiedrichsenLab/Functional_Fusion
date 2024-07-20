@@ -73,11 +73,11 @@ if __name__ == "__main__":
     #         fx.correct_header(img_file)
 
     # --- Create the design files for each subject and run single-subject ICA ---
-    # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
-    #     subject = subject_path.name[1:]
-    #     for run in runs_sessionscat:
-    #         # fx.make_design(subject, run, imaging_dir, design_dir, template_filestem='ssica_task')
-    #         fx.run_ica(subject, run, imaging_dir, design_dir, template_filestem='ssica_task')
+    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]
+        for run in runs_sessionscat:
+            # fx.make_design(subject, run, imaging_dir, design_dir, template_filestem='ssica_task')
+            fx.run_ica(subject, run, imaging_dir, design_dir, template_filestem='ssica_task')
 
     # --- Copy motion parameter files to ica folders for feature extraction ---
     # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
@@ -96,10 +96,10 @@ if __name__ == "__main__":
     #     shutil.copy(f'{folder}/filtered_func_data.ica/hand_classification_caro', f'{folder}/hand_labels_noise.txt')
 
     # # --- Copy motion parameter files to ica folders for feature extraction ---
-    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
-        subject = subject_path.name[1:]
-        for run in runs_sessionscat:
-            fx.copy_motionparams(subject_path, run)
+    # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]
+    #     for run in runs_sessionscat:
+    #         fx.copy_motionparams(subject_path, run)
 
     # --- After classification, run fix training and leave-one-out testing ---
     # labelled_folders = get_labelled_folders()
