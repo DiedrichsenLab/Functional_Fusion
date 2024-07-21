@@ -58,6 +58,20 @@ def get_labelled_folders():
     labelled_folders = [folder_pattern.format(imaging_dir=imaging_dir, subject=line['subject'], run=line['run']) for _, line in checked.iterrows()]
     return labelled_folders
 
+
+def copy_mean_func():
+    """
+    Copies the mean_func.nii.gz file from the filtered_func_data.ica folder to the parent folder for each subject and run.
+    FIX needs the mean_func file in the main (feat) directory, not in the ica directory.
+    """
+    for i in imaging_dir.glob('s*/run*.feat/filtered_func_data.ica/mean.nii.gz'):
+        print(" ")
+        if not (i.parent / 'mean_func.nii.gz').exists():
+            shutil.copy(i, i.parent / 'mean_func.nii.gz')
+
+
+
+
 if __name__ == "__main__":
     # copy_runs()
     # make_tinfo_file()
@@ -100,6 +114,9 @@ if __name__ == "__main__":
     #     subject = subject_path.name[1:]
     #     for run in runs_sessionscat:
     #         fx.copy_motionparams(subject_path, run)
+    
+    # # --- Copy the mean_func.nii.gz file from the ica folder to the parent folder ---
+    # copy_mean_func()
 
     # --- After classification, run fix training and leave-one-out testing ---
     # labelled_folders = get_labelled_folders()
@@ -122,13 +139,13 @@ if __name__ == "__main__":
 
 
     # # --- Extract features for all ICAs that have been run so far - saves time for later fix-cleaning ---
-    # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
-    #     subject = subject_path.name[1:]
-    #     for run in runs_sessionscat:
-    #         ica_path = f"{str(subject_path)}/run{run}.feat/"
-    #         if op.exists(ica_path):
-    #             subprocess.run(
-    #                 ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
+    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+        subject = subject_path.name[1:]
+        for run in runs_sessionscat:
+            ica_path = f"{str(subject_path)}/run{run}.feat/"
+            if op.exists(ica_path) and not op.exists(f"{ica_path}/fix/features.csv"):
+                subprocess.run(
+                    ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
 
     
     # --- Copy the FIX-cleaned runs into estimates ---
