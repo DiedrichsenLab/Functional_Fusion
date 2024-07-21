@@ -71,15 +71,20 @@ def run_ica(subject, run, imaging_dir, design_dir, template_filestem='ssica'):
     """
 
     img_file = Path(f"{imaging_dir}/s{subject}/rrun_{run}_hdr.nii.gz")
-    ica_dir = Path(f"{imaging_dir}/s{subject}/run{run}.feat")
+    feat_dir = Path(f"{imaging_dir}/s{subject}/run{run}.feat")
+    ica_dir = Path(f"{imaging_dir}/s{subject}/run{run}.feat/filtered_func_data.ica")
     design_output = Path(f"{design_dir}/{template_filestem}_{subject}_run-{run}.fsf")
 
-    if img_file.is_file() and not ica_dir.is_dir():
+    if img_file.is_file() and not feat_dir.is_dir():
         print(f"Running ssica for subject {subject} run {run}")
+        subprocess.Popen(['feat', str(design_output)])
+    elif img_file.is_file() and feat_dir.is_dir() and not ica_dir.is_dir():
+        print(f"Feat already run, but not completed. Re-running ssica for subject {subject} run {run}")
+        subprocess.Popen(['mv', str(feat_dir), f"{feat_dir}_bak"])
         subprocess.Popen(['feat', str(design_output)])
     elif not img_file.is_file():
         print(f"{subject} {run}: missing image file")
-    elif ica_dir.is_dir():
+    elif feat_dir.is_dir():
         print(f"{subject} {run}: ica already run")
         # use firefox if ut.base_dir.startswith('/Volumes') else 'open'
         # if ut.base_dir.startswith('/Volumes'):
