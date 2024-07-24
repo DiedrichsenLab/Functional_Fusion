@@ -103,11 +103,11 @@ if __name__ == "__main__":
     # percent_data = 20
     # df = fx.make_classifier_sample(percent_data, imaging_dir, runs_sessionscat, outfile=f'{design_dir}/task_classifier_sample')
 
-    # # --- Classify, and then name the checked classification files 'hand_labels_noise.txt' ---
-    # labelled_folders = get_labelled_folders()
-    # for folder in labelled_folders:
-    #     # Make copy of hand_labels_caro and save it as hand_labels_noise
-    #     shutil.copy(f'{folder}/filtered_func_data.ica/hand_classification_caro', f'{folder}/hand_labels_noise.txt')
+    # # --- Name the checked classification files 'hand_labels_noise.txt' ---
+    labelled_folders = get_labelled_folders()
+    for folder in labelled_folders:
+        # Make copy of hand_labels_caro and save it as hand_labels_noise
+        shutil.copy(f'{folder}/filtered_func_data.ica/hand_classification_caro', f'{folder}/hand_labels_noise.txt')
 
     # # --- Copy motion parameter files to ica folders for feature extraction ---
     # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
@@ -119,10 +119,10 @@ if __name__ == "__main__":
     # copy_mean_func()
 
     # --- After classification, run fix training and leave-one-out testing ---
-    labelled_folders = get_labelled_folders()
-    os.chdir(f'{imaging_dir}/../fix_ica/')
-    subprocess.run(
-        ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_task', '-l'] + labelled_folders)
+    # labelled_folders = get_labelled_folders()
+    # os.chdir(f'{imaging_dir}/../fix_ica/')
+    # subprocess.run(
+    #     ['/srv/software/fix/1.06.15/fix', '-t', 'mdtb_task', '-l'] + labelled_folders)
 
     # # # --- Run leave-one-out testing using HCP training data and standard training data to compare acccuracy ---
     # labelled_folders = get_labelled_folders()
@@ -139,13 +139,13 @@ if __name__ == "__main__":
 
 
     # --- Extract features for all ICAs that have been run so far - saves time for later fix-cleaning ---
-    for subject_path in imaging_dir.glob('s[0-9][0-9]'):
-        subject = subject_path.name[1:]
-        for run in runs_sessionscat:
-            ica_path = f"{str(subject_path)}/run{run}.feat/"
-            if op.exists(ica_path) and not op.exists(f"{ica_path}/fix/features.csv"):
-                subprocess.run(
-                    ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
+    # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
+    #     subject = subject_path.name[1:]
+    #     for run in runs_sessionscat:
+    #         ica_path = f"{str(subject_path)}/run{run}.feat/"
+    #         if op.exists(ica_path) and not op.exists(f"{ica_path}/fix/features.csv"):
+    #             subprocess.run(
+    #                 ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
 
     
     # --- Copy the FIX-cleaned runs into estimates ---
