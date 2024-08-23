@@ -52,7 +52,7 @@ def get_labelled_folders():
     """
         Returns a list of the folders containing the labelled components for FIX training.
     """
-    classified = pd.read_csv(f'{design_dir}/task_classifier_sample_initial-subset.tsv', delimiter='\t')
+    classified = pd.read_csv(f'{design_dir}/classifier_short.tsv', delimiter='\t')
     checked = classified[classified['checked'] == 'X']
     folder_pattern = '/{imaging_dir}/{subject}/run{run:02d}.feat/'
     labelled_folders = [folder_pattern.format(imaging_dir=imaging_dir, subject=line['subject'], run=line['run']) for _, line in checked.iterrows()]
@@ -148,20 +148,20 @@ if __name__ == "__main__":
     #                 ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
 
     # --- Run FIX cleanup---
-    chosen_threshold = 20
-    # # For those scans that have hand-labelled components, clean noise components from the data
-    labelled_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs if op.exists(
-        f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
-    for folder in labelled_folders:
-        subprocess.run(
-            ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/hand_labels_noise.txt'])
+    # chosen_threshold = 20
+    # # # For those scans that have hand-labelled components, clean noise components from the data
+    # labelled_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs if op.exists(
+    #     f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
+    # for folder in labelled_folders[10:]:
+    #     subprocess.run(
+    #         ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/hand_labels_noise.txt'])
     
-    # For the rest, automatically classify labelled components using mdtb task training set, then clean noise components from the data
-    automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs if not op.exists(
-        f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
-    for folder in automatic_folders:
-        subprocess.run(
-            ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/fix4melview_mdtb_task_thr{chosen_threshold}.txt'])
+    # # For the rest, automatically classify labelled components using mdtb task training set, then clean noise components from the data
+    # automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs if not op.exists(
+    #     f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
+    # for folder in automatic_folders:
+    #     subprocess.run(
+    #         ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/fix4melview_mdtb_task_thr{chosen_threshold}.txt'])
         
 
     # --- Copy the FIX-cleaned runs into estimates ---
