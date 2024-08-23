@@ -159,8 +159,8 @@ if __name__ == "__main__":
     automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs if not op.exists(
         f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
     for folder in automatic_folders:
-        # subprocess.run(
-        #     ['/srv/software/fix/1.06.15/fix', '-c', folder, f'{str(rest_dir)}/../fix_ica/mdtb_rest.RData', str(chosen_threshold)])
+        subprocess.run(
+            ['/srv/software/fix/1.06.15/fix', '-c', folder, f'{imaging_dir}/../fix_ica/mdtb_task.RData', str(chosen_threshold)])
         subprocess.run(
             ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/fix4melview_mdtb_rest_thr{chosen_threshold}.txt'])
         
