@@ -1837,50 +1837,53 @@ class DataSetLanguage(DataSetNative):
 
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 5)
-        n_cond = np.max(info.reg_id)
+        if type == 'Tseries':
+            info['names'] = info['timepoint']
+            data_new, data_info = data, info
 
-        if type == 'CondHalf':
-            data_info, C = agg_data(info,
-                                    ['half', 'reg_id'],
-                                    ['run', 'reg_num'],
-                                    subset=(info.reg_id >0))
-            data_info['names'] = [
-                f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+        else:
+            if type == 'CondHalf':
+                data_info, C = agg_data(info,
+                                        ['half', 'reg_id'],
+                                        ['run', 'reg_num'],
+                                        subset=(info.reg_id >0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'CondRun':
+            elif type == 'CondRun':
 
-            data_info, C = agg_data(info,
-                                    ['run', 'reg_id'],
-                                    ['reg_num'],
-                                    subset=(info.reg_id > 0))
-            data_info['names'] = [
-                f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+                data_info, C = agg_data(info,
+                                        ['run', 'reg_id'],
+                                        ['reg_num'],
+                                        subset=(info.reg_id > 0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'CondAll':
-            data_info, C = agg_data(info,
-                                    ['reg_id'],
-                                    ['run', 'half', 'reg_num'],
-                                    subset=(info.reg_id > 0))
-            data_info['names'] = [
-                f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+            elif type == 'CondAll':
+                data_info, C = agg_data(info,
+                                        ['reg_id'],
+                                        ['run', 'half', 'reg_num'],
+                                        subset=(info.reg_id > 0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
+            # Prewhiten the data
+            data_n = prewhiten_data(data)
 
-        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+            dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
 
-        # Load the designmatrix and perform optimal contrast
-        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
-        reg_in = np.arange(C.shape[1], dtype=int)
-        CI = matrix.indicator(info.run * info.inst, positive=True)
-        C = np.c_[C, CI]
+            # Load the designmatrix and perform optimal contrast
+            X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+            reg_in = np.arange(C.shape[1], dtype=int)
+            CI = matrix.indicator(info.run * info.inst, positive=True)
+            C = np.c_[C, CI]
 
-        data_new = optimal_contrast(data_n, C, X, reg_in)
+            data_new = optimal_contrast(data_n, C, X, reg_in)
 
         return data_new, data_info
