@@ -10,6 +10,7 @@ from Functional_Fusion.dataset import DataSetLanguage, DataSetPontine
 import nibabel as nb
 import SUITPy as suit
 import matplotlib.pyplot as plt
+import Functional_Fusion.connectivity as conn
 
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
@@ -60,5 +61,15 @@ if __name__ == "__main__":
     # dataset.group_average_data(atlas='MNISymC3')
     # dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)
 
-    extract_language()
+    # extract_language()
+
+    # Exctract Rest timeseries & connectivity fingerprint
+    dname = 'MDTB'
+    T = pd.read_csv(
+            data_dir + '/participants.tsv', delimiter='\t')
+    subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
+    lang_dataset = DataSetLanguage(data_dir)   
+    lang_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06Run', space='MNISymC3', ses_id='ses-rest', subj=subject_subset)
     pass
