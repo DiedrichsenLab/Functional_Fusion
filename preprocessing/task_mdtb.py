@@ -25,6 +25,8 @@ runs_sessionscat = np.arange(1, 33)
 runs_sessionscat = [f'{run:02d}' for run in runs_sessionscat]
 
 sessions = ["1", "2"]
+mdtb_subjects = pd.read_csv(f'{fusion_dir}/participants.tsv', delimiter='\t')
+subjects = mdtb_subjects['participant_id']
 
 def copy_runs(fix=True):
     """
@@ -167,13 +169,12 @@ if __name__ == "__main__":
         
     # --- Move files ---
     # Move files to imaging_data_fix
-    folders = imaging_dir.glob('s[0-9][0-9]')
-    for folder in folders:
-        folder = str(folder)
-        subject = folder.split('/')[-1]
-        fx.move_mask(imaging_dir, subject)
+    for subject in subjects:
+        folder = f'{imaging_dir}/{subject}'
+        subject_orig = subject.replace('sub-', 's')
+        fx.move_mask(imaging_dir, subject_orig)
         for run in runs:
-            fx.move_cleaned(imaging_dir, subject, run)
+            fx.move_cleaned(imaging_dir, subject_orig, run)
 
     # --- Copy the FIX-cleaned runs into estimates ---
     copy_runs(fix=True)

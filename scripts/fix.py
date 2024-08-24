@@ -115,7 +115,7 @@ def move_cleaned(imaging_dir, subject, run):
         gunzip_cmd = f"gunzip {dest_dir + dest}"
         subprocess.run(gunzip_cmd, shell=True)
     except:
-        print('skipping ' + src)
+        print('skipping ' + source_dir + src)
 
 
 
