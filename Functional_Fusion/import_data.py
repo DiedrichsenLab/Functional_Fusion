@@ -271,8 +271,8 @@ def import_rest(src, dest, sub_id, ses_id, info_dict, mask_file=None):
         except:
             print('skipping ' + src)
         
-        # Make reginfo
-        # create_reginfo(dest_dir, sub_id, ses_id=ses_id, reginfo_general=info_dict['reginfo_general'])
+    # Make reginfo
+    create_reginfo(str(dest_dir), sub_id, ses_id=ses_id, reginfo_general=info_dict['reginfo_general'])
 
     
     # import mask

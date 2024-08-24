@@ -114,15 +114,14 @@ if __name__ == '__main__':
     dest_dir = base_dir + '/FunctionalFusion/Language/derivatives/{sub}/estimates/ses-rest/{sub}_ses-rest'
     T = pd.read_csv(base_dir + '/FunctionalFusion/Language/participants.tsv', delimiter='\t')
     participants = T[T['ses-rest'] == 1].participant_id
-    # for s in participants:
-        # Creating reginfo for functional fusion
-        # fx.create_reginfo(dest_dir, participant_id, ses_id='ses-rest', reginfo_general='sub-01')
+    subject_with_reginfo_file = 'sub-01'
 
     # Import resting-state session (only participants who have rest data)
+    info_dic = pd.read_csv(dest_dir.format(sub=participants[0]) + f'/{participants[0]}_ses-rest_reginfo.tsv', sep='\t')
     info_dict = {
-            'runs': ['01', '02'],
-            'reginfo_general': 'sub-02',
-        }    
+        'runs': [f'{run:02d}' for run in info_dic.run.unique()],
+        'reginfo_general': subject_with_reginfo_file,
+    }
 
     fix=False
     if fix:
@@ -130,7 +129,7 @@ if __name__ == '__main__':
         file_ending = '_run-{run}_fix.nii'
     else:
         src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-04/{sub}_ses-04'
-        file_ending = '_run-{run}'
+        file_ending = '_run-{run}.nii'
         
     for s in participants:
         src = src_stem.format(sub=s) + file_ending
