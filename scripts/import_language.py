@@ -124,7 +124,7 @@ if __name__ == '__main__':
                 'runs': ['01', '02'],
                 'reginfo_general': 'sub-02',
             }
-            id.import_rest(dir1, dir2, s, 'ses-rest', info_dict)
+            id.import_rest(dir1, dir2, s, 'ses-rest', info_dict, fix=fix)
 
         # T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
         # for s in T.participant_id:

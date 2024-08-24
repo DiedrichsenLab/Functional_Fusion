@@ -39,13 +39,13 @@ def copy_runs(fix=True):
         subject = subject[1].participant_id
         for session in sessions:
             imaging_folder = f'imaging_data_fix' if fix else f'imaging_data'
-            file_name = f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}_fix.nii" if fix else f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}.nii"
-            task_dir = Path(f'{data_dir}/sc1/{imaging_folder}/s{subject[-2:]}')
+            task_dir = Path(f'{data_dir}/sc1/{imaging_folder}/') if fix else Path(f'{data_dir}/sc1/{imaging_folder}/s{subject[-2:]}')
             # Remove 'c' from session
             for run in runs:
+                file_name = f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}_fix.nii" if fix else f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}.nii"
                 # if session is 1, then the run is the same as the original run, otherwise it is the original run + 16
                 orig_run = int(run) if session == "1" else int(run) + 16
-                task_file = f"{str(task_dir)}/rrun_{orig_run}.nii"
+                task_file = f"{str(task_dir)}/{subject}_run-{orig_run:02d}.nii" if fix else f"{str(task_dir)}/rrun_{orig_run}.nii" 
                 if op.exists(task_file):
                     subprocess.run(
                         ['cp', task_file, file_name])
@@ -169,13 +169,13 @@ if __name__ == "__main__":
         
     # --- Move files ---
     # Move files to imaging_data_fix
-    session = 's1'
-    for subject in subjects:
-        folder = f'{imaging_dir}/{subject}'
-        subject_orig = subject.replace('sub-', 's')
-        fx.move_mask(imaging_dir, subject_orig, session)
-        for run in runs:
-            fx.move_cleaned(imaging_dir, subject_orig, run)
+    # session = 's1'
+    # for subject in subjects:
+    #     folder = f'{imaging_dir}/{subject}' 
+    #     subject_orig = subject.replace('sub-', 's')
+    #     fx.move_mask(imaging_dir, subject_orig, session)
+    #     for run in runs:
+    #         fx.move_cleaned(imaging_dir, subject_orig, run)
 
     # --- Copy the FIX-cleaned runs into estimates ---
     copy_runs(fix=True)
