@@ -272,8 +272,8 @@ def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict, fix=Fal
 
 
     # import mask
-    src = f'/{participant_id}_{ses_id}_mask_fix.nii' if fix else f'/{participant_id}_{ses_id}_mask.nii'
-    dest = f'/{participant_id}_{ses_id}_mask_fix.nii' if fix else f'/{participant_id}_{ses_id}_mask.nii'
+    src = f'/{participant_id}_{ses_id}_mask.nii'
+    dest = f'/{participant_id}_{ses_id}_mask.nii'
     try:
         shutil.copyfile(source_dir + src,
                         dest_dir + dest)

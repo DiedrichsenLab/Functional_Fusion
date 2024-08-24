@@ -30,8 +30,9 @@ subjects = mdtb_subjects['participant_id']
 
 def copy_runs(fix=True):
     """
-        Copies the raw runs into the estimates folder for each subject.
+        Copies the raw runs into the estimates folder for each subject. Run this function instead of the import_rest function in import_data.py, because this function needs to additionally handle the issue of session 1 and 2 being concatenated in the MDTB dataset.
         If fix is True, it will copy the FIX-cleaned runs, otherwise it will copy the raw (uncleaned) data.
+        
     """
     T = pd.read_csv(f'{fusion_dir}/participants.tsv', delimiter='\t')
     # --- Copy the raw runs into estimates ---
@@ -169,13 +170,13 @@ if __name__ == "__main__":
         
     # --- Move files ---
     # Move files to imaging_data_fix
-    # session = 's1'
-    # for subject in subjects:
-    #     folder = f'{imaging_dir}/{subject}' 
-    #     subject_orig = subject.replace('sub-', 's')
-    #     fx.move_mask(imaging_dir, subject_orig, session)
-    #     for run in runs:
-    #         fx.move_cleaned(imaging_dir, subject_orig, run)
+    session = 's1'
+    for subject in subjects:
+        folder = f'{imaging_dir}/{subject}' 
+        subject_orig = subject.replace('sub-', 's')
+        fx.move_mask(imaging_dir, subject_orig, session)
+        for run in runs:
+            fx.move_cleaned(imaging_dir, subject_orig, run)
 
     # --- Copy the FIX-cleaned runs into estimates ---
     copy_runs(fix=True)
