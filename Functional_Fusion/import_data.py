@@ -240,42 +240,48 @@ def create_reginfo(dest_dir, participant_id, ses_id='ses-rest', reginfo_general=
     reginfo.to_csv(dest, sep='\t', index=False)
 
 
-def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict):
+def import_rest(src, dest, sub_id, ses_id, info_dict, mask_file=None):
     """Imports the resting state files
        into a BIDS/derivative structure
     Args:
-        source_dir (str): source directory
-        dest_dir (str): destination directory
-        participant_id (str): ID of participant
+        src (str): source name structure
+        dest (str): destination name structure
+        sub_id (str): ID of participant
         ses_id (str): ID of session
         info_dict (dict): Dictionary with run information and name of subject that stores the pre-created general timeseries reginfo.tsv file
+        fix (bool): If True, then import the data that is FIX cleaned
     """
     run_names = info_dict['runs']
+
+    # get source directory with Path
+    source_dir = Path(src).parent
+    dest_dir = Path(dest).parent
 
     # Make the destination directory
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     for run in run_names:
 
         # move data into the corresponding session folder
-        src = (f'{participant_id}_run-{run}.nii')
-        dest = (f'/{participant_id}_{ses_id}_run-{run}.nii')
+        src_file = src.format(run=run)
+        dest_file = dest.format(run=run)
 
         try:
-            shutil.copyfile(source_dir + src,
-                            dest_dir + dest)
+            shutil.copyfile(src_file,
+                            dest_file)
         except:
             print('skipping ' + src)
         
         # Make reginfo
-        create_reginfo(dest_dir, participant_id, ses_id=ses_id, reginfo_general=info_dict['reginfo_general'])
+        # create_reginfo(dest_dir, sub_id, ses_id=ses_id, reginfo_general=info_dict['reginfo_general'])
 
-
+    
     # import mask
-    src = f'/{participant_id}_{ses_id}_mask.nii'
-    dest = f'/{participant_id}_{ses_id}_mask.nii'
+    if mask_file is None:
+        mask_file = str(source_dir) + f'/{sub_id}_{ses_id}_mask.nii'
+    dest_file = f'/{sub_id}_{ses_id}_mask.nii'
     try:
-        shutil.copyfile(source_dir + src,
-                        dest_dir + dest)
+        shutil.copyfile(mask_file,
+                        str(dest_dir) + dest_file)
     except:
-        print('skipping ' + src)
+        print('skipping ' + source_dir + src_file)
 
