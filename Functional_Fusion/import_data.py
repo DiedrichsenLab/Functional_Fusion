@@ -265,13 +265,13 @@ def import_rest(src, dest, sub_id, ses_id, info_dict, mask_file=None):
         src_file = src.format(run=run)
         dest_file = dest.format(run=run)
 
-        # try:
-        #     shutil.copyfile(src_file,
-        #                     dest_file)
-        # except:
-        #     print('skipping ' + src)
+        try:
+            shutil.copyfile(src_file,
+                            dest_file)
+        except:
+            print('skipping ' + src)
         
-        # # Make reginfo
+        # Make reginfo
         # create_reginfo(dest_dir, sub_id, ses_id=ses_id, reginfo_general=info_dict['reginfo_general'])
 
     
