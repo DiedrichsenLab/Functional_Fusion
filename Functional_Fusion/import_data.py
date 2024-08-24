@@ -240,7 +240,7 @@ def create_reginfo(dest_dir, participant_id, ses_id='ses-rest', reginfo_general=
     reginfo.to_csv(dest, sep='\t', index=False)
 
 
-def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict):
+def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict, fix=False):
     """Imports the resting state files
        into a BIDS/derivative structure
     Args:
@@ -249,6 +249,7 @@ def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict):
         participant_id (str): ID of participant
         ses_id (str): ID of session
         info_dict (dict): Dictionary with run information and name of subject that stores the pre-created general timeseries reginfo.tsv file
+        fix (bool): If True, then import the data that is FIX cleaned
     """
     run_names = info_dict['runs']
 
@@ -257,8 +258,8 @@ def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict):
     for run in run_names:
 
         # move data into the corresponding session folder
-        src = (f'{participant_id}_run-{run}.nii')
-        dest = (f'/{participant_id}_{ses_id}_run-{run}.nii')
+        src = (f'{participant_id}_run-{run}_fix.nii') if fix else (f'{participant_id}_run-{run}.nii')
+        dest = (f'/{participant_id}_{ses_id}_run-{run}_fix.nii') if fix else (f'/{participant_id}_{ses_id}_run-{run}.nii')
 
         try:
             shutil.copyfile(source_dir + src,
@@ -271,8 +272,8 @@ def import_rest(source_dir, dest_dir, participant_id, ses_id, info_dict):
 
 
     # import mask
-    src = f'/{participant_id}_{ses_id}_mask.nii'
-    dest = f'/{participant_id}_{ses_id}_mask.nii'
+    src = f'/{participant_id}_{ses_id}_mask_fix.nii' if fix else f'/{participant_id}_{ses_id}_mask.nii'
+    dest = f'/{participant_id}_{ses_id}_mask_fix.nii' if fix else f'/{participant_id}_{ses_id}_mask.nii'
     try:
         shutil.copyfile(source_dir + src,
                         dest_dir + dest)

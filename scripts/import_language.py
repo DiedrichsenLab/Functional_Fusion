@@ -11,7 +11,7 @@ from pathlib import Path
 import mat73
 import numpy as np
 import scipy.io as sio
-from Functional_Fusion.import_data import *
+import Functional_Fusion.import_data as id
 
 base_dir = '/Volumes/diedrichsen_data$/data'
 if not Path(base_dir).exists():
@@ -82,36 +82,58 @@ if __name__ == '__main__':
         source_dir = '{}/suit/anatomicals/{}'.format(src_base_dir, participant_id)
         dest_dir = '{}/derivatives/{}/suit'.format(dest_base_dir, participant_id)
         anat_name = 'anatomical'
-        import_suit(source_dir,dest_dir,anat_name, participant_id)
+        id.import_suit(source_dir,dest_dir,anat_name, participant_id)
 
         # # # # # --- Importing ANAT ---
         # source_dir = '{}/anatomicals/{}'.format(src_base_dir, participant_id)
         # dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
         # anat_name = 'anatomical'
-        # import_anat(source_dir,dest_dir,anat_name,participant_id)
+        # id.import_anat(source_dir,dest_dir,anat_name,participant_id)
 
         # # # --- Importing Freesurfer ---
         # source_dir = '{}/surfaceWB/data/{}/'.format(src_base_dir, participant_id)
         # dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
         # old_id = '{}'.format(participant_id)
         # new_id = '{}'.format(participant_id)
-        # import_freesurfer(source_dir,dest_dir,old_id,new_id)
+        # id.import_freesurfer(source_dir,dest_dir,old_id,new_id)
 
         # # --- Importing Estimates ---
-        # source_dir = '{}/GLM_firstlevel/glm_21/{}/'.format(src_base_dir, participant_id)
-        # dest_dir = '{}/derivatives/{}/estimates/ses-02'.format(dest_base_dir, participant_id)
+        source_dir = '{}/GLM_firstlevel/glm_21/{}/'.format(src_base_dir, participant_id)
+        dest_dir = '{}/derivatives/{}/estimates/ses-02'.format(dest_base_dir, participant_id)
         # subj_id = '{}'.format(participant_id)
         # ses_id = 'ses-02'
-        # import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
+        # id.import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
 
         # # # Importing design matrix
         # source_dir = f'{src_base_dir}/GLM_firstlevel/glm_21/{participant_id}'
         # dest_dir = f'{dest_base_dir}/derivatives/{participant_id}/estimates/{ses}'
-        # import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
+        # id.import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
 
         # Creating reginfo for functional fusion
         # create_reginfo(dest_dir, participant_id, ses_id='ses-rest', reginfo_general='sub-01')
 
+        # Import resting-state session
+        # (only take participants who have rest data)
+        fix=False
+        participants = participants[T['ses-rest'] == 1]
+        for s in participants:
+            old_id = s.replace('sub-', 's', 1)
+            dir1 = orig_dir + '/resting_state/imaging_data_fix/' if fix else orig_dir + '/resting_state/imaging_data/'
+            dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
+            info_dict = {
+                'runs': ['01', '02'],
+                'reginfo_general': 'sub-02',
+            }
+            id.import_rest(dir1, dir2, s, 'ses-rest', info_dict)
+
+        # T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+        # for s in T.participant_id:
+        #     print(f"-Start importing subject {s}")
+        #     # old_id = s.replace('sub-','s',1)
+        #     dir1 = os.path.join(orig_dir, str(s))
+        #     dir2 = os.path.join(target_dir, 'derivatives/%s/func' % str(s))
+        #     import_func_resting(dir1, dir2, str(s))
+        #     print(f"-Done subject {s}")
         pass
 
 

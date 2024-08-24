@@ -119,10 +119,10 @@ def move_cleaned(imaging_dir, subject, run):
 
 
 
-def move_mask(imaging_dir, subject):    
+def move_mask(imaging_dir, subject, session):    
     """Move the functional space grey matter mask into the imaging_data_fix folder."""
     src = 'rmask_noskull.nii'
-    dest = (f'/sub-{subject[1:]}_ses-rest_mask.nii')
+    dest = (f'/sub-{subject[1:]}_ses-{session}_mask.nii')
 
     source_dir = f"{imaging_dir}/{subject}/"
     dest_dir = f"{imaging_dir}/../imaging_data_fix/"

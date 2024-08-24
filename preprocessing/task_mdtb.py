@@ -39,7 +39,7 @@ def copy_runs(fix=True):
         subject = subject[1].participant_id
         for session in sessions:
             imaging_folder = f'imaging_data_fix' if fix else f'imaging_data'
-            file_name = f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}_clean-fix.nii" if fix else f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}.nii"
+            file_name = f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}_fix.nii" if fix else f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}.nii"
             task_dir = Path(f'{data_dir}/sc1/{imaging_folder}/s{subject[-2:]}')
             # Remove 'c' from session
             for run in runs:
@@ -169,10 +169,11 @@ if __name__ == "__main__":
         
     # --- Move files ---
     # Move files to imaging_data_fix
+    session = 's1'
     for subject in subjects:
         folder = f'{imaging_dir}/{subject}'
         subject_orig = subject.replace('sub-', 's')
-        fx.move_mask(imaging_dir, subject_orig)
+        fx.move_mask(imaging_dir, subject_orig, session)
         for run in runs:
             fx.move_cleaned(imaging_dir, subject_orig, run)
 
