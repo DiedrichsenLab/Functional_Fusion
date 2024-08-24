@@ -70,6 +70,7 @@ if __name__ == "__main__":
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
     lang_dataset = DataSetLanguage(data_dir)   
     lang_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    lang_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='fs32k', smooth=2.0)
     conn.get_connectivity_fingerprint(dname,
                                       type='Fus06Run', space='MNISymC3', ses_id='ses-rest', subj=subject_subset)
     pass
