@@ -117,7 +117,7 @@ if __name__ == '__main__':
     subject_with_reginfo_file = 'sub-01'
 
     # Import resting-state session (only participants who have rest data)
-    info_dic = pd.read_csv(dest_dir.format(sub=participants[0]) + f'/{participants[0]}_ses-rest_reginfo.tsv', sep='\t')
+    info_dic = pd.read_csv(dest_dir.format(sub=participants[0]) + f'_reginfo.tsv', sep='\t')
     info_dict = {
         'runs': [f'{run:02d}' for run in info_dic.run.unique()],
         'reginfo_general': subject_with_reginfo_file,
