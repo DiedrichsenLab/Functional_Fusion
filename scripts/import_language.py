@@ -16,6 +16,8 @@ import Functional_Fusion.import_data as id
 base_dir = '/Volumes/diedrichsen_data$/data'
 if not Path(base_dir).exists():
     base_dir = '/cifs/diedrichsen/data'
+if not Path(base_dir).exists():
+    base_dir = '/srv/diedrichsen/data'
 
 
 def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
@@ -72,68 +74,70 @@ def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
             print('skipping ' + src[i])
 
 if __name__ == '__main__':
-    src_base_dir = base_dir + '/Cerebellum/Language/Language_7T'
-    dest_base_dir = base_dir + '/FunctionalFusion/Language'
-    ses = 'ses-02'
-    for participant_id in ['sub-06']:
-        # '01', '03', '04', '07', '95', '96', '97',
+    # src_base_dir = base_dir + '/Cerebellum/Language/Language_7T'
+    # dest_base_dir = base_dir + '/FunctionalFusion/Language'
+    # ses = 'ses-02'
+    # for participant_id in ['sub-06']:
+    #     # '01', '03', '04', '07', '95', '96', '97',
+    #     # # --- Importing SUIT ---
+    #     source_dir = '{}/suit/anatomicals/{}'.format(src_base_dir, participant_id)
+    #     dest_dir = '{}/derivatives/{}/suit'.format(dest_base_dir, participant_id)
+    #     anat_name = 'anatomical'
+    #     id.import_suit(source_dir,dest_dir,anat_name, participant_id)
 
-        # # --- Importing SUIT ---
-        source_dir = '{}/suit/anatomicals/{}'.format(src_base_dir, participant_id)
-        dest_dir = '{}/derivatives/{}/suit'.format(dest_base_dir, participant_id)
-        anat_name = 'anatomical'
-        id.import_suit(source_dir,dest_dir,anat_name, participant_id)
+    #     # # # # --- Importing ANAT ---
+    #     source_dir = '{}/anatomicals/{}'.format(src_base_dir, participant_id)
+    #     dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
+    #     anat_name = 'anatomical'
+    #     id.import_anat(source_dir,dest_dir,anat_name,participant_id)
 
-        # # # # # --- Importing ANAT ---
-        # source_dir = '{}/anatomicals/{}'.format(src_base_dir, participant_id)
-        # dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
-        # anat_name = 'anatomical'
-        # id.import_anat(source_dir,dest_dir,anat_name,participant_id)
+    #     # # --- Importing Freesurfer ---
+    #     source_dir = '{}/surfaceWB/data/{}/'.format(src_base_dir, participant_id)
+    #     dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
+    #     old_id = '{}'.format(participant_id)
+    #     new_id = '{}'.format(participant_id)
+    #     id.import_freesurfer(source_dir,dest_dir,old_id,new_id)
 
-        # # # --- Importing Freesurfer ---
-        # source_dir = '{}/surfaceWB/data/{}/'.format(src_base_dir, participant_id)
-        # dest_dir = '{}/derivatives/{}/anat'.format(dest_base_dir, participant_id)
-        # old_id = '{}'.format(participant_id)
-        # new_id = '{}'.format(participant_id)
-        # id.import_freesurfer(source_dir,dest_dir,old_id,new_id)
+    #     # --- Importing Estimates ---
+        
+    #     subj_id = '{}'.format(participant_id)
+    #     ses_id = 'ses-02'
+    #     id.import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
 
-        # # --- Importing Estimates ---
-        source_dir = '{}/GLM_firstlevel/glm_21/{}/'.format(src_base_dir, participant_id)
-        dest_dir = '{}/derivatives/{}/estimates/ses-02'.format(dest_base_dir, participant_id)
-        # subj_id = '{}'.format(participant_id)
-        # ses_id = 'ses-02'
-        # id.import_spm_glm(source_dir, dest_dir, subj_id, ses_id)
+    #     # # Importing design matrix
+    #     source_dir = f'{src_base_dir}/GLM_firstlevel/glm_21/{participant_id}'
+    #     dest_dir = f'{dest_base_dir}/derivatives/{participant_id}/estimates/{ses}'
+    #     id.import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
 
-        # # # Importing design matrix
-        # source_dir = f'{src_base_dir}/GLM_firstlevel/glm_21/{participant_id}'
-        # dest_dir = f'{dest_base_dir}/derivatives/{participant_id}/estimates/{ses}'
-        # id.import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
 
+
+    dest_dir = base_dir + '/FunctionalFusion/Language/derivatives/{sub}/estimates/ses-rest/{sub}_ses-rest'
+    T = pd.read_csv(base_dir + '/FunctionalFusion/Language/participants.tsv', delimiter='\t')
+    participants = T[T['ses-rest'] == 1].participant_id
+    # for s in participants:
         # Creating reginfo for functional fusion
-        # create_reginfo(dest_dir, participant_id, ses_id='ses-rest', reginfo_general='sub-01')
+        # fx.create_reginfo(dest_dir, participant_id, ses_id='ses-rest', reginfo_general='sub-01')
 
-        # Import resting-state session
-        # (only take participants who have rest data)
-        fix=False
-        participants = participants[T['ses-rest'] == 1]
-        for s in participants:
-            old_id = s.replace('sub-', 's', 1)
-            dir1 = orig_dir + '/resting_state/imaging_data_fix/' if fix else orig_dir + '/resting_state/imaging_data/'
-            dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
-            info_dict = {
-                'runs': ['01', '02'],
-                'reginfo_general': 'sub-02',
-            }
-            id.import_rest(dir1, dir2, s, 'ses-rest', info_dict, fix=fix)
+    # Import resting-state session (only participants who have rest data)
+    info_dict = {
+            'runs': ['01', '02'],
+            'reginfo_general': 'sub-02',
+        }    
 
-        # T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
-        # for s in T.participant_id:
-        #     print(f"-Start importing subject {s}")
-        #     # old_id = s.replace('sub-','s',1)
-        #     dir1 = os.path.join(orig_dir, str(s))
-        #     dir2 = os.path.join(target_dir, 'derivatives/%s/func' % str(s))
-        #     import_func_resting(dir1, dir2, str(s))
-        #     print(f"-Done subject {s}")
+    fix=False
+    if fix:
+        src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data_fix/{sub}/ses-04/{sub}_ses-04'
+        file_ending = '_run-{run}_fix.nii'
+    else:
+        src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-04/{sub}_ses-04'
+        file_ending = '_run-{run}'
+        
+    for s in participants:
+        src = src_stem.format(sub=s) + file_ending
+        dest = dest_dir.format(sub=s) + file_ending
+        mask_file = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-01/rmask_noskull.nii'.format(sub=s)
+        id.import_rest(src, dest, s, 'ses-rest', info_dict, mask_file=mask_file)
+
         pass
 
 

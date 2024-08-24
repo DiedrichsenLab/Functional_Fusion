@@ -39,7 +39,7 @@ def copy_runs(fix=True):
     for subject in T.iterrows():
         subject = subject[1].participant_id
         for session in sessions:
-            imaging_folder = f'imaging_data_fix' if fix else f'imaging_data'
+            imaging_folder = 'imaging_data_fix' if fix else 'imaging_data'
             task_dir = Path(f'{data_dir}/sc1/{imaging_folder}/') if fix else Path(f'{data_dir}/sc1/{imaging_folder}/s{subject[-2:]}')
             # Remove 'c' from session
             for run in runs:
