@@ -174,7 +174,7 @@ if __name__ == "__main__":
     for subject in subjects:
         folder = f'{imaging_dir}/{subject}' 
         subject_orig = subject.replace('sub-', 's')
-        fx.move_mask(imaging_dir, subject_orig, session)
+        # fx.move_mask(imaging_dir, subject_orig, session)
         for run in runs:
             fx.move_cleaned(imaging_dir, subject_orig, run)
 
