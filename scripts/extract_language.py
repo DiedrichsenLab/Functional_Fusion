@@ -64,7 +64,7 @@ if __name__ == "__main__":
     # extract_language()
 
     # Exctract Rest timeseries & connectivity fingerprint
-    dname = 'MDTB'
+    dname = 'Language'
     T = pd.read_csv(
             data_dir + '/participants.tsv', delimiter='\t')
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
