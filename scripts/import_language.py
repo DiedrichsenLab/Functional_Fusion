@@ -114,9 +114,9 @@ if __name__ == '__main__':
     dest_dir = base_dir + '/FunctionalFusion/Language/derivatives/{sub}/estimates/ses-rest/{sub}_ses-rest'
     T = pd.read_csv(base_dir + '/FunctionalFusion/Language/participants.tsv', delimiter='\t')
     participants = T[T['ses-rest'] == 1].participant_id
-    # for s in participants:
+    for s in participants:
         # Creating reginfo for functional fusion
-        # fx.create_reginfo(dest_dir, participant_id, ses_id='ses-rest', reginfo_general='sub-01')
+        id.create_reginfo(dest_dir.format(sub=s), s, ses_id='ses-rest', reginfo_general='sub-01')
 
     # Import resting-state session (only participants who have rest data)
     info_dict = {
