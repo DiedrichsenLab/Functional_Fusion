@@ -9,7 +9,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import shutil
-from Functional_Fusion.scripts.fix import copy_motionparams
+from Functional_Fusion.scripts.fix import copy_motionparams, move_cleaned, move_mask
 
 data_dir = f'{ut.base_dir}/../Cerebellum/super_cerebellum/'
 rest_dir = Path(f'{data_dir}/resting_state/imaging_data/')
@@ -120,36 +120,7 @@ def get_labelled_folders():
 
 
 
-def move_cleaned(subject, run):
-    """Move the cleaned data into the imaging_data_fix folder."""
-    
-    # move data into the corresponding session folder
-    src = 'filtered_func_data_clean.nii.gz'
-    dest = (f'/sub-{subject[1:]}_run-{run}.nii.gz')
 
-    source_dir = f"{rest_dir}/{subject}/run{run}.feat/"
-    dest_dir = f"{rest_dir}/../imaging_data_fix/"
-    try:
-        shutil.copyfile(source_dir + src,
-                        dest_dir + dest)
-        gunzip_cmd = f"gunzip {dest_dir + dest}"
-        subprocess.run(gunzip_cmd, shell=True)
-    except:
-        print('skipping ' + src)
-
-
-def move_mask(subject):    
-    """Move the functional space grey matter mask into the imaging_data_fix folder."""
-    src = 'rmask_noskull.nii'
-    dest = (f'/sub-{subject[1:]}_ses-rest_mask.nii')
-
-    source_dir = f"{rest_dir}/{subject}/"
-    dest_dir = f"{rest_dir}/../imaging_data_fix/"
-    try:
-        shutil.copyfile(source_dir + src,
-                        dest_dir + dest)
-    except:
-        print('skipping ' + src)
 
 if __name__ == "__main__":
 

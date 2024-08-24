@@ -100,6 +100,37 @@ def copy_motionparams(subject_path, run):
         subprocess.run(
             ['cp', rp_file, f"{ica_path}/mc/prefiltered_func_data_mcf.par"])
 
+def move_cleaned(imaging_dir, subject, run):
+    """Move the cleaned data into the imaging_data_fix folder."""
+    
+    # move data into the corresponding session folder
+    src = 'filtered_func_data_clean.nii.gz'
+    dest = (f'/sub-{subject[1:]}_run-{run}.nii.gz')
+
+    source_dir = f"{imaging_dir}/{subject}/run{run}.feat/"
+    dest_dir = f"{imaging_dir}/../imaging_data_fix/"
+    try:
+        shutil.copyfile(source_dir + src,
+                        dest_dir + dest)
+        gunzip_cmd = f"gunzip {dest_dir + dest}"
+        subprocess.run(gunzip_cmd, shell=True)
+    except:
+        print('skipping ' + src)
+
+
+
+def move_mask(imaging_dir, subject):    
+    """Move the functional space grey matter mask into the imaging_data_fix folder."""
+    src = 'rmask_noskull.nii'
+    dest = (f'/sub-{subject[1:]}_ses-rest_mask.nii')
+
+    source_dir = f"{imaging_dir}/{subject}/"
+    dest_dir = f"{imaging_dir}/../imaging_data_fix/"
+    try:
+        shutil.copyfile(source_dir + src,
+                        dest_dir + dest)
+    except:
+        print('skipping ' + src)
 
 # def balanced_subset(subjects, runs, percent_data):
 #     # Calculate the number of subjects to select
