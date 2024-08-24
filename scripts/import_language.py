@@ -130,7 +130,7 @@ if __name__ == '__main__':
         file_ending = '_run-{run}_fix.nii'
     else:
         src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-04/{sub}_ses-04'
-        file_ending = '_run-{run}'
+        file_ending = '_run-{run}.nii'
         
     for s in participants:
         src = src_stem.format(sub=s) + file_ending
