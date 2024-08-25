@@ -109,7 +109,7 @@ def move_cleaned(imaging_dir, subject, run):
 
     source_dir = f"{imaging_dir}/{subject}/run{run}.feat/"
     dest_dir = f"{imaging_dir}/../imaging_data_fix/"
-    if not Path(dest_dir + dest).exists():
+    if not Path(dest_dir + dest.strip('.gz')).exists():
         try:
             shutil.copyfile(source_dir + src,
                             dest_dir + dest)
