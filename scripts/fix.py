@@ -109,13 +109,14 @@ def move_cleaned(imaging_dir, subject, run):
 
     source_dir = f"{imaging_dir}/{subject}/run{run}.feat/"
     dest_dir = f"{imaging_dir}/../imaging_data_fix/"
-    try:
-        shutil.copyfile(source_dir + src,
-                        dest_dir + dest)
-        gunzip_cmd = f"gunzip {dest_dir + dest}"
-        subprocess.run(gunzip_cmd, shell=True)
-    except:
-        print('skipping ' + source_dir + src)
+    if not Path(dest_dir + dest).exists():
+        try:
+            shutil.copyfile(source_dir + src,
+                            dest_dir + dest)
+            gunzip_cmd = f"gunzip {dest_dir + dest}"
+            subprocess.run(gunzip_cmd, shell=True)
+        except:
+            print('skipping ' + source_dir + src)
 
 
 
