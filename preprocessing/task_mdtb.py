@@ -162,14 +162,21 @@ if __name__ == "__main__":
     # # For the rest, automatically classify labelled components using mdtb task training set, then clean noise components from the data
     automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs if not op.exists(
         f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
-    for folder in automatic_folders:
-        # subprocess.run(
-        #     ['/srv/software/fix/1.06.15/fix', '-c', folder, f'{imaging_dir}/../fix_ica/mdtb_task.RData', str(chosen_threshold)])
-        subprocess.run(
-            ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/fix4melview_mdtb_task_thr{chosen_threshold}.txt'])
+    for subject in subjects:
+        subject_orig = subject.replace('sub-', 's')
+        folder = f'{imaging_dir}/{subject_orig}' 
+        for run in runs:
+            feat_path = f"{str(folder)}/run{run}.feat"
+            if not op.exists(f"{feat_path}/filtered_func_data_clean.nii.gz"):
+                print(f"Cleaning {subject} run {run}")
+                subprocess.run(
+                    ['/srv/software/fix/1.06.15/fix', '-c', feat_path, f'{imaging_dir}/../fix_ica/mdtb_task.RData', str(chosen_threshold)])
+                subprocess.run(
+                    ['/srv/software/fix/1.06.15/fix', '-a', f'{feat_path}/fix4melview_mdtb_task_thr{chosen_threshold}.txt'])
         
     # --- Move files ---
     # Move files to imaging_data_fix
+
     session = 's1'
     for subject in subjects:
         folder = f'{imaging_dir}/{subject}' 
