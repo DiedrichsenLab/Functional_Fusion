@@ -117,6 +117,8 @@ def move_cleaned(imaging_dir, subject, run):
             subprocess.run(gunzip_cmd, shell=True)
         except:
             print('skipping ' + source_dir + src)
+    else:
+        print(source_dir + src + 'already exists')
 
 
 
