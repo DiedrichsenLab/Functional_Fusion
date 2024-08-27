@@ -576,12 +576,15 @@ class DataSet:
             fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
             T = pd.read_csv(
                 dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
-        elif type == 'Tseries':
+        elif type == 'Tseries' or type == 'FixTseries':
             # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
-            fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-*.nii')
+            fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii')
             runs = [int(fname.split('run-')[-1].split('_')[0].split('.')[0]) for fname in fnames]
             runs = np.unique(runs)
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in runs]
+            if type == 'FixTseries':
+                # Make sure to load fix-cleaned timeseries
+                fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}_fix.nii' for r in runs]
             try:
                 # Load timeseries info file if it exists
                 T = pd.read_csv(
@@ -594,8 +597,8 @@ class DataSet:
                 timepoints = np.arange(sum(timepoints))+1
                 timepoints_string = [f'T{timepoint:04d}' for timepoint in timepoints]
                 T = pd.DataFrame({'run': runs,
-                                  'timepoint': timepoints_string,
-                                  'time_id':timepoints}, index=None)
+                                    'timepoint': timepoints_string,
+                                    'time_id':timepoints}, index=None)
                 
         return fnames, T
 
