@@ -47,7 +47,7 @@ def copy_runs(fix=True):
                 # if session is 1, then the run is the same as the original run, otherwise it is the original run + 16
                 orig_run = int(run) if session == "1" else int(run) + 16
                 task_file = f"{str(task_dir)}/{subject}_run-{orig_run:02d}.nii" if fix else f"{str(task_dir)}/rrun_{orig_run}.nii" 
-                if op.exists(task_file):
+                if op.exists(task_file) and not op.exists(file_name):
                     subprocess.run(
                         ['cp', task_file, file_name])
                     print(f'Copied {run} for {subject} in {session}')
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     for subject in subjects:
         folder = f'{imaging_dir}/{subject}' 
         subject_orig = subject.replace('sub-', 's')
-        # fx.move_mask(imaging_dir, subject_orig, session)
+        fx.move_mask(imaging_dir, subject_orig, session)
         for run in runs:
             fx.move_cleaned(imaging_dir, subject_orig, run)
 
