@@ -1030,7 +1030,7 @@ class DataSetMDTB(DataSetNative):
 
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 9)
-        if type == 'Tseries':
+        if type == 'Tseries' or type == 'FixTseries':
             info['names'] = info['timepoint']
             data_new, data_info = data, info
 
