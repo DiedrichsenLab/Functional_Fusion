@@ -75,21 +75,21 @@ if __name__ == "__main__":
     # Import resting-state session
     # (only take participants who have rest data)
     participants = participants[T['ses-rest'] == 1]
-    for s in participants:
-        old_id = s.replace('sub-', 's', 1)
-        dir1 = orig_dir + '/resting_state/imaging_data_fix/'
-        dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
-        info_dict = {
-            'runs': ['01', '02'],
-            'reginfo_general': 'sub-02',
-        }
-        id.import_rest(dir1, dir2, s, 'ses-rest', info_dict)
+    # for s in participants:
+    #     old_id = s.replace('sub-', 's', 1)
+    #     dir1 = orig_dir + '/resting_state/imaging_data_fix/'
+    #     dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
+    #     info_dict = {
+    #         'runs': ['01', '02'],
+    #         'reginfo_general': 'sub-02',
+    #     }
+    #     id.import_rest(dir1, dir2, s, 'ses-rest', info_dict)
 
-    # T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
-    # for s in T.participant_id:
-    #     print(f"-Start importing subject {s}")
-    #     # old_id = s.replace('sub-','s',1)
-    #     dir1 = os.path.join(orig_dir, str(s))
-    #     dir2 = os.path.join(target_dir, 'derivatives/%s/func' % str(s))
-    #     import_func_resting(dir1, dir2, str(s))
-    #     print(f"-Done subject {s}")
+    T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+    for s in T.participant_id:
+        print(f"-Start importing subject {s}")
+        # old_id = s.replace('sub-','s',1)
+        dir1 = os.path.join(orig_dir, str(s))
+        dir2 = os.path.join(target_dir, 'derivatives/%s/func' % str(s))
+        import_func_resting(dir1, dir2, str(s))
+        print(f"-Done subject {s}")
