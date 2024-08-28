@@ -9,14 +9,14 @@ import pandas as pd
 from datetime import datetime
 import os
 import shutil
-from Functional_Fusion.scripts.fix import copy_motionparams, move_cleaned, move_mask
+from scripts.fix import copy_motionparams, move_cleaned, move_mask
 
 data_dir = f'{ut.base_dir}/../Cerebellum/super_cerebellum/'
 rest_dir = Path(f'{data_dir}/resting_state/imaging_data/')
 anat_dir = Path(f'{data_dir}/sc1/anatomicals/')
 design_dir = Path(
     '~/code/Python/Functional_Fusion/preprocessing/design_files/').expanduser()
-runs = ["01", "02"]
+rest_runs = ["01", "02"]
 
 
 
@@ -64,7 +64,7 @@ def rename_anatomical(img_file):
     subprocess.run(['mv', str(opti_file), str(out_file)])
 
 def classify_components():
-    runs = ["01", "02"]
+    rest_runs = ["01", "02"]
     # Load the list of subjects to classify
     classified_file = op.join(design_dir, 'classified_subjects.tsv')
     classified_df = pd.read_csv(classified_file, sep='\t', header=0)
@@ -111,10 +111,10 @@ def classify_components():
 
 
 def get_labelled_folders():
-    labelled_folders = [f"{folder}/run{run}_smoothed.ica" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if op.exists(
+    labelled_folders = [f"{folder}/run{run}_smoothed.ica" for folder in rest_dir.glob('s[0-9][0-9]') for run in rest_runs if op.exists(
         f'{folder}/run{run}_smoothed.ica/filtered_func_data.ica/hand_labels_noise.txt')]
     labelled_folders = labelled_folders + [f"{folder}/run{run}.feat" for folder in rest_dir.glob(
-        's[0-9][0-9]') for run in runs if op.exists(f"{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt")]
+        's[0-9][0-9]') for run in rest_runs if op.exists(f"{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt")]
 
     return labelled_folders
 
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     # --- Brain-extract anatomical to be used in registration ---
     # for subject_path in anat_dir.glob('s[0-9][0-9]'):
     #     subject = subject_path.name[1:]  # remove the 's' prefix
-    #     for run in runs:
+    #     for run in rest_runs:
     #         img_file = f"{str(subject_path)}/anatomical.nii"
     #         bet_anatomical(img_file)
     #         rename_anatomical(img_file)
@@ -135,14 +135,14 @@ if __name__ == "__main__":
     # --- Correct the header of the image files by inserting TR ---
     # for subject_path in rest_dir.glob('s[0-9][0-9]'):
     #     subject = subject_path.name[1:]  # remove the 's' prefix
-    #     for run in runs:
+    #     for run in rest_runs:
     #         img_file = f"{str(subject_path)}/rrun_{run}.nii"
     #         correct_header(img_file)
 
     # --- Create the design files for each subject and run single-subject ICA ---
     # for subject_path in rest_dir.glob('s[0-9][0-9]'):
     #     subject = subject_path.name[1:]
-    #     for run in runs:
+    #     for run in rest_runs:
     #         make_design(subject, run)
     #         run_ica(subject, run)
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     # # --- Copy motion parameter files to ica folders for feature extraction ---
     # for subject_path in rest_dir.glob('s[0-9][0-9]'):
     #     subject = subject_path.name[1:]
-    #     for run in runs:
+    #     for run in rest_runs:
     #         copy_motionparams(subject_path, run)
 
     # # --- After classification, run fix training and leave-one-out testing ---
@@ -176,14 +176,14 @@ if __name__ == "__main__":
     # --- Run FIX cleanup---
     # chosen_threshold = 20
     # # # For those scans that have hand-labelled components, clean noise components from the data
-    # labelled_folders = [f"{folder}/run{run}.feat" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if op.exists(
+    # labelled_folders = [f"{folder}/run{run}.feat" for folder in rest_dir.glob('s[0-9][0-9]') for run in rest_runs if op.exists(
     #     f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
     # for folder in labelled_folders:
     #     subprocess.run(
     #         ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/hand_labels_noise.txt'])
 
     # For the rest, automatically classify labelled components using mdtb training set, then clean noise components from the data
-    # automatic_folders = [f"{folder}/run{run}.feat" for folder in rest_dir.glob('s[0-9][0-9]') for run in runs if not op.exists(
+    # automatic_folders = [f"{folder}/run{run}.feat" for folder in rest_dir.glob('s[0-9][0-9]') for run in rest_runs if not op.exists(
     #     f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
     # for folder in automatic_folders:
     #     # subprocess.run(
@@ -197,8 +197,8 @@ if __name__ == "__main__":
     for folder in folders:
         folder = str(folder)
         subject = folder.split('/')[-1]
-        move_mask(subject)
-        # for run in runs:
-        #     move_cleaned(subject, run)
+        # move_mask(subject)
+        for run in rest_runs:
+            move_cleaned('/'.join(folder.split('/')[:-1]), subject, run)
         
     
