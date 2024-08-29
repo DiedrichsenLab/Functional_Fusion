@@ -104,7 +104,7 @@ if __name__ == "__main__":
     
     T = pd.read_csv(base_dir + '/FunctionalFusion/MDTB/participants.tsv', delimiter='\t')
     participants = T[T['ses-rest'] == 1].participant_id
-    runs = np.arange(1, 17)
+    runs = [f'{run:02d}' for run in np.arange(1, 17)]
     
     fix=True
     for session in [1,2]:
@@ -120,4 +120,4 @@ if __name__ == "__main__":
             src = src_stem.format(sub=s) + file_ending
             dest = dest_dir.format(sub=s) + file_ending
             mask_file = base_dir + '/Cerebellum/super_cerebellum/sc1/imaging_data_fix/{sub}_ses-s1_mask.nii'.format(sub=s)
-            id.import_rest(src, dest, s, 'ses-rest', runs=[f'{run:02d}' for run in runs], mask_file=mask_file)
+            id.import_rest(src, dest, s, 'ses-rest', runs, mask_file=mask_file)
