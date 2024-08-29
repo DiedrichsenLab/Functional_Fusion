@@ -108,9 +108,10 @@ if __name__ == "__main__":
     
     fix=True
     for session in [1,2]:
-        dest_dir = base_dir + '/FunctionalFusion/MDTB/derivatives/{sub}/estimates/' + f'ses-s{session}' + '/{sub}_ses-rest'
+        session_name = f'ses-s{session}'
+        dest_dir = base_dir + '/FunctionalFusion/MDTB/derivatives/{sub}/estimates/' + session_name + '/{sub}_' + session_name
         if fix:
-            src_stem = base_dir + '/Cerebellum/super_cerebellum/sc1/' + 'imaging_data_fix/{sub}_' + f'ses-s{session}'
+            src_stem = base_dir + '/Cerebellum/super_cerebellum/sc1/' + 'imaging_data_fix/{sub}_' + session_name
             file_ending = '_run-{run}_fix.nii'
         else:
             src_stem = base_dir + '/Cerebellum/super_cerebellum/imaging_data/{sub}/'
@@ -120,4 +121,4 @@ if __name__ == "__main__":
             src = src_stem.format(sub=s) + file_ending
             dest = dest_dir.format(sub=s) + file_ending
             mask_file = base_dir + '/Cerebellum/super_cerebellum/sc1/imaging_data_fix/{sub}_ses-s1_mask.nii'.format(sub=s)
-            id.import_rest(src, dest, s, 'ses-rest', runs, mask_file=mask_file)
+            id.import_rest(src, dest, s, session_name, runs, mask_file=mask_file)

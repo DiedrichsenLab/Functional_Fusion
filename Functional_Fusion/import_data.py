@@ -219,21 +219,24 @@ def import_rest(src, dest, sub_id, ses_id, runs, mask_file=None):
         # move data into the corresponding session folder
         src_file = src.format(run=run)
         dest_file = dest.format(run=run)
-
-        try:
-            shutil.copyfile(src_file,
-                            dest_file)
-        except:
-            print('skipping ' + src)
+        if not Path(dest_file).exists():
+            try:
+                shutil.copyfile(src_file,
+                                dest_file)
+            except:
+                print('skipping ' + src)
+        else:
+            print(f'{src} already exists. Skipped.')
 
     
     # import mask
     if mask_file is None:
         mask_file = str(source_dir) + f'/{sub_id}_{ses_id}_mask.nii'
     dest_file = f'/{sub_id}_{ses_id}_mask.nii'
-    try:
-        shutil.copyfile(mask_file,
-                        str(dest_dir) + dest_file)
-    except:
-        print('skipping ' + source_dir + src_file)
+    if not Path(str(dest_dir) + dest_file).exists():
+        try:
+            shutil.copyfile(mask_file,
+                            str(dest_dir) + dest_file)
+        except:
+            print('skipping ' + source_dir + src_file)
 
