@@ -195,7 +195,7 @@ def import_spm_designmatrix(source_dir, dest_dir, sub_id, sess_id):
 
 
 
-def import_rest(src, dest, sub_id, ses_id, info_dict, mask_file=None):
+def import_rest(src, dest, sub_id, ses_id, runs, mask_file=None):
     """Imports the resting state files
        into a BIDS/derivative structure
     Args:
@@ -203,10 +203,10 @@ def import_rest(src, dest, sub_id, ses_id, info_dict, mask_file=None):
         dest (str): destination name structure
         sub_id (str): ID of participant
         ses_id (str): ID of session
-        info_dict (dict): Dictionary with run information and name of subject that stores the pre-created general timeseries reginfo.tsv file
+        runs (list): list of runs to import
         fix (bool): If True, then import the data that is FIX cleaned
     """
-    run_names = info_dict['runs']
+    
 
     # get source directory with Path
     source_dir = Path(src).parent
@@ -214,7 +214,7 @@ def import_rest(src, dest, sub_id, ses_id, info_dict, mask_file=None):
 
     # Make the destination directory
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
-    for run in run_names:
+    for run in runs:
 
         # move data into the corresponding session folder
         src_file = src.format(run=run)

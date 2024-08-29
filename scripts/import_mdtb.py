@@ -101,25 +101,17 @@ if __name__ == "__main__":
 
 
     # Import session s1 and session s2 fix-cleaned timeseries
-    dest_dir = base_dir + '/FunctionalFusion/MDTB/derivatives/{sub}/estimates/ses-s1/{sub}_ses-rest'
+    
     T = pd.read_csv(base_dir + '/FunctionalFusion/MDTB/participants.tsv', delimiter='\t')
     participants = T[T['ses-rest'] == 1].participant_id
-    subject_with_reginfo_file = 'sub-02'
-
-    # Import resting-state session (only participants who have rest data)
-    info_dic = pd.read_csv(dest_dir.format(sub=participants[0]) + f'_reginfo.tsv', sep='\t')
-    info_dict = {
-        'runs': [f'{run:02d}' for run in info_dic.run.unique()],
-        'reginfo_general': subject_with_reginfo_file,
-    }
-
+    runs = np.arange(1, 17)
+    
     fix=True
-
     for session in [1,2]:
-        session_str = f'ses-s{session:02d}'
+        dest_dir = base_dir + '/FunctionalFusion/MDTB/derivatives/{sub}/estimates/' + f'ses-s{session}' + '/{sub}_ses-rest'
         if fix:
-            src_stem = base_dir + '/Cerebellum/super_cerebellum/imaging_data_fix/{sub}_' + f'ses-{session_str}'
-            file_ending = '_run-{run}.nii'
+            src_stem = base_dir + '/Cerebellum/super_cerebellum/sc1/' + 'imaging_data_fix/{sub}_' + f'ses-s{session}'
+            file_ending = '_run-{run}_fix.nii'
         else:
             src_stem = base_dir + '/Cerebellum/super_cerebellum/imaging_data/{sub}/'
             file_ending = '_run-{run}.nii'
@@ -127,5 +119,5 @@ if __name__ == "__main__":
         for s in participants:
             src = src_stem.format(sub=s) + file_ending
             dest = dest_dir.format(sub=s) + file_ending
-            mask_file = base_dir + '/Cerebellum/super_cerebellum/imaging_data/{sub}/ses-01/rmask_noskull.nii'.format(sub=s)
-            id.import_rest(src, dest, s, 'ses-rest', info_dict, mask_file=mask_file)
+            mask_file = base_dir + '/Cerebellum/super_cerebellum/sc1/imaging_data_fix/{sub}_ses-s1_mask.nii'.format(sub=s)
+            id.import_rest(src, dest, s, 'ses-rest', runs=[f'{run:02d}' for run in runs], mask_file=mask_file)

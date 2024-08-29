@@ -114,14 +114,7 @@ if __name__ == '__main__':
     dest_dir = base_dir + '/FunctionalFusion/Language/derivatives/{sub}/estimates/ses-rest/{sub}_ses-rest'
     T = pd.read_csv(base_dir + '/FunctionalFusion/Language/participants.tsv', delimiter='\t')
     participants = T[T['ses-rest'] == 1].participant_id
-    subject_with_reginfo_file = 'sub-01'
-
-    # Import resting-state session (only participants who have rest data)
-    info_dic = pd.read_csv(dest_dir.format(sub=participants[0]) + f'_reginfo.tsv', sep='\t')
-    info_dict = {
-        'runs': [f'{run:02d}' for run in info_dic.run.unique()],
-        'reginfo_general': subject_with_reginfo_file,
-    }
+    
 
     fix=False
     if fix:
@@ -135,7 +128,7 @@ if __name__ == '__main__':
         src = src_stem.format(sub=s) + file_ending
         dest = dest_dir.format(sub=s) + file_ending
         mask_file = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-01/rmask_noskull.nii'.format(sub=s)
-        id.import_rest(src, dest, s, 'ses-rest', info_dict, mask_file=mask_file)
+        id.import_rest(src, dest, s, 'ses-rest', runs=[f'{run:02d}' for run in info_dic.run.unique()], mask_file=mask_file)
 
         pass
 
