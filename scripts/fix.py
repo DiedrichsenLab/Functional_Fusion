@@ -100,12 +100,12 @@ def copy_motionparams(subject_path, run):
         subprocess.run(
             ['cp', rp_file, f"{ica_path}/mc/prefiltered_func_data_mcf.par"])
 
-def move_cleaned(imaging_dir, subject, run, ses_id=None):
+def move_cleaned(imaging_dir, subject, run):
     """Move the cleaned data into the imaging_data_fix folder."""
     
     # move data into the corresponding session folder
     src = 'filtered_func_data_clean.nii.gz'
-    dest = (f'/sub-{subject[1:]}_run-{run}.nii.gz') if ses_id is None else (f'/sub-{subject[1:]}_ses-{ses_id}_run-{run}.nii.gz')
+    dest = (f'/sub-{subject[1:]}_run-{run}.nii.gz')
 
     source_dir = f"{imaging_dir}/{subject}/run{run}.feat/"
     dest_dir = f"{imaging_dir}/../imaging_data_fix/"
