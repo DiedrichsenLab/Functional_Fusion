@@ -74,14 +74,14 @@ def copy_mean_func():
             shutil.copy(i, i.parent / 'mean_func.nii.gz')
 
 
-def rename_run(imaging_dir, subject, run, new_run, session):
-    """
-    Renames the run folder from run to new_run for the given subject and session.
-    """
-    old_file = f"{imaging_dir}/{subject}/{session}/run{run}.nii"
-    new_file = f"{imaging_dir}/{subject}/{session}/run{new_run}.nii"
-    if op.exists(old_file) and not op.exists(new_file):
-        os.rename(old_file, new_file)
+# def rename_run(imaging_dir, subject, run, new_run, session):
+#     """
+#     Renames the run folder from run to new_run for the given subject and session.
+#     """
+#     old_file = f"{imaging_dir}_fix/sc1/{subject}_run-{run}.nii"
+#     new_file = f"{imaging_dir}_fix/sc1/{subject}_ses-s2_run-{new_run}.nii"
+#     if op.exists(old_file) and not op.exists(new_file):
+#         os.rename(old_file, new_file)
 
 
 if __name__ == "__main__":
@@ -170,19 +170,19 @@ if __name__ == "__main__":
     # #         ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/hand_labels_noise.txt'])
     
     # # For the rest, automatically classify labelled components using mdtb task training set, then clean noise components from the data
-    automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs_sessionscat if not op.exists(
-        f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
-    for subject in subjects:
-        subject_orig = subject.replace('sub-', 's')
-        folder = f'{imaging_dir}/{subject_orig}' 
-        for run in runs_sessionscat:
-            feat_path = f"{str(folder)}/run{run}.feat"
-            if not op.exists(f"{feat_path}/filtered_func_data_clean.nii.gz"):
-                print(f"Cleaning {subject} run {run}")
-                subprocess.run(
-                    ['/srv/software/fix/1.06.15/fix', '-c', feat_path, f'{imaging_dir}/../fix_ica/mdtb_task.RData', str(chosen_threshold)])
-                subprocess.run(
-                    ['/srv/software/fix/1.06.15/fix', '-a', f'{feat_path}/fix4melview_mdtb_task_thr{chosen_threshold}.txt'])
+    # automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs_sessionscat if not op.exists(
+    #     f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
+    # for subject in subjects:
+    #     subject_orig = subject.replace('sub-', 's')
+    #     folder = f'{imaging_dir}/{subject_orig}' 
+    #     for run in runs_sessionscat:
+    #         feat_path = f"{str(folder)}/run{run}.feat"
+    #         if not op.exists(f"{feat_path}/filtered_func_data_clean.nii.gz"):
+    #             print(f"Cleaning {subject} run {run}")
+    #             subprocess.run(
+    #                 ['/srv/software/fix/1.06.15/fix', '-c', feat_path, f'{imaging_dir}/../fix_ica/mdtb_task.RData', str(chosen_threshold)])
+    #             subprocess.run(
+    #                 ['/srv/software/fix/1.06.15/fix', '-a', f'{feat_path}/fix4melview_mdtb_task_thr{chosen_threshold}.txt'])
         
     # --- Move files ---
     # Move files to imaging_data_fix
@@ -198,7 +198,7 @@ if __name__ == "__main__":
             run = int(run)
             if run > 16:
                 fx.move_cleaned(imaging_dir, subject_orig, run)
-                rename_run(imaging_dir, subject_orig, run, run-16, session='s2')
+                # rename_run(imaging_dir, subject_orig, run, run-16, session='s2')
 
     
 
