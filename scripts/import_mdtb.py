@@ -8,8 +8,8 @@ import scripts.paths as paths
 base_dir = paths.set_base_dir()
 atlas_dir = paths.set_atlas_dir(base_dir)
 
-orig_dir = base_dir + '/../Cerebellum/super_cerebellum'
-target_dir = base_dir + '/MDTB'
+orig_dir = base_dir + '/Cerebellum/super_cerebellum'
+target_dir = base_dir + 'FunctionalFusion/MDTB'
 
 
 def fix_sc2_reginfo():
@@ -113,16 +113,19 @@ if __name__ == "__main__":
         'reginfo_general': subject_with_reginfo_file,
     }
 
-    fix=False
-    if fix:
-        src_stem = base_dir + '/Cerebellum/super_cerebellum/imaging_data_fix/{sub}/ses-04/{sub}_ses-04'
-        file_ending = '_run-{run}_fix.nii'
-    else:
-        src_stem = base_dir + '/Cerebellum/super_cerebellum/imaging_data/{sub}/ses-04/r{sub}_ses-04'
-        file_ending = '_run-{run}.nii'
-    
-    for s in participants:
-        src = src_stem.format(sub=s) + file_ending
-        dest = dest_dir.format(sub=s) + file_ending
-        mask_file = base_dir + '/Cerebellum/super_cerebellum/imaging_data/{sub}/ses-01/rmask_noskull.nii'.format(sub=s)
-        id.import_rest(src, dest, s, 'ses-rest', info_dict, mask_file=mask_file)
+    fix=True
+
+    for session in [1,2]:
+        session_str = f'ses-s{session:02d}'
+        if fix:
+            src_stem = base_dir + '/Cerebellum/super_cerebellum/imaging_data_fix/{sub}_' + f'ses-{session_str}'
+            file_ending = '_run-{run}.nii'
+        else:
+            src_stem = base_dir + '/Cerebellum/super_cerebellum/imaging_data/{sub}/'
+            file_ending = '_run-{run}.nii'
+        
+        for s in participants:
+            src = src_stem.format(sub=s) + file_ending
+            dest = dest_dir.format(sub=s) + file_ending
+            mask_file = base_dir + '/Cerebellum/super_cerebellum/imaging_data/{sub}/ses-01/rmask_noskull.nii'.format(sub=s)
+            id.import_rest(src, dest, s, 'ses-rest', info_dict, mask_file=mask_file)
