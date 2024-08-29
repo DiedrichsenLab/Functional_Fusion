@@ -224,9 +224,9 @@ def import_rest(src, dest, sub_id, ses_id, runs, mask_file=None):
                 shutil.copyfile(src_file,
                                 dest_file)
             except:
-                print('skipping ' + src)
+                print(f'{dest_file} could not be copied.')
         else:
-            print(f'{src} already exists. Skipped.')
+            print(f'{dest_file} already exists. Skipped.')
 
     
     # import mask
@@ -238,5 +238,5 @@ def import_rest(src, dest, sub_id, ses_id, runs, mask_file=None):
             shutil.copyfile(mask_file,
                             str(dest_dir) + dest_file)
         except:
-            print('skipping ' + source_dir + src_file)
+            print(f'{dest_file} could not be copied.')
 
