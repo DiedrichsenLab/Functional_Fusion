@@ -74,14 +74,14 @@ def copy_mean_func():
             shutil.copy(i, i.parent / 'mean_func.nii.gz')
 
 
-# def rename_run(imaging_dir, subject, run, new_run, session):
-#     """
-#     Renames the run folder from run to new_run for the given subject and session.
-#     """
-#     old_file = f"{imaging_dir}_fix/sc1/{subject}_run-{run}.nii"
-#     new_file = f"{imaging_dir}_fix/sc1/{subject}_ses-s2_run-{new_run}.nii"
-#     if op.exists(old_file) and not op.exists(new_file):
-#         os.rename(old_file, new_file)
+def rename_run(imaging_dir, subject, run, new_run, session):
+    """
+    Takes care of run renaming for session 2 of MDTB (run 17-32 of session 1 are run 1-16 of session 2). Renames the run folder from run to new_run for the given subject and session.
+    """
+    old_file = f"{imaging_dir}_fix/{subject}_ses-{session}_run-{run}.nii"
+    new_file = f"{imaging_dir}_fix/{subject}_ses-{session}_run-{new_run:02d}.nii"
+    if op.exists(old_file) and not op.exists(new_file):
+        os.rename(old_file, new_file)
 
 
 if __name__ == "__main__":
@@ -187,18 +187,18 @@ if __name__ == "__main__":
     # --- Move files ---
     # Move files to imaging_data_fix
 
-    session = 's1'
+    
     for subject in subjects:
         folder = f'{imaging_dir}/{subject}' 
         subject_orig = subject.replace('sub-', 's')
-        # fx.move_mask(imaging_dir, subject_orig, session)
+        fx.move_mask(imaging_dir, subject_orig, session='s1')
         for run in runs_sessionscat:
-            
+            session = 's1' if int(run) <= 16 else 's2'
+            fx.move_cleaned(imaging_dir, subject_orig, run, ses_id=session)
             # Rename runs 17-32 to 1-16 of session 2
             run = int(run)
             if run > 16:
-                fx.move_cleaned(imaging_dir, subject_orig, run)
-                # rename_run(imaging_dir, subject_orig, run, run-16, session='s2')
+                rename_run(imaging_dir, subject, run, run-16, session='s2')
 
     
 
