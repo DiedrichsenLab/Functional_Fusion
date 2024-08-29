@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import Functional_Fusion.import_data as id
-import scripts.paths as paths
+import scripts.fusion_paths as paths
 
 
 base_dir = paths.set_base_dir()
