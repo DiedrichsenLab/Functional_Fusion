@@ -107,7 +107,7 @@ if __name__ == "__main__":
     runs = [f'{run:02d}' for run in np.arange(1, 17)]
     
     fix=True
-    for session in [1,2]:
+    for session in [2]:
         session_name = f'ses-s{session}'
         dest_dir = base_dir + '/FunctionalFusion/MDTB/derivatives/{sub}/estimates/' + session_name + '/{sub}_' + session_name
         if fix:

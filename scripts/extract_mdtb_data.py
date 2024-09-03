@@ -139,7 +139,8 @@ if __name__ == "__main__":
 
     # -- Extract task timeseries --
     # mdtb_dataset.extract_all(ses_id='ses-s1', type='FixTseries', atlas='MNISymC3', smooth=2.0)
-    mdtb_dataset.extract_all(ses_id='ses-s1', type='FixTseries', atlas='fs32k', smooth=2.0, subj=[23])
+    # mdtb_dataset.extract_all(ses_id='ses-s1', type='FixTseries', atlas='fs32k', smooth=2.0, subj=[23])
+    # mdtb_dataset.extract_all(ses_id='ses-s1', type='FixTseries', atlas='fs32k', smooth=2.0, subj=[16])
     mdtb_dataset.extract_all(ses_id='ses-s2', type='FixTseries', atlas='MNISymC3', smooth=2.0)
     mdtb_dataset.extract_all(ses_id='ses-s2', type='FixTseries', atlas='fs32k', smooth=2.0)
     

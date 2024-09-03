@@ -78,8 +78,8 @@ def rename_run(imaging_dir, subject, run, new_run, session):
     """
     Takes care of run renaming for session 2 of MDTB (run 17-32 of session 1 are run 1-16 of session 2). Renames the run folder from run to new_run for the given subject and session.
     """
-    old_file = f"{imaging_dir}_fix/{subject}_ses-{session}_run-{run}.nii"
-    new_file = f"{imaging_dir}_fix/{subject}_ses-{session}_run-{new_run:02d}.nii"
+    old_file = f"{imaging_dir}_fix/{subject}_ses-{session}_run-{run}_fix.nii"
+    new_file = f"{imaging_dir}_fix/{subject}_ses-{session}_run-{new_run:02d}_fix.nii"
     if op.exists(old_file) and not op.exists(new_file):
         os.rename(old_file, new_file)
 
@@ -123,13 +123,13 @@ if __name__ == "__main__":
 
     # # --- Copy motion parameter files to ica folders for feature extraction ---
     # for subject in subjects:
-    # for subject in ['sub-12', 'sub-24']:
+    # for subject in ['sub-24']:
     #     subject_orig = subject.replace('sub-', 's')
     #     subject_path = f'{imaging_dir}/{subject_orig}'
     #     for run in runs_sessionscat:
     #         fx.copy_motionparams(subject_path, run)
     
-    # # --- Copy the mean_func.nii.gz file from the ica folder to the parent folder ---
+    # # # --- Copy the mean_func.nii.gz file from the ica folder to the parent folder ---
     # copy_mean_func()
 
     # --- After classification, run fix training and leave-one-out testing ---
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     #                 ['/srv/software/fix/1.06.15/fix', '-f', ica_path])
 
     # --- Run FIX cleanup---
-    # chosen_threshold = 20
+    chosen_threshold = 20
     # # # For those scans that have hand-labelled components, clean noise components from the data
     # # labelled_folders = get_labelled_folders()
     # # for folder in labelled_folders:
@@ -170,25 +170,23 @@ if __name__ == "__main__":
     # #         ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/hand_labels_noise.txt'])
     
     # # For the rest, automatically classify labelled components using mdtb task training set, then clean noise components from the data
-    # automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs_sessionscat if not op.exists(
-    #     f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
-    # for subject in subjects:
-    #     subject_orig = subject.replace('sub-', 's')
-    #     folder = f'{imaging_dir}/{subject_orig}' 
-    #     for run in runs_sessionscat:
-    #         feat_path = f"{str(folder)}/run{run}.feat"
-    #         if not op.exists(f"{feat_path}/filtered_func_data_clean.nii.gz"):
-    #             print(f"Cleaning {subject} run {run}")
-    #             subprocess.run(
-    #                 ['/srv/software/fix/1.06.15/fix', '-c', feat_path, f'{imaging_dir}/../fix_ica/mdtb_task.RData', str(chosen_threshold)])
-    #             subprocess.run(
-    #                 ['/srv/software/fix/1.06.15/fix', '-a', f'{feat_path}/fix4melview_mdtb_task_thr{chosen_threshold}.txt'])
+    automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs_sessionscat if not op.exists(
+        f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
+    for subject in subjects:
+        subject_orig = subject.replace('sub-', 's')
+        folder = f'{imaging_dir}/{subject_orig}' 
+        for run in runs_sessionscat:
+            feat_path = f"{str(folder)}/run{run}.feat"
+            if not op.exists(f"{feat_path}/filtered_func_data_clean.nii.gz"):
+                print(f"Cleaning {subject} run {run}")
+                subprocess.run(
+                    ['/srv/software/fix/1.06.15/fix', '-c', feat_path, f'{imaging_dir}/../fix_ica/mdtb_task.RData', str(chosen_threshold)])
+                subprocess.run(
+                    ['/srv/software/fix/1.06.15/fix', '-a', f'{feat_path}/fix4melview_mdtb_task_thr{chosen_threshold}.txt'])
         
     # --- Move files ---
     # Move files to imaging_data_fix
-
-    
-    for subject in subjects:
+    for subject in ['sub-24']:
         folder = f'{imaging_dir}/{subject}' 
         subject_orig = subject.replace('sub-', 's')
         fx.move_mask(imaging_dir, subject_orig, session='s1')
