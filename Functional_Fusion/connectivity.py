@@ -133,7 +133,14 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         T = T.iloc[subj]
 
     # Load the cortical networks
-    target, type = re.findall('[A-Z][^A-Z]*', type)        
+    type_parts = re.findall('[A-Z][^A-Z]*', type)        
+    if len(type_parts) == 2:
+        target, type = type_parts
+        fix = ''
+    elif len(type_parts) == 3:
+        target, fix, type = type_parts
+    
+    tseries_type = 'FixTseries' if fix == 'Fix' else 'Tseries'
     res = target[3:]
     
     if target[:3] == 'Net':
@@ -153,12 +160,12 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         # Get the subject's data
         # Get cortical data
         data_cortex_subj, _ = dset.get_data(
-            space='fs32k', ses_id=ses_id, type='Tseries', subj=[row.Index])
+            space='fs32k', ses_id=ses_id, type=tseries_type, subj=[row.Index])
 
 
         # Get cerebellar data
         data_cereb_subj, info_cereb = dset.get_data(
-                space=space, ses_id=ses_id, type='Tseries', subj=[row.Index])
+                space=space, ses_id=ses_id, type=tseries_type, subj=[row.Index])
         data_cereb_subj = data_cereb_subj.squeeze()
 
         if target[:3] == 'Net' or target[:3] == 'Fus':
@@ -201,9 +208,9 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         dest_dir = dset.data_dir.format(participant_id)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
-        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
+        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+fix+type}.dscalar.nii')
         info.to_csv(
-            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
+            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+fix+type}.tsv', sep='\t', index=False)
 
 
 def get_cortical_target(target):

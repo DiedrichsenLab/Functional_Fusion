@@ -95,27 +95,32 @@ def run_ica(subject, run, imaging_dir, design_dir, template_filestem='ssica'):
 def copy_motionparams(subject_path, run):
     ica_path = f"{str(subject_path)}/run{run}.feat"
     rp_file = f"{str(subject_path)}/rp_run_{run}.txt"
-    if op.exists(ica_path) and op.exists(rp_file):
+    if op.exists(ica_path) and op.exists(rp_file) and not op.exists(f'{ica_path}/mc/prefiltered_func_data_mcf.par'):
         subprocess.run(['mkdir', f"{ica_path}/mc"])
         subprocess.run(
             ['cp', rp_file, f"{ica_path}/mc/prefiltered_func_data_mcf.par"])
 
-def move_cleaned(imaging_dir, subject, run):
+def move_cleaned(imaging_dir, subject, run, ses_id=None):
     """Move the cleaned data into the imaging_data_fix folder."""
     
     # move data into the corresponding session folder
     src = 'filtered_func_data_clean.nii.gz'
-    dest = (f'/sub-{subject[1:]}_run-{run}.nii.gz')
+    dest = (f'/sub-{subject[1:]}_run-{run}_fix.nii.gz') if ses_id is None else (f'/sub-{subject[1:]}_ses-{ses_id}_run-{run}_fix.nii.gz')
 
     source_dir = f"{imaging_dir}/{subject}/run{run}.feat/"
     dest_dir = f"{imaging_dir}/../imaging_data_fix/"
-    try:
-        shutil.copyfile(source_dir + src,
-                        dest_dir + dest)
-        gunzip_cmd = f"gunzip {dest_dir + dest}"
-        subprocess.run(gunzip_cmd, shell=True)
-    except:
-        print('skipping ' + source_dir + src)
+    if not Path(dest_dir + dest.strip('.gz')).exists():
+        if not Path(source_dir + src).exists():
+            print(f'{source_dir} has no {src}')
+        try:
+            shutil.copyfile(source_dir + src,
+                            dest_dir + dest)
+            gunzip_cmd = f"gunzip {dest_dir + dest}"
+            subprocess.run(gunzip_cmd, shell=True)
+        except:
+            print(f'skipping {subject} {run}')
+    else:
+        print(f'{subject} {run} already exists')
 
 
 

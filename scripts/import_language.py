@@ -114,28 +114,21 @@ if __name__ == '__main__':
     dest_dir = base_dir + '/FunctionalFusion/Language/derivatives/{sub}/estimates/ses-rest/{sub}_ses-rest'
     T = pd.read_csv(base_dir + '/FunctionalFusion/Language/participants.tsv', delimiter='\t')
     participants = T[T['ses-rest'] == 1].participant_id
-    subject_with_reginfo_file = 'sub-01'
-
-    # Import resting-state session (only participants who have rest data)
-    info_dic = pd.read_csv(dest_dir.format(sub=participants[0]) + f'/{participants[0]}_ses-rest_reginfo.tsv', sep='\t')
-    info_dict = {
-        'runs': [f'{run:02d}' for run in info_dic.run.unique()],
-        'reginfo_general': subject_with_reginfo_file,
-    }
+    runs =[f'{run:02d}' for run in np.arange(1, 8)    ]
 
     fix=False
     if fix:
         src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data_fix/{sub}/ses-04/{sub}_ses-04'
         file_ending = '_run-{run}_fix.nii'
     else:
-        src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-04/{sub}_ses-04'
+        src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-04/r{sub}_ses-04'
         file_ending = '_run-{run}.nii'
         
     for s in participants:
         src = src_stem.format(sub=s) + file_ending
         dest = dest_dir.format(sub=s) + file_ending
         mask_file = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-01/rmask_noskull.nii'.format(sub=s)
-        id.import_rest(src, dest, s, 'ses-rest', info_dict, mask_file=mask_file)
+        id.import_rest(src, dest, s, 'ses-rest', runs, mask_file=mask_file)
 
         pass
 

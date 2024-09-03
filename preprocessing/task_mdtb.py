@@ -28,29 +28,29 @@ sessions = ["1", "2"]
 mdtb_subjects = pd.read_csv(f'{fusion_dir}/participants.tsv', delimiter='\t')
 subjects = mdtb_subjects['participant_id']
 
-def copy_runs(fix=True):
-    """
-        Copies the raw runs into the estimates folder for each subject. Run this function instead of the import_rest function in import_data.py, because this function needs to additionally handle the issue of session 1 and 2 being concatenated in the MDTB dataset.
-        If fix is True, it will copy the FIX-cleaned runs, otherwise it will copy the raw (uncleaned) data.
+# def copy_runs(fix=True):
+#     """
+#         Copies the raw runs into the estimates folder for each subject. Run this function instead of the import_rest function in import_data.py, because this function needs to additionally handle the issue of session 1 and 2 being concatenated in the MDTB dataset.
+#         If fix is True, it will copy the FIX-cleaned runs, otherwise it will copy the raw (uncleaned) data.
         
-    """
-    T = pd.read_csv(f'{fusion_dir}/participants.tsv', delimiter='\t')
-    # --- Copy the raw runs into estimates ---
-    for subject in T.iterrows():
-        subject = subject[1].participant_id
-        for session in sessions:
-            imaging_folder = 'imaging_data_fix' if fix else 'imaging_data'
-            task_dir = Path(f'{data_dir}/sc1/{imaging_folder}/') if fix else Path(f'{data_dir}/sc1/{imaging_folder}/s{subject[-2:]}')
-            # Remove 'c' from session
-            for run in runs:
-                file_name = f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}_fix.nii" if fix else f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}.nii"
-                # if session is 1, then the run is the same as the original run, otherwise it is the original run + 16
-                orig_run = int(run) if session == "1" else int(run) + 16
-                task_file = f"{str(task_dir)}/{subject}_run-{orig_run:02d}.nii" if fix else f"{str(task_dir)}/rrun_{orig_run}.nii" 
-                if op.exists(task_file):
-                    subprocess.run(
-                        ['cp', task_file, file_name])
-                    print(f'Copied {run} for {subject} in {session}')
+#     """
+#     T = pd.read_csv(f'{fusion_dir}/participants.tsv', delimiter='\t')
+#     # --- Copy the raw runs into estimates ---
+#     for subject in T.iterrows():
+#         subject = subject[1].participant_id
+#         for session in sessions:
+#             imaging_folder = 'imaging_data_fix' if fix else 'imaging_data'
+#             task_dir = Path(f'{data_dir}/sc1/{imaging_folder}/') if fix else Path(f'{data_dir}/sc1/{imaging_folder}/s{subject[-2:]}')
+#             # Remove 'c' from session
+#             for run in runs:
+#                 file_name = f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}_fix.nii" if fix else f"{fusion_dir}/derivatives/{subject}/estimates/ses-s{session}/{subject}_ses-s{session}_run-{run}.nii"
+#                 # if session is 1, then the run is the same as the original run, otherwise it is the original run + 16
+#                 orig_run = int(run) if session == "1" else int(run) + 16
+#                 task_file = f"{str(task_dir)}/{subject}_run-{orig_run:02d}.nii" if fix else f"{str(task_dir)}/rrun_{orig_run}.nii" 
+#                 if op.exists(task_file) and not op.exists(file_name):
+#                     subprocess.run(
+#                         ['cp', task_file, file_name])
+#                     print(f'Copied {run} for {subject} in {session}')
 
 def get_labelled_folders():
     """
@@ -74,6 +74,14 @@ def copy_mean_func():
             shutil.copy(i, i.parent / 'mean_func.nii.gz')
 
 
+def rename_run(imaging_dir, subject, run, new_run, session):
+    """
+    Takes care of run renaming for session 2 of MDTB (run 17-32 of session 1 are run 1-16 of session 2). Renames the run folder from run to new_run for the given subject and session.
+    """
+    old_file = f"{imaging_dir}_fix/{subject}_ses-{session}_run-{run}_fix.nii"
+    new_file = f"{imaging_dir}_fix/{subject}_ses-{session}_run-{new_run:02d}_fix.nii"
+    if op.exists(old_file) and not op.exists(new_file):
+        os.rename(old_file, new_file)
 
 
 if __name__ == "__main__":
@@ -114,12 +122,14 @@ if __name__ == "__main__":
     #     shutil.copy(f'{folder}/filtered_func_data.ica/hand_classification_caro', f'{folder}/hand_labels_noise.txt')
 
     # # --- Copy motion parameter files to ica folders for feature extraction ---
-    # for subject_path in imaging_dir.glob('s[0-9][0-9]'):
-    #     subject = subject_path.name[1:]
+    # for subject in subjects:
+    # for subject in ['sub-24']:
+    #     subject_orig = subject.replace('sub-', 's')
+    #     subject_path = f'{imaging_dir}/{subject_orig}'
     #     for run in runs_sessionscat:
     #         fx.copy_motionparams(subject_path, run)
     
-    # # --- Copy the mean_func.nii.gz file from the ica folder to the parent folder ---
+    # # # --- Copy the mean_func.nii.gz file from the ica folder to the parent folder ---
     # copy_mean_func()
 
     # --- After classification, run fix training and leave-one-out testing ---
@@ -160,23 +170,33 @@ if __name__ == "__main__":
     # #         ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/hand_labels_noise.txt'])
     
     # # For the rest, automatically classify labelled components using mdtb task training set, then clean noise components from the data
-    automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs if not op.exists(
+    automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs_sessionscat if not op.exists(
         f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
-    for folder in automatic_folders:
-        # subprocess.run(
-        #     ['/srv/software/fix/1.06.15/fix', '-c', folder, f'{imaging_dir}/../fix_ica/mdtb_task.RData', str(chosen_threshold)])
-        subprocess.run(
-            ['/srv/software/fix/1.06.15/fix', '-a', f'{folder}/fix4melview_mdtb_task_thr{chosen_threshold}.txt'])
+    for subject in ['sub-09']:
+        subject_orig = subject.replace('sub-', 's')
+        folder = f'{imaging_dir}/{subject_orig}' 
+        for run in ['25']:
+            feat_path = f"{str(folder)}/run{run}.feat"
+            if not op.exists(f"{feat_path}/filtered_func_data_clean.nii.gz"):
+                print(f"Cleaning {subject} run {run}")
+                subprocess.run(
+                    ['/srv/software/fix/1.06.15/fix', '-c', feat_path, f'{imaging_dir}/../fix_ica/mdtb_task.RData', str(chosen_threshold)])
+                subprocess.run(
+                    ['/srv/software/fix/1.06.15/fix', '-a', f'{feat_path}/fix4melview_mdtb_task_thr{chosen_threshold}.txt'])
         
     # --- Move files ---
     # Move files to imaging_data_fix
-    session = 's1'
     for subject in subjects:
         folder = f'{imaging_dir}/{subject}' 
         subject_orig = subject.replace('sub-', 's')
-        # fx.move_mask(imaging_dir, subject_orig, session)
-        for run in runs:
-            fx.move_cleaned(imaging_dir, subject_orig, run)
+        fx.move_mask(imaging_dir, subject_orig, session='s1')
+        for run in runs_sessionscat:
+            session = 's1' if int(run) <= 16 else 's2'
+            fx.move_cleaned(imaging_dir, subject_orig, run, ses_id=session)
+            # Rename runs 17-32 to 1-16 of session 2
+            run = int(run)
+            if run > 16:
+                rename_run(imaging_dir, subject, run, run-16, session='s2')
 
-    # --- Copy the FIX-cleaned runs into estimates ---
-    copy_runs(fix=True)
+    
+
