@@ -103,11 +103,13 @@ if __name__ == "__main__":
     # Import session s1 and session s2 fix-cleaned timeseries
     
     T = pd.read_csv(base_dir + '/FunctionalFusion/MDTB/participants.tsv', delimiter='\t')
-    participants = T[T['ses-rest'] == 1].participant_id
+    participants = T.participant_id
+    participants_rest = participants[T['ses-rest'] == 1]
+
     runs = [f'{run:02d}' for run in np.arange(1, 17)]
     
     fix=True
-    for session in [2]:
+    for session in [1,2]:
         session_name = f'ses-s{session}'
         dest_dir = base_dir + '/FunctionalFusion/MDTB/derivatives/{sub}/estimates/' + session_name + '/{sub}_' + session_name
         if fix:

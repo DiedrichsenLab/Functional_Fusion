@@ -172,10 +172,10 @@ if __name__ == "__main__":
     # # For the rest, automatically classify labelled components using mdtb task training set, then clean noise components from the data
     automatic_folders = [f"{folder}/run{run}.feat" for folder in imaging_dir.glob('s[0-9][0-9]') for run in runs_sessionscat if not op.exists(
         f'{folder}/run{run}.feat/filtered_func_data.ica/hand_labels_noise.txt')]
-    for subject in subjects:
+    for subject in ['sub-09']:
         subject_orig = subject.replace('sub-', 's')
         folder = f'{imaging_dir}/{subject_orig}' 
-        for run in runs_sessionscat:
+        for run in ['25']:
             feat_path = f"{str(folder)}/run{run}.feat"
             if not op.exists(f"{feat_path}/filtered_func_data_clean.nii.gz"):
                 print(f"Cleaning {subject} run {run}")
@@ -186,7 +186,7 @@ if __name__ == "__main__":
         
     # --- Move files ---
     # Move files to imaging_data_fix
-    for subject in ['sub-24']:
+    for subject in subjects:
         folder = f'{imaging_dir}/{subject}' 
         subject_orig = subject.replace('sub-', 's')
         fx.move_mask(imaging_dir, subject_orig, session='s1')
