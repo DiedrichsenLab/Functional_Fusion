@@ -74,10 +74,11 @@ def import_spm_glm(source_dir, dest_dir, sub_id, sess_id):
 if __name__ == '__main__':
     src_base_dir = base_dir + '/Cerebellum/Language/Language_7T'
     dest_base_dir = base_dir + '/FunctionalFusion/Language'
-    ses = 'ses-sencoding_category_fixed_adjusted'
-    glm =  'glm_sencoding_category_fixed_adjusted'
-    # participant_list = ['sub-01','sub-02','sub-03','sub-04','sub-06','sub-07','sub-08'] #localizer
-    participant_list = ['sub-02','sub-03','sub-07','sub-09','sub-10','sub-13']                              # sencoding
+    ses = 'ses-sencoding_category_duration'
+    glm =  'glm_sencoding_category_duration'
+    # participant_list = ['sub-01','sub-02','sub-03','sub-04','sub-06','sub-07','sub-08','sub-09','sub-10','sub-12','sub-13','sub-14','sub-15','sub-16','sub-17','sub-18'] #localizer
+    participant_list = ['sub-02','sub-03','sub-07','sub-09','sub-10','sub-12','sub-13']                              # sencoding
+
 
     for participant_id in participant_list:
         print(f'importing {participant_id}')

@@ -572,10 +572,11 @@ class DataSet:
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
         
         if type[:4] == 'Cond' or type[:4] == 'Task':
-            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
-            fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
             T = pd.read_csv(
                 dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
+            fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
+            
         elif type == 'Tseries':
             # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
             fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-*.nii')
@@ -1846,7 +1847,7 @@ class DataSetLanguage(DataSetNative):
             data_info['names'] = [
                 f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
             # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+            # B = matrix.indicator(data_info.half, positive=True)
             
 
         elif type == 'CondRun':
@@ -1858,7 +1859,7 @@ class DataSetLanguage(DataSetNative):
             data_info['names'] = [
                 f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
             # Baseline substraction
-            B = matrix.indicator(data_info.run, positive=True)
+            # B = matrix.indicator(data_info.run, positive=True)
 
         elif type == 'CondAll':
             data_info, C = agg_data(info,
@@ -1868,7 +1869,7 @@ class DataSetLanguage(DataSetNative):
             data_info['names'] = [
                 f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
             # Baseline substraction
-            B = np.ones((data_info.shape[0],1))
+            # B = np.ones((data_info.shape[0],1))
 
 
         if ses_id == 'ses-sencoding_trial_duration' or ses_id == 'ses-sencoding_trial_fixed':
@@ -1916,8 +1917,8 @@ class DataSetLanguage(DataSetNative):
             #  contrast for all instructions
             CI = matrix.indicator(info.run * info.inst, positive=True)
             C = np.c_[C, CI]
-            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
-        elif ses_id == 'ses-sencoding_category_fixed'or ses_id =='ses-sencoding_category_fixed_adjusted':
+            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
+        elif ses_id == 'ses-sencoding_category_fixed'or ses_id =='ses-sencoding_category_duration':
             data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
         elif ses_id == 'ses-sencoding_trial_fixed' or ses_id =='ses-sencoding_trial_duration':
             data_new = data_n

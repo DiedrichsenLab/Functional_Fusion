@@ -2,6 +2,7 @@ import numpy as np
 from numpy.linalg import inv, pinv
 import nibabel as nb
 import h5py
+import Functional_Fusion.atlas_map as am
 
 
 def sq_eucl_distances(coordA,coordB):
@@ -150,3 +151,39 @@ def templateflow_xfm_h5_to_nii(filename):
         deform_img = nb.Nifti1Image(P2,affine)
         nb.save(deform_img, filename.replace('.h5','.nii'))
         pass
+
+
+def get_volumes(data, atlas_name='MNISymC2'):
+    """
+    Projects CIFTI data from any space (e.g., SUIT3/MNISymC2) back to volume space.
+
+    Args:
+        data (list, np.ndarray): Input data. Can be a list, NumPy array.
+        atlas (str): Atlas code to specify the projection space (e.g., 'SUIT3', 'MNISymC3'). Default is 'MNISymC2'.
+
+    Returns:
+        list: A list of NIfTI volume objects projected from the input data.
+    """
+
+    atlas,_ = am.get_atlas(atlas_name)
+
+    # Determine number of volumes based on data type
+    if isinstance(data, np.ndarray):
+        n_vols = data.shape[0]
+    elif isinstance(data, list):
+        n_vols = len(data)
+    else:
+        raise TypeError("data must be a list, np.ndarray, or torch.Tensor")
+
+    nii_vols = []
+    
+    # Project each data volume back to NIfTI volume space
+    for i in range(n_vols):
+        cifti_data = data[i]
+        vol = atlas.data_to_nifti(cifti_data)
+        nii_vols.append(vol)
+
+    return nii_vols
+
+            
+

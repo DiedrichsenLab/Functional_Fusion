@@ -23,9 +23,9 @@ data_dir = base_dir + '/Language'
 atlas_dir = base_dir + '/Atlases'
 
 
-types = ['CondAll']
-atlases  = ['fs32k','SUIT3']
-session_list = ['ses-sencoding_trial_fixed','ses-sencoding_trial_duration']
+types = ['CondHalf','CondRun','CondAll']
+atlases  = ['MNISymC3']
+session_list = ['ses-localizer_cond']
 
 
 LL_dataset = DataSetLanguage(data_dir)
@@ -42,6 +42,7 @@ for ses in session_list:
 
     else:
         raise Exception('wrong session values')
+    
     
 
     for type in types:
