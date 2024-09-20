@@ -195,9 +195,9 @@ def import_spm_designmatrix(source_dir, dest_dir, sub_id, sess_id):
 
 
 
-def import_rest(src, dest, sub_id, ses_id, runs, mask_file=None):
-    """Imports the resting state files
-       into a BIDS/derivative structure
+def import_tseries(src, dest, sub_id, ses_id, runs, mask_file=None):
+    """Imports the timeseries files
+       into the Functional Fusion structure
     Args:
         src (str): source name structure
         dest (str): destination name structure
