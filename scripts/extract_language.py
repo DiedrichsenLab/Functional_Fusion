@@ -65,7 +65,8 @@ if __name__ == "__main__":
 
     # Exctract Rest timeseries & connectivity fingerprint
     dname = 'Language'
-    session = 'rest'
+    # session = 'rest'
+    session = 'localizer_cond'
     T = pd.read_csv(
             data_dir + '/participants.tsv', delimiter='\t')
     subject_subset_indices = T.participant_id[T['ses-rest'] == 1].index.tolist()
