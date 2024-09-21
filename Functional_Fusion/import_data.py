@@ -5,7 +5,7 @@ import numpy as np
 import scipy.io as sio
 import mat73
 from copy import deepcopy
-
+import nibabel as nb
 def import_suit(source_dir, dest_dir, anat_name, participant_id):
     """
     Imports a suit folder into a BIDS/derivtive structure
@@ -222,9 +222,10 @@ def import_tseries(src, dest, sub_id, ses_id, runs, trs=None, mask_file=None):
         dest_file = dest.format(run=run)
         if not Path(dest_file + 'x').exists():
             if trs is not None: # If TR number is specified, then only import that number of TRs
-                data = np.load(src_file)
-                data = data[:trs]
-                np.save(dest_file, data)
+                img = nb.load(src_file)
+                data = img.get_fdata()[:,:,:,:trs]
+                img = nb.Nifti1Image(data, img.affine, img.header)
+                nb.save(img, dest_file)
             else:
                 try:
                     shutil.copyfile(src_file,
