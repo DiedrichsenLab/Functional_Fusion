@@ -195,7 +195,7 @@ def import_spm_designmatrix(source_dir, dest_dir, sub_id, sess_id):
 
 
 
-def import_tseries(src, dest, sub_id, ses_id, runs, mask_file=None):
+def import_tseries(src, dest, sub_id, ses_id, runs, trs=None, mask_file=None):
     """Imports the timeseries files
        into the Functional Fusion structure
     Args:
@@ -204,6 +204,7 @@ def import_tseries(src, dest, sub_id, ses_id, runs, mask_file=None):
         sub_id (str): ID of participant
         ses_id (str): ID of session
         runs (list): list of runs to import
+        trs (int): Number of timepoints of the timeseries to import
         fix (bool): If True, then import the data that is FIX cleaned
     """
     
@@ -219,12 +220,17 @@ def import_tseries(src, dest, sub_id, ses_id, runs, mask_file=None):
         # move data into the corresponding session folder
         src_file = src.format(run=run)
         dest_file = dest.format(run=run)
-        if not Path(dest_file).exists():
-            try:
-                shutil.copyfile(src_file,
-                                dest_file)
-            except:
-                print(f'{dest_file} could not be copied.')
+        if not Path(dest_file + 'x').exists():
+            if trs is not None: # If TR number is specified, then only import that number of TRs
+                data = np.load(src_file)
+                data = data[:trs]
+                np.save(dest_file, data)
+            else:
+                try:
+                    shutil.copyfile(src_file,
+                                    dest_file)
+                except:
+                    print(f'{dest_file} could not be copied.')
         else:
             print(f'{dest_file} already exists. Skipped.')
 

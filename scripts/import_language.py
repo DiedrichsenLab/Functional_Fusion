@@ -119,6 +119,11 @@ if __name__ == '__main__':
     participants = T[T[f'ses-rest'] == 1].participant_id
     runs =[f'{run:02d}' for run in np.arange(1, 8) ] if session == 'rest' else [f'{run:02d}' for run in np.arange(1, 9) ] # Maximum number of runs that all subjects have is 7 in rest session and 8 in localizer session
 
+    # Import TR information
+    imaging_info = pd.read_csv(base_dir + '/Cerebellum/Language/Language_7T/participants.tsv', delimiter='\t')
+    imaging_info = imaging_info[imaging_info['rest'] == "yes"]
+    trs = min(imaging_info[f'ses_{int(session_orig):01d}_numTRs']) if session == 'localizer_cond' else None
+
 
     fix=False
     if fix:
@@ -132,7 +137,7 @@ if __name__ == '__main__':
         src = src_stem.format(sub=s) + file_ending
         dest = dest_dir.format(sub=s) + file_ending
         mask_file = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-01/rmask_noskull.nii'.format(sub=s)
-        id.import_tseries(src, dest, s, f'ses-{session_orig}', runs, mask_file=mask_file)
+        id.import_tseries(src, dest, s, f'ses-{session_orig}', runs, trs=trs, mask_file=mask_file)
 
         pass
 
