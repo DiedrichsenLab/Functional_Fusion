@@ -117,7 +117,8 @@ if __name__ == '__main__':
     dest_dir = base_dir + '/FunctionalFusion/Language/derivatives/{sub}/estimates/' + f'ses-{session}' '/{sub}_' + f'ses-{session}'
     T = pd.read_csv(base_dir + '/FunctionalFusion/Language/participants.tsv', delimiter='\t')
     participants = T[T[f'ses-rest'] == 1].participant_id
-    runs =[f'{run:02d}' for run in np.arange(1, 8)    ]
+    runs =[f'{run:02d}' for run in np.arange(1, 8) ] if session == 'rest' else [f'{run:02d}' for run in np.arange(1, 9) ] # Maximum number of runs that all subjects have is 7 in rest session and 8 in localizer session
+
 
     fix=False
     if fix:
