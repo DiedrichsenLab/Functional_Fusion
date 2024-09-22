@@ -125,7 +125,7 @@ if __name__ == '__main__':
     trs = min(imaging_info[f'ses_{int(session_orig):01d}_numTRs']) if session == 'localizer_cond' else None
 
 
-    fix=False
+    fix=True
     if fix:
         src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data_fix/{sub}/' + f'ses-{session_orig}' + '/{sub}_' + f'ses-{session_orig}'
         file_ending = '_run-{run}_fix.nii'
