@@ -86,7 +86,7 @@ if __name__ == "__main__":
     #         'runs': ['01', '02'],
     #         'reginfo_general': 'sub-02',
     #     }
-    #     id.import_rest(dir1, dir2, s, 'ses-rest', info_dict)
+    #     id.import_tseries(dir1, dir2, s, 'ses-rest', info_dict)
 
     # T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
     # for s in T.participant_id:
@@ -123,4 +123,4 @@ if __name__ == "__main__":
             src = src_stem.format(sub=s) + file_ending
             dest = dest_dir.format(sub=s) + file_ending
             mask_file = base_dir + '/Cerebellum/super_cerebellum/sc1/imaging_data_fix/{sub}_ses-s1_mask.nii'.format(sub=s)
-            id.import_rest(src, dest, s, session_name, runs, mask_file=mask_file)
+            id.import_tseries(src, dest, s, session_name, runs, mask_file=mask_file)

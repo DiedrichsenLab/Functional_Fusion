@@ -110,25 +110,36 @@ if __name__ == '__main__':
     #     id.import_spm_designmatrix(source_dir, dest_dir, participant_id, ses)
 
 
+    # session='rest'
+    session='localizer_cond'
+    session_orig = '04' if session == 'rest' else '01'
 
-    dest_dir = base_dir + '/FunctionalFusion/Language/derivatives/{sub}/estimates/ses-rest/{sub}_ses-rest'
+    dest_dir = base_dir + '/FunctionalFusion/Language/derivatives/{sub}/estimates/' + f'ses-{session}' '/{sub}_' + f'ses-{session}'
     T = pd.read_csv(base_dir + '/FunctionalFusion/Language/participants.tsv', delimiter='\t')
-    participants = T[T['ses-rest'] == 1].participant_id
-    runs =[f'{run:02d}' for run in np.arange(1, 8)    ]
+    participants = T[T[f'ses-rest'] == 1].participant_id
+    runs =[f'{run:02d}' for run in np.arange(1, 8) ] if session == 'rest' else [f'{run:02d}' for run in np.arange(1, 9) ] # Maximum number of runs that all subjects have is 7 in rest session and 8 in localizer session
 
-    fix=False
+    # Import TR information
+    imaging_info = pd.read_csv(base_dir + '/Cerebellum/Language/Language_7T/participants.tsv', delimiter='\t')
+    imaging_info = imaging_info[imaging_info['rest'] == "yes"]
+    trs = min(imaging_info[f'ses_{int(session_orig):01d}_numTRs']) if session == 'localizer_cond' else None
+
+
+    fix=True
     if fix:
-        src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data_fix/{sub}/ses-04/{sub}_ses-04'
+        src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data_fix/{sub}_' + f'ses-{session_orig}'
         file_ending = '_run-{run}_fix.nii'
+        mask_file = base_dir + '/Cerebellum/Language/Language_7T/imaging_data_fix/{sub}_ses-01_mask.nii'
     else:
-        src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-04/r{sub}_ses-04'
+        src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/' + f'ses-{session_orig}' + '/r{sub}_' + f'ses-{session_orig}'
         file_ending = '_run-{run}.nii'
+        mask_file = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-01/rmask_noskull.nii'
         
     for s in participants:
         src = src_stem.format(sub=s) + file_ending
         dest = dest_dir.format(sub=s) + file_ending
-        mask_file = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-01/rmask_noskull.nii'.format(sub=s)
-        id.import_rest(src, dest, s, 'ses-rest', runs, mask_file=mask_file)
+        mask_file = mask_file.format(sub=s)
+        id.import_tseries(src, dest, s, f'ses-{session_orig}', runs, trs=trs, mask_file=mask_file)
 
         pass
 
