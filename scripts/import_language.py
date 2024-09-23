@@ -127,16 +127,18 @@ if __name__ == '__main__':
 
     fix=True
     if fix:
-        src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data_fix/{sub}/' + f'ses-{session_orig}' + '/{sub}_' + f'ses-{session_orig}'
+        src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data_fix/{sub}_' + f'ses-{session_orig}'
         file_ending = '_run-{run}_fix.nii'
+        mask_file = base_dir + '/Cerebellum/Language/Language_7T/imaging_data_fix/{sub}_ses-01_mask.nii'
     else:
         src_stem = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/' + f'ses-{session_orig}' + '/r{sub}_' + f'ses-{session_orig}'
         file_ending = '_run-{run}.nii'
+        mask_file = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-01/rmask_noskull.nii'
         
     for s in participants:
         src = src_stem.format(sub=s) + file_ending
         dest = dest_dir.format(sub=s) + file_ending
-        mask_file = base_dir + '/Cerebellum/Language/Language_7T/imaging_data/{sub}/ses-01/rmask_noskull.nii'.format(sub=s)
+        mask_file = mask_file.format(sub=s)
         id.import_tseries(src, dest, s, f'ses-{session_orig}', runs, trs=trs, mask_file=mask_file)
 
         pass
