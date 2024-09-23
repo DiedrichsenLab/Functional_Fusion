@@ -1115,7 +1115,7 @@ class DataSetHcpResting(DataSetCifti):
         return fnames, T
 
     def condense_data(self, data, info, type, participant_id=None, ses_id=None):
-        if type == 'Tseries':
+        if type == 'Tseries' or type == 'FixTseries':
             info['names'] = info['timepoint']
         return data, info
 
@@ -1739,7 +1739,7 @@ class DataSetDmcc(DataSetMNIVol):
             # fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         elif type == 'Contrast':
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.con_id:02}_con.nii' for i, t in T.iterrows()]
-        elif type == 'Tseries':
+        elif type == 'Tseries' or type == 'FixTseries':
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
         return fnames, T
 
@@ -1840,7 +1840,7 @@ class DataSetLanguage(DataSetNative):
 
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 5)
-        if type == 'Tseries':
+        if type == 'Tseries' or type == 'FixTseries':
             info['names'] = info['timepoint']
             data_new, data_info = data, info
 
