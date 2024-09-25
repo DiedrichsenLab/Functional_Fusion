@@ -2,14 +2,14 @@
 import pandas as pd
 import numpy as np
 import Functional_Fusion.import_data as id
-import scripts.paths as paths
+import scripts.fusion_paths as paths
 
 
 base_dir = paths.set_base_dir()
 atlas_dir = paths.set_atlas_dir(base_dir)
 
-orig_dir = base_dir + '/../Cerebellum/super_cerebellum'
-target_dir = base_dir + '/MDTB'
+orig_dir = base_dir + '/Cerebellum/super_cerebellum'
+target_dir = base_dir + 'FunctionalFusion/MDTB'
 
 
 def fix_sc2_reginfo():
@@ -44,6 +44,9 @@ def fix_sc2_reginfo():
             T1.to_csv(info, sep='\t', index=False)
 
 
+
+
+
 if __name__ == "__main__":
     # fix_sc2_reginfo()
     T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
@@ -74,16 +77,16 @@ if __name__ == "__main__":
 
     # Import resting-state session
     # (only take participants who have rest data)
-    participants = participants[T['ses-rest'] == 1]
-    for s in participants:
-        old_id = s.replace('sub-', 's', 1)
-        dir1 = orig_dir + '/resting_state/imaging_data_fix/'
-        dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
-        info_dict = {
-            'runs': ['01', '02'],
-            'reginfo_general': 'sub-02',
-        }
-        id.import_rest(dir1, dir2, s, 'ses-rest', info_dict)
+    # participants = participants[T['ses-rest'] == 1]
+    # for s in participants:
+    #     old_id = s.replace('sub-', 's', 1)
+    #     dir1 = orig_dir + '/resting_state/imaging_data_fix/'
+    #     dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
+    #     info_dict = {
+    #         'runs': ['01', '02'],
+    #         'reginfo_general': 'sub-02',
+    #     }
+    #     id.import_tseries(dir1, dir2, s, 'ses-rest', info_dict)
 
     # T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
     # for s in T.participant_id:
@@ -93,3 +96,31 @@ if __name__ == "__main__":
     #     dir2 = os.path.join(target_dir, 'derivatives/%s/func' % str(s))
     #     import_func_resting(dir1, dir2, str(s))
     #     print(f"-Done subject {s}")
+
+
+
+
+    # Import session s1 and session s2 fix-cleaned timeseries
+    
+    T = pd.read_csv(base_dir + '/FunctionalFusion/MDTB/participants.tsv', delimiter='\t')
+    participants = T.participant_id
+    participants_rest = participants[T['ses-rest'] == 1]
+
+    runs = [f'{run:02d}' for run in np.arange(1, 17)]
+    
+    fix=True
+    for session in [1,2]:
+        session_name = f'ses-s{session}'
+        dest_dir = base_dir + '/FunctionalFusion/MDTB/derivatives/{sub}/estimates/' + session_name + '/{sub}_' + session_name
+        if fix:
+            src_stem = base_dir + '/Cerebellum/super_cerebellum/sc1/' + 'imaging_data_fix/{sub}_' + session_name
+            file_ending = '_run-{run}_fix.nii'
+        else:
+            src_stem = base_dir + '/Cerebellum/super_cerebellum/imaging_data/{sub}/'
+            file_ending = '_run-{run}.nii'
+        
+        for s in participants:
+            src = src_stem.format(sub=s) + file_ending
+            dest = dest_dir.format(sub=s) + file_ending
+            mask_file = base_dir + '/Cerebellum/super_cerebellum/sc1/imaging_data_fix/{sub}_ses-s1_mask.nii'.format(sub=s)
+            id.import_tseries(src, dest, s, session_name, runs, mask_file=mask_file)

@@ -572,17 +572,19 @@ class DataSet:
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
         
         if type[:4] == 'Cond' or type[:4] == 'Task':
-            T = pd.read_csv(
-                dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
             fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
-            
-        elif type == 'Tseries':
+            T = pd.read_csv(
+                dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+        elif type == 'Tseries' or type == 'FixTseries':
             # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
-            fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-*.nii')
+            fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii')
             runs = [int(fname.split('run-')[-1].split('_')[0].split('.')[0]) for fname in fnames]
             runs = np.unique(runs)
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in runs]
+            if type == 'FixTseries':
+                # Make sure to load fix-cleaned timeseries
+                fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}_fix.nii' for r in runs]
             try:
                 # Load timeseries info file if it exists
                 T = pd.read_csv(
@@ -595,8 +597,8 @@ class DataSet:
                 timepoints = np.arange(sum(timepoints))+1
                 timepoints_string = [f'T{timepoint:04d}' for timepoint in timepoints]
                 T = pd.DataFrame({'run': runs,
-                                  'timepoint': timepoints_string,
-                                  'time_id':timepoints}, index=None)
+                                    'timepoint': timepoints_string,
+                                    'time_id':timepoints}, index=None)
                 
         return fnames, T
 
@@ -1028,7 +1030,7 @@ class DataSetMDTB(DataSetNative):
 
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 9)
-        if type == 'Tseries':
+        if type == 'Tseries' or type == 'FixTseries':
             info['names'] = info['timepoint']
             data_new, data_info = data, info
 
@@ -1813,7 +1815,7 @@ class DataSetLanguage(DataSetNative):
         self.part_ind = 'half'
 
     def condense_data(self, data, info,
-                      type='CondHalf',
+                      type='TaskHalf',
                       participant_id=None,
                       ses_id=None):
         """ Condense the data from the language localizer project after extraction
@@ -1837,247 +1839,54 @@ class DataSetLanguage(DataSetNative):
         """
 
         # Depending on the type, make a new contrast
-        info['half'] = info['half'] = (info.run % 2) + 1
+        info['half'] = 2 - (info.run < 5)
+        if type == 'Tseries':
+            info['names'] = info['timepoint']
+            data_new, data_info = data, info
 
-        if type == 'CondHalf':
-            data_info, C = agg_data(info,
-                                    ['half', 'reg_id'],
-                                    ['run', 'reg_num'],
-                                    subset=(info.inst == 0))
-            data_info['names'] = [
-                f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            # B = matrix.indicator(data_info.half, positive=True)
-            
+        else:
+            if type == 'CondHalf':
+                data_info, C = agg_data(info,
+                                        ['half', 'reg_id'],
+                                        ['run', 'reg_num'],
+                                        subset=(info.reg_id >0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'CondRun':
+            elif type == 'CondRun':
 
-            data_info, C = agg_data(info,
-                                    ['run', 'reg_id'],
-                                    ['reg_num'],
-                                    subset=(info.inst == 0))
-            data_info['names'] = [
-                f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            # B = matrix.indicator(data_info.run, positive=True)
+                data_info, C = agg_data(info,
+                                        ['run', 'reg_id'],
+                                        ['reg_num'],
+                                        subset=(info.reg_id > 0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'CondAll':
-            data_info, C = agg_data(info,
-                                    ['reg_id'],
-                                    ['run', 'half', 'reg_num'],
-                                    subset=(info.inst == 0))
-            data_info['names'] = [
-                f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            # B = np.ones((data_info.shape[0],1))
+            elif type == 'CondAll':
+                data_info, C = agg_data(info,
+                                        ['reg_id'],
+                                        ['run', 'half', 'reg_num'],
+                                        subset=(info.reg_id > 0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
+            # Prewhiten the data
+            data_n = prewhiten_data(data)
 
-        if ses_id == 'ses-sencoding_trial_duration' or ses_id == 'ses-sencoding_trial_fixed':
-            sentence_indices = info.index[info['inst'] == 0].tolist()
-            info = info[info['inst']==0]
-            info = info.reset_index(drop = True)
-            sentence_data  = [d[sentence_indices] for d in data]
-            reordered_data = [np.zeros_like(d) for d in sentence_data]
-                
-            for j in range(len(sentence_data)):
-                # Reorder first 350 sentences
-                for i in range(0,350):
-                    task_num = info[:350].loc[i, 'task'] - 1  
-                    reordered_data[j][task_num] = sentence_data[j][i]
-                # Reorder second 350 sentences
-                for i in range(350, 699):
-                    task_num = info[350:].loc[i, 'task'] - 1 + 350  
-                    reordered_data[j][task_num] = sentence_data[j][i]
-                # add resms image
-                reordered_data[j] = np.vstack([reordered_data[j], data[j][-1]])
-            data = reordered_data
+            dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
 
-            # standardize the info_file
-            info['half'] = [1 if i < 350 else 2 for i in range(len(info))] 
-            info['sentence_number'] = info['taskName'].str.extract(r'(\d+)$').astype(int)
-
-            # Split  into two halves and sort
-            info_first_half = info.iloc[:350].sort_values(by='sentence_number').reset_index(drop=True)
-            info_second_half = info.iloc[350:].sort_values(by='sentence_number').reset_index(drop=True)
-
-            # Concatenate
-            info_sorted = pd.concat([info_first_half, info_second_half]).reset_index(drop=True)
-            data_info = info_sorted.drop(columns=['sentence_number'])
-
-
-
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
-        
-        # Load the designmatrix and perform optimal contrast
-        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
-        reg_in = np.arange(C.shape[1], dtype=int)
-        if ses_id == 'ses-localizer_cond':
-            #  contrast for all instructions
+            # Load the designmatrix and perform optimal contrast
+            X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+            reg_in = np.arange(C.shape[1], dtype=int)
             CI = matrix.indicator(info.run * info.inst, positive=True)
             C = np.c_[C, CI]
-            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
-        elif ses_id == 'ses-sencoding_category_fixed'or ses_id =='ses-sencoding_category_duration':
-            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
-        elif ses_id == 'ses-sencoding_trial_fixed' or ses_id =='ses-sencoding_trial_duration':
-            data_new = data_n
+
+            data_new = optimal_contrast(data_n, C, X, reg_in)
 
         return data_new, data_info
-    
-    def extract_all(self,
-                    ses_id='ses-01',
-                    type='CondHalf',
-                    atlas='SUIT3',
-                    smooth=2.0,
-                    subj='all'):
-        """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
-
-        Args:
-            ses_id (str):
-                Session. Defaults to 'ses-s1'.
-            type (str):
-                Type for condense_data. Defaults to 'CondHalf'.
-            atlas (str):
-                Short atlas string. Defaults to 'SUIT3'.
-            smooth (float):
-                Smoothing kernel. Defaults to 2.0.
-            subj (list / str):
-                List of Subject numbers to get use. Default = 'all'
-        """
-        myatlas, _ = am.get_atlas(atlas)
-        # create and calculate the atlas map for each participant
-        T = self.get_participants()
-        if subj != 'all':
-            T = T[T['participant_id'].isin(subj)]
-
-        for s in T.participant_id:
-            print(f'Atlasmap {s}')
-            atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
-                                                  smooth=smooth)
-            print(f'Extract {s}')
-            fnames, info = self.get_data_fnames(s, ses_id, type=type)
-            data = am.get_data_nifti(fnames, atlas_maps)
-            data, info = self.condense_data(data, info, type,
-                                            participant_id=s, ses_id=ses_id)
-            # Write out data as CIFTI file
-            if ses_id == 'ses-sencoding_trial_fixed' or 'ses-sencoding_trial_duration':
-                list_of_strings = [str(i) for i in range(1, data[0].shape[0] + 1)]
-                C = myatlas.data_to_cifti(data, list_of_strings)
-            else:
-                C = myatlas.data_to_cifti(data, info.names)
-            dest_dir = self.data_dir.format(s)
-            Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-            info.to_csv(
-                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
-    
-    def group_average_data(self, ses_id=None,
-                               type=None,
-                               atlas='SUIT3',
-                               subj=None):
-            """Loads group data in SUIT space from a standard experiment structure
-            averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
-
-            Args:
-                ses_id (str, optional): Session ID. If not provided, the first session ID in the dataset will be used.
-                type (str, optional): Type of data. If not provided, the default type will be used.
-                atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
-                subj (list or None, optional): Subset of subjects to include in the group average. If None, all subjects will be included.
-
-            """
-            if ses_id is None:
-                ses_id = self.sessions[0]
-            if type is None:
-                type = self.default_type
-
-            data, info = self.get_data(space=atlas, ses_id=ses_id,
-                                       type=type, subj=subj)
-            # average across participants
-            X = np.nanmean(data, axis=0)
-            # make output cifti
-            s = self.get_participants().participant_id[0]
-
-            if subj is not None:
-                s  = subj[0]
-            C = nb.load(self.data_dir.format(s) +
-                        f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-            C = nb.Cifti2Image(dataobj=X, header=C.header)
-            # save output
-            dest_dir = op.join(self.data_dir.format('group'))
-            Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir +
-                    f'/group_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-            if 'sn' in info.columns:
-                info = info.drop(columns=['sn'])
-
-            info.to_csv(dest_dir +
-                        f'/group_{ses_id}_info-{type}.tsv', sep='\t', index=False)
-    
-    def plot_cerebellum(self, subject='group', sessions=None, atlas='SUIT3', type=None, cond='all', savefig=False, cmap='hot', colorbar=False):
-        """Loads group data in SUIT3 space from a standard experiment structure
-        averaged across all subjects and projects to SUIT flatmap. Saves the results as .png figures in the data/group/figures directory.
-
-        Args:
-            sub (str, optional): Subject string. Defaults to group to plot data averaged across all subjects.
-            session (str, optional): Session string. Defaults to first session of in session list of dataset.
-            atlas (str, optional): Atlas string. Defaults to 'SUIT3'.
-            type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
-            cond (str or list): List of condition indices (e.g. [0,1,2] for the first three conditions) or 'all'. Defaults to 'all'.
-            savefig (str, optional): Boolean indicating whether figure should be saved. Defaults to 'False'.
-            cmap (str, optional): Matplotlib colour map. Defaults to 'hot'.
-            colorbar (str, optional): Boolean indicating whether colourbar should be plotted in figure. Defaults to 'False'.
-        """
-        if sessions is None:
-            sessions = self.sessions
-        if type is None:
-            type = self.default_type
-        if subject == 'all':
-            subjects = self.get_participants().participant_id.tolist()
-        else:
-            subjects = [subject]
-
-        atlasmap, atlasinfo = am.get_atlas(atlas, self.atlas_dir)
-
-        for sub in subjects:
-            print(f'Plotting {sub}')
-            for session in sessions:
-                info = self.data_dir.split(
-                    '/{0}')[0] + f'/{sub}/data/{sub}_{session}_info-{type}.tsv'
-                data = self.data_dir.split(
-                    '/{0}')[0] + f'/{sub}/data/{sub}_space-{atlas}_{session}_{type}.dscalar.nii'
-
-                # Load average
-                C = nb.load(data)
-                D = pd.read_csv(info, sep='\t')
-                X = C.get_fdata()
-                # limes = [X[np.where(~np.isnan(X))].min(), X[np.where(~np.isnan(X))].max()] # cannot use nanmax or nanmin because memmap does not have this attribute
-                limes = [np.percentile(X[np.where(~np.isnan(X))], 5), np.percentile(
-                    X[np.where(~np.isnan(X))], 95)]
-
-                if cond == 'all':
-                    conditions = D[self.cond_name]
-                else:
-                    conditions = D[self.cond_name][cond]
-
-                # -- Plot each condition in seperate figures --
-                dest_dir = self.data_dir.split('/{0}')[0] + f'/{sub}/figures/'
-                Path(dest_dir).mkdir(parents=True, exist_ok=True)
-                for c in conditions:
-                    condition_name = c.strip()
-                    D[D[self.cond_name] == c].index
-                    Nifti = atlasmap.data_to_nifti(
-                        X[D[D[self.cond_name] == c].index, :].mean(axis=0))
-                    surf_data = suit.flatmap.vol_to_surf(
-                        Nifti, space=atlasinfo['normspace'])
-                    cscale = [-0.1,0.1]
-                    fig = suit.flatmap.plot(
-                        surf_data, render='matplotlib', new_figure=True, cscale=cscale, cmap=cmap, colorbar=colorbar)
-                    fig.set_title(condition_name)
-
-                    # save figure
-                    if savefig:
-                        plt.savefig(
-                            dest_dir + f'{sub}_{session}_{condition_name}.png')
-                    plt.clf()
