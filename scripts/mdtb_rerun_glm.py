@@ -41,7 +41,7 @@ def save_data(dataset, subject, session, space, atlas, data, data_info, data_typ
     print(f'Saving {data_type} for {subject}')
     
     # Convert data to CIFTI format
-    C = atlas.data_to_cifti(data, data_info.names if not binfo else binfo.reg_name)
+    C = atlas.data_to_cifti(data, data_info.names)
     
     # Create the destination directory
     dest_dir = dataset.data_dir.format(subject)
