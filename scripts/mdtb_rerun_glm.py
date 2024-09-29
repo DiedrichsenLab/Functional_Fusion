@@ -100,7 +100,7 @@ def rerun_glms(dataset, glm_path, subjects, session, space, fix=True):
             Warning('Condition names do not match. Saving beta info from SPM.mat file without any additional info')
         
         # Betas are saved as FixNewCondRun or NewCondRun (to avoid overwriting the original betas saved as CondRun)
-        save_data(dataset, subject, session, space, atlas, beta, binfo, fix_type + 'New' + 'CondRun', binfo)
+        save_data(dataset, subject, session, space, atlas, beta, binfo, fix_type + 'New' + 'CondRun')
 
         # Save Residuals
         save_data(dataset, subject, session, space, atlas, residuals, data_info, fix_type + 'Residuals')

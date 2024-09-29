@@ -187,7 +187,7 @@ if __name__ == "__main__":
                                       type='Fus06Run', space='fs32k', ses_id='ses-s1', subj=subject_subset)
     conn.get_connectivity_fingerprint(dname,
                                       type='Fus06Run', space='fs32k', ses_id='ses-s2', subj=subject_subset)
-        conn.get_connectivity_fingerprint(dname,
+    conn.get_connectivity_fingerprint(dname,
                                       type='Fus06FixRun', space='fs32k', ses_id='ses-rest', subj=subject_subset)
     conn.get_connectivity_fingerprint(dname,
                                       type='Fus06FixRun', space='fs32k', ses_id='ses-s1', subj=subject_subset)
