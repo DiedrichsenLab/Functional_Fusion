@@ -133,6 +133,7 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
 if __name__ == "__main__":
     mdtb_dataset = DataSetMDTB(mdtb_dir)
 
+
     # -- Extract resting-state timeseries --
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC2', smooth=2.0)
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='fs32k', smooth=2.0)
@@ -144,17 +145,16 @@ if __name__ == "__main__":
     # mdtb_dataset.extract_all(ses_id='ses-s2', type='FixTseries', atlas='MNISymC3', smooth=2.0)
     # mdtb_dataset.extract_all(ses_id='ses-s2', type='FixTseries', atlas='fs32k', smooth=2.0, subj=[23])
     
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06FixRun', space='MNISymC3', ses_id='ses-s1', subj=['sub-31'])
-    conn.get_connectivity_fingerprint(dname,
-                                    type='Fus06FixRun', space='MNISymC3', ses_id='ses-s2')
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06FixRun', space='MNISymC3', ses_id='ses-s1', subj=['sub-31'])
+    # conn.get_connectivity_fingerprint(dname,
+    #                                 type='Fus06FixRun', space='MNISymC3', ses_id='ses-s2')
     
-    # -- Get connectivity fingerprint for rest session --
-    T = pd.read_csv(
-        mdtb_dir + '/participants.tsv', delimiter='\t')
-    subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
-    # # get indices of subjects
-    # subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist()
+    # # -- Get connectivity fingerprint for rest session --
+    # T = pd.read_csv(
+    #     mdtb_dir + '/participants.tsv', delimiter='\t')
+    # subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
+    # subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist() # get indices of subjects
     # # conn.get_connectivity_fingerprint(dname,
     # #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     # # conn.get_connectivity_fingerprint(dname,
@@ -183,18 +183,6 @@ if __name__ == "__main__":
     #                                   type='Fus06Run', space='MNISymC3', ses_id='ses-rest', subj=subject_subset)
     
 
-    # # -- Group Average Data --
-    # # mdtb_dataset.group_average_data(atlas='MNISymC2', ses_id='ses-rest', type='Net69Run', subj=subject_subset)
-    # # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=['ses-rest'], type='Net69Run')
 
-    # mdtb_dataset.group_average_data(
-    #     atlas='MNISymC2', ses_id='ses-rest', type='Fus06Run', subj=subject_subset)
-    # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=[
-    #                              'ses-rest'], type='Fus06Run')
-
-    # mdtb_dataset.group_average_data(
-    #     atlas='Ico42Run', ses_id='ses-rest', type='Ico162Run', subj=subject_subset)
-    # mdtb_dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', sessions=[
-    #                              'ses-rest'], type='Ico162Run')
     pass
     
