@@ -55,7 +55,6 @@ def save_data(dataset, subject, session, space, atlas, data, data_info, data_typ
     tsv_filename = f'{dest_dir}/{subject}_{session}_info-{data_type}.tsv'
     data_info.to_csv(tsv_filename, sep='\t', index=False)
     
-    print(f'{data_type} saved successfully!')
 
 
 def rerun_glms(dataset, glm_path, subjects, session, space):
@@ -120,7 +119,7 @@ if __name__ == "__main__":
 
     # Setttings
     space='MNISymC3'
-    session_idx = 1
+    session_idx = 2
     session=f'ses-s{session_idx}'
     glm_path = base_dir + f'Cerebellum/super_cerebellum/sc{session_idx}/' 'GLM_firstlevel_7/{subject_name_orig}/'
     
