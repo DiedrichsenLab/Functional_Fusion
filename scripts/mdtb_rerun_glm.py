@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     # Setttings
     space='MNISymC3'
-    session_idx = 2
+    session_idx = 1
     session=f'ses-s{session_idx}'
     glm_path = base_dir + f'Cerebellum/super_cerebellum/sc{session_idx}/' 'GLM_firstlevel_7/{subject_name_orig}/'
     
