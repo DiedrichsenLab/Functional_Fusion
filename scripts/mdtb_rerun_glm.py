@@ -124,7 +124,7 @@ if __name__ == "__main__":
     session=f'ses-s{session_idx}'
     glm_path = base_dir + f'Cerebellum/super_cerebellum/sc{session_idx}/' 'GLM_firstlevel_7/{subject_name_orig}/'
     
-    rerun_glms(mdtb_dataset, glm_path, subject_subset, session_idx, space)
+    rerun_glms(mdtb_dataset, glm_path, subject_subset, session, space)
       
     pass
     
