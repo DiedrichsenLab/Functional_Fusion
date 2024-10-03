@@ -178,7 +178,8 @@ if __name__ == "__main__":
     
     # Exctract Rest timeseries & connectivity fingerprint
     mdtb_dataset = DataSetMDTB(mdtb_dir)   
-    mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    mdtb_dataset.extract_all(ses_id='fs32k', type='Tseries', atlas='MNISymC3', smooth=2.0)
     conn.get_connectivity_fingerprint(dname,
                                       type='Fus06Run', space='MNISymC3', ses_id='ses-rest', subj=subject_subset)
 
