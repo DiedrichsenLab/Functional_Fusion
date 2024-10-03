@@ -117,11 +117,10 @@ if __name__ == "__main__":
             file_ending = '_run-{run}_fix.nii'
         else:
             src_stem = base_dir + '/Cerebellum/super_cerebellum/sc1//imaging_data/{sub}/' if session != 'rest' else base_dir + '/Cerebellum/super_cerebellum/resting_state/imaging_data/{sub}/'
-            file_ending = 'rrun_{run}.nii'
         
         for s in participants:
             subject_orig = s.replace('sub-', 's', 1)
-            src = src_stem.format(sub=subject_orig) + file_ending
-            dest = dest_dir.format(sub=s) + file_ending
+            src = src_stem.format(sub=subject_orig) + 'rrun_{run}.nii'
+            dest = dest_dir.format(sub=s) + '_run-{run}.nii'
             mask_file = base_dir + '/Cerebellum/super_cerebellum/sc1/imaging_data_fix/{sub}_ses-s1_mask.nii'.format(sub=s) 
             id.import_tseries(src, dest, s, session_name, runs, mask_file=mask_file)

@@ -32,7 +32,13 @@ for i in ${base_dir}/FunctionalFusion/MDTB/derivatives/sub*/data/*ses-rest_*Net6
 done
 
 
-Ico162Run
-Ico42Run
-Net67Run
-Net69Run
+# for all files named '/Volumes/diedrichsen_data$/data//FunctionalFusion/MDTB/derivatives/sub-*/estimates/ses-rest/sub-*_ses-restrrun_*.nii', rename as /Volumes/diedrichsen_data$/data//FunctionalFusion/MDTB/derivatives/sub-*/estimates/ses-rest/sub-*_ses-rest_run-*.nii
+base_dir="/cifs/diedrichsen/data/"
+for i in ${base_dir}/FunctionalFusion/MDTB/derivatives/sub*/estimates/ses-rest/sub-*_ses-restrrun_*.nii; do 
+    echo $i
+    # Rename the "FixBeta" part of the file to "FixNewCondRun"
+    newname=$(echo $i | sed 's/restrrun_/rest_run-/')
+    echo $newname
+    mv $i $newname
+
+done
