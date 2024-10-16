@@ -121,7 +121,8 @@ if __name__ == "__main__":
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
 
     # Setttings
-    space='MNISymC3'
+    # space='MNISymC3'
+    space='fs32k'
     session_idx = 1
     session=f'ses-s{session_idx}'
     glm_path = base_dir + f'Cerebellum/super_cerebellum/sc{session_idx}/' 'GLM_firstlevel_7/{subject_name_orig}/'
