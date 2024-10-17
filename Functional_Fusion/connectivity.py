@@ -143,8 +143,6 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     
     if tseries_type == 'Fix':
         tseries_type = 'FixTseries'
-    elif tseries_type == 'Res':
-        tseries_type = 'Residuals'
     elif tseries_type == '':
         tseries_type = 'Tseries'
 
