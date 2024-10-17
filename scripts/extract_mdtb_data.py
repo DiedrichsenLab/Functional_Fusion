@@ -151,10 +151,10 @@ if __name__ == "__main__":
     #                                 type='Fus06FixRun', space='MNISymC3', ses_id='ses-s2')
     
     # # -- Get connectivity fingerprint for rest session --
-    # T = pd.read_csv(
-    #     mdtb_dir + '/participants.tsv', delimiter='\t')
-    # subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
-    # subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist() # get indices of subjects
+    T = pd.read_csv(
+        mdtb_dir + '/participants.tsv', delimiter='\t')
+    subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
+    subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist() # get indices of subjects
     # # conn.get_connectivity_fingerprint(dname,
     # #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     # # conn.get_connectivity_fingerprint(dname,
@@ -177,11 +177,20 @@ if __name__ == "__main__":
     
     
     # Exctract Rest timeseries & connectivity fingerprint
-    # mdtb_dataset = DataSetMDTB(mdtb_dir)   
-    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    mdtb_dataset = DataSetMDTB(mdtb_dir)   
+    # Need to first rerun GLM to get residuals using script mdtb_rerun_glm.py
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06ResidualsRun', space='MNISymC3', ses_id='ses-s1', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Fus06Run', space='MNISymC3', ses_id='ses-rest', subj=subject_subset)
-    
+    #                                   type='Fus06Run', space='fs32k', ses_id='ses-s1', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06Run', space='fs32k', ses_id='ses-s2', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06FixRun', space='fs32k', ses_id='ses-rest', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06FixRun', space='fs32k', ses_id='ses-s1', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06FixRun', space='fs32k', ses_id='ses-s2', subj=subject_subset)
 
 
     pass

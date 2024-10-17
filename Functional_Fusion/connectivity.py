@@ -136,11 +136,16 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     type_parts = re.findall('[A-Z][^A-Z]*', type)        
     if len(type_parts) == 2:
         target, type = type_parts
-        fix = ''
+        tseries_type = ''
     elif len(type_parts) == 3:
-        target, fix, type = type_parts
+        target, tseries_type, type = type_parts
     
-    tseries_type = 'FixTseries' if fix == 'Fix' else 'Tseries'
+    
+    if tseries_type == 'Fix':
+        tseries_type = 'FixTseries'
+    elif tseries_type == '':
+        tseries_type = 'Tseries'
+
     res = target[3:]
     
     if target[:3] == 'Net':
@@ -208,9 +213,9 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         dest_dir = dset.data_dir.format(participant_id)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
-        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+fix+type}.dscalar.nii')
+        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+tseries_type+type}.dscalar.nii')
         info.to_csv(
-            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+fix+type}.tsv', sep='\t', index=False)
+            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+tseries_type+type}.tsv', sep='\t', index=False)
 
 
 def get_cortical_target(target):

@@ -23,7 +23,7 @@ atlas_dir = base_dir + '/Atlases'
 from pathlib import Path
 import nibabel as nb
 
-def save_data(dataset, subject, session, space, atlas, data, data_info, data_type, binfo=None):
+def save_data(dataset, subject, session, space, atlas, data, data_info, data_type):
     """
     Function to save the data from re-running the GLM as CIFTI files
 
@@ -41,7 +41,7 @@ def save_data(dataset, subject, session, space, atlas, data, data_info, data_typ
     print(f'Saving {data_type} for {subject}')
     
     # Convert data to CIFTI format
-    C = atlas.data_to_cifti(data, data_info.names if not binfo else binfo.reg_name)
+    C = atlas.data_to_cifti(data, data_info.names)
     
     # Create the destination directory
     dest_dir = dataset.data_dir.format(subject)
@@ -55,10 +55,9 @@ def save_data(dataset, subject, session, space, atlas, data, data_info, data_typ
     tsv_filename = f'{dest_dir}/{subject}_{session}_info-{data_type}.tsv'
     data_info.to_csv(tsv_filename, sep='\t', index=False)
     
-    print(f'{data_type} saved successfully!')
 
 
-def rerun_glms(dataset, glm_path, subjects, session, space):
+def rerun_glms(dataset, glm_path, subjects, session, space, fix=True):
     """Function to rerun GLMs for a given session and space, and save betas, residuals, predicted, and adjusted timeseries.
 
     Parameters:
@@ -67,10 +66,12 @@ def rerun_glms(dataset, glm_path, subjects, session, space):
     - subjects (list): List of subject identifiers.
     - session (int): Session identifier.
     - space (str): The space identifier (e.g., MNI).
+    - fix (bool): Whether to use the fixed timeseries or not.
     """
     # Get the atlas object
     atlas, _ = am.get_atlas(space)
-    
+    fix_type = 'Fix' if fix else ''
+
     for subj in range(len(subjects)):
         # Loop over subjects, load SPM.mat file, and get betas, residuals, and adj data
         subject = subjects[subj]
@@ -82,7 +83,7 @@ def rerun_glms(dataset, glm_path, subjects, session, space):
         subject_spm.get_info_from_spm_mat()
 
         # Load functional data
-        data_raw, data_info = dataset.get_data(ses_id=session, type='FixTseries', space=space, subj=[subj])
+        data_raw, data_info = dataset.get_data(ses_id=session, type=fix_type + 'Tseries', space=space, subj=[subj])
 
         # Rerun GLM
         beta, binfo, _, data_hat, data_adj, residuals = subject_spm.rerun_glm(data_raw[0])       
@@ -98,16 +99,17 @@ def rerun_glms(dataset, glm_path, subjects, session, space):
         else:
             Warning('Condition names do not match. Saving beta info from SPM.mat file without any additional info')
         
-        save_data(dataset, subject, session, space, atlas, beta, binfo, 'FixBeta', binfo)
+        # Betas are saved as FixNewCondRun or NewCondRun (to avoid overwriting the original betas saved as CondRun)
+        save_data(dataset, subject, session, space, atlas, beta, binfo, fix_type + 'New' + 'CondRun')
 
         # Save Residuals
-        save_data(dataset, subject, session, space, atlas, residuals, data_info, 'FixResiduals')
+        save_data(dataset, subject, session, space, atlas, residuals, data_info, fix_type + 'Residuals')
 
         # Save predicted timeseries
-        save_data(dataset, subject, session, space, atlas, data_hat, data_info, 'FixPredicted')
+        save_data(dataset, subject, session, space, atlas, data_hat, data_info, fix_type + 'Predicted')
 
         # Save adjusted timeseries
-        save_data(dataset, subject, session, space, atlas, data_adj, data_info, 'FixAdjusted')
+        save_data(dataset, subject, session, space, atlas, data_adj, data_info, fix_type + 'Adjusted')
 
 
 if __name__ == "__main__":
@@ -119,12 +121,13 @@ if __name__ == "__main__":
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
 
     # Setttings
-    space='MNISymC3'
+    # space='MNISymC3'
+    space='fs32k'
     session_idx = 1
     session=f'ses-s{session_idx}'
     glm_path = base_dir + f'Cerebellum/super_cerebellum/sc{session_idx}/' 'GLM_firstlevel_7/{subject_name_orig}/'
     
-    rerun_glms(mdtb_dataset, glm_path, subject_subset, session_idx, space)
+    rerun_glms(mdtb_dataset, glm_path, subject_subset, session, space, fix=False)
       
     pass
     
