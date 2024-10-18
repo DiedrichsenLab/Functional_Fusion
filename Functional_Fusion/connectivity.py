@@ -142,9 +142,12 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     
     
     if tseries_type == 'Fix':
-        tseries_type = 'FixTseries'
+        load_tseries_type = 'FixTseries'
+    elif tseries_type == 'Res':
+        load_tseries_type = 'Residuals'
     elif tseries_type == '':
-        tseries_type = 'Tseries'
+        load_tseries_type = 'Tseries'
+    
 
     res = target[3:]
     
@@ -165,12 +168,12 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         # Get the subject's data
         # Get cortical data
         data_cortex_subj, _ = dset.get_data(
-            space='fs32k', ses_id=ses_id, type=tseries_type, subj=[row.Index])
+            space='fs32k', ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
 
 
         # Get cerebellar data
         data_cereb_subj, info_cereb = dset.get_data(
-                space=space, ses_id=ses_id, type=tseries_type, subj=[row.Index])
+                space=space, ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
         data_cereb_subj = data_cereb_subj.squeeze()
 
         if target[:3] == 'Net' or target[:3] == 'Fus':
