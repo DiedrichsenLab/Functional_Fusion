@@ -145,12 +145,14 @@ if __name__ == "__main__":
     # extract_nishi_fs32k(ses_id='ses-01',type='CondHalf')
     # extract_nishi_fs32k(ses_id='ses-02',type='CondHalf')
 
-    # dataset = DataSetNishi(data_dir)
+    dataset = DataSetNishi(data_dir)
+    dataset.extract_all(ses_id='ses-01', type='CondAll', atlas='MNISymC3')
+    dataset.extract_all(ses_id='ses-02', type='CondAll', atlas='MNISymC3')
     # dataset.group_average_data(type='CondHalf', atlas='MNISymC3')
     # dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)
 
     ## fs32k smoothing ##
-    for s in [1,2,3,4,5,6,7]:
-        smooth_nishi_fs32k(ses_id='ses-01', type='CondHalf', smooth=s)
-        smooth_nishi_fs32k(ses_id='ses-02', type='CondHalf', smooth=s)
+    # for s in [1,2,3,4,5,6,7]:
+    #     smooth_nishi_fs32k(ses_id='ses-01', type='CondHalf', smooth=s)
+    #     smooth_nishi_fs32k(ses_id='ses-02', type='CondHalf', smooth=s)
     pass
