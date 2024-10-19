@@ -702,7 +702,7 @@ class DataSet:
         return atlas_maps
 
     def extract_all(self,
-                    ses_id=None,
+                    ses_id='ses-s1',
                     type='CondHalf',
                     atlas='SUIT3',
                     smooth=2.0,
