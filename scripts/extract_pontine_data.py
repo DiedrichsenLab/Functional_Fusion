@@ -68,7 +68,7 @@ if __name__ == "__main__":
     #                    cond='all', savefig=True)
 
     dataset = DataSetPontine(data_dir)
-    dataset.extract_all(type='TaskAll', atlas='MNISymC3')
+    dataset.extract_all(type='TaskAll', ses_id='ses-01', atlas='MNISymC3')
     # dataset.group_average_data(atlas='MNISymC3')
     # dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)
     pass
