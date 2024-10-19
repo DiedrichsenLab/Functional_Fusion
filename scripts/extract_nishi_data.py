@@ -5,8 +5,7 @@ import shutil
 from pathlib import Path
 import mat73
 import numpy as np
-import atlas_map as am
-from dataset import DataSetNishi
+from Functional_Fusion.dataset import DataSetNishi
 import nibabel as nb
 import SUITPy as suit
 import matplotlib.pyplot as plt
