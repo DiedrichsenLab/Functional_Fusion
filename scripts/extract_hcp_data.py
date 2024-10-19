@@ -92,12 +92,18 @@ if __name__ == "__main__":
 
     # -- Get connectivity fingerprint --
     dname = 'HCP'
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Net67Run', space='MNISymC2', ses_id='ses-rest1')
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Net67Run', space='MNISymC2', ses_id='ses-rest2')
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest1')
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest2')
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+
+
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06All', space='MNISymC3', ses_id='ses-rest1')
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06All', space='MNISymC3', ses_id='ses-rest2')
 
     # extract_hcp_timeseries(
     #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')

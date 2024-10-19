@@ -572,10 +572,10 @@ class DataSet:
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
         
         if type[:4] == 'Cond' or type[:4] == 'Task':
-            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
-            fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
             T = pd.read_csv(
                 dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
+            fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         elif type == 'Tseries' or type == 'FixTseries':
             # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
             fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii')

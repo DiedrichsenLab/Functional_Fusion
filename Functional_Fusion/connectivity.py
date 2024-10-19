@@ -97,7 +97,7 @@ def connectivity_fingerprint(source, target, info, type):
             coefs.append(coef)
 
     elif type == 'All':
-        coef = ut.correlate(source, target)
+        coef = ut.correlate(source, target.T)
         coefs.append(coef)
 
     return np.vstack(coefs)
@@ -204,10 +204,16 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         runs = np.repeat([info_cereb.run.unique()], len(names))
         net_id = np.tile(np.arange(len(names)),
                          int(coef.shape[0] / len(names))) + 1
-        info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+        if type == 'Run':
+            info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
                              'sess': [ses_id] * coef.shape[0],
                              'run': runs,
                              'half': 2 - (runs < runs[-1]),
+                             'net_id': net_id,
+                             'names': names * int(coef.shape[0] / len(names))})
+        elif type == 'All':
+            info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+                             'sess': [ses_id] * coef.shape[0],
                              'net_id': net_id,
                              'names': names * int(coef.shape[0] / len(names))})
 
