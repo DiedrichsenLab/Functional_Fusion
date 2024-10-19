@@ -97,7 +97,7 @@ def connectivity_fingerprint(source, target, info, type):
             coefs.append(coef)
 
     elif type == 'All':
-        coef = ut.correlate(source, target)
+        coef = ut.correlate(source, target.T)
         coefs.append(coef)
 
     return np.vstack(coefs)
