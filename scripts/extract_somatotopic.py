@@ -5,7 +5,6 @@ from pathlib import Path
 import mat73
 import numpy as np
 import sys
-import atlas_map as am
 from Functional_Fusion.dataset import DataSetSomatotopic
 import nibabel as nb
 import SUITPy as suit

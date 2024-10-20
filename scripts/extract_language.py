@@ -76,7 +76,7 @@ if __name__ == "__main__":
     # lang_dataset.extract_all(ses_id=f'ses-{session}', type='Tseries', atlas='MNISymC3', subj=subject_subset_indices)
     # lang_dataset.extract_all(ses_id=f'ses-{session}', type='Tseries', atlas='fs32k', subj=subject_subset_indices)
     conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06All', space='MNISymC3', ses_id=f'ses-{session}', subj=subject_subset)
+                                      type='Fus06Half', space='MNISymC3', ses_id=f'ses-{session}', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Fus06Run', space='fs32k', ses_id=f'ses-{session}', subj=subject_subset)
     

@@ -95,12 +95,19 @@ def connectivity_fingerprint(source, target, info, type):
             net_run = target.T[info.run == run]
             coef = ut.correlate(data_run, net_run)
             coefs.append(coef)
+    
+    elif type == 'Half':
+        for half in info.half.unique():
+            data_half = source[info.half == half]
+            net_half = target.T[info.half == half]
+            coef = ut.correlate(data_half, net_half)
+            coefs.append(coef)
 
     elif type == 'All':
-        coef = ut.correlate(source, target.T)
+        coefs = ut.correlate(source, target.T)
         coefs.append(coef)
 
-    return np.vstack(coefs)
+    return np.vstack(coefs) 
 
 
 def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None):
@@ -211,6 +218,15 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
                              'half': 2 - (runs < runs[-1]),
                              'net_id': net_id,
                              'names': names * int(coef.shape[0] / len(names))})
+            info['names'] = [f'{d.names.strip()}-run{d.run}' for i, d in info.iterrows()]
+        elif type == 'Half':
+            
+            info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+                             'sess': [ses_id] * coef.shape[0],
+                             'half': np.repeat([1,2],coef.shape[0]/2),
+                             'net_id': net_id,
+                             'names': names * int(coef.shape[0] / len(names))})
+            info['names'] = [f'{d.names.strip()}-half{d.half}' for i, d in info.iterrows()]
         elif type == 'All':
             info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
                              'sess': [ses_id] * coef.shape[0],
