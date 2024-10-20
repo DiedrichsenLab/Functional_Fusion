@@ -97,6 +97,8 @@ def connectivity_fingerprint(source, target, info, type):
             coefs.append(coef)
     
     elif type == 'Half':
+        if 'half' not in info.columns:
+            info['half'] = 2 - (info.run <= np.ceil(info.run.max()/2))
         for half in info.half.unique():
             data_half = source[info.half == half]
             net_half = target.T[info.half == half]
