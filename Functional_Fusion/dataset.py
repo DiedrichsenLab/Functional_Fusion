@@ -1275,13 +1275,13 @@ class DataSetPontine(DataSetNative):
             data_info['names'] = [
                 f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
             # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+            B = np.ones((data_info.shape[0],1))
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
-        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+        X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy')
         reg_in = np.arange(C.shape[1], dtype=int)
         CI = matrix.indicator(info.run * info.instruction, positive=True)
         C = np.c_[C, CI]

@@ -65,8 +65,8 @@ if __name__ == "__main__":
 
     # Exctract Rest timeseries & connectivity fingerprint
     dname = 'Language'
-    # session = 'rest'
-    session = 'localizer_cond'
+    session = 'rest'
+    # session = 'localizer_cond'
     T = pd.read_csv(
             data_dir + '/participants.tsv', delimiter='\t')
     subject_subset_indices = T.participant_id[T['ses-rest'] == 1].index.tolist()
@@ -75,12 +75,14 @@ if __name__ == "__main__":
     # Extract non-fix Tseries
     # lang_dataset.extract_all(ses_id=f'ses-{session}', type='Tseries', atlas='MNISymC3', subj=subject_subset_indices)
     # lang_dataset.extract_all(ses_id=f'ses-{session}', type='Tseries', atlas='fs32k', subj=subject_subset_indices)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06Half', space='MNISymC3', ses_id=f'ses-{session}', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Fus06Run', space='MNISymC3', ses_id=f'ses-{session}', subj=subject_subset)
+    #                                   type='Fus06Run', space='fs32k', ses_id=f'ses-{session}', subj=subject_subset)
     
     # Exctract fix-cleaned Tseries
-    lang_dataset.extract_all(ses_id=f'ses-{session}', type='FixTseries', atlas='MNISymC3', subj=subject_subset_indices)
-    lang_dataset.extract_all(ses_id=f'ses-{session}', type='FixTseries', atlas='fs32k', subj=subject_subset_indices)
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06FixRun', space='MNISymC3', ses_id=f'ses-{session}', subj=subject_subset)
+    # lang_dataset.extract_all(ses_id=f'ses-{session}', type='FixTseries', atlas='MNISymC3', subj=subject_subset_indices)
+    # lang_dataset.extract_all(ses_id=f'ses-{session}', type='FixTseries', atlas='fs32k', subj=subject_subset_indices)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06FixRun', space='MNISymC3', ses_id=f'ses-{session}', subj=subject_subset)
     pass

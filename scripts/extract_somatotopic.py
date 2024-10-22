@@ -50,17 +50,18 @@ if __name__ == "__main__":
     # extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
     # extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='fs32k')
     # extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
-    extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='MNISymC2')
+    # extract_somatotopic(ses_id='ses-motor', type='CondHalf', atlas='MNISymC2')
 
 
     # --- Group Average ---
     dataset = DataSetSomatotopic(data_dir)
+    dataset.extract_all(type='CondAll', ses_id='ses-motor', atlas='MNISymC3')
     # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='SUIT3')
     # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='MNISymC3')
     # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='fs32k')
-    dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='MNISymC2')
+    # dataset.group_average_data(ses_id='ses-motor', type='CondHalf', atlas='MNISymC2')
 
     
     # --- Show group average ---
-    dataset.plot_cerebellum(subject='group', savefig=True, colorbar=True)
+    # dataset.plot_cerebellum(subject='group', savefig=True, colorbar=True)
     pass

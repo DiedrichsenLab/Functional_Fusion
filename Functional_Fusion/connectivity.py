@@ -123,15 +123,22 @@ def connectivity_fingerprint(source, target, info, type, threshold=None, keeptop
                 coef = binarize_top_percent(coef, percent=threshold,
                                             keep_top=keeptop)
             coefs.append(coef)
+    
+    elif type == 'Half':
+        for half in info.half.unique():
+            data_half = source[info.half == half]
+            net_half = target.T[info.half == half]
+            coef = ut.correlate(data_half, net_half)
+            coefs.append(coef)
 
     elif type == 'All':
-        coef = ut.correlate(source, target)
+        coef = ut.correlate(source, target.T)
         if threshold is not None:
             coef = binarize_top_percent(coef, percent=threshold,
                                         keep_top=keeptop)
         coefs.append(coef)
 
-    return np.vstack(coefs)
+    return np.vstack(coefs) 
 
 
 def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None):
@@ -167,11 +174,19 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     type_parts = re.findall('[A-Z][^A-Z]*', type)        
     if len(type_parts) == 2:
         target, type = type_parts
-        fix = ''
+        tseries_type = ''
     elif len(type_parts) == 3:
-        target, fix, type = type_parts
+        target, tseries_type, type = type_parts
     
-    tseries_type = 'FixTseries' if fix == 'Fix' else 'Tseries'
+    
+    if tseries_type == 'Fix':
+        load_tseries_type = 'FixTseries'
+    elif tseries_type == 'Res':
+        load_tseries_type = 'Residuals'
+    elif tseries_type == '':
+        load_tseries_type = 'Tseries'
+    
+
     res = target[3:]
     
     if target[:3] == 'Net':
@@ -191,12 +206,12 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         # Get the subject's data
         # Get cortical data
         data_cortex_subj, _ = dset.get_data(
-            space='fs32k', ses_id=ses_id, type=tseries_type, subj=[row.Index])
+            space='fs32k', ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
         data_cortex_subj = data_cortex_subj.squeeze()
 
         # Get cerebellar data
         data_cereb_subj, info_cereb = dset.get_data(
-                space=space, ses_id=ses_id, type=tseries_type, subj=[row.Index])
+                space=space, ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
         data_cereb_subj = data_cereb_subj.squeeze()
 
         if target[:3] == 'Net' or target[:3] == 'Fus':
@@ -227,10 +242,25 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         runs = np.repeat([info_cereb.run.unique()], len(names))
         net_id = np.tile(np.arange(len(names)),
                          int(coef.shape[0] / len(names))) + 1
-        info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+        if type == 'Run':
+            info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
                              'sess': [ses_id] * coef.shape[0],
                              'run': runs,
                              'half': 2 - (runs < runs[-1]),
+                             'net_id': net_id,
+                             'names': names * int(coef.shape[0] / len(names))})
+            info['names'] = [f'{d.names.strip()}-run{d.run}' for i, d in info.iterrows()]
+        elif type == 'Half':
+            
+            info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+                             'sess': [ses_id] * coef.shape[0],
+                             'half': np.repeat([1,2],coef.shape[0]/2),
+                             'net_id': net_id,
+                             'names': names * int(coef.shape[0] / len(names))})
+            info['names'] = [f'{d.names.strip()}-half{d.half}' for i, d in info.iterrows()]
+        elif type == 'All':
+            info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+                             'sess': [ses_id] * coef.shape[0],
                              'net_id': net_id,
                              'names': names * int(coef.shape[0] / len(names))})
 
@@ -239,9 +269,9 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         dest_dir = dset.data_dir.format(participant_id)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
-        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+fix+type}.dscalar.nii')
+        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+tseries_type+type}.dscalar.nii')
         info.to_csv(
-            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+fix+type}.tsv', sep='\t', index=False)
+            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+tseries_type+type}.tsv', sep='\t', index=False)
 
 
 def get_cortical_target(target):

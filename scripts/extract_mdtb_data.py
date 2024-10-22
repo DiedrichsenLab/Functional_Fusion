@@ -103,14 +103,14 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
     return data_reshaped
 
 if __name__ == "__main__":
-    mdtb_dataset = DataSetMDTB(mdtb_dir)
+    # mdtb_dataset = DataSetMDTB(mdtb_dir)
 
     # smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=4, kernel='fwhm')
     # smooth_mdtb_fs32k(ses_id='ses-s2', type='CondHalf', smooth=4, kernel='fwhm')
     # -- Extract resting-state timeseries --
-    for s in [2,4,5,6]:
-        mdtb_dataset.extract_all(ses_id='ses-s1', type='CondHalf', atlas='MNISymC3', smooth=s)
-        mdtb_dataset.extract_all(ses_id='ses-s2', type='CondHalf', atlas='MNISymC3', smooth=s)
+    # for s in [2,4,5,6]:
+    #     mdtb_dataset.extract_all(ses_id='ses-s1', type='CondHalf', atlas='MNISymC3', smooth=s)
+    #     mdtb_dataset.extract_all(ses_id='ses-s2', type='CondHalf', atlas='MNISymC3', smooth=s)
 
     # -- Extract task timeseries --
     # mdtb_dataset.extract_all(ses_id='ses-s1', type='FixTseries', atlas='MNISymC3', smooth=2.0, subj=[23])
@@ -151,11 +151,17 @@ if __name__ == "__main__":
 
 
     # Exctract Rest timeseries & connectivity fingerprint
-    # mdtb_dataset = DataSetMDTB(mdtb_dir)
-    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC3', smooth=2.0)
+    mdtb_dataset = DataSetMDTB(mdtb_dir)   
+    # Need to first rerun GLM to get residuals using script mdtb_rerun_glm.py
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06ResRun', space='MNISymC3', ses_id='ses-s1', subj=subject_subset)
     conn.get_connectivity_fingerprint(dname,
-                                      type='Ico642Run', space='fs32k', ses_id='ses-rest')
-
-
-
-    pass
+                                      type='Ico642Run', space='fs32k', ses_id='ses-rest', subj=None)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06All', space='MNISymC3', ses_id='ses-s2', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06FixRun', space='fs32k', ses_id='ses-rest', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06FixRun', space='fs32k', ses_id='ses-s1', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06FixRun', space='fs32k', ses_id='ses-s2', subj=subject_subset)
