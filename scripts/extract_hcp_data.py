@@ -296,11 +296,51 @@ if __name__ == "__main__":
     # extract_hcp_timeseries(ses_id='ses-rest2', type='Tseries', atlas='fs32k')
 
     # -- Get connectivity fingerprint --
+<<<<<<< Updated upstream
     dname = 'HCP'
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest1')
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest2')
+=======
+    for t in [162]:
+        get_hcp_fs32k_rsfc(type=f'Ico{t}Run', space='fs32k', ses_id='ses-rest1', 
+                        subj_list='/subj_list/HCP40_training_set.tsv',
+                        smooth=None, kernel='fwhm', thres=None, keeptop=False)
+        get_hcp_fs32k_rsfc(type=f'Ico{t}Run', space='fs32k', ses_id='ses-rest2',
+                        subj_list='/subj_list/test_split/HCP923_test_set_split_1.tsv',
+                        smooth=4, kernel='fwhm', thres=0.1, keeptop=False)
+        # get_hcp_fs32k_rsfc(type='Ico42Run', space='fs32k', ses_id='ses-rest1',
+        #                    subj_list='/subj_list/HCP40_validation_set.tsv',
+        #                    smooth=4, kernel='fwhm')
+        # get_hcp_fs32k_rsfc(type='Ico42Run', space='fs32k', ses_id='ses-rest2',
+        #                    subj_list='/subj_list/HCP40_validation_set.tsv',
+        #                    smooth=4, kernel='fwhm')
+        # get_hcp_fs32k_rsfc(type='Ico42Run', space='fs32k', ses_id='ses-rest1', 
+        #                    subj_list='/subj_list/HCP923_test_set.tsv',
+        #                    smooth=4, kernel='fwhm')
+        # get_hcp_fs32k_rsfc(type='Ico42Run', space='fs32k', ses_id='ses-rest2', 
+        #                    subj_list='/subj_list/HCP923_test_set.tsv',
+        #                    smooth=4, kernel='fwhm')
+
+    #  -- fs32k smoothing (cortex)
+    # smooth_hcp_fs32k(hcp_dir + '/subj_list/HCP40_validation_set.tsv', ses_id='ses-rest1',
+    #                 type=f'Tseries', smooth=4, kernel='fwhm', return_data_only=False)
+    # smooth_hcp_fs32k(hcp_dir + '/subj_list/HCP40_validation_set.tsv', ses_id='ses-rest2',
+    #                 type=f'Tseries', smooth=4, kernel='fwhm', return_data_only=False)
+    
+    #  -- fs32k binarizing (cortex)
+    for t in [0.25, 0.5, 0.75]:
+        binarize_rsfc_fs32k(hcp_dir + '/subj_list/HCP40_training_set.tsv', ses_id='ses-rest1',
+                            type='ICA50Run', smooth=4, kernel='fwhm', thres=t)
+        binarize_rsfc_fs32k(hcp_dir + '/subj_list/HCP40_training_set.tsv', ses_id='ses-rest2',
+                            type='ICA50Run', smooth=4, kernel='fwhm', thres=t)
+    name = 'HCP'
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net67Run', space='fs32k', ses_id='ses-rest1')
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net67Run', space='fs32k', ses_id='ses-rest2')
+>>>>>>> Stashed changes
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
 

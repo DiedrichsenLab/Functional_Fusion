@@ -144,6 +144,7 @@ def connectivity_fingerprint(source, target, info, type, threshold=None, keeptop
             if threshold is not None:
                 coef = binarize_top_percent(coef, percent=threshold,
                                             keep_top=keeptop)
+<<<<<<< Updated upstream
             coefs.append(coef)
     
     elif type == 'Half':
@@ -155,6 +156,12 @@ def connectivity_fingerprint(source, target, info, type, threshold=None, keeptop
 
     elif type == 'All':
         coef = ut.correlate(source, target.T)
+=======
+            coefs.append(coef)
+
+    elif type == 'All':
+        coef = ut.correlate(source, target)
+>>>>>>> Stashed changes
         if threshold is not None:
             coef = binarize_top_percent(coef, percent=threshold,
                                         keep_top=keeptop)
