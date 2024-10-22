@@ -9,8 +9,9 @@ def set_base_dir():
 
     possible_dirs = [
         '/Volumes/diedrichsen_data$/data/',
-        '/srv/diedrichsen/data/',
+        '/srv/diedrichsen/data',
         'Y:\data\\',
+        '/data/tge/Tian/UKBB_full/imaging',
         '/Users/callithrix/Documents/Projects//',
         '/Users/jdiedrichsen/Data//',
     ]

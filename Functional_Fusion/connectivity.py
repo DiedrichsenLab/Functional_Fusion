@@ -154,20 +154,16 @@ def connectivity_fingerprint(source, target, info, type, threshold=None, keeptop
             coefs.append(coef)
 
     elif type == 'All':
-<<<<<<< Updated upstream
-        coefs = ut.correlate(source, target.T)
-=======
-        coef = ut.correlate(source, target)
+        coef = ut.correlate(source, target.T)
         if threshold is not None:
             coef = binarize_top_percent(coef, percent=threshold,
                                         keep_top=keeptop)
->>>>>>> Stashed changes
         coefs.append(coef)
 
     return np.vstack(coefs) 
 
 
-def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None):
+def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', smooth=None, subj=None):
     """Extracts the connectivity fingerprint for each network in the HCP data
     Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse 
                     Alternatively, average cortical timecourse within each Icosahedron parcel to get network timecourse

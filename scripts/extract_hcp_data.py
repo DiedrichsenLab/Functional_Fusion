@@ -296,13 +296,30 @@ if __name__ == "__main__":
     # extract_hcp_timeseries(ses_id='ses-rest2', type='Tseries', atlas='fs32k')
 
     # -- Get connectivity fingerprint --
-<<<<<<< Updated upstream
     dname = 'HCP'
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest1')
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest2')
-=======
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
+
+
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06All', space='MNISymC3', ses_id='ses-rest1')
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06All', space='MNISymC3', ses_id='ses-rest2')
+
+    # extract_hcp_timeseries(
+    #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')
+
+    # -- Group average --
+    # group_average_hcp(type='Ico162Run', atlas='MNISymC3')
+    # pass
+    # extract_hcp_timeseries(
+    #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')
+    # pass
+
     for t in [162]:
         get_hcp_fs32k_rsfc(type=f'Ico{t}Run', space='fs32k', ses_id='ses-rest1', 
                         subj_list='/subj_list/HCP40_training_set.tsv',
@@ -340,22 +357,3 @@ if __name__ == "__main__":
     #                                   type='Net67Run', space='fs32k', ses_id='ses-rest1')
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='fs32k', ses_id='ses-rest2')
->>>>>>> Stashed changes
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-
-
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06All', space='MNISymC3', ses_id='ses-rest1')
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06All', space='MNISymC3', ses_id='ses-rest2')
-
-    # extract_hcp_timeseries(
-    #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')
-
-    # -- Group average --
-    # group_average_hcp(type='Ico162Run', atlas='MNISymC3')
-    # pass
-    # extract_hcp_timeseries(
-    #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')
-    # pass
