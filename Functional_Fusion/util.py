@@ -2,6 +2,7 @@ import numpy as np
 from numpy.linalg import inv, pinv
 import nibabel as nb
 import h5py
+import Functional_Fusion.atlas_map as am
 
 
 def sq_eucl_distances(coordA,coordB):
@@ -123,8 +124,21 @@ def correlate(X, Y):
     Y = zstandarize_ts(Y)
     return Y.T @ X / X.shape[0]
 
+def pearson_correlation(X, Y):
+    assert X.shape[0] == Y.shape[0], "Both matrices must have the same size of rows."
+    k = X.shape[0]
+
+    X = X - np.mean(X, axis=0, keepdims=True) 
+    Y = Y - np.mean(Y, axis=0, keepdims=True)
+
+    cov = X.T @ Y / (k - 1)
+    sd_X = np.sqrt(np.sum(X**2, axis=0, keepdims=True) / (k - 1))
+    sd_Y = np.sqrt(np.sum(Y**2, axis=0, keepdims=True) / (k - 1))
+        
+    return cov / np.matmul(sd_X.T, sd_Y)
+
 def templateflow_xfm_h5_to_nii(filename):
-    """This is a first attempt to understand the _xfm.h5 files from templateflow
+    """This is a first attempt to understand the _xfm.h5 files from templatefaccerlerationlow
     and convert them to nifti files. Not easy without documentation - so this is work
     in progress for now
 
@@ -150,3 +164,39 @@ def templateflow_xfm_h5_to_nii(filename):
         deform_img = nb.Nifti1Image(P2,affine)
         nb.save(deform_img, filename.replace('.h5','.nii'))
         pass
+
+
+def get_volumes(data, atlas_name='MNISymC2'):
+    """
+    Projects CIFTI data from any space (e.g., SUIT3/MNISymC2) back to volume space.
+
+    Args:
+        data (list, np.ndarray): Input data. Can be a list, NumPy array.
+        atlas (str): Atlas code to specify the projection space (e.g., 'SUIT3', 'MNISymC3'). Default is 'MNISymC2'.
+
+    Returns:
+        list: A list of NIfTI volume objects projected from the input data.
+    """
+
+    atlas,_ = am.get_atlas(atlas_name)
+
+    # Determine number of volumes based on data type
+    if isinstance(data, np.ndarray):
+        n_vols = data.shape[0]
+    elif isinstance(data, list):
+        n_vols = len(data)
+    else:
+        raise TypeError("data must be a list, np.ndarray, or torch.Tensor")
+
+    nii_vols = []
+    
+    # Project each data volume back to NIfTI volume space
+    for i in range(n_vols):
+        cifti_data = data[i]
+        vol = atlas.data_to_nifti(cifti_data)
+        nii_vols.append(vol)
+
+    return nii_vols
+
+            
+

@@ -10,6 +10,7 @@ from Functional_Fusion.dataset import DataSetLanguage, DataSetPontine
 import nibabel as nb
 import SUITPy as suit
 import matplotlib.pyplot as plt
+import Functional_Fusion.connectivity as conn
 
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
@@ -60,5 +61,28 @@ if __name__ == "__main__":
     # dataset.group_average_data(atlas='MNISymC3')
     # dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)
 
-    extract_language()
+    # extract_language()
+
+    # Exctract Rest timeseries & connectivity fingerprint
+    dname = 'Language'
+    session = 'rest'
+    # session = 'localizer_cond'
+    T = pd.read_csv(
+            data_dir + '/participants.tsv', delimiter='\t')
+    subject_subset_indices = T.participant_id[T['ses-rest'] == 1].index.tolist()
+    subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
+    lang_dataset = DataSetLanguage(data_dir)
+    # Extract non-fix Tseries
+    # lang_dataset.extract_all(ses_id=f'ses-{session}', type='Tseries', atlas='MNISymC3', subj=subject_subset_indices)
+    # lang_dataset.extract_all(ses_id=f'ses-{session}', type='Tseries', atlas='fs32k', subj=subject_subset_indices)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06Half', space='MNISymC3', ses_id=f'ses-{session}', subj=subject_subset)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06Run', space='fs32k', ses_id=f'ses-{session}', subj=subject_subset)
+    
+    # Exctract fix-cleaned Tseries
+    # lang_dataset.extract_all(ses_id=f'ses-{session}', type='FixTseries', atlas='MNISymC3', subj=subject_subset_indices)
+    # lang_dataset.extract_all(ses_id=f'ses-{session}', type='FixTseries', atlas='fs32k', subj=subject_subset_indices)
+    # conn.get_connectivity_fingerprint(dname,
+    #                                   type='Fus06FixRun', space='MNISymC3', ses_id=f'ses-{session}', subj=subject_subset)
     pass

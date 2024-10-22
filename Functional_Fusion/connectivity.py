@@ -7,12 +7,13 @@ import pandas as pd
 from pathlib import Path
 import re
 import Functional_Fusion.dataset as ds
-import scripts.fusion_paths as paths
+# import scripts.fusion_paths as paths
 
 
-base_dir = paths.set_base_dir()
-data_dir = paths.set_fusion_dir(base_dir)
-atlas_dir = paths.set_atlas_dir(base_dir)
+# base_dir = paths.set_base_dir()
+base_dir = '/data/tge/Tian/UKBB_full/imaging'
+data_dir = base_dir
+atlas_dir = base_dir + '/Atlases'
 
 
 def regress_networks(X, Y):
@@ -20,7 +21,7 @@ def regress_networks(X, Y):
     Returns the network timecourses.
 
     Args:
-        X (np.arry): 4D Network data of the signal components
+        X (np.array): 4D Network data of the signal components
             (default input networks are in fs32k Space: 59518 vertices x nComponents )
         Y (<nibabel CIFTI image object>): fMRI timeseries in volume
             Has to be in the same space as networks (59518 vertices x nTimepoints )
@@ -41,6 +42,52 @@ def regress_networks(X, Y):
 
     return network_timecourse
 
+
+def binarize_top_percent(arr, percent=0.1, keep_top=False):
+    """Binarization of the rsFC by giving a top percent
+    For example, the top 10% values are 1, the rest are 0s
+
+    Args:
+        arr (np.array): the given rsFC matrix to biniarize
+        percent (float): the number of top percent to keep
+
+    Returns:
+        result (np.int8): the binarized rsFC
+    """
+    # Ensure the input is a NumPy array / set nan to -1
+    arr = np.nan_to_num(np.asarray(arr), nan=-1)
+    threshold = np.percentile(arr.flatten(), (1-percent)*100)
+
+    # Apply the threshold to keep the top `percent` values
+    if keep_top:
+        # 1. keep the original values
+        result = np.where(arr >= threshold, arr, 0).astype(np.float32)
+    else:
+        # 2. set to 1
+        result = np.where(arr >= threshold, 1, 0).astype(np.int8)
+    
+    return result
+
+def keep_top_percent(arr, percent=0.1):
+    """Keep the rsFC by giving a top percent
+    For example, the top 10% values are kept (the original values),
+    the rest are set tp 0s
+
+    Args:
+        arr (np.array): the given rsFC matrix
+        percent (float): the number of top percent to keep
+
+    Returns:
+        result (np.float32): the kept rsFC for top <percent>
+    """
+    # Ensure the input is a NumPy array
+    arr = np.asarray(arr)
+    threshold = np.percentile(arr.flatten(), (1-percent)*100)
+
+    # Apply the threshold to keep the top `percent` values
+    result = np.where(arr >= threshold, arr, 0).astype(np.float32)
+    
+    return result
 
 def average_within_Icos(label_file, data, atlas="fs32k"):
     """Average the raw time course for voxels within a parcel
@@ -75,7 +122,7 @@ def average_within_Icos(label_file, data, atlas="fs32k"):
     return parcel_data, parcels
 
 
-def connectivity_fingerprint(source, target, info, type):
+def connectivity_fingerprint(source, target, info, type, threshold=None, keeptop=False):
     """ Calculate the connectivity fingerprint of a target region
 
     Args:
@@ -94,13 +141,30 @@ def connectivity_fingerprint(source, target, info, type):
             data_run = source[info.run == run]
             net_run = target.T[info.run == run]
             coef = ut.correlate(data_run, net_run)
+            if threshold is not None:
+                coef = binarize_top_percent(coef, percent=threshold,
+                                            keep_top=keeptop)
+            coefs.append(coef)
+    
+    elif type == 'Half':
+        for half in info.half.unique():
+            data_half = source[info.half == half]
+            net_half = target.T[info.half == half]
+            coef = ut.correlate(data_half, net_half)
             coefs.append(coef)
 
     elif type == 'All':
+<<<<<<< Updated upstream
+        coefs = ut.correlate(source, target.T)
+=======
         coef = ut.correlate(source, target)
+        if threshold is not None:
+            coef = binarize_top_percent(coef, percent=threshold,
+                                        keep_top=keeptop)
+>>>>>>> Stashed changes
         coefs.append(coef)
 
-    return np.vstack(coefs)
+    return np.vstack(coefs) 
 
 
 def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None):
@@ -133,7 +197,22 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         T = T.iloc[subj]
 
     # Load the cortical networks
-    target, type = re.findall('[A-Z][^A-Z]*', type)        
+    type_parts = re.findall('[A-Z][^A-Z]*', type)        
+    if len(type_parts) == 2:
+        target, type = type_parts
+        tseries_type = ''
+    elif len(type_parts) == 3:
+        target, tseries_type, type = type_parts
+    
+    
+    if tseries_type == 'Fix':
+        load_tseries_type = 'FixTseries'
+    elif tseries_type == 'Res':
+        load_tseries_type = 'Residuals'
+    elif tseries_type == '':
+        load_tseries_type = 'Tseries'
+    
+
     res = target[3:]
     
     if target[:3] == 'Net':
@@ -153,12 +232,12 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         # Get the subject's data
         # Get cortical data
         data_cortex_subj, _ = dset.get_data(
-            space='fs32k', ses_id=ses_id, type='Tseries', subj=[row.Index])
+            space='fs32k', ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
 
 
         # Get cerebellar data
         data_cereb_subj, info_cereb = dset.get_data(
-                space=space, ses_id=ses_id, type='Tseries', subj=[row.Index])
+                space=space, ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
         data_cereb_subj = data_cereb_subj.squeeze()
 
         if target[:3] == 'Net' or target[:3] == 'Fus':
@@ -189,10 +268,25 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         runs = np.repeat([info_cereb.run.unique()], len(names))
         net_id = np.tile(np.arange(len(names)),
                          int(coef.shape[0] / len(names))) + 1
-        info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+        if type == 'Run':
+            info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
                              'sess': [ses_id] * coef.shape[0],
                              'run': runs,
                              'half': 2 - (runs < runs[-1]),
+                             'net_id': net_id,
+                             'names': names * int(coef.shape[0] / len(names))})
+            info['names'] = [f'{d.names.strip()}-run{d.run}' for i, d in info.iterrows()]
+        elif type == 'Half':
+            
+            info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+                             'sess': [ses_id] * coef.shape[0],
+                             'half': np.repeat([1,2],coef.shape[0]/2),
+                             'net_id': net_id,
+                             'names': names * int(coef.shape[0] / len(names))})
+            info['names'] = [f'{d.names.strip()}-half{d.half}' for i, d in info.iterrows()]
+        elif type == 'All':
+            info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
+                             'sess': [ses_id] * coef.shape[0],
                              'net_id': net_id,
                              'names': names * int(coef.shape[0] / len(names))})
 
@@ -201,9 +295,9 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         dest_dir = dset.data_dir.format(participant_id)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
-        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+type}.dscalar.nii')
+        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+tseries_type+type}.dscalar.nii')
         info.to_csv(
-            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+type}.tsv', sep='\t', index=False)
+            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+tseries_type+type}.tsv', sep='\t', index=False)
 
 
 def get_cortical_target(target):

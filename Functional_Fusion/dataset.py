@@ -24,6 +24,7 @@ from numpy import eye, zeros, ones, empty, nansum, sqrt
 from numpy.linalg import pinv, solve
 import warnings
 import SUITPy as suit
+import glob
 import matplotlib.pyplot as plt
 
 
@@ -569,13 +570,36 @@ class DataSet:
             T (pd.DataFrame): Info structure for regressors (reginfo)
         """
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
-        T = pd.read_csv(
-            dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+        
         if type[:4] == 'Cond' or type[:4] == 'Task':
+            T = pd.read_csv(
+                dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
             fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
-        elif type == 'Tseries':
-            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
+        elif type == 'Tseries' or type == 'FixTseries':
+            # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
+            fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii')
+            runs = [int(fname.split('run-')[-1].split('_')[0].split('.')[0]) for fname in fnames]
+            runs = np.unique(runs)
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in runs]
+            if type == 'FixTseries':
+                # Make sure to load fix-cleaned timeseries
+                fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}_fix.nii' for r in runs]
+            try:
+                # Load timeseries info file if it exists
+                T = pd.read_csv(
+                    dirw + f'/{participant_id}_{session_id}_tinfo.tsv', sep='\t')
+            except:
+                # Create timeseries info yourself if it doesn't exist
+                timepoints = [nb.load(fname).shape[-1] for fname in fnames]
+                runs = np.repeat(runs, timepoints)
+                # Timepoints start counting at 1, not 0!
+                timepoints = np.arange(sum(timepoints))+1
+                timepoints_string = [f'T{timepoint:04d}' for timepoint in timepoints]
+                T = pd.DataFrame({'run': runs,
+                                    'timepoint': timepoints_string,
+                                    'time_id':timepoints}, index=None)
+                
         return fnames, T
 
     def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None):
@@ -706,7 +730,7 @@ class DataSet:
             print(f'Atlasmap {s}')
             atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
                                                   smooth=smooth)
-            print(f'Extract {s}')
+            print(f'Extract {s}, smooth={smooth}')
             fnames, info = self.get_data_fnames(s, ses_id, type=type)
             data = am.get_data_nifti(fnames, atlas_maps)
             data, info = self.condense_data(data, info, type,
@@ -715,10 +739,15 @@ class DataSet:
             C = myatlas.data_to_cifti(data, info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-            info.to_csv(
-                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+            if smooth is not None and (smooth > 0):
+                nb.save(C, dest_dir + 
+                        f'/{s}_space-{atlas}_{ses_id}_{type}_desc-sm{smooth}.dscalar.nii')
+            else:
+                nb.save(C, dest_dir + 
+                        f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            
+            info.to_csv(dest_dir + 
+                        f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
@@ -1006,7 +1035,7 @@ class DataSetMDTB(DataSetNative):
 
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 9)
-        if type == 'Tseries':
+        if type == 'Tseries' or type == 'FixTseries':
             info['names'] = info['timepoint']
             data_new, data_info = data, info
 
@@ -1059,14 +1088,22 @@ class DataSetMDTB(DataSetNative):
 
 
 class DataSetHcpResting(DataSetCifti):
-    def __init__(self, dir):
+    def __init__(self, dir, subj_id_file='/participants.tsv'):
         super().__init__(dir)
         self.sessions = ['ses-rest1', 'ses-rest2']
         self.hem_name = ['cortex_left', 'cortex_right']
-        self.default_type = 'Net69Run'
+        self.default_type = 'Net67Run'
         self.cond_ind = 'net_id'
         self.cond_name = 'names'
         self.part_ind = 'half'
+        self.subj_id_file = subj_id_file
+
+    def get_participants(self):
+        """Get participants id
+        """
+        self.part_info = pd.read_csv(
+            self.base_dir + self.subj_id_file, delimiter='\t')
+        return self.part_info
 
     def get_data_fnames(self, participant_id, ses_id):
         """ Gets all raw data files
@@ -1091,7 +1128,7 @@ class DataSetHcpResting(DataSetCifti):
         return fnames, T
 
     def condense_data(self, data, info, type, participant_id=None, ses_id=None):
-        if type == 'Tseries':
+        if type == 'Tseries' or type == 'FixTseries':
             info['names'] = info['timepoint']
         return data, info
 
@@ -1252,13 +1289,13 @@ class DataSetPontine(DataSetNative):
             data_info['names'] = [
                 f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
             # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+            B = np.ones((data_info.shape[0],1))
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
-        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+        X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy')
         reg_in = np.arange(C.shape[1], dtype=int)
         CI = matrix.indicator(info.run * info.instruction, positive=True)
         C = np.c_[C, CI]
@@ -1715,7 +1752,7 @@ class DataSetDmcc(DataSetMNIVol):
             # fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         elif type == 'Contrast':
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.con_id:02}_con.nii' for i, t in T.iterrows()]
-        elif type == 'Tseries':
+        elif type == 'Tseries' or type == 'FixTseries':
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in T.run.unique().tolist()]
         return fnames, T
 
@@ -1816,57 +1853,60 @@ class DataSetLanguage(DataSetNative):
 
         # Depending on the type, make a new contrast
         info['half'] = 2 - (info.run < 5)
-        n_cond = np.max(info.reg_id)
+        if type == 'Tseries' or type == 'FixTseries':
+            info['names'] = info['timepoint']
+            data_new, data_info = data, info
 
-        if type == 'CondHalf':
-            data_info, C = agg_data(info,
-                                    ['half', 'reg_id'],
-                                    ['run', 'reg_num'],
-                                    subset=(info.reg_id >0))
-            data_info['names'] = [
-                f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+        else:
+            if type == 'CondHalf':
+                data_info, C = agg_data(info,
+                                        ['half', 'reg_id'],
+                                        ['run', 'reg_num'],
+                                        subset=(info.reg_id >0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'CondRun':
+            elif type == 'CondRun':
 
-            data_info, C = agg_data(info,
-                                    ['run', 'reg_id'],
-                                    ['reg_num'],
-                                    subset=(info.reg_id > 0))
-            data_info['names'] = [
-                f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+                data_info, C = agg_data(info,
+                                        ['run', 'reg_id'],
+                                        ['reg_num'],
+                                        subset=(info.reg_id > 0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'CondAll':
-            data_info, C = agg_data(info,
-                                    ['reg_id'],
-                                    ['run', 'half', 'reg_num'],
-                                    subset=(info.reg_id > 0))
-            data_info['names'] = [
-                f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+            elif type == 'CondAll':
+                data_info, C = agg_data(info,
+                                        ['reg_id'],
+                                        ['run', 'half', 'reg_num'],
+                                        subset=(info.reg_id > 0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
+            # Prewhiten the data
+            data_n = prewhiten_data(data)
 
-        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+            dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
 
-        # Load the designmatrix and perform optimal contrast
-        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
-        reg_in = np.arange(C.shape[1], dtype=int)
-        CI = matrix.indicator(info.run * info.inst, positive=True)
-        C = np.c_[C, CI]
+            # Load the designmatrix and perform optimal contrast
+            X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+            reg_in = np.arange(C.shape[1], dtype=int)
+            CI = matrix.indicator(info.run * info.inst, positive=True)
+            C = np.c_[C, CI]
 
-        data_new = optimal_contrast(data_n, C, X, reg_in)
+            data_new = optimal_contrast(data_n, C, X, reg_in)
 
         return data_new, data_info
 
 
-class DataSetUKBResting(DataSetMNIVol):
-    def __init__(self, dir):
+class DataSetUkbResting(DataSetMNIVol):
+    def __init__(self, dir, subj_id_file='/participants_filtered_final.tsv'):
         super().__init__(dir)
         self.group_space = 'tpl-MNI152NLin6Asym'
         self.sessions = ['ses-rest1', 'ses-rest2']
@@ -1874,7 +1914,17 @@ class DataSetUKBResting(DataSetMNIVol):
         self.cond_ind = 'net_id'
         self.cond_name = 'names'
         self.part_ind = 'half'
-    def get_data_fnames(self, participant_id, ses_id):
+        self.atlas_dir = self.base_dir + '/Atlases'
+        self.subj_id_file = subj_id_file
+
+    def get_participants(self):
+        """Get participants id
+        """
+        self.part_info = pd.read_csv(
+            self.base_dir + self.subj_id_file, delimiter='\t')
+        return self.part_info
+    
+    def get_data_fnames(self, participant_id, ses_id, type):
         """ Gets all raw data files
         Args:
             participant_id (str): Subject
@@ -1887,13 +1937,14 @@ class DataSetUKBResting(DataSetMNIVol):
             runs = np.arange(0, 1)
         elif ses_id == "ses-rest2":
             runs = np.arange(1, 2)
-        # idx = self.sessions.index(ses_id)
+
         T = pd.read_csv(
             dirw + f'/{participant_id}_{ses_id}_reginfo.tsv', sep='\t')
         for r in runs:
             fnames.append(
-                f'{dirw}/sub-{participant_id}_run-{r}_space-MNIAsym2.dtseries.nii')
+                f'{dirw}/{participant_id}_run-{r}_space-MNIAsym2.nii.gz')
         return fnames, T
+
     def get_atlasmaps(self, atlas, sub=None, ses_id=None, smooth=None):
         """ Gets group atlasmaps.
         Assumes that all scans are in the same space (self.space)
@@ -1907,22 +1958,29 @@ class DataSetUKBResting(DataSetMNIVol):
         # if you have xfm files per subject, then you can get it from the anat dir under individual subject
         atlas_maps = []
         if atlas.structure == 'cerebellum':
-            deform = os.path.dirname(am.__file__) + '/Atlases' + \
-                     f'/tpl-{self.space}/tpl-{self.space}_space-SUIT_xfm.nii'
-            if atlas.name[0:4] != 'SUIT':
-                deform1 = am.get_deform(atlas.space, 'SUIT')
-                deform = [deform1, deform]
-            mask = os.path.dirname(am.__file__) + '/Atlases' + \
-                   f'/tpl-{self.space}/tpl-{self.space}_desc-cereb_mask.nii'
-            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            self.space = 'MNI152NLin6AsymC'
+            if atlas.space == self.space:
+                mask = os.path.dirname(am.__file__) + '/Atlases' + \
+                        f'/tpl-{self.space}/tpl-{self.space}_res-2_gmcmask.nii'
+                atlas_maps.append(am.AtlasMapDeform(atlas.world, None, mask))
+            else:
+                # deform = os.path.dirname(am.__file__) + '/Atlases' + \
+                #         f'/tpl-{self.space}/tpl-{self.space}_space-SUIT_xfm.nii'
+                # if atlas.name[0:4] != 'SUIT':
+                #     deform1 = am.get_deform(atlas.space, 'SUIT')
+                #     deform = [deform, deform1]
+                deform = am.get_deform(atlas.space, self.space)
+                mask = os.path.dirname(am.__file__) + '/Atlases' + \
+                    f'/tpl-{self.space}/tpl-{self.space}_desc-cereb_mask.nii'
+                atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
         elif atlas.space == 'fs32k':
             for i, hem in enumerate(['L', 'R']):
-                adir = self.anatomical_dir.format(sub)
-                pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
-                white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
-                mask = self.atlas_dir + \
-                    f'/{self.space}/{self.space}_mask.nii'
+                adir = self.base_dir + '/Atlases/tpl-fs32k'
+                pial = adir + f'/tpl-fs32k_hemi-{hem}_pial.surf.gii'
+                white = adir + f'/tpl-fs32k_hemi-{hem}_white.surf.gii'
+                mask = self.base_dir + '/Atlases' + \
+                    f'/tpl-{self.space}/tpl-{self.space}_2mm_brain_mask.nii'
                 atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
                                                   white, pial, mask))
                 atlas_maps[i].build()
