@@ -44,8 +44,7 @@ def get_atlas(atlas_str, atlas_dir=default_atlas_dir):
             mask.append(atlas_dir + f"/{ainf['dir']}/{m}")
     else:
         mask = f"{atlas_dir}/{ainf['dir']}/{ainf['mask']}"
-    atlas = At(atlas_str, mask)
-    atlas.structure = ainf["structure"]
+    atlas = At(atlas_str, mask, structure=ainf["structure"])
     atlas.space = ainf["space"]
     return atlas, ainf
 

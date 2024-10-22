@@ -12,7 +12,7 @@ import SUITPy as suit
 import os
 import sys
 import matplotlib.pyplot as plt
-from ProbabilisticParcellation.util import plot_multi_flat, plot_data_flat
+# from ProbabilisticParcellation.util import plot_multi_flat, plot_data_flat
 import re
 import Functional_Fusion.connectivity as conn
 

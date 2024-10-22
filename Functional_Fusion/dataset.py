@@ -10,9 +10,8 @@ to a standard data structure that can be used in Diedrichsen lab
 from pathlib import Path
 import numpy as np
 import pandas as pd
-import os
+import os, time, sys
 import os.path as op
-import sys
 
 import Functional_Fusion.util as util
 import Functional_Fusion.matrix as matrix
@@ -570,12 +569,12 @@ class DataSet:
             T (pd.DataFrame): Info structure for regressors (reginfo)
         """
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
-        
+
         if type[:4] == 'Cond' or type[:4] == 'Task':
-            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
-            fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
             T = pd.read_csv(
                 dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
+            fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
+            fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         elif type == 'Tseries' or type == 'FixTseries':
             # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
             fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii')
@@ -797,12 +796,12 @@ class DataSet:
                 print(f'- Getting data for {s} in {space}')
             # Load the data
             if smooth is not None:
-                C = nb.load(self.data_dir.format(s, smooth)
+                C = nb.load(self.data_dir.format(s)
                             + f'/{s}_space-{space}_{ses_id}_{type}_desc-sm{int(smooth)}.dscalar.nii')
             else:
                 C = nb.load(self.data_dir.format(s)
                             + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
-            this_data = C.get_fdata()
+                this_data = C.get_fdata()
 
             # Check if this subject data in incomplete
             if this_data.shape[0] != info_com.shape[0]:

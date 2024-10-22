@@ -1,17 +1,16 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
-import os
+import os, subprocess, time
 import pandas as pd
-from pathlib import Path
 import numpy as np
-import Functional_Fusion.atlas_map as am
-from Functional_Fusion.dataset import DataSetMDTB
-import Functional_Fusion.dataset as ds
 import nibabel as nb
-import subprocess
-import scripts.fusion_paths as paths
-import Functional_Fusion.connectivity as conn
 import matplotlib.pyplot as plt
+import scripts.fusion_paths as paths
+import Functional_Fusion.atlas_map as am
+import Functional_Fusion.connectivity as conn
+import Functional_Fusion.util as fut
 
+from pathlib import Path
+from Functional_Fusion.dataset import DataSetMDTB
 
 base_dir = paths.set_base_dir()
 atlas_dir = paths.set_atlas_dir(base_dir)
@@ -62,8 +61,8 @@ def parcel_mdtb_fs32k(res=162, ses_id='ses-s1', type='condHalf'):
         pass
 
 
-def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
-    myatlas, _ = am.get_atlas('fs32k', atlas_dir)
+def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1, kernel='gaussian'):
+    myatlas, _ = am.get_atlas('fs32k')
     mdtb_dataset = DataSetMDTB(mdtb_dir)
     T = mdtb_dataset.get_participants()
 
@@ -72,41 +71,14 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1):
     surf_R = mdtb_dataset.atlas_dir + f'/tpl-fs32k/fs_LR.32k.R.midthickness.surf.gii'
 
     for s in T.participant_id:
-        print(f'- Smoothing data for {s} fs32k {ses_id} in {smooth}mm ...')
-        # Load the unsmoothed data and fill nan with zeros
-        C = nb.load(mdtb_dataset.base_dir.format(s)
-                    + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
-        mask = np.isnan(C.get_fdata())
-        C = nb.Cifti2Image(dataobj=np.nan_to_num(
-            C.get_fdata()), header=C.header)
-        nb.save(C, 'tmp.dscalar.nii')
+        print(f'Smoothing data for {s} fs32k {ses_id} in {smooth}mm {kernel} ...')
 
-        dest_dir = mdtb_dataset.data_smooth_dir.format(s, smooth)
-        cifti_out = dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
-        Path(dest_dir).mkdir(parents=True, exist_ok=True)
-
-        # Write in smoothed surface data (filled with 0)
-        smooth_cmd = f"wb_command -cifti-smoothing tmp.dscalar.nii " \
-                     f"{smooth} {smooth} COLUMN {cifti_out} " \
-                     f"-left-surface {surf_L} -right-surface {surf_R} " \
-                     f"-fix-zeros-surface"
-        subprocess.run(smooth_cmd, shell=True)
-        os.remove("tmp.dscalar.nii")
-
-        # Replace 0s back to NaN (we don't want the 0s impact model learning)
-        C = nb.load(cifti_out)
-        data = C.get_fdata()
-        data[mask] = np.nan
-        C = nb.Cifti2Image(dataobj=data, header=C.header)
-        nb.save(C, cifti_out)
-
-        # Copy info to the corresponding /smoothed folder
-        if not Path(dest_dir + f'/{s}_{ses_id}_info-{type}.tsv').exists():
-            info = pd.read_csv(mdtb_dataset.base_dir.format(s)
-                               + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
-            info.to_csv(
-                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
-
+        start = time.perf_counter()
+        file = mdtb_dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
+        fut.smooth_fs32k_data(file, surf_L, surf_R, smooth=smooth, kernel=kernel)
+        finish = time.perf_counter()
+        elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+        print(f"- Done subject {s} - time {elapse}.")
 
 def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean_centering=False):
     """Reshape data from (n_subjects, n_trials, n_voxels) to (n_subjects, n_runs, n_conditions, n_voxels) to comply with the decompose_pattern_into_group_indiv_noise function."""
@@ -119,7 +91,7 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
     # Set nans to number and print number of nans
     print(f'Setting {np.sum(np.isnan(data_reshaped))} nan values to zero.')
     data_reshaped = np.nan_to_num(data_reshaped)
-    
+
     # Mean centering
     if mean_centering:
         # Subtract the mean across subjects and runs from each voxel
@@ -127,16 +99,18 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
         # Repeat the mean across conditions for each condition
         mean_across_conditions = np.repeat(mean_across_conditions[:, :, np.newaxis, :], data_reshaped.shape[2], axis=2)
         data_reshaped = data_reshaped - mean_across_conditions
-    
+
     return data_reshaped
 
 if __name__ == "__main__":
     mdtb_dataset = DataSetMDTB(mdtb_dir)
 
-
+    # smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=4, kernel='fwhm')
+    # smooth_mdtb_fs32k(ses_id='ses-s2', type='CondHalf', smooth=4, kernel='fwhm')
     # -- Extract resting-state timeseries --
-    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC2', smooth=2.0)
-    # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='fs32k', smooth=2.0)
+    for s in [2,4,5,6]:
+        mdtb_dataset.extract_all(ses_id='ses-s1', type='CondHalf', atlas='MNISymC3', smooth=s)
+        mdtb_dataset.extract_all(ses_id='ses-s2', type='CondHalf', atlas='MNISymC3', smooth=s)
 
     # -- Extract task timeseries --
     # mdtb_dataset.extract_all(ses_id='ses-s1', type='FixTseries', atlas='MNISymC3', smooth=2.0, subj=[23])
@@ -144,12 +118,12 @@ if __name__ == "__main__":
     # mdtb_dataset.extract_all(ses_id='ses-s1', type='FixTseries', atlas='fs32k', smooth=2.0, subj=[16])
     # mdtb_dataset.extract_all(ses_id='ses-s2', type='FixTseries', atlas='MNISymC3', smooth=2.0)
     # mdtb_dataset.extract_all(ses_id='ses-s2', type='FixTseries', atlas='fs32k', smooth=2.0, subj=[23])
-    
+
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Fus06FixRun', space='MNISymC3', ses_id='ses-s1', subj=['sub-31'])
     # conn.get_connectivity_fingerprint(dname,
     #                                 type='Fus06FixRun', space='MNISymC3', ses_id='ses-s2')
-    
+
     # # -- Get connectivity fingerprint for rest session --
     # T = pd.read_csv(
     #     mdtb_dir + '/participants.tsv', delimiter='\t')
@@ -174,15 +148,14 @@ if __name__ == "__main__":
     # #                                   type='Ico162Run', space='MNISymC2', ses_id='ses-rest', subj=subject_subset)
     # # conn.get_connectivity_fingerprint(dname,
     # #                                   type='Ico162Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-    
-    
+
+
     # Exctract Rest timeseries & connectivity fingerprint
-    # mdtb_dataset = DataSetMDTB(mdtb_dir)   
+    # mdtb_dataset = DataSetMDTB(mdtb_dir)
     # mdtb_dataset.extract_all(ses_id='ses-rest', type='Tseries', atlas='MNISymC3', smooth=2.0)
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Fus06Run', space='MNISymC3', ses_id='ses-rest', subj=subject_subset)
-    
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Ico642Run', space='fs32k', ses_id='ses-rest')
+
 
 
     pass
-    
