@@ -801,7 +801,7 @@ class DataSet:
             else:
                 C = nb.load(self.data_dir.format(s)
                             + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
-                this_data = C.get_fdata()
+            this_data = C.get_fdata()
 
             # Check if this subject data in incomplete
             if this_data.shape[0] != info_com.shape[0]:
