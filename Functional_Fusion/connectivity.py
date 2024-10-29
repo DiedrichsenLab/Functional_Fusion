@@ -242,7 +242,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 
         nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+tseries_type+type}.dscalar.nii')
         info.to_csv(
-            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+tseries_type+type}.tsv', sep='\t', index=False)
+            f'{dest_dir}/{participant_id}_{ses_id}_{target+tseries_type+type}.tsv', sep='\t', index=False)
 
 
 def get_cortical_target(target):
