@@ -1,9 +1,10 @@
 import numpy as np
 from numpy.linalg import inv, pinv
 import nibabel as nb
-import h5py
+import h5py, os, subprocess
 import Functional_Fusion.atlas_map as am
 
+default_atlas_dir = os.path.dirname(am.__file__) + '/Atlases'
 
 def sq_eucl_distances(coordA,coordB):
     D = coordA.reshape(3,-1,1)-coordB.reshape(3,1,-1)
@@ -185,5 +186,81 @@ def get_volumes(data, atlas_name='MNISymC2'):
 
     return nii_vols
 
-            
 
+def split_string(s):
+    """ Split string into integer and string
+
+    Args:
+        s: input string to be splitted
+
+    Returns:
+        integer part, and string part
+    """
+    # Split string into integer and string
+    for i, char in enumerate(s):
+        if not char.isdigit():
+            return int(s[:i]), s[i:]
+
+
+def smooth_fs32k_data(input_file, smooth=1, kernel='gaussian',
+                      return_data_only=False):
+    """ Smooth cortical data in fs32k space from cifti file, then save as cifti
+        format using workbench command
+
+    Args:
+        input_file: the input cifti file to be smoothed
+        smooth: width of smoothing kernel in mm
+        kernel: the type of smoothing kernel, either "gaussian" or "fwhm"
+        return_data_only: only return the smoothed data but not store any
+
+    Returns:
+        Write in the cifti file of smoothed data
+    """
+    # get the surfaces for smoothing
+    surf_L = default_atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_sphere.surf.gii'
+    surf_R = default_atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-R_sphere.surf.gii'
+
+    # Making in / out file names
+    dir_path, file_name = os.path.split(input_file)
+    base_name = file_name.split('.')[0]
+    ext = '.' + '.'.join(file_name.split('.')[1:])
+
+    if kernel == 'gaussian':
+        smooth_suffix = f'_desc-sm{smooth}'
+    elif kernel == 'fwhm':
+        smooth_suffix = f'_desc-sm{smooth}fwhm'
+    else:
+        raise ValueError('Only gaussian and fwhm kernels are supported!')
+
+    cifti_out = os.path.join(dir_path, base_name + smooth_suffix + ext)
+
+    # Load data and fill nan with zeros if unsmoothed data contains any
+    contain_nan = False  ## a flag
+    C = nb.load(input_file)
+    if np.isnan(C.get_fdata()).any():
+        contain_nan = True
+        mask = np.isnan(C.get_fdata())
+        C = nb.Cifti2Image(dataobj=np.nan_to_num(C.get_fdata()), header=C.header)
+        input_file = dir_path + f'/tmp' + ext
+        nb.save(C, input_file)
+
+    # Write in smoothed surface data (filled with 0)
+    smooth_cmd = f"wb_command -cifti-smoothing {input_file} " \
+                 f"{smooth} {smooth} COLUMN {cifti_out} " \
+                 f"{f'-{kernel} ' if kernel == 'fwhm' else ''}" \
+                 f"-left-surface {surf_L} -right-surface {surf_R} " \
+                 f"-fix-zeros-surface"
+    subprocess.run(smooth_cmd, shell=True)
+
+    # Double-check if the original data contain NaN values
+    if contain_nan:
+        os.remove(dir_path + f'/tmp' + ext)
+        # Replace 0s back to NaN (we don't want the 0s impact model learning)
+        data = nb.load(cifti_out).get_fdata()
+        data[mask] = np.nan
+        C = nb.Cifti2Image(dataobj=data, header=C.header)
+        nb.save(C, cifti_out)
+
+    if return_data_only:
+        os.remove(cifti_out)
+        return data

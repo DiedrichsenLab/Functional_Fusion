@@ -4,8 +4,9 @@ import shutil
 from pathlib import Path
 import mat73
 import numpy as np
-import sys
+import sys, os, time
 import Functional_Fusion.atlas_map as am
+import Functional_Fusion.util as fut
 from Functional_Fusion.dataset import DataSetPontine
 import nibabel as nb
 import SUITPy as suit
@@ -60,7 +61,26 @@ def show_pontine_suit(subj,sess,cond):
     print(f'Showing {D.cond_name[cond]}')
     pass
 
+def smooth_pontine_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1, kernel='gaussian'):
+    dataset = DataSetPontine(data_dir)
+    # get the surfaces for smoothing
+    surf_L = dataset.atlas_dir + f'/tpl-fs32k/fs_LR.32k.L.midthickness.surf.gii'
+    surf_R = dataset.atlas_dir + f'/tpl-fs32k/fs_LR.32k.R.midthickness.surf.gii'
+
+    T = dataset.get_participants()
+    for s in T.participant_id:
+        print(f'Smoothing data for {s} fs32k {ses_id} in {smooth}mm {kernel} ...')
+
+        start = time.perf_counter()
+        file = dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
+        fut.smooth_fs32k_data(file, surf_L, surf_R, smooth=smooth, kernel=kernel)
+        finish = time.perf_counter()
+        elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+        print(f"- Done subject {s} - time {elapse}.")
+
 if __name__ == "__main__":
+    smooth_pontine_fs32k(ses_id='ses-01', type='TaskHalf', smooth=4, kernel='fwhm')
+
     # extract_pontine_group(type='TaskHalf', atlas='MNISymC3')
     #  extract_pontine_fs32k(ses_id='ses-01',type='TaskHalf')
     # extract_pontine_suit(ses_id='ses-01', type='TaskHalf', atlas='MNISymC2')

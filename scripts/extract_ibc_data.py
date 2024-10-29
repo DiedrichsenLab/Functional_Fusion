@@ -1,12 +1,13 @@
 # Script for importing the IBC data set from super_cerebellum to general format.
-import os
+import os, time
 import pandas as pd
 import shutil
 from pathlib import Path
 import mat73
 import numpy as np
-import atlas_map as am
-from dataset import DataSetIBC
+import Functional_Fusion.atlas_map as am
+from Functional_Fusion.dataset import DataSetIBC
+import Functional_Fusion.util as fut
 import nibabel as nb
 import SUITPy as suit
 import matplotlib.pyplot as plt
@@ -72,8 +73,7 @@ def extract_all(atlas='MNISym3'):
         else:
             ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas=atlas)
 
-def smooth_ibc_fs32k(type='CondHalf', smooth=1):
-    myatlas, _ = am.get_atlas('fs32k', atlas_dir)
+def smooth_ibc_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1, kernel='gaussian'):
     ds = DataSetIBC(data_dir)
     T = ds.get_participants()
 
@@ -82,33 +82,16 @@ def smooth_ibc_fs32k(type='CondHalf', smooth=1):
     surf_R = ds.atlas_dir + f'/tpl-fs32k/fs_LR.32k.R.midthickness.surf.gii'
 
     for ses_id in ds.sessions:
+        print(f'IBC session {ses_id}:')
         for s in T.participant_id:
-            print(f'- Smoothing data for {s} fs32k {ses_id} in {smooth} mm ...')
-            # Load the unsmoothed data and fill nan with zeros
-            C = nb.load(ds.data_dir.format(s)
-                        + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
-            mask = np.isnan(C.get_fdata())
-            C = nb.Cifti2Image(dataobj=np.nan_to_num(C.get_fdata()), header=C.header)
-            nb.save(C, 'tmp.dscalar.nii')
+            print(f'Smoothing data for {s} fs32k {type} in {smooth}mm {kernel} ...')
 
-            dest_dir = ds.data_dir.format(s)
-            cifti_out = dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}_' \
-                                   f'desc-sm{smooth}.dscalar.nii'
-
-            # Write in smoothed surface data (filled with 0)
-            smooth_cmd = f"wb_command -cifti-smoothing tmp.dscalar.nii " \
-                         f"{smooth} {smooth} COLUMN {cifti_out} " \
-                         f"-left-surface {surf_L} -right-surface {surf_R} " \
-                         f"-fix-zeros-surface"
-            subprocess.run(smooth_cmd, shell=True)
-            os.remove("tmp.dscalar.nii")
-
-            # Replace 0s back to NaN (we don't want the 0s impact model learning)
-            C = nb.load(cifti_out)
-            data = C.get_fdata()
-            data[mask] = np.nan
-            C = nb.Cifti2Image(dataobj=data, header=C.header)
-            nb.save(C, cifti_out)
+            start = time.perf_counter()
+            file = ds.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
+            fut.smooth_fs32k_data(file, surf_L, surf_R, smooth=smooth, kernel=kernel)
+            finish = time.perf_counter()
+            elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+            print(f"- Done subject {s} - time {elapse}.")
 
 def copy_currentAsOld():
     """This function copies the regressor info file as "_old.tsv"
@@ -181,6 +164,8 @@ def correct_condHalf():
     pass
 
 if __name__ == "__main__":
+    smooth_ibc_fs32k(ses_id='ses-s1', type='CondHalf', smooth=4, kernel='fwhm')
+    smooth_ibc_fs32k(ses_id='ses-s2', type='CondHalf', smooth=4, kernel='fwhm')
     # copy_currentAsOld()
     # correct_condHalf()
     # extract_all('SUIT3')

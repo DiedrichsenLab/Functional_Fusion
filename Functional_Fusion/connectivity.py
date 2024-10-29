@@ -75,7 +75,32 @@ def average_within_Icos(label_file, data, atlas="fs32k"):
     return parcel_data, parcels
 
 
-def connectivity_fingerprint(source, target, info, type):
+def binarize_top_percent(arr, percent=0.1, keep_top=False):
+    """Binarization of the rsFC by giving a top percent
+    For example, the top 10% values are 1, the rest are 0s
+
+    Args:
+        arr (np.array): the given rsFC matrix to biniarize
+        percent (float): the number of top percent to keep
+
+    Returns:
+        result (np.int8): the binarized rsFC
+    """
+    # Ensure the input is a NumPy array / set nan to -1
+    arr = np.nan_to_num(np.asarray(arr), nan=-1)
+    threshold = np.percentile(arr.flatten(), (1 - percent) * 100)
+
+    # Apply the threshold to keep the top `percent` values
+    if keep_top:
+        # 1. keep the original values
+        result = np.where(arr >= threshold, arr, 0).astype(np.float32)
+    else:
+        # 2. set to 1
+        result = np.where(arr >= threshold, 1, 0).astype(np.int8)
+
+    return result
+
+def connectivity_fingerprint(source, target, info, type, threshold=None, keeptop=False):
     """ Calculate the connectivity fingerprint of a target region
 
     Args:
@@ -94,6 +119,9 @@ def connectivity_fingerprint(source, target, info, type):
             data_run = source[info.run == run]
             net_run = target.T[info.run == run]
             coef = ut.correlate(data_run, net_run)
+            if threshold is not None:
+                coef = binarize_top_percent(coef, percent=threshold,
+                                            keep_top=keeptop)
             coefs.append(coef)
     
     elif type == 'Half':
@@ -106,7 +134,10 @@ def connectivity_fingerprint(source, target, info, type):
             coefs.append(coef)
 
     elif type == 'All':
-        coefs = ut.correlate(source, target.T)
+        coef = ut.correlate(source, target.T)
+        if threshold is not None:
+            coef = binarize_top_percent(coef, percent=threshold,
+                                        keep_top=keeptop)
         coefs.append(coef)
 
     return np.vstack(coefs) 
@@ -178,7 +209,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         # Get cortical data
         data_cortex_subj, _ = dset.get_data(
             space='fs32k', ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
-
+        data_cortex_subj = data_cortex_subj.squeeze()
 
         # Get cerebellar data
         data_cereb_subj, info_cereb = dset.get_data(
