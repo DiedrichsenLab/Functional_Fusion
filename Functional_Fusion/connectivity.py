@@ -125,6 +125,8 @@ def connectivity_fingerprint(source, target, info, type, threshold=None, keeptop
             coefs.append(coef)
     
     elif type == 'Half':
+        if 'half' not in info.columns:
+            info['half'] = 2 - (info.run <= np.ceil(info.run.max()/2))
         for half in info.half.unique():
             data_half = source[info.half == half]
             net_half = target.T[info.half == half]
@@ -271,7 +273,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 
         nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+tseries_type+type}.dscalar.nii')
         info.to_csv(
-            f'{dest_dir}/{participant_id}_{ses_id}_info-{target+tseries_type+type}.tsv', sep='\t', index=False)
+            f'{dest_dir}/{participant_id}_{ses_id}_{target+tseries_type+type}.tsv', sep='\t', index=False)
 
 
 def get_cortical_target(target):

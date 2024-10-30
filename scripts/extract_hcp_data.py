@@ -101,9 +101,9 @@ if __name__ == "__main__":
 
 
     conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06All', space='MNISymC3', ses_id='ses-rest1')
+                                      type='Fus06Half', space='MNISymC3', ses_id='ses-rest1')
     conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06All', space='MNISymC3', ses_id='ses-rest2')
+                                      type='Fus06Half', space='MNISymC3', ses_id='ses-rest2')
 
     # extract_hcp_timeseries(
     #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')
