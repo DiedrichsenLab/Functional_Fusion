@@ -277,14 +277,18 @@ def optimal_contrast(data, C, X, reg_in=None, baseline=None):
         if reg_in is not None:
             d = d[reg_in, :]
         # Now subtract baseline
-        if baseline is not None:
-            Q = d.shape[0]
-            R = eye(Q) - baseline @ pinv(baseline)
-            d = R @ d
+        d = remove_baseline(d,baseline)
         # Put the data in a list:
         data_new.append(d)
     return data_new
 
+def remove_baseline(data, baseline):
+    """ Removes a baseline from the data"""
+    if baseline is None:
+        return data 
+    Q = data.shape[0]
+    R = eye(Q) - baseline @ pinv(baseline)
+    return R @ data
 
 def reliability_within_subj(X, part_vec, cond_vec,
                             voxel_wise=False,
