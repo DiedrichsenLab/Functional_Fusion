@@ -13,7 +13,7 @@ For example, extracting sessions 1 from the MDTB dataset, with a split half-esti
                         atlas='MNISymC3',
                         smooth=2)
 
-The resulting data for each subject and session is stored in a cifti-file in the ``basedir/derivatives/<subj_id>/data`` directory under the name ``sub-xx_space-xxxx_ses-xx_<type>.dscalar.nii``. The description of the data-axis in the cifti-file is stored in ``sub-xx_ses-xx_<type>.tsv`` (note that there is of course only one of these files for all atlas spaces). 
+The resulting data for each subject and session is stored in a cifti-file in the ``basedir/derivatives/<subj_id>/data`` directory under the name ``sub-<xx>_space-<atlas>_ses-xx_<type>.dscalar.nii``. The description of the data-axis in the cifti-file is stored in ``sub-xx_ses-xx_<type>.tsv`` (note that there is of course only one of these files for all atlas spaces). 
 
 That's all you need. The rest of documentation will explain the different steps in the extraction process in detail:
 
@@ -31,7 +31,7 @@ The specific mapping rules for the dataset are defined in the dataset method :py
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
 
-    * ``MNI152NLin2009cSymC`` & ``MNI152NLin6AsymC``: Here we use the individual deformation map into SUIT space and then from SUIT space into the MNI-space. Mask is the cerebellar mask in source space.
+    * ``MNI152NLin2009cSymC`` & ``MNI152NLin6AsymC``: Here we use the individual deformation map into SUIT space and then from SUIT space into the MNI-space. Mask is the cerebellar mask in source space. We used this type of mapping for our first papers (Nettekoven et al., 2024), but will replace it with a direct mapping from native to MNI space (see below).
 
          .. code-block:: python
 
@@ -39,7 +39,21 @@ The specific mapping rules for the dataset are defined in the dataset method :py
             deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
 
-    * ``fs33k``: The atlasmap is defined by the individual pial and white surfaces. The surface coordinates need to be in the source space - so if the source data is in native space, the surfaces need to be defined in native space. If the source data is in MNI152 space, the individual surfaces need to be in MNI152 space. The mask is the functional mask image for that subject and session.
+    * ``MNI152NLin2009cSym``, ``MNI152NLin2009cAsym``: Here we use ideally direct mapping between native space and the corresponding space, found in the individual anat folder. If the corresponding deformation file is not found, a warning is given, We use then the individual deformation into MNI152NLin6Asym space and the functional mask image for that subject and session. Then we use the deformation from MNI152NLin6Asym to MNI152NLin2009cSym or MNI152NLin2009cAsym.
+
+            .. code-block:: python
+
+                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+                mask = self.estimates_dir.format(sub) + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+
+    * ``MNI152NLin6Asym``: We use the individual deformation into MNI152NLin6Asym (SPM segmentation) space and the functional mask image for that subject and session.
+
+            .. code-block:: python
+
+                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+                mask = self.estimates_dir.format(sub) + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+
+    * ``fs32k``: The atlasmap is defined by the individual pial and white surfaces. The surface coordinates need to be in the source space - so if the source data is in native space, the surfaces need to be defined in native space. If the source data is in MNI152 space, the individual surfaces need to be in MNI152 space. The mask is the functional mask image for that subject and session.
 
          .. code-block:: python
 
@@ -49,23 +63,11 @@ The specific mapping rules for the dataset are defined in the dataset method :py
 
 * Defined in ``DataSetNative``
 
-    * ``MNI152NLin6Asym``: We use the individual deformation into MNI152NLin6Asym (SPM segmentation) space and the functional mask image for that subject and session.
-
-            .. code-block:: python
-
-                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
-                mask = self.estimates_dir.format(sub) + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
-
-    * ``MNI152NLin2009cSym,MNI152NLin2009cAsym``: here we use first the individual deformation into MNI152NLin6Asym space and the functional mask image for that subject and session. Then we use the deformation from MNI152NLin6Asym to MNI152NLin2009cSym or MNI152NLin2009cAsym.
-
-            .. code-block:: python
-
-                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
-                mask = self.estimates_dir.format(sub) + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+    Same as in ``DataSet`` 
 
 * Defined in ``DataSetMNIVol``
 
-    * ``MNI152NLin6Asym,MNI152NLin2009cSym,MNI152NLin2009cAsym``: For any deformation into an MNI space, we either use no deformation (if the atlas.space and dataset.space match), or we use the deformation between the two MNI spaces.
+    * ``MNI152NLin6Asym,MNI152NLin2009cSym,MNI152NLin2009cAsym``: For any deformation into an MNI space, we either use no deformation (if the atlas.space and dataset.space match), or we use the deformation between the two MNI spaces. No individual deformation is expected. 
 
             .. code-block:: python
 
@@ -96,6 +98,8 @@ Typically, there are different `type`s:
 * ``'CondRun'``: A separate estimate per condition and run.
 
 The averaging is done in the function :py:meth:`dataset.optimal_contrast`, which can take into account the first-level design matrix. This procedure will result in the same estimate that you would have gotten if you had defined a design matrix with a regressor for each condition across runs.
+
+After thius step (and depending how baseline has been modeled) the function :py:meth:`dataset.remove_baseline` can be called to remove the mean of the voxels across conditions within each run. This is totally optional.  
 
 Finally, we are dividing the beta estimates by the estimate of the noise standard-deviation per voxel, using :py:meth:`dataset.prewhiten`, coming from the resms.nii.
 
