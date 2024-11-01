@@ -43,7 +43,11 @@ def get_dataset_class(base_dir, dataset):
     if len(i) == 0:
         raise (NameError(f'Unknown dataset: {dataset}'))
     dsclass = getattr(sys.modules[__name__], T.class_name[int(i)])
-    dir_name = base_dir + '/' + T.dir_name[int(i)]
+    dir_name = T.dir_name[int(i)]
+    if dir_name[0] == '/':
+        abs_path = dir_name
+    else:
+        abs_path = base_dir + '/' + T.dir_name[int(i)]
     my_dataset = dsclass(dir_name)
     return my_dataset
 
