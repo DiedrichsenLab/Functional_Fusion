@@ -87,7 +87,7 @@ def process_anat(directory):
                         shutil.move(fsaverage_folder, final_surface_wb_folder)
 
                 # Remove the structural preproc folder
-                os.rmdir(structural_preproc_folder)
+                shutil.rmtree(structural_preproc_folder, ignore_errors=True)
 
         
 #  step 4: Reorganize func stuff
@@ -109,9 +109,7 @@ def process_func(directory):
                 if '3T_tfMRI' in session:
                     session_name = session.split('_')[-2]
                     session_path = os.path.join(subject_path, session,subject_number, 'MNINonLinear', 'Results')
-                    if os.path.isdir(session_path):
-                        runs_found = False  # Track if valid runs are found
-                        
+                    if os.path.isdir(session_path):                        
                         # Create a session directory inside 'func'
                         session_func_dir = os.path.join(func_directory, f'ses-{session_name}')
                         os.makedirs(session_func_dir, exist_ok=True)
@@ -140,4 +138,7 @@ def process_func(directory):
 
                 shutil.rmtree(os.path.join(subject_path, session), ignore_errors=True)
 
+unzip_clean(directory)
+group_participant_folders(directory)
+process_anat(directory)
 process_func(directory)
