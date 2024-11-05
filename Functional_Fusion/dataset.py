@@ -46,11 +46,12 @@ def get_dataset_class(base_dir, dataset):
     dir_name = T.dir_name[int(i)]
     if dir_name[0] == '/':
         abs_path = dir_name
+    elif dir_name[0] == '.':  # Relative path relative to fusion project
+        abs_path = Path(base_dir).parent + Path(dir_name[1:])
     else:
         abs_path = base_dir + '/' + T.dir_name[int(i)]
-    my_dataset = dsclass(dir_name)
+    my_dataset = dsclass(abs_path)
     return my_dataset
-
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
                 type=None, smooth=None, info_only=False):
