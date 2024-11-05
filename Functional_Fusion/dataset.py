@@ -676,6 +676,8 @@ class DataSet:
                 Built AtlasMap object
         """
         atlas_maps = []
+        adir = self.anatomical_dir.format(sub)
+        edir = self.estimates_dir.format(sub)
         if atlas.space == 'SUIT':
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
@@ -689,9 +691,13 @@ class DataSet:
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
+        elif atlas.space in ['MNI152NLin2009cSym']:
+            # This is direct MNI normalization 
+            deform = adir + f'/{sub}_space-{atlas.space}_xfm.nii'
+            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
         elif atlas.space == 'fs32k':
-            adir = self.anatomical_dir.format(sub)
-            edir = self.estimates_dir.format(sub)
             for i, struc in enumerate(atlas.structure):
                 if struc=='cortex_left':
                     hem = 'L'
