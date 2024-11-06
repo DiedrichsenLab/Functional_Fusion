@@ -104,8 +104,8 @@ def reshape_data(data, info, cond_column='cond_num_uni', part_column='run', mean
 
 if __name__ == "__main__":
     mdtb_dataset = DataSetMDTB(mdtb_dir)
-    mdtb_dataset.extract_all(ses_id='ses-s1', type='CondRun', atlas='MNISymDentate1', smooth=0.0)
-    mdtb_dataset.extract_all(ses_id='ses-s2', type='CondRun', atlas='MNISymDentate1', smooth=0.0)
+    mdtb_dataset.extract_all(ses_id='ses-s1', type='CondRun', atlas='MNISymDentate1', smooth=None)
+    mdtb_dataset.extract_all(ses_id='ses-s2', type='CondRun', atlas='MNISymDentate1', smooth=None)
     mdtb_dataset.extract_all(ses_id='ses-s1', type='CondRun', atlas='MNISymCereb2', smooth=2.0)
     mdtb_dataset.extract_all(ses_id='ses-s2', type='CondRun', atlas='MNISymCereb2', smooth=2.0)
 

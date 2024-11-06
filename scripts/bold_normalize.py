@@ -75,7 +75,7 @@ def normalize_bold_all(dataset,template,mask=None,tot='SyNCC',kwargs={},subj=Non
         # Translater into deformation field
         xfm = f'{xfm_dir}/xfm_{src_sub}_composite.h5'
         def_field = ants_transform_to_deformation_field([xfm],src,trg)
-        fname=f'{dataset.anatomical_dir.format(src_sub)}/{src_sub}_space-MNI2009cSym_xfm.nii'
+        fname=f'{dataset.anatomical_dir.format(src_sub)}/{src_sub}_space-MNI152NLin2009cSym_xfm.nii'
         nb.save(def_field,fname)
         pass
 

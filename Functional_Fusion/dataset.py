@@ -644,7 +644,7 @@ class DataSet:
         for s in T.participant_id.iloc[subj]:
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
-                                   + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                                   + f'/{s}_{ses_id}_{type}.tsv', sep='\t')
             # Reduce tsv file when fields are given
             if fields is not None:
                 info = info_raw[fields]
@@ -756,7 +756,7 @@ class DataSet:
             nb.save(C, dest_dir +
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
-                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+                dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
 
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
@@ -821,7 +821,7 @@ class DataSet:
             # Check if this subject data in incomplete
             if this_data.shape[0] != info_com.shape[0]:
                 this_info = pd.read_csv(self.data_dir.format(s)
-                                        + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                                        + f'/{s}_{ses_id}_{type}.tsv', sep='\t')
                 base = np.asarray(info_com['names'])
                 incomplete = np.asarray(this_info['names'])
                 for j in range(base.shape[0]):
@@ -875,7 +875,7 @@ class DataSet:
                 info = info.drop(columns=['sn'])
 
             info.to_csv(dest_dir +
-                        f'/group_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+                        f'/group_{ses_id}_{type}.tsv', sep='\t', index=False)
 
 class DataSetNative(DataSet):
     """Data set with estimates data stored as
@@ -1008,7 +1008,7 @@ class DataSetCifti(DataSet):
             nb.save(C, dest_dir +
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
-                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+                dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
 
 
 class DataSetMDTB(DataSetNative):
