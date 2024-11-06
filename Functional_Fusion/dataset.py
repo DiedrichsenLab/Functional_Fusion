@@ -22,9 +22,7 @@ import nitools as nt
 from numpy import eye, zeros, ones, empty, nansum, sqrt
 from numpy.linalg import pinv, solve
 import warnings
-import SUITPy as suit
 import glob
-import matplotlib.pyplot as plt
 
 
 def get_dataset_class(base_dir, dataset):
