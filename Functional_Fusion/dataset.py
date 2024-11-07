@@ -190,7 +190,11 @@ def agg_data(info, by, over, subset=None):
             original data frame
     Return
         data_info (DataFrame): Reduced data frame
-        C (ndarray): Contrast matrix defining the mapping from full to reduced
+        C (ndarray): Indicator matrix defining the mapping from full to reduced
+    Example: 
+        data,info,mdtb= ds.get_data('MDTB','MNISymDentate1',ses_id='ses-s1',type='CondRun')   
+        cinfo,C = ds.agg_data(info,['cond_num_uni'],['run','half','reg_num','names'])
+        cdata = np.linalg.pinv(C) @ data
     """
     # Subset original data frame as needed
     info_n = info.copy()
@@ -218,7 +222,7 @@ def agg_data(info, by, over, subset=None):
     info_gb = info_n.groupby(by)
     data_info = info_gb.agg(operations).reset_index()
 
-    # Build contrast matrix for averaging
+    # Build indicator matrix for averaging
     C = np.zeros((info.shape[0], data_info.shape[0]))
     for i, (k, v) in enumerate(info_gb.indices.items()):
         C[indx[v], i] = 1
