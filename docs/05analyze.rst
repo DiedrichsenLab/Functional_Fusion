@@ -6,8 +6,9 @@ To use Functional fusion framework you need access to a folder that holds the da
 .. code-block:: python
 
     import Functional_Fusion.dataset as ds
+    import Function_Fusion.utils as ut
     import nibabel as nb
-    base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
+    base_dir = ut.get_base_dir()
 
 
 Loading Data
