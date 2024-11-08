@@ -22,9 +22,7 @@ import nitools as nt
 from numpy import eye, zeros, ones, empty, nansum, sqrt
 from numpy.linalg import pinv, solve
 import warnings
-import SUITPy as suit
 import glob
-import matplotlib.pyplot as plt
 
 
 def get_dataset_class(base_dir, dataset):
@@ -43,10 +41,15 @@ def get_dataset_class(base_dir, dataset):
     if len(i) == 0:
         raise (NameError(f'Unknown dataset: {dataset}'))
     dsclass = getattr(sys.modules[__name__], T.class_name[int(i)])
-    dir_name = base_dir + '/' + T.dir_name[int(i)]
-    my_dataset = dsclass(dir_name)
+    dir_name = T.dir_name[int(i)]
+    if dir_name[0] == '/':
+        abs_path = dir_name
+    elif dir_name[0] == '.':  # Relative path relative to fusion project
+        abs_path = Path(base_dir).parent + Path(dir_name[1:])
+    else:
+        abs_path = base_dir + '/' + T.dir_name[int(i)]
+    my_dataset = dsclass(abs_path)
     return my_dataset
-
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
                 type=None, smooth=None, info_only=False):
@@ -187,7 +190,11 @@ def agg_data(info, by, over, subset=None):
             original data frame
     Return
         data_info (DataFrame): Reduced data frame
-        C (ndarray): Contrast matrix defining the mapping from full to reduced
+        C (ndarray): Indicator matrix defining the mapping from full to reduced
+    Example: 
+        data,info,mdtb= ds.get_data('MDTB','MNISymDentate1',ses_id='ses-s1',type='CondRun')   
+        cinfo,C = ds.agg_data(info,['cond_num_uni'],['run','half','reg_num','names'])
+        cdata = np.linalg.pinv(C) @ data
     """
     # Subset original data frame as needed
     info_n = info.copy()
@@ -215,7 +222,7 @@ def agg_data(info, by, over, subset=None):
     info_gb = info_n.groupby(by)
     data_info = info_gb.agg(operations).reset_index()
 
-    # Build contrast matrix for averaging
+    # Build indicator matrix for averaging
     C = np.zeros((info.shape[0], data_info.shape[0]))
     for i, (k, v) in enumerate(info_gb.indices.items()):
         C[indx[v], i] = 1
@@ -277,14 +284,18 @@ def optimal_contrast(data, C, X, reg_in=None, baseline=None):
         if reg_in is not None:
             d = d[reg_in, :]
         # Now subtract baseline
-        if baseline is not None:
-            Q = d.shape[0]
-            R = eye(Q) - baseline @ pinv(baseline)
-            d = R @ d
+        d = remove_baseline(d,baseline)
         # Put the data in a list:
         data_new.append(d)
     return data_new
 
+def remove_baseline(data, baseline):
+    """ Removes a baseline from the data"""
+    if baseline is None:
+        return data 
+    Q = data.shape[0]
+    R = eye(Q) - baseline @ pinv(baseline)
+    return R @ data
 
 def reliability_within_subj(X, part_vec, cond_vec,
                             voxel_wise=False,
@@ -667,6 +678,8 @@ class DataSet:
                 Built AtlasMap object
         """
         atlas_maps = []
+        adir = self.anatomical_dir.format(sub)
+        edir = self.estimates_dir.format(sub)
         if atlas.space == 'SUIT':
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
@@ -680,9 +693,13 @@ class DataSet:
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
+        elif atlas.space in ['MNI152NLin2009cSym']:
+            # This is direct MNI normalization 
+            deform = adir + f'/{sub}_space-{atlas.space}_xfm.nii'
+            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
         elif atlas.space == 'fs32k':
-            adir = self.anatomical_dir.format(sub)
-            edir = self.estimates_dir.format(sub)
             for i, struc in enumerate(atlas.structure):
                 if struc=='cortex_left':
                     hem = 'L'

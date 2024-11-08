@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import Functional_Fusion.import_data as id
 import scripts.fusion_paths as paths
+import shutil
 
 
 base_dir = paths.set_base_dir()
@@ -43,14 +44,45 @@ def fix_sc2_reginfo():
                 T1.common[T1.task_num == i + 1] = shc[indx]
             T1.to_csv(info, sep='\t', index=False)
 
+def import_fix_restingstate():
+    # Import session s1 and session s2 fix-cleaned timeseries
+    T = pd.read_csv(target_dir + '/FunctionalFusion/MDTB/participants.tsv', delimiter='\t')
+    participants = T.participant_id
+    participants_rest = participants[T['ses-rest'] == 1]
+
+    runs = [f'{run:02d}' for run in np.arange(1, 17)]
+    
+    fix=False
+    # for session in ['1','2']:
+    for session in ['rest']:
+        session_name = f'ses-s{session}' if session != 'rest' else 'ses-rest'
+        dest_dir = base_dir + '/FunctionalFusion/MDTB/derivatives/{sub}/estimates/' + session_name + '/{sub}_' + session_name
+        if fix:
+            src_stem = base_dir + '/Cerebellum/super_cerebellum/sc1/' + 'imaging_data_fix/{sub}_' + session_name if session != 'rest' else base_dir + '/Cerebellum/super_cerebellum/resting_state/imaging_data_fix/'
+            file_ending = '_run-{run}_fix.nii'
+        else:
+            src_stem = base_dir + '/Cerebellum/super_cerebellum/sc1//imaging_data/{sub}/' if session != 'rest' else base_dir + '/Cerebellum/super_cerebellum/resting_state/imaging_data/{sub}/'
+        
+        for s in participants:
+            subject_orig = s.replace('sub-', 's', 1)
+            src = src_stem.format(sub=subject_orig) + 'rrun_{run}.nii'
+            dest = dest_dir.format(sub=s) + '_run-{run}.nii'
+            mask_file = base_dir + '/Cerebellum/super_cerebellum/sc1/imaging_data_fix/{sub}_ses-s1_mask.nii'.format(sub=s) 
+            id.import_tseries(src, dest, s, session_name, runs, mask_file=mask_file)
 
 
-
+def import_mean_bold():
+    T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+    participants = T.participant_id
+    for s in participants:
+        subject_orig = s.replace('sub-', 's', 1)
+        src = base_dir + f'/Cerebellum/super_cerebellum/sc1/imaging_data/{subject_orig}/rmeanepi.nii'
+        dest = base_dir + f'/FunctionalFusion/MDTB/derivatives/{s}/anat/{s}_meanbold.nii'
+        shutil.copyfile(src,dest)
 
 if __name__ == "__main__":
     # fix_sc2_reginfo()
-    T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
-    participants = T.participant_id
+    import_mean_bold()
 
     # for s in participants:
     # old_id = s.replace('sub-','s',1)
@@ -98,29 +130,3 @@ if __name__ == "__main__":
     #     print(f"-Done subject {s}")
 
 
-
-
-    # Import session s1 and session s2 fix-cleaned timeseries
-    T = pd.read_csv(base_dir + '/FunctionalFusion/MDTB/participants.tsv', delimiter='\t')
-    participants = T.participant_id
-    participants_rest = participants[T['ses-rest'] == 1]
-
-    runs = [f'{run:02d}' for run in np.arange(1, 17)]
-    
-    fix=False
-    # for session in ['1','2']:
-    for session in ['rest']:
-        session_name = f'ses-s{session}' if session != 'rest' else 'ses-rest'
-        dest_dir = base_dir + '/FunctionalFusion/MDTB/derivatives/{sub}/estimates/' + session_name + '/{sub}_' + session_name
-        if fix:
-            src_stem = base_dir + '/Cerebellum/super_cerebellum/sc1/' + 'imaging_data_fix/{sub}_' + session_name if session != 'rest' else base_dir + '/Cerebellum/super_cerebellum/resting_state/imaging_data_fix/'
-            file_ending = '_run-{run}_fix.nii'
-        else:
-            src_stem = base_dir + '/Cerebellum/super_cerebellum/sc1//imaging_data/{sub}/' if session != 'rest' else base_dir + '/Cerebellum/super_cerebellum/resting_state/imaging_data/{sub}/'
-        
-        for s in participants:
-            subject_orig = s.replace('sub-', 's', 1)
-            src = src_stem.format(sub=subject_orig) + 'rrun_{run}.nii'
-            dest = dest_dir.format(sub=s) + '_run-{run}.nii'
-            mask_file = base_dir + '/Cerebellum/super_cerebellum/sc1/imaging_data_fix/{sub}_ses-s1_mask.nii'.format(sub=s) 
-            id.import_tseries(src, dest, s, session_name, runs, mask_file=mask_file)
