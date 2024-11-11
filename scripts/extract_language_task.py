@@ -23,9 +23,9 @@ data_dir = base_dir + '/Language'
 atlas_dir = base_dir + '/Atlases'
 
 
-types = ['CondHalf','CondRun','CondAll']
-atlases  = ['MNISymC3']
-session_list = ['ses-localizer_cond']
+types = ['CondAll']
+atlases  = ['MNISymC2','SUIT3','fs32k']
+session_list = ['ses-localizer_cond_fm']
 
 
 LL_dataset = DataSetLanguage(data_dir)
@@ -33,7 +33,7 @@ for ses in session_list:
 
     print(f'extracting session {ses}')
     participants_tsv = pd.read_csv(f'{data_dir}/participants.tsv',sep = '\t')
-    if ses  == 'ses-localizer_cond':
+    if ses  == 'ses-localizer_cond' or ses == 'ses-localizer_cond_fm':
         filtered_participants = participants_tsv[participants_tsv['ses'].str.contains('loc')]
         subj_list = filtered_participants['participant_id'].tolist()
     elif ses == 'ses-sencoding_category_fixed' or ses == 'ses-sencoding_category_duration' or ses == 'ses-sencoding_trial_fixed' or ses == 'ses-sencoding_trial_duration' :
@@ -46,8 +46,8 @@ for ses in session_list:
     
 
     for type in types:
-        print(f'extrac?ting type {type}')
+        print(f'extracting type {type}')
         for atlas in atlases:
             print(f'extracting atlas: {atlas}')
-            LL_dataset.extract_all(ses_id = ses,type = type, atlas = atlas, subj= subj_list)
+            LL_dataset.extract_all(ses_id = ses,type = type, atlas = atlas, subj= 'all')
  

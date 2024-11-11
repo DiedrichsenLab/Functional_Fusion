@@ -1869,7 +1869,6 @@ class DataSetLanguage(DataSetNative):
                 data_info['names'] = [
                     f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
                 # Baseline substraction
-                B = matrix.indicator(data_info.half, positive=True)
 
             elif type == 'CondRun':
 
@@ -1880,7 +1879,6 @@ class DataSetLanguage(DataSetNative):
                 data_info['names'] = [
                     f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
                 # Baseline substraction
-                B = matrix.indicator(data_info.half, positive=True)
 
             elif type == 'CondAll':
                 data_info, C = agg_data(info,
@@ -1890,7 +1888,6 @@ class DataSetLanguage(DataSetNative):
                 data_info['names'] = [
                     f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
                 # Baseline substraction
-                B = matrix.indicator(data_info.half, positive=True)
 
             # Prewhiten the data
             data_n = prewhiten_data(data)
