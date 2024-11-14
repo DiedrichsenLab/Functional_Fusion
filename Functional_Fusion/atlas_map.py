@@ -10,7 +10,7 @@ import numpy as np
 from numpy.linalg import inv
 import nibabel as nb
 import warnings
-#import nitools as nt
+import nitools as nt
 import json
 import re
 import os

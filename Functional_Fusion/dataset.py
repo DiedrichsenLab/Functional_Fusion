@@ -18,7 +18,7 @@ import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
 import scipy.linalg as sl
 import nibabel as nb
-#import nitools as nt
+import nitools as nt
 from numpy import eye, zeros, ones, empty, nansum, sqrt
 from numpy.linalg import pinv, solve
 import warnings
