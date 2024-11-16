@@ -3,7 +3,6 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 import scipy.io as sio
-import mat73
 import nibabel as nb
 
 def import_suit(source_dir, dest_dir, anat_name, participant_id):

@@ -76,7 +76,30 @@
          "mask": "tpl-MNI152NLin2009cAsym_res-2_bgmask.nii",
          "structure": "other",
          "type": "AtlasVolumetric"},
-     "fs32k": {
+      "MNISymCereb1": {
+         "dir": "tpl-MNI152NLin2009cSym",
+         "space": "MNI152NLin2009cSym",
+         "res": 1,
+         "mask": "tpl-MNI2009cSym_res-1_gmcmask.nii",
+         "structure": "cerebellum",
+         "normspace": "MNISymC",
+         "type": "AtlasVolumeSymmetric"},
+      "MNISymCereb2": {
+         "dir": "tpl-MNI152NLin2009cSym",
+         "space": "MNI152NLin2009cSym",
+         "res": 2,
+         "mask": "tpl-MNI2009cSym_res-2_gmcmask.nii",
+         "structure": "cerebellum",
+         "normspace": "MNISymC",
+         "type": "AtlasVolumeSymmetric"},
+      "MNISymDentate1": { 
+         "dir": "tpl-MNI152NLin2009cSym",
+         "space": "MNI152NLin2009cSym",
+         "res": 1,
+         "mask": "tpl-MNI152NLin2009cSym_res-1_dentate.nii",
+         "structure": "other",
+         "type": "AtlasVolumeSymmetric"},      
+      "fs32k": {
 	      "dir": "tpl-fs32k",
          "space": "fs32k",
           "mask": ["tpl-fs32k_hemi-L_mask.label.gii",
