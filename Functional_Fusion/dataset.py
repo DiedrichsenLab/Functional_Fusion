@@ -18,13 +18,11 @@ import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
 import scipy.linalg as sl
 import nibabel as nb
-import nitools as nt
 from numpy import eye, zeros, ones, empty, nansum, sqrt
 from numpy.linalg import pinv, solve
 import warnings
-import SUITPy as suit
 import glob
-import matplotlib.pyplot as plt
+import re
 
 
 def get_dataset_class(base_dir, dataset):
@@ -244,6 +242,31 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
             data[..., label_vec == l], axis=len(psize) - 1)
     return parcel_data, labels
 
+def combine_parcel_labels(labels_org,labelvec_org,labels_new):
+    """ Combines parcel labels from a new atlas to an existing atlas
+    Example call: 
+    combine_parcel_labels(labels_org,labelvec_org,['A.L','A.R','S..','M3.')
+    To get different aggregations of the Nettekoven atlas
+    * A.L includes A1-4L 
+    * A.R includes A1-4R
+    * S.. includes all S-areas
+    * M3. includes M3L and M3R 
+
+    Args:
+        labels_org (list of str): Original label names (should include '0' for first)
+        labelvec_org (ndarray): Original label vector 
+        labels_new (list of str): List of regexpressions for new labels
+    Returns:
+        labelvec_new (ndarray): New label vector
+
+    """
+    labelvec_new = np.zeros(labelvec_org.shape)
+    for i,l in enumerate(labels_new):
+        for j,lo in enumerate(labels_org):
+            if re.match(l,lo):
+                labelvec_new[labelvec_org== j] = i
+    
+    return labelvec_new
 
 def optimal_contrast(data, C, X, reg_in=None, baseline=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
@@ -649,8 +672,13 @@ class DataSet:
         return info_com
 
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
-        """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for
-        SUIT: Using individual normalization from source space. MNI152NLin2009cSymC & MNI152NLin6AsymC: Via indivual SUIT normalization and the to MNI over group deformation, fs32k: Via individual pial and white surfaces (need to be in source space)
+        """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for different spaces
+            - SUIT: Using individual normalization from source space. 
+            - MNI152NLin2009cSymC: Via indivual SUIT normalization + group
+            - MNI152NLin6AsymC: Via indivual SUIT normalization + group
+            - MNI152Lin2009cSym: Via individual MNI normalization
+            - MNI152NLin6Asym: Via individual MNI normalization
+        fs32k: Via individual pial and white surfaces (need to be in source space)
         Other dataset classes will overwrite and extend this function.
 
         Args:
@@ -885,9 +913,13 @@ class DataSetNative(DataSet):
             AtlasMap: Built AtlasMap object
         """
         atlas_maps = []
-        if atlas.space == 'MNI152NLin6Asym':
+
+        if atlas.space == ['MNI152NLin2009cSym','MNI152NLin6Asym']:
             # This is for MNI standard space)
-            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-{atlas.space}_xfm.nii'
+            if not os.path.exists(deform):
+                warnings.warn(f'No individual deformation found for {atlas.space} in {sub} - resortinh to MNI_xfm.nii')
+                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
             edir = self.estimates_dir.format(sub)
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
