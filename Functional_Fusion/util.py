@@ -3,9 +3,19 @@ from numpy.linalg import inv, pinv
 import nibabel as nb
 import h5py, os, subprocess
 import Functional_Fusion.atlas_map as am
+from pathlib import Path
 
 default_atlas_dir = os.path.dirname(am.__file__) + '/Atlases'
 
+def get_base_dir():
+    possible_dirs = ['/Volumes/diedrichsen_data$/data/FunctionalFusion',
+                     '/srv/diedrichsen/data/FunctionalFusion',
+                     'Y:/data/FunctionalFusion']
+    for directory in possible_dirs:
+        if Path(directory).exists():
+            return directory
+    raise FileNotFoundError('Could not find base_dir')
+    
 def sq_eucl_distances(coordA,coordB):
     D = coordA.reshape(3,-1,1)-coordB.reshape(3,1,-1)
     D = np.sum(D**2,axis=0)
