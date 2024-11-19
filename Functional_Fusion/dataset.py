@@ -262,20 +262,23 @@ def combine_parcel_labels(labels_org,labelvec_org,labels_new):
     * M3. includes M3L and M3R 
 
     Args:
-        labels_org (list of str): Original label names (should include '0' for first)
-        labelvec_org (ndarray): Original label vector 
+        labels_org (list of str): N original label names (should include '0' for 0)
+        labelvec_org (ndarray): Original label vector (P-vector) 
         labels_new (list of str): List of regexpressions for new labels
     Returns:
-        labelvec_new (ndarray): New label vector
-
+        labelvec_new (ndarray): New label vector (P-vector)
+        mapping (ndarray): New label indices for the old labels (N-vector)
     """
     labelvec_new = np.zeros(labelvec_org.shape)
+    mapping = np.zeros(len(labels_org))
+
     for i,l in enumerate(labels_new):
         for j,lo in enumerate(labels_org):
             if re.match(l,lo):
                 labelvec_new[labelvec_org== j] = i
+                mapping[j] = i
     
-    return labelvec_new
+    return labelvec_new, mapping
 
 def optimal_contrast(data, C, X, reg_in=None, baseline=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
