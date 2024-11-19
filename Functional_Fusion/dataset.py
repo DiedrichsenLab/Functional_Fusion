@@ -233,8 +233,8 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
     """ Aggregates data over colums to condense to parcels
 
     Args:
-        data (ndarray): Either 2d or 3d data structure
-        labels (ndarray): 1d-array that gives the labels
+        data (ndarray): Either 2d or 3d data structure, P has to be the last dimension
+        labels (ndarray): 1d-array that gives the labels (P-vector)
         fcn (function): Function to use to aggregate over these
     Returns:
         aggdata (ndarray): Aggregated either 2d or 3d data structure
