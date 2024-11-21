@@ -62,8 +62,8 @@ We can quickly calculate the reliability of the data across subjects and within 
 
 
 
-Decomposing variances
---------------------- 
+Decomposing variances (checking reliability)
+-------------------------------------------- 
 
 A more general way of looking at reliability within and across subjects is to decompose the variance into components related to the group, the subject and the measurement error.
 
