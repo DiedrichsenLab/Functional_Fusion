@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
+import nitools as nt
+import nibabel as nb
 
 def ortho(data, voxel, fig=None, cursor=False, background=None, **kwargs):
     """Simple orthographic plot of a 3D array using matplotlib.
@@ -62,3 +63,6 @@ def ortho(data, voxel, fig=None, cursor=False, background=None, **kwargs):
             ax.spines[side].set_visible(False)
     
     return (fig, xax, yax, zax)
+
+
+
