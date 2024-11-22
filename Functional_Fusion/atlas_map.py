@@ -374,10 +374,6 @@ class AtlasSurface(Atlas):
             name (str): Name of the brain structure (cortex_left, cortex_right, cerebellum)
             mask_gii (list): gifti file name of mask image defining atlas locations
             structure (list): [cortex_left, cortex_right] - CIFTI brain structure names
-        Notes:
-            Since this class is called 'AtlasSurface', I think we should
-            only integrate surface datas in cifti brain structures so that
-            the volume data shouldn't be in.   -- dzhi
         """
         super().__init__(name, structure=structure, space=space)
 
@@ -390,7 +386,9 @@ class AtlasSurface(Atlas):
         self.mask = [(X > 0) for X in Xmask]
         self.vertex_mask = [(X > 0) for X in Xmask]
         self.vertex = [np.nonzero(X)[0] for X in self.vertex_mask]
-        # Correction: needs to be number of vertices in mask (JD)
+        # 
+        self.structure_index = [i*np.ones(len(v)) for i,v in enumerate(self.vertex)]
+        self.structure_index = np.concatenate(self.structure_index)
         self.P = sum([v.shape[0] for v in self.vertex])
 
     def data_to_cifti(self, data, row_axis=None):
@@ -477,8 +475,10 @@ class AtlasSurface(Atlas):
                 if isinstance(im, str):
                     im = nb.load(im)
                 d = im.agg_data()
+                if isinstance(d,tuple): # If tuple, the gifti is likely a surf.gii file
+                    d = d[0]            # then return only coordinates
                 data.append(d[self.vertex[i]])
-            data = np.hstack(data)
+            data = np.concatenate(data,axis=0)
         return data
 
     def cifti_to_data(self, cifti):

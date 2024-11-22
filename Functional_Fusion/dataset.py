@@ -233,8 +233,8 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
     """ Aggregates data over colums to condense to parcels
 
     Args:
-        data (ndarray): Either 2d or 3d data structure
-        labels (ndarray): 1d-array that gives the labels
+        data (ndarray): Either 2d or 3d data structure, P has to be the last dimension
+        labels (ndarray): 1d-array that gives the labels (P-vector)
         fcn (function): Function to use to aggregate over these
     Returns:
         aggdata (ndarray): Aggregated either 2d or 3d data structure
@@ -251,10 +251,10 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
             data[..., label_vec == l], axis=len(psize) - 1)
     return parcel_data, labels
 
-def combine_parcel_labels(labels_org,labelvec_org,labels_new):
+def combine_parcel_labels(labels_org,labels_new, labelvec_org=None):
     """ Combines parcel labels from a new atlas to an existing atlas
     Example call: 
-    combine_parcel_labels(labels_org,labelvec_org,['A.L','A.R','S..','M3.')
+    mapping, lv = combine_parcel_labels(labels_org,['0','A.L','A.R','S..','M3.'],labelvec_org)
     To get different aggregations of the Nettekoven atlas
     * A.L includes A1-4L 
     * A.R includes A1-4R
@@ -262,20 +262,27 @@ def combine_parcel_labels(labels_org,labelvec_org,labels_new):
     * M3. includes M3L and M3R 
 
     Args:
-        labels_org (list of str): Original label names (should include '0' for first)
-        labelvec_org (ndarray): Original label vector 
-        labels_new (list of str): List of regexpressions for new labels
+        labels_org (list of str): N-lenght original label names (should include '0' for 0)
+        labels_new (list of str): List of regexpressions for new labels (should include '0' for 0) 
+        labelvec_org (ndarray, optional): Original label vector to remap (P-vector) 
     Returns:
-        labelvec_new (ndarray): New label vector
-
+        mapping (ndarray): New label indices for the old labels (N-length vector)
+        labelvec_new (ndarray): New label vector (P-vector) - returned if labelvec_org is given
     """
-    labelvec_new = np.zeros(labelvec_org.shape)
+    mapping = np.zeros(len(labels_org))
+
     for i,l in enumerate(labels_new):
         for j,lo in enumerate(labels_org):
             if re.match(l,lo):
-                labelvec_new[labelvec_org== j] = i
-    
-    return labelvec_new
+                mapping[j] = i
+
+    if labelvec_org is None:
+        return mapping
+    else :
+        labelvec_new = np.zeros(labelvec_org.shape)
+        for i in np.arange(len(mapping)):
+            labelvec_new[labelvec_org == i] = mapping[i]
+        return mapping, labelvec_new 
 
 def optimal_contrast(data, C, X, reg_in=None, baseline=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
