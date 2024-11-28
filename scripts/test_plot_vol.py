@@ -8,16 +8,17 @@ import nilearn.plotting as nlp
 import matplotlib.pyplot as plt
 import nitools as nt
 
+
+
+def test_plot_roi(): 
+    atlas_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion/Atlases'
+    # Generate some random data in dentate atlas space
+    dn,ainf = am.get_atlas('MNISymDentate1')
+    data = np.random.normal(0,1,(3,dn.P))
+    data = np.random.randint(1,33,(1,dn.P)).astype(np.int8) # Note that 0 is no assignment
+    indx, color, labels = nt.read_lut(atlas_dir + '/tpl-MNI152NLin2009cSymC/atl-NettekovenSym32.lut')
+    fplt.plot_dentate(data[0],cscale=[0,32],cmap=color)
+
 if __name__=="__main__":
-    base_dir = ut.get_base_dir()
-    # dn,ainf = am.get_atlas('MNISymDentate1')
-    # dat,dinf,_ = ds.get_dataset(base_dir,'Language',atlas='MNISymDentate1', sess='ses-localizer',subj=[1],type='cond_fm_CondRun')
-    adir = ut.default_atlas_dir
-    bg_img = nb.load(adir + '/tpl-MNI152NLin2009cSym/tpl-MNI152NLin2009cSym_res-1_dentate.nii')
-    # Project the functional data into the atlas space
-    # fcn_img = dn.data_to_nifti(dat[0,:])
-
-    c1 = [-25,-70,-43] # Lower left corner of image 
-    c2 = [25,-40,-20] # Upper right corner of image
-
+    test_plot_roi()
     pass

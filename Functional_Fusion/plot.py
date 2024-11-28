@@ -8,6 +8,8 @@ import nibabel as nb
 import nilearn.plotting as nlp
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+from matplotlib.colors import ListedColormap
+
 import nitools as nt
 from numpy.linalg import inv
 
@@ -95,7 +97,7 @@ def plot_dentate(data,
         gridspec (Gridspec): A 6 x 2 Gridspec to plot the dentate data.
         z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-35,-37,-39,-42].
         cscale (list): [lower and upper] range for colorscale. None sets it to 2% percentile of data (asymmetric). 
-        cmap (str, colormap): matplotlib or nilearn colormap. Defaults to 'cold_hot'. 
+        cmap (str, colormap, ndarray): Name, colormap, or Nx3 ndarray. Defaults to 'cold_hot'. 
         threshold (numeric): Single threshold: will plot data abs(y)> th
     
     Returns: 
@@ -114,6 +116,10 @@ def plot_dentate(data,
         cscale[0] = np.percentile(data,2)
     if cscale[1] is None:
         cscale[1] = np.percentile(data,98)
+
+    # Make a colormap from ndarray
+    if isinstance(cmap,np.ndarray):
+        cmap = ListedColormap(cmap)
 
     # Cut out the left and right dentate at the voxel coordinates
     c1 = np.array([[-25,-70,-43],[7,-70,-43]]).T # Lower left corner of image
