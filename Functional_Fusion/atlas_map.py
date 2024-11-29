@@ -265,10 +265,13 @@ class AtlasVolumetric(Atlas):
         return img
 
     def read_data(self, img, interpolation=0):
-        """Read data from a NIFTI or CIFTI file into the volumetric atlas space
+        """
+        Read data from a NIFTI or CIFTI file into the volumetric atlas 
+        space
 
         Args:
-            img (nibabel.image): Nifti or Cifti image
+            img (nibabel.image) or str: Nifti or Cifti image or 
+                                        corresponding filename
             interpolation (int)): nearest neighbour (0), trilinear (1)
         Returns:
             data (ndarray): (N,P) ndarray
@@ -279,7 +282,8 @@ class AtlasVolumetric(Atlas):
             img = nt.volume_from_cifti(img, [self.structure])
         if isinstance(img, (nb.Nifti1Image, nb.Nifti2Image)):
             data = nt.sample_image(
-                img, self.world[0, :], self.world[1, :], self.world[2, :], interpolation
+                img, self.world[0, :], self.world[1, :], self.world[2, :], 
+                interpolation
             )
         else:
             raise(NameError("Unknown image type"))
@@ -457,26 +461,34 @@ class AtlasSurface(Atlas):
         return cifti_img
 
     def read_data(self, img, interpolation=0):
-        """reads data for surface-based atlas from list of gifti [left,right]or single cifti file. Adjusts automatically for node masks.
+        """
+        Reads data for surface-based atlas from list of gifti 
+        [left,right]or single cifti file. 
+        Adjusts automatically for node masks.
 
         Args:
-            img (nibabel.image): Cifti or (list of) gifti images
+            img (nibabel.image) or str: Cifti or its filename or 
+                                        (list of) gifti images
             interpolation (int): nearest neighbour (0), trilinear (1)
         Returns:
             data (ndarray): (N,P) ndarray
         """
+        if isinstance(img, str):
+            img = nb.load(img)
         if isinstance(img, nb.Cifti2Image):
             data = self.cifti_to_data(img)
         elif isinstance(img, list):
             if len(img) != len(self.structure):
-                raise (NameError("Number of images needs to match len(self.structure)"))
+                raise (NameError(
+                    "Number of images needs to match len(self.structure)"))
             data = []
             for i, im in enumerate(img):
                 if isinstance(im, str):
                     im = nb.load(im)
                 d = im.agg_data()
-                if isinstance(d,tuple): # If tuple, the gifti is likely a surf.gii file
-                    d = d[0]            # then return only coordinates
+                # If tuple, the gifti is likely a surf.gii file, ...
+                if isinstance(d,tuple): 
+                    d = d[0] # ... then return only coordinates
                 data.append(d[self.vertex[i]])
             data = np.concatenate(data,axis=0)
         return data
