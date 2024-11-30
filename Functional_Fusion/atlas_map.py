@@ -51,9 +51,9 @@ def get_atlas(atlas_str, atlas_dir=default_atlas_dir):
 def get_deform(target_space, source_space,atlas_dir = default_atlas_dir):
     """Get name of group deformation map between two volumetric spaces
     In image mode. That is, the xfm file will be in the voxels space of the target, and contain the xyz coordinates of the source space (pull).
-
     If you want to deform points (ROI centers, surfaces) from the target to the source, you need mode-point xfm file (push).
     Note that: tpl-A_from_B-mode-point_xfm.nii = tpl-B_from_A-mode-image_xfm.nii
+
     Args:
         target_space (str): Target space
         source_space (str): Source space
@@ -63,6 +63,29 @@ def get_deform(target_space, source_space,atlas_dir = default_atlas_dir):
     """
     deform = f"{atlas_dir}/tpl-{target_space}/tpl-{target_space}_from-{source_space}_mode-image_xfm.nii"
     return deform
+
+def deform_data(data, src_atlas,trg_atlas,interpolation=1):
+    """ Deforms any data from a source atlas to a target atlas
+    Current implementation is only for volumetric atlases
+    Source atlas has P_src locations, target space has P_trg locations
+
+    Args:
+        data (ndarray): N x P_src array of data
+        src_atlas (Atlas): Source atlas
+        trg_atlas (Atlas): Target atlas
+        interpolation (int, optional): Nearest Neighbour (0) or Trilinear interpolation (1). Defaults to 1.
+    Returns:
+        data_def (ndarray): N x P_trg array of data
+    """
+    nii_src = src_atlas.data_to_nifti(data)
+    xfm_name = am.get_deform(trg_atlas.space,src_atlas.space)
+    xfm = nb.load(xfm_name)
+    XYZ = nt.sample_image(xfm, trg_atlas.world[0],trg_atlas.world[1],trg_atlas.world[2],1)
+    data_trg = nt.sample_image(nii_src,
+                    XYZ[:,0,0],
+                    XYZ[:,0,1],
+                    XYZ[:,0,2],interpolation=1)
+    return data_trg
 
 def parcel_recombine(label_vector,parcels_selected,label_id=None,label_name=None):
     """ Recombines and selects different parcels into a new label vector for ROI analysis.
@@ -235,18 +258,22 @@ class AtlasVolumetric(Atlas):
         return cifti_img
 
     def data_to_nifti(self, data):
-        """Transforms data in atlas space into 3d or 4d nifti image, depending on data type, the empty parts of the image will be NaNs or zeros.
-        Nifti data type will be dictated by the data type of the input data.
+        """Transforms data in atlas space into 3d or 4d nifti image, depending on whether
+        the data is a vector (1d) or a matrix (2d). Depending on the data type (float or int)
+        the empty parts of the image will be NaNs or zeros.
+        The nifti data type will be dictated by the data type of the input data.
+
         Args:
-            data (np.ndarray): Data to be mapped into nifti
+            data (np.ndarray): Data to be mapped into nifti (1-d or 2-d)
         Returns:
             Nifti1Image(nb.Nifti1Image): NiftiImage object
         """
         if data.ndim == 1:
             N, p = 1, data.shape[0]
-        else:
+        elif data.ndim ==2:
             N, p = data.shape
-        
+        else:
+            raise(NameError('data needs to be either 1d or 2d'))
         if p != self.P:
             raise (NameError("Data needs to be a P vector or NxP matrix"))
         if N > 1:
@@ -266,11 +293,11 @@ class AtlasVolumetric(Atlas):
 
     def read_data(self, img, interpolation=0):
         """
-        Read data from a NIFTI or CIFTI file into the volumetric atlas 
+        Read data from a NIFTI or CIFTI file into the volumetric atlas
         space
 
         Args:
-            img (nibabel.image) or str: Nifti or Cifti image or 
+            img (nibabel.image) or str: Nifti or Cifti image or
                                         corresponding filename
             interpolation (int)): nearest neighbour (0), trilinear (1)
         Returns:
@@ -282,7 +309,7 @@ class AtlasVolumetric(Atlas):
             img = nt.volume_from_cifti(img, [self.structure])
         if isinstance(img, (nb.Nifti1Image, nb.Nifti2Image)):
             data = nt.sample_image(
-                img, self.world[0, :], self.world[1, :], self.world[2, :], 
+                img, self.world[0, :], self.world[1, :], self.world[2, :],
                 interpolation
             )
         else:
@@ -390,7 +417,7 @@ class AtlasSurface(Atlas):
         self.mask = [(X > 0) for X in Xmask]
         self.vertex_mask = [(X > 0) for X in Xmask]
         self.vertex = [np.nonzero(X)[0] for X in self.vertex_mask]
-        # 
+        #
         self.structure_index = [i*np.ones(len(v)) for i,v in enumerate(self.vertex)]
         self.structure_index = np.concatenate(self.structure_index)
         self.P = sum([v.shape[0] for v in self.vertex])
@@ -462,12 +489,12 @@ class AtlasSurface(Atlas):
 
     def read_data(self, img, interpolation=0):
         """
-        Reads data for surface-based atlas from list of gifti 
-        [left,right]or single cifti file. 
+        Reads data for surface-based atlas from list of gifti
+        [left,right]or single cifti file.
         Adjusts automatically for node masks.
 
         Args:
-            img (nibabel.image) or str: Cifti or its filename or 
+            img (nibabel.image) or str: Cifti or its filename or
                                         (list of) gifti images
             interpolation (int): nearest neighbour (0), trilinear (1)
         Returns:
@@ -487,7 +514,7 @@ class AtlasSurface(Atlas):
                     im = nb.load(im)
                 d = im.agg_data()
                 # If tuple, the gifti is likely a surf.gii file, ...
-                if isinstance(d,tuple): 
+                if isinstance(d,tuple):
                     d = d[0] # ... then return only coordinates
                 data.append(d[self.vertex[i]])
             data = np.concatenate(data,axis=0)

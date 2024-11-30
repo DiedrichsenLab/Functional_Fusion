@@ -124,3 +124,13 @@ And here a full example for an ROI-analysis for a volumetric (cerebellar) atlas:
     cifti_img = nb.Cifti2Image(Y, header=header)
     nb.save(cift_img,'myROIresult.pscalar.nii')
 
+Transforming data between atlas space
+-------------------------------------
+Data extracted in one Atlas space can be directly transformed into another atlas space. For this, the two Atlasses need to cover the same brain structure. Currently, direct deformation is only possible between two volumetric atlases. The deformation depends on the `xfm` file found in the template directory of the target space. If the file does not exist, raise an issue on Github.
+
+.. code-block:: python
+
+    atlas_src,_ = am.get_atlas('SUIT3')
+    atlas_trg,_ = am.get_atlas('MNISymC2')
+    data = atlas_src.read_data('file_in_suit_space.dscalar.nii')
+    data_new = am.deform_data(data,atlas_src,atlas_trg,interpolation=1)
