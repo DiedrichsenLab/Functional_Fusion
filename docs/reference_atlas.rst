@@ -8,6 +8,8 @@ Atlas Functions
 
 .. autofunction:: atlas_map.get_deform
 
+.. autofunction:: atlas_map.deform_data
+
 .. autofunction:: atlas_map.parcel_recombine
 
 Atlas Classes
