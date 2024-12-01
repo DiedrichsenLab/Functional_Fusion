@@ -322,12 +322,23 @@ def optimal_contrast(data, C, X, reg_in=None, baseline=None):
     return data_new
 
 def remove_baseline(data, baseline):
-    """ Removes a baseline from the data"""
+    """ Removes a baseline from the data
+    
+    Arg:
+        data (ndarray): (nsubj x N x P) OR (N x P) array
+        baseline (narray): 1-dimensional array (N,) of partition number or (N x npart) indicator matrix
+    Returns: 
+        data_sub (ndarray): Baseline subtracted data  
+    """
     if baseline is None:
         return data 
-    Q = data.shape[0]
-    R = eye(Q) - baseline @ pinv(baseline)
-    return R @ data
+    N = data.shape[-2]        # This is the trial dimension  
+    if baseline.ndim == 1: 
+        B = matrix.indicator(baseline)
+    else: 
+        B = baseline
+    R = eye(N) - B @ pinv(B) # Residual forming matrix  
+    return R @ data # Uses broadcasting for >2 dim arrays 
 
 def reliability_within_subj(X, part_vec, cond_vec,
                             voxel_wise=False,

@@ -238,7 +238,7 @@ def test_atlas_parcelVol():
 def test_atlas_parcelSurf():
 
     data_file = os.path.join(base_dir, 'WMFS', 'derivatives', 'sub-01', 'data', 'sub-01_space-fs32k_ses-02_CondHalf.dscalar.nii')
-    
+
     # load left and right data in one file
     data_img = nb.cifti2.load(data_file)
     hemi = ['L', 'R']
