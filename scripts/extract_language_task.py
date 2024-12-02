@@ -23,8 +23,8 @@ data_dir = base_dir + '/Language'
 atlas_dir = base_dir + '/Atlases'
 
 
-types = ['CondAll']
-atlases  = ['MNISymC2','SUIT3','fs32k']
+types = ['CondRun']
+atlases  = ['MNISymThalamus1']
 session_list = ['ses-localizer_cond_fm']
 
 
@@ -44,10 +44,9 @@ for ses in session_list:
         raise Exception('wrong session values')
     
     
-
     for type in types:
         print(f'extracting type {type}')
         for atlas in atlases:
             print(f'extracting atlas: {atlas}')
-            LL_dataset.extract_all(ses_id = ses,type = type, atlas = atlas, subj= 'all')
+            LL_dataset.extract_all(ses_id = ses,type = type, atlas = atlas, smooth=None, subj='all')
  

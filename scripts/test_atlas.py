@@ -2,13 +2,14 @@
 import pandas as pd
 import shutil
 from pathlib import Path
-import mat73
+# import mat73
 import numpy as np
-import atlas_map as am
+import Functional_Fusion.atlas_map as am
+import Functional_Fusion.dataset as ds
 from Functional_Fusion.dataset import DataSetMDTB
 from Functional_Fusion.dataset import DataSetHcpResting
 import nibabel as nb
-from matrix import indicator
+from Functional_Fusion.matrix import indicator
 import sys
 import os
 
@@ -237,7 +238,7 @@ def test_atlas_parcelVol():
 def test_atlas_parcelSurf():
 
     data_file = os.path.join(base_dir, 'WMFS', 'derivatives', 'sub-01', 'data', 'sub-01_space-fs32k_ses-02_CondHalf.dscalar.nii')
-    
+
     # load left and right data in one file
     data_img = nb.cifti2.load(data_file)
     hemi = ['L', 'R']
@@ -265,9 +266,18 @@ def test_atlas_parcelSurf():
 
     return data_parcel
 
+def test_atlas_deform(): 
+    a1,ainf1 = am.get_atlas('SUIT3')
+    a2,ainf2 = am.get_atlas('MNISymC2')
+    data,info,_ = ds.get_dataset(base_dir,'MDTB',atlas='SUIT3', sess='ses-s1' subj=[1],type='CondAll')
+    am.deform_data(data,a1,a2)
+
+    pass
+
+
 if __name__ == "__main__":
     # make_mdtb_suit()
     # test_atlas_sym()
-    test_atlas_parcelSurf()
+    test_atlas_deform()
     pass
 

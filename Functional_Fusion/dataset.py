@@ -18,11 +18,11 @@ import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
 import scipy.linalg as sl
 import nibabel as nb
-import nitools as nt
 from numpy import eye, zeros, ones, empty, nansum, sqrt
 from numpy.linalg import pinv, solve
 import warnings
 import glob
+import re
 
 
 def get_dataset_class(base_dir, dataset):
@@ -233,8 +233,8 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
     """ Aggregates data over colums to condense to parcels
 
     Args:
-        data (ndarray): Either 2d or 3d data structure
-        labels (ndarray): 1d-array that gives the labels
+        data (ndarray): Either 2d or 3d data structure, P has to be the last dimension
+        labels (ndarray): 1d-array that gives the labels (P-vector)
         fcn (function): Function to use to aggregate over these
     Returns:
         aggdata (ndarray): Aggregated either 2d or 3d data structure
@@ -251,6 +251,38 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
             data[..., label_vec == l], axis=len(psize) - 1)
     return parcel_data, labels
 
+def combine_parcel_labels(labels_org,labels_new, labelvec_org=None):
+    """ Combines parcel labels from a new atlas to an existing atlas
+    Example call: 
+    mapping, lv = combine_parcel_labels(labels_org,['0','A.L','A.R','S..','M3.'],labelvec_org)
+    To get different aggregations of the Nettekoven atlas
+    * A.L includes A1-4L 
+    * A.R includes A1-4R
+    * S.. includes all S-areas
+    * M3. includes M3L and M3R 
+
+    Args:
+        labels_org (list of str): N-lenght original label names (should include '0' for 0)
+        labels_new (list of str): List of regexpressions for new labels (should include '0' for 0) 
+        labelvec_org (ndarray, optional): Original label vector to remap (P-vector) 
+    Returns:
+        mapping (ndarray): New label indices for the old labels (N-length vector)
+        labelvec_new (ndarray): New label vector (P-vector) - returned if labelvec_org is given
+    """
+    mapping = np.zeros(len(labels_org))
+
+    for i,l in enumerate(labels_new):
+        for j,lo in enumerate(labels_org):
+            if re.match(l,lo):
+                mapping[j] = i
+
+    if labelvec_org is None:
+        return mapping
+    else :
+        labelvec_new = np.zeros(labelvec_org.shape)
+        for i in np.arange(len(mapping)):
+            labelvec_new[labelvec_org == i] = mapping[i]
+        return mapping, labelvec_new 
 
 def optimal_contrast(data, C, X, reg_in=None, baseline=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
@@ -290,12 +322,23 @@ def optimal_contrast(data, C, X, reg_in=None, baseline=None):
     return data_new
 
 def remove_baseline(data, baseline):
-    """ Removes a baseline from the data"""
+    """ Removes a baseline from the data
+    
+    Arg:
+        data (ndarray): (nsubj x N x P) OR (N x P) array
+        baseline (narray): 1-dimensional array (N,) of partition number or (N x npart) indicator matrix
+    Returns: 
+        data_sub (ndarray): Baseline subtracted data  
+    """
     if baseline is None:
         return data 
-    Q = data.shape[0]
-    R = eye(Q) - baseline @ pinv(baseline)
-    return R @ data
+    N = data.shape[-2]        # This is the trial dimension  
+    if baseline.ndim == 1: 
+        B = matrix.indicator(baseline)
+    else: 
+        B = baseline
+    R = eye(N) - B @ pinv(B) # Residual forming matrix  
+    return R @ data # Uses broadcasting for >2 dim arrays 
 
 def reliability_within_subj(X, part_vec, cond_vec,
                             voxel_wise=False,
@@ -458,8 +501,7 @@ def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
     elif criterion in ['global','subject_wise']:
         Y = X.reshape((1, n_subjects, n_partitions, n_conditions * n_voxels))
     else:
-        Y = np.empty(1)
-        print('invalid criterion')
+        raise(NameError('criterion needs to be global, voxel_wise, condition_wise, or subject_wise'))
     [n_split, _, _, n_features] = Y.shape
 
     # reshape the data to be in the form of (n_split, n_subjects*n_partitions, n_features)
@@ -660,8 +702,13 @@ class DataSet:
         return info_com
 
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
-        """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for
-        SUIT: Using individual normalization from source space. MNI152NLin2009cSymC & MNI152NLin6AsymC: Via indivual SUIT normalization and the to MNI over group deformation, fs32k: Via individual pial and white surfaces (need to be in source space)
+        """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for different spaces
+            - SUIT: Using individual normalization from source space. 
+            - MNI152NLin2009cSymC: Via indivual SUIT normalization + group
+            - MNI152NLin6AsymC: Via indivual SUIT normalization + group
+            - MNI152Lin2009cSym: Via individual MNI normalization
+            - MNI152NLin6Asym: Via individual MNI normalization
+        fs32k: Via individual pial and white surfaces (need to be in source space)
         Other dataset classes will overwrite and extend this function.
 
         Args:
@@ -902,9 +949,13 @@ class DataSetNative(DataSet):
             AtlasMap: Built AtlasMap object
         """
         atlas_maps = []
-        if atlas.space == 'MNI152NLin6Asym':
+
+        if atlas.space == ['MNI152NLin2009cSym','MNI152NLin6Asym']:
             # This is for MNI standard space)
-            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-{atlas.space}_xfm.nii'
+            if not os.path.exists(deform):
+                warnings.warn(f'No individual deformation found for {atlas.space} in {sub} - resortinh to MNI_xfm.nii')
+                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
             edir = self.estimates_dir.format(sub)
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
