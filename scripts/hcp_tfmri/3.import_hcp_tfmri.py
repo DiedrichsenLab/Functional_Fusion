@@ -211,6 +211,7 @@ def make_reginfo(source_dir, dest_dir):
             run_dirs = [d for d in session_dir.iterdir() if d.is_dir()]
             
             for run_dir in run_dirs:
+                reg_id = 0
                 # Locate .feat folder
                 feat_dir = list(run_dir.glob("*.feat"))
                 design_fsf = feat_dir[0] / "design.fsf"
@@ -230,9 +231,11 @@ def make_reginfo(source_dir, dest_dir):
                         "cond_name": cond_name,
                         "run": run_counter,
                         "reg_num": reg_num,
-                        "run_type": session_name
+                        "run_type": session_name,
+                        "reg_id": reg_id
                     })
                     reg_num += 1
+                    reg_id += 1
                 
                 run_counter += 1
 
@@ -242,7 +245,7 @@ def make_reginfo(source_dir, dest_dir):
         if not dest_folder.exists():
             os.makedirs(dest_folder, exist_ok=True)
         
-        reginfo_df = pd.DataFrame(reginfo_data, columns=["cond_name", "run", "reg_num", "run_type"])
+        reginfo_df = pd.DataFrame(reginfo_data, columns=["cond_name", "run", "run_type","reg_num", "reg_id"])
         reginfo_df.to_csv(dest_file, sep="\t", index=False)
         print(f"Saved reginfo file: {dest_file}")
 
