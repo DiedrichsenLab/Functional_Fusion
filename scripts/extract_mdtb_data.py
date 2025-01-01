@@ -106,9 +106,12 @@ if __name__ == "__main__":
     T = pd.read_csv(
         mdtb_dir + '/participants.tsv', delimiter='\t')
     subject_subset = T.participant_id[T['ses-rest'] == 1].tolist()
+    subject_indices = T.participant_id[T['ses-rest'] == 1].index.tolist() # get indices of subjects
+    
+
     mdtb_dataset = DataSetMDTB(mdtb_dir)
-    mdtb_dataset.extract_all(ses_id='ses-s1', type='TaskRun', atlas='MNISymC3', subj=subject_subset)
-    mdtb_dataset.extract_all(ses_id='ses-s2', type='TaskRun', atlas='MNISymC3', subj=subject_subset)
+    mdtb_dataset.extract_all(ses_id='ses-s1', type='TaskRun', atlas='MNISymC3', subj=subject_indices)
+    mdtb_dataset.extract_all(ses_id='ses-s2', type='TaskRun', atlas='MNISymC3', subj=subject_indices)
     # mdtb_dataset.extract_all(ses_id='ses-s1', type='CondRun', atlas='MNISymDentate1', smooth=None)
     # mdtb_dataset.extract_all(ses_id='ses-s2', type='CondRun', atlas='MNISymDentate1', smooth=None)
 
