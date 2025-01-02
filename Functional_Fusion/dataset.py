@@ -1137,8 +1137,8 @@ class DataSetMDTB(DataSetNative):
             elif type == 'TaskRun':
 
                 data_info, C = agg_data(info,
-                                        ['run', 'reg_id'],
-                                        ['reg_num'],
+                                        by=['run', 'task_num'],
+                                        over=['task_num'],
                                         subset=(info.reg_id > 0))
                 data_info['names'] = [
                     f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
