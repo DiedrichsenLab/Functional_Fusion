@@ -112,6 +112,9 @@ if __name__ == "__main__":
     mdtb_dataset = DataSetMDTB(mdtb_dir)
     mdtb_dataset.extract_all(ses_id='ses-s1', type='TaskRun', atlas='MNISymC3')
     mdtb_dataset.extract_all(ses_id='ses-s2', type='TaskRun', atlas='MNISymC3')
+    mdtb_dataset.extract_all(ses_id='ses-s1', type='TaskRun', atlas='fs32k')
+    mdtb_dataset.extract_all(ses_id='ses-s2', type='TaskRun', atlas='fs32k')
+    
     # mdtb_dataset.extract_all(ses_id='ses-s1', type='CondRun', atlas='MNISymDentate1', smooth=None)
     # mdtb_dataset.extract_all(ses_id='ses-s2', type='CondRun', atlas='MNISymDentate1', smooth=None)
 
