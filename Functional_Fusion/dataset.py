@@ -1134,6 +1134,17 @@ class DataSetMDTB(DataSetNative):
                 # Baseline substraction
                 B = np.ones((data_info.shape[0],1))
 
+            elif type == 'TaskRun':
+
+                data_info, C = agg_data(info,
+                                        by=['run', 'task_num'],
+                                        over=['reg_num'],
+                                        subset=(info.instruction == 0))
+                data_info['names'] = [
+                    f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
+
             # Prewhiten the data
             data_n = prewhiten_data(data)
 
