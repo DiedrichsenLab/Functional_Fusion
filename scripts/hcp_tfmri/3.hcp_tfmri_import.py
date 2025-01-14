@@ -274,11 +274,11 @@ def make_reginfo(source_dir, dest_dir):
 
 
 if __name__ == '__main__':
-    # make_participant_tsv(HCP_dir, functional_fusion_dir)
-    # import_anat_data(HCP_dir, functional_fusion_dir)
-    # import_freesurfer(HCP_dir, functional_fusion_dir)
-    # import_resms(HCP_dir, functional_fusion_dir)
-    # import_masks(HCP_dir, functional_fusion_dir)
+    make_participant_tsv(HCP_dir, functional_fusion_dir)
+    import_anat_data(HCP_dir, functional_fusion_dir)
+    import_freesurfer(HCP_dir, functional_fusion_dir)
+    import_resms(HCP_dir, functional_fusion_dir)
+    import_masks(HCP_dir, functional_fusion_dir)
     import_betas(HCP_dir, functional_fusion_dir)
     make_reginfo(HCP_dir, functional_fusion_dir)
 
