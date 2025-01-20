@@ -346,18 +346,21 @@ def reliability_within_subj(X, part_vec, cond_vec,
     """ Calculates the within-subject reliability of a data set
     Data (X) is grouped by condition vector, and the
     partition vector indicates the independent measurements
-
+    Does the calculation for each subejct if X is a 3d array
     Args:
-        X (ndarray): num_subj x num_trials x num_voxel tensor of data
+        X (ndarray): (num_subj x) num_trials x num_voxel tensor of data
         part_vec (ndarray): num_trials partition vector
         cond_vec (ndarray): num_trials condition vector
         voxel_wise (bool): Return the results as map or overall?
         subtract_mean (bool): Remove the mean per voxel before correlation calc?
     Returns:
-        r (ndarray)L: num_subj x num_partition matrix of correlations
+        r (ndarray)L: (num_subj x) num_partition matrix of correlations
     """
     partitions = np.unique(part_vec)
     n_part = partitions.shape[0]
+    if len(X.shape) == 2:
+        X = X.reshape(1, X.shape[0], X.shape[1])
+        single_subj = True
     n_subj = X.shape[0]
     if voxel_wise:
         r = np.zeros((n_subj, n_part, X.shape[2]))
@@ -381,6 +384,8 @@ def reliability_within_subj(X, part_vec, cond_vec,
             else:
                 r[s, pn] = nansum(X1 * X2) / \
                     sqrt(nansum(X1 * X1) * nansum(X2 * X2))
+    if single_subj:
+        r = r[0, :]    
     return r
 
 
