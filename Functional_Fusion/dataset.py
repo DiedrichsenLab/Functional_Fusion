@@ -506,8 +506,7 @@ def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
     elif criterion in ['global','subject_wise']:
         Y = X.reshape((1, n_subjects, n_partitions, n_conditions * n_voxels))
     else:
-        Y = np.empty(1)
-        print('invalid criterion')
+        raise(NameError('criterion needs to be global, voxel_wise, condition_wise, or subject_wise'))
     [n_split, _, _, n_features] = Y.shape
 
     # reshape the data to be in the form of (n_split, n_subjects*n_partitions, n_features)
