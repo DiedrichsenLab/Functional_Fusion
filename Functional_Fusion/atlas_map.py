@@ -377,18 +377,13 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
 
         # Now find a ordering of the right hemisphere
         # that matches the left hemisphere
-        for i in range(self.Psym):
-            a = np.nonzero(
-                np.all(world_coord[:, i : i + 1] == self.world[:, indx_right], axis=0)
-            )[0]
-            if len(a) != 1:
-                raise (
-                    NameError(
-                        "The voxels in mask do not seem to be fully symmetric along the x-axis"
-                    )
-                )
-            self.indx_full[1, i] = indx_right[a[0]]
-            self.indx_reduced[indx_right[a[0]]] = i
+        Match = (world_coord[0:1,indx_left].T==world_coord[0:1,indx_right]) & \
+            (world_coord[1:2,indx_left].T==world_coord[1:2,indx_right]) & \
+            (world_coord[2:3,indx_left].T==world_coord[2:3,indx_right])
+        r=Match.argmax(axis=0)
+
+        self.indx_full[1, :] = indx_right[r]
+        self.indx_reduced[indx_right[r]] = indx_left
         # Generate flipping index
         indx_orig = np.arange(self.P, dtype=int)
         self.indx_flip = np.zeros((self.P,), dtype=int)
