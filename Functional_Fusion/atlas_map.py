@@ -380,7 +380,7 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
         Match = (world_coord[0:1,indx_left].T==world_coord[0:1,indx_right]) & \
             (world_coord[1:2,indx_left].T==world_coord[1:2,indx_right]) & \
             (world_coord[2:3,indx_left].T==world_coord[2:3,indx_right])
-        r=Match.argmax(axis=0)
+        r=Match.argmax(axis=1)
 
         self.indx_full[1, :] = indx_right[r]
         self.indx_reduced[indx_right[r]] = indx_left
