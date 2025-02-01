@@ -221,7 +221,7 @@ class AtlasVolumetric(Atlas):
         """Transforms data into a cifti image
 
         Args:
-            data (ndarray/list): the input data to be mapped 1-d Numpy array of the size (P,)
+            data (ndarray/list): the input data to be mapped: shape (N,P).
             row_axis: label for row axis in cifti file, it can be:
 
                 | (list) - a list of row names
@@ -264,7 +264,7 @@ class AtlasVolumetric(Atlas):
         The nifti data type will be dictated by the data type of the input data.
 
         Args:
-            data (np.ndarray): Data to be mapped into nifti (1-d or 2-d)
+            data (np.ndarray): P-vector or NxP matrix to be mapped into nifti
         Returns:
             Nifti1Image(nb.Nifti1Image): NiftiImage object
         """
@@ -306,7 +306,7 @@ class AtlasVolumetric(Atlas):
         if isinstance(img, str):
             img = nb.load(img)
         if isinstance(img, nb.Cifti2Image):
-            img = nt.volume_from_cifti(img, [self.structure])
+            img = nt.volume_from_cifti(img)
         if isinstance(img, (nb.Nifti1Image, nb.Nifti2Image)):
             data = nt.sample_image(
                 img, self.world[0, :], self.world[1, :], self.world[2, :],
@@ -314,7 +314,7 @@ class AtlasVolumetric(Atlas):
             )
         else:
             raise(NameError("Unknown image type"))
-        return data
+        return data.T # Return the data as NxP array
 
     def sample_nifti(self, img, interpolation):
         """Samples a img at the atlas locations
