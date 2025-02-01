@@ -1139,6 +1139,17 @@ class DataSetMDTB(DataSetNative):
                 # Baseline substraction
                 B = np.ones((data_info.shape[0],1))
 
+            elif type == 'TaskRun':
+
+                data_info, C = agg_data(info,
+                                        by=['run', 'task_num'],
+                                        over=['reg_num'],
+                                        subset=(info.instruction == 0))
+                data_info['names'] = [
+                    f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
+
             # Prewhiten the data
             data_n = prewhiten_data(data)
 
@@ -1959,3 +1970,69 @@ class DataSetLanguage(DataSetNative):
             data_new = optimal_contrast(data_n, C, X, reg_in)
 
         return data_new, data_info
+
+class DataSetHcpTask(DataSetNative):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.sessions = ['ses-task']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'reg_id'
+        self.cond_name = 'cond_name'
+        self.part_ind = 'half'
+
+    def condense_data(self, data, info,
+                      type='CondHalf',
+                      participant_id=None,
+                      ses_id=None):
+        """ Condense the data in a certain way optimally
+        'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+        'CondRun': Conditions with seperate estimates per run. Defaults to 'CondHalf'.
+
+        Args:
+            data (list): List of extracted datasets
+            info (DataFrame): Data Frame with description of data - row-wise
+            type (str): Type of extraction:
+            participant_id (str): ID of participant
+            ses_id (str): Name of session
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provided
+        """
+
+        # Depending on the type, make a new contrast
+        if type == 'CondHalf':
+            data_info, C = agg_data(info,
+                                    ['half','reg_id'],
+                                    ['run', 'reg_num']
+                                    )
+            data_info['names'] = [
+                f'{d.cond_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+
+        elif type == 'CondRun':
+            data_info, C = agg_data(info,
+                                    ['run', 'reg_id'],
+                                    ['reg_num', 'half']
+                                    )
+            data_info['names'] = [
+                f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
+
+        elif type == 'CondAll':
+
+            data_info, C = agg_data(info,
+                                    ['reg_id'],
+                                    ['run', 'half', 'reg_num']
+                                    )
+            data_info['names'] = [
+                f'{d.cond_name}' for i, d in data_info.iterrows()]
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Combine with contrast
+        for i in range(len(data_n)):
+            data_n[i] = pinv(C) @ data_n[i]
+            
+        return data_n, data_info
