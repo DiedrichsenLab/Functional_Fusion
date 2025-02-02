@@ -709,7 +709,7 @@ class AtlasMapDeform:
 
         Args:
             worlds (ndarray): 3xP ND array of world locations
-            deform_img (str/list): Name of deformation map image(s). If None, no deformation is applied.s
+            deform_img (str/list): Name of deformation map image(s). If None, no deformation is applied.
             mask_img (str): Name of masking image that defines the functional source space.
         """
         self.P = world.shape[1]
@@ -722,14 +722,15 @@ class AtlasMapDeform:
                 self.deform_img.append(nb.load(di))
         self.mask_img = nb.load(mask_img)
 
-    def build(self, smooth=None, additional_mask=None):
+    def build(self, interpolation=1, smooth=None, additional_mask=None):
         """ Using the dataset, builds a list of voxel indices of
         For each of the locations. It creates:
         vox_list: List of voxels to sample for each atlas location
         vox_weight: Weight of each of these voxels to determine the atlas location
 
         Args:
-            smooth (double): SD of smoothing kernel (mm) or None for nearest neighbor
+            interpolation (int): nearest neighbour (0), trilinear (1), smooth (2)
+            smooth (double): SD of smoothing kernel (mm) (only used if interpolation=2)
             additional_mask: Additional Mask image (not necessarily in functional space - only voxels with elements > 0 in that image
             will be used for the altas )
         """
@@ -739,13 +740,13 @@ class AtlasMapDeform:
         # Pass through the list of deformations
         for i, di in enumerate(self.deform_img):
             xyz = nt.sample_image(di, xyz[0], xyz[1], xyz[2], 1).squeeze().T
-        atlas_ind = xyz
-        N = atlas_ind.shape[1]  # Number of locations in atlas
+        atlas_coord = xyz
+        N = atlas_coord.shape[1]  # Number of locations in atlas
 
         # Determine which voxels are available in functional space
         # and apply additional mask if given
-        M = self.mask_img.get_fdata()
-        i, j, k = np.where(M > 0)
+        M = self.mask_img.get_fdata()>0
+        i, j, k = np.where(M)
         vox = np.vstack((i, j, k))
         # available voxels in world coordiantes
         world_vox = nt.affine_transform_mat(vox, self.mask_img.affine)
@@ -756,15 +757,42 @@ class AtlasMapDeform:
             add_mask = nt.sample_image(
                 additional_mask, world_vox[0], world_vox[1], world_vox[2], 1
             )
-            world_vox = world_vox[:, add_mask > 0]
+            M[i,j,k]=add_mask > 0
             vox = vox[:, add_mask > 0]
+            world_vox = world_vox[:, add_mask > 0]
 
-        if smooth is None:  # Use nearest neighbor interpolation
-            linindx, good = nt.coords_to_linvidxs(atlas_ind, self.mask_img, mask=True)
+        # For backwards compatibility:
+        if smooth is not None:
+            interpolation = 2
+
+        if interpolation==0:  # Use nearest neighbor interpolation
+            linindx, good = nt.coords_to_linvidxs(atlas_coord, self.mask_img, mask=True)
             self.vox_list = linindx.reshape(-1, 1)
             self.vox_weight = np.ones((linindx.shape[0], 1))
             self.vox_weight[np.logical_not(good)] = np.nan
-        else:  # Use smoothing kernel of specific size
+        elif interpolation==1:
+            atlas_vox = nt.affine_transform_mat(atlas_coord,np.linalg.inv(self.mask_img.affine))
+            vox_lpi = np.floor(atlas_vox).astype(int)
+            remainder = atlas_vox - vox_lpi
+            X = vox_lpi[0].reshape(-1,1) + np.array([0,1,0,1,0,1,0,1]).reshape(1,-1)
+            Y = vox_lpi[1].reshape(-1,1) + np.array([0,0,1,1,0,0,1,1]).reshape(1,-1)
+            Z = vox_lpi[2].reshape(-1,1) + np.array([0,0,0,0,1,1,1,1]).reshape(1,-1)
+            weight = np.array([(1-remainder[0])*(1-remainder[1])*(1-remainder[2]),
+                               remainder[0]*(1-remainder[1])*(1-remainder[2]),
+                               (1-remainder[0])*remainder[1]*(1-remainder[2]),
+                               remainder[0]*remainder[1]*(1-remainder[2]),
+                               (1-remainder[0])*(1-remainder[1])*remainder[2],
+                               remainder[0]*(1-remainder[1])*remainder[2],
+                               (1-remainder[0])*remainder[1]*remainder[2],
+                               remainder[0]*remainder[1]*remainder[2]]).T
+            linindx = np.ravel_multi_index((X,Y,Z),M.shape,mode='clip')
+            weight = weight * M.flatten()[linindx]
+            mw = weight.sum(axis=1,keepdims=True)
+            mw[mw == 0] = np.nan
+            self.vox_weight = weight / mw
+            self.vox_list = linindx
+
+        elif interpolation==2:  # Use smoothing kernel of specific size
             linindx = np.ravel_multi_index(
                 (vox[0, :], vox[1, :], vox[2, :]), M.shape, mode="clip"
             )
@@ -808,7 +836,7 @@ class AtlasMapSurf:
         self.pial_surf = nb.load(pial_surf)
         self.mask_img = nb.load(mask_img)
 
-    def build(self, smooth=None, depths=[0, 0.2, 0.4, 0.6, 0.8, 1.0]):
+    def build(self, depths=[0, 0.2, 0.4, 0.6, 0.8, 1.0]):
         """ Using the dataset, builds a list of voxel indices of
         each of the nodes
 
@@ -816,7 +844,6 @@ class AtlasMapSurf:
             | vox_weight: Weight of each of these voxels to determine the atlas location
 
         Args:
-            smooth (double): SD of smoothing kernel (mm) or None for nearest neighbor
             depths (iterable): List of depth between pial (1) and white (0) surface that
             will be sampled
         """
