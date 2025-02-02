@@ -18,11 +18,14 @@ def test_atlasmap_deform():
     deform = am.default_atlas_dir + '/tpl-SUIT/tpl-SUIT_from-MNI152NLin2009cSymC_mode-image_xfm.nii'
     mask = am.default_atlas_dir + '/tpl-MNI152NLin2009cSymC/tpl-MNISymC_res-2_gmcmask.nii'
     amap = am.AtlasMapDeform(at2.world,deform,mask)
-    amap.build(interpolation=1)
+    amap.build(interpolation=0)
 
-    []=am.get_data_nifti(fname,[amap])
-
-
+    wdir = '/Users/jdiedrichsen/Dropbox/projects/Pontine7T/'
+    fname = wdir + 'beta_res_2.nii.gz'
+    [data]=am.get_data_nifti([fname],[amap])
+    nifti = at2.data_to_nifti(data)
+    nb.save(nifti,wdir + 'beta_SUIT2nn.nii.gz')
+    pass
 
 if __name__ == "__main__":
     test_atlasmap_deform()
