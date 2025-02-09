@@ -80,11 +80,11 @@ def deform_data(data, src_atlas,trg_atlas,interpolation=1):
     nii_src = src_atlas.data_to_nifti(data)
     xfm_name = am.get_deform(trg_atlas.space,src_atlas.space)
     xfm = nb.load(xfm_name)
-    XYZ = nt.sample_image(xfm, trg_atlas.world[0],trg_atlas.world[1],trg_atlas.world[2],1)
+    XYZ = nt.sample_image(xfm, trg_atlas.world[0],trg_atlas.world[1],trg_atlas.world[2],interpolation=interpolation)
     data_trg = nt.sample_image(nii_src,
                     XYZ[:,0,0],
                     XYZ[:,0,1],
-                    XYZ[:,0,2],interpolation=1)
+                    XYZ[:,0,2],interpolation=interpolation)
     return data_trg
 
 def parcel_recombine(label_vector,parcels_selected,label_id=None,label_name=None):
