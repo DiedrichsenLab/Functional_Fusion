@@ -346,18 +346,21 @@ def reliability_within_subj(X, part_vec, cond_vec,
     """ Calculates the within-subject reliability of a data set
     Data (X) is grouped by condition vector, and the
     partition vector indicates the independent measurements
-
+    Does the calculation for each subejct if X is a 3d array
     Args:
-        X (ndarray): num_subj x num_trials x num_voxel tensor of data
+        X (ndarray): (num_subj x) num_trials x num_voxel tensor of data
         part_vec (ndarray): num_trials partition vector
         cond_vec (ndarray): num_trials condition vector
         voxel_wise (bool): Return the results as map or overall?
         subtract_mean (bool): Remove the mean per voxel before correlation calc?
     Returns:
-        r (ndarray)L: num_subj x num_partition matrix of correlations
+        r (ndarray)L: (num_subj x) num_partition matrix of correlations
     """
     partitions = np.unique(part_vec)
     n_part = partitions.shape[0]
+    if len(X.shape) == 2:
+        X = X.reshape(1, X.shape[0], X.shape[1])
+        single_subj = True
     n_subj = X.shape[0]
     if voxel_wise:
         r = np.zeros((n_subj, n_part, X.shape[2]))
@@ -381,6 +384,8 @@ def reliability_within_subj(X, part_vec, cond_vec,
             else:
                 r[s, pn] = nansum(X1 * X2) / \
                     sqrt(nansum(X1 * X1) * nansum(X2 * X2))
+    if single_subj:
+        r = r[0, :]    
     return r
 
 
@@ -1966,31 +1971,27 @@ class DataSetLanguage(DataSetNative):
 
         return data_new, data_info
 
-
-
-class DataSetLanguage(DataSetNative):
+class DataSetHcpTask(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
-        self.sessions = ['ses-social', 'ses-rest']
+        self.sessions = ['ses-task']
         self.default_type = 'CondHalf'
         self.cond_ind = 'reg_id'
-        self.cond_name = 'condName'
+        self.cond_name = 'cond_name'
         self.part_ind = 'half'
 
     def condense_data(self, data, info,
                       type='CondHalf',
                       participant_id=None,
                       ses_id=None):
-        """ Condense the data from the language localizer project after extraction
+        """ Condense the data in a certain way optimally
+        'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+        'CondRun': Conditions with seperate estimates per run. Defaults to 'CondHalf'.
 
         Args:
-            data (list of ndarray)
-            info (dataframe)
+            data (list): List of extracted datasets
+            info (DataFrame): Data Frame with description of data - row-wise
             type (str): Type of extraction:
-                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
-                'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'CondHalf'.
-                'CondAll': Conditions with all estimates combined
             participant_id (str): ID of participant
             ses_id (str): Name of session
 
@@ -1998,56 +1999,40 @@ class DataSetLanguage(DataSetNative):
             Y (list of np.ndarray):
                 A list (len = numatlas) with N x P_i numpy array of prewhitened data
             T (pd.DataFrame):
-                A data frame with information about the N numbers provide
-            names: Names for CIFTI-file per row
+                A data frame with information about the N numbers provided
         """
 
         # Depending on the type, make a new contrast
-        info['half'] = 2 - (info.run < 5)
-        if type == 'Tseries' or type == 'FixTseries':
-            info['names'] = info['timepoint']
-            data_new, data_info = data, info
+        if type == 'CondHalf':
+            data_info, C = agg_data(info,
+                                    ['half','reg_id'],
+                                    ['run', 'reg_num']
+                                    )
+            data_info['names'] = [
+                f'{d.cond_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
 
-        else:
-            if type == 'CondHalf':
-                data_info, C = agg_data(info,
-                                        ['half', 'reg_id'],
-                                        ['run', 'reg_num'],
-                                        subset=(info.reg_id >0))
-                data_info['names'] = [
-                    f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
-                # Baseline substraction
+        elif type == 'CondRun':
+            data_info, C = agg_data(info,
+                                    ['run', 'reg_id'],
+                                    ['reg_num', 'half']
+                                    )
+            data_info['names'] = [
+                f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
 
-            elif type == 'CondRun':
+        elif type == 'CondAll':
 
-                data_info, C = agg_data(info,
-                                        ['run', 'reg_id'],
-                                        ['reg_num'],
-                                        subset=(info.reg_id > 0))
-                data_info['names'] = [
-                    f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
-                # Baseline substraction
+            data_info, C = agg_data(info,
+                                    ['reg_id'],
+                                    ['run', 'half', 'reg_num']
+                                    )
+            data_info['names'] = [
+                f'{d.cond_name}' for i, d in data_info.iterrows()]
 
-            elif type == 'CondAll':
-                data_info, C = agg_data(info,
-                                        ['reg_id'],
-                                        ['run', 'half', 'reg_num'],
-                                        subset=(info.reg_id > 0))
-                data_info['names'] = [
-                    f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
-                # Baseline substraction
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
 
-            # Prewhiten the data
-            data_n = prewhiten_data(data)
-
-            dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-
-            # Load the designmatrix and perform optimal contrast
-            X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
-            reg_in = np.arange(C.shape[1], dtype=int)
-            CI = matrix.indicator(info.run * info.inst, positive=True)
-            C = np.c_[C, CI]
-
-            data_new = optimal_contrast(data_n, C, X, reg_in)
-
-        return data_new, data_info
+        # Combine with contrast
+        for i in range(len(data_n)):
+            data_n[i] = pinv(C) @ data_n[i]
+            
+        return data_n, data_info

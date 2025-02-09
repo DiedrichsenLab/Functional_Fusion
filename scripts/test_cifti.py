@@ -1,9 +1,10 @@
 # Script for importing the MDTB data set from super_cerebellum to general format.
-import numpy as np 
+import numpy as np
 import nibabel as nb
-from atlas_map import AtlasVolumetric, AtlasMapDeform, get_data3D
-from dataset import DataSetMDTB
+import Functional_Fusion.atlas_map as am
+import Functional_Fusion.dataset as ds
 import surfAnalysisPy as surf
+import nitools as nt
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 data_dir = base_dir + '/MDTB'
@@ -21,7 +22,7 @@ def explore_cifti():
     pass
 
 def explore_pconn():
-    # B = nb.load('RSN-networks.32k_fs_LR.dlabel.nii') 
+    # B = nb.load('RSN-networks.32k_fs_LR.dlabel.nii')
     A = nb.load('./test_data/HCP_Yeo2011_17Networks.32k_fs_LR.pconn.nii')
     ser = A.header.get_axis(0)
     bmf = A.header.get_axis(1)
@@ -30,8 +31,8 @@ def explore_pconn():
         print(idx,str(nam),slc)
     pass
 
-def test_pdscalar(): 
-    pass 
+def test_pdscalar():
+    pass
 
 
 def get_cereb_mask():
@@ -57,7 +58,7 @@ def get_cortex():
     bmf = A.header.get_axis(1)
     bmcl = bmf[bmf.name == 'CIFTI_STRUCTURE_CORTEX_LEFT']
     bmcr = bmf[bmf.name == 'CIFTI_STRUCTURE_CORTEX_RIGHT']
-    
+
     maskl=np.zeros(32492,)
     maskl[bmcl.vertex]=1
     maskr=np.zeros(32492,)
@@ -91,9 +92,9 @@ def get_ts_nii():
         # fill in data
         if (idx != 0) & (idx != 1): # indices 0 and 1 are cortical hemispheres
             # print(str(nam))
-            subcorticals_vol[ijk[:, 0], ijk[:, 1], ijk[:, 2], :] = bm_vals.T 
+            subcorticals_vol[ijk[:, 0], ijk[:, 1], ijk[:, 2], :] = bm_vals.T
 
-    # save as nii 
+    # save as nii
     N = nb.Nifti1Image(subcorticals_vol,bmf.affine)
 
     Vs = nb.funcs.four_to_three(N)
@@ -104,10 +105,43 @@ def get_ts_nii():
     return Vs
 
 
+def reduce_cifti():
+    wdir = '/Users/jdiedrichsen/Dropbox/projects/Pontine7T/'
+    cimg = nb.load(wdir + 'beta_glm2_cereb_gray_S01.dscalar.nii')
+    D = cimg.get_fdata()[0:2,:]
+    bm = cimg.header.get_axis(1)
+    row_axis = [f"row {r:03}" for r in range(D.shape[0])]
+    row_axis = nb.cifti2.ScalarAxis(row_axis)
+    header = nb.Cifti2Header.from_axes((row_axis, bm))
+    cifti_img = nb.Cifti2Image(dataobj=D, header=header)
+    nb.save(cifti_img,wdir + 'beta.dscalar.nii')
+    pass
+
+def cifti_to_nifti():
+    wdir = '/Users/jdiedrichsen/Dropbox/projects/Pontine7T/'
+    cimg = nb.load(wdir + 'beta.dscalar.nii')
+    nimg = nt.volume_from_cifti(cimg)
+    nb.save(nimg,wdir + 'beta.nii.gz')
+    pass
+
+
+def test_read_cifti():
+    # Test a read-out of a cifti file in a different resolution than the atlas
+    at,_ = am.get_atlas('MNISymC2')
+    wdir = '/Users/jdiedrichsen/Dropbox/projects/Pontine7T/'
+    data = at.read_data(wdir + 'beta.dscalar.nii',interpolation=1)
+    X = at.data_to_nifti(data)
+    nb.save(X,wdir + 'beta_res_2.nii.gz')
+    pass
+
+
+
 if __name__ == "__main__":
     # get_cereb_mask()
-    explore_cifti()
-
+    # explore_cifti()
+    test_read_cifti()
+    # reduce_cifti()
+    # sample_cifti()
     # T= pd.read_csv(data_dir + '/participants.tsv',delimiter='\t')
     # for s in T.participant_id:
     #     pass
