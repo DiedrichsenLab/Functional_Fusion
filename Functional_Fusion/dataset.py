@@ -2036,3 +2036,87 @@ class DataSetHcpTask(DataSetNative):
             data_n[i] = pinv(C) @ data_n[i]
             
         return data_n, data_info
+
+class DataSetSocial(DataSetNative):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.sessions = ['ses-social', 'ses-rest']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'reg_id'
+        self.cond_name = 'condName'
+        self.part_ind = 'half'
+
+    def condense_data(self, data, info,
+                      type='CondHalf',
+                      participant_id=None,
+                      ses_id=None):
+        """ Condense the data from the language localizer project after extraction
+
+        Args:
+            data (list of ndarray)
+            info (dataframe)
+            type (str): Type of extraction:
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
+                'CondAll': Conditions with all estimates combined
+            participant_id (str): ID of participant
+            ses_id (str): Name of session
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+
+        # Depending on the type, make a new contrast
+        info['half'] = 2 - (info.run < 5)
+        if type == 'Tseries' or type == 'FixTseries':
+            info['names'] = info['timepoint']
+            data_new, data_info = data, info
+
+        else:
+            if type == 'CondHalf':
+                data_info, C = agg_data(info,
+                                        ['half', 'reg_id'],
+                                        ['run', 'reg_num'],
+                                        subset=(info.reg_id >0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+
+            elif type == 'CondRun':
+
+                data_info, C = agg_data(info,
+                                        ['run', 'reg_id'],
+                                        ['reg_num'],
+                                        subset=(info.reg_id > 0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+
+            elif type == 'CondAll':
+                data_info, C = agg_data(info,
+                                        ['reg_id'],
+                                        ['run', 'half', 'reg_num'],
+                                        subset=(info.reg_id > 0))
+                data_info['names'] = [
+                    f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+
+            # Prewhiten the data
+            data_n = prewhiten_data(data)
+
+            dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+
+            # Load the designmatrix and perform optimal contrast
+            X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+            reg_in = np.arange(C.shape[1], dtype=int)
+            CI = matrix.indicator(info.run * info.inst, positive=True)
+            C = np.c_[C, CI]
+
+            data_new = optimal_contrast(data_n, C, X, reg_in)
+
+        return data_new, data_info
