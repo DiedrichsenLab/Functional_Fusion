@@ -757,8 +757,6 @@ class DataSet:
                 pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
                 white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
                 mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
-                if atlas.name == 'fs32k_fromStructural':
-                    mask = adir + f'/{sub}_label-GM_probseg.nii'
                 atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
                                                   white, pial, mask))
                 atlas_maps[i].build()
