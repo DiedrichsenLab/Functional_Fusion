@@ -653,8 +653,6 @@ class AtlasSurface(Atlas):
         self.n_labels = self.labels.shape[0]
         return self.label_vector, self.labels
 
-
-
 class AtlasSurfaceSymmetric(AtlasSurface):
     """
     """
