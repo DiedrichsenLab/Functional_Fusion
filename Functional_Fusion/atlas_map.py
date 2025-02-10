@@ -700,7 +700,21 @@ class AtlasSurfaceSymmetric(AtlasSurface):
         self.indx_flip[self.indx_full[1]] = indx_orig[self.indx_full[0]]
 
 
-class AtlasMapDeform:
+class AtlasMap:
+    def __init__(self):
+        """AtlasMap is a class that stores the mapping rules betwween a set of locations in atlas space and an individual space"""
+        self.P = np.nan
+
+    def extract_data_group(self, images): 
+        """ Extracts the desired atlas locations from a set of images, applied mapping rules and returns the data in group space"""
+        pass 
+
+    def extract_data_native(self, images): 
+        """ Extracts the voxels required for the desired atlas locations from a set of images"""
+        pass
+
+
+class AtlasMapDeform(AtlasMap):
     def __init__(self, world, deform_img, mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
         to the desired atlas space in form of a voxel list from source space
@@ -790,7 +804,7 @@ class AtlasMapDeform:
             self.vox_weight = self.vox_weight / mw
         pass
 
-class AtlasMapSurf:
+class AtlasMapSurf(Altas):
     def __init__(self, vertex, white_surf, pial_surf, mask_img):
         """AtlasMapSurf stores the mapping rules for a freesurfer-style surface (pial + white surface pair)
 
