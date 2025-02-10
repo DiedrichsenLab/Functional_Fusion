@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 import scipy.io as sio
 import nibabel as nb
-import mat73
 
 def import_suit(source_dir, dest_dir, anat_name, participant_id):
     """
@@ -126,7 +125,7 @@ def import_spm_glm(source_dir, dest_dir, sub_id, sess_id, info_dict):
     src = []
     dest = []
     # Generate new dictionary from SPM info
-    D = mat73.loadmat(source_dir + '/SPM.mat')
+    D = mat73.loadmat(source_dir + '/SPM_info.mat')
     T = {}
     for i in info_dict.items():
         series=D[i[0]]
