@@ -162,6 +162,7 @@ class Atlas:
         return self.label_vector, self.labels
 
 
+
 class AtlasVolumetric(Atlas):
     def __init__(self, name, mask_img, structure='unknown', space='unknown'):
         """Atlas Volumetric is an atlas for a Volumetric
@@ -216,6 +217,23 @@ class AtlasVolumetric(Atlas):
             bm_list.append((pname, bm))
         parcel_axis = nb.cifti2.ParcelsAxis.from_brain_models(bm_list)
         return parcel_axis
+
+    def get_subatlas_sphere(self,center,radius):
+        """Returns a subatlas (region) based on a sphere around a center location within current atlas
+        """
+        raise NotImplementedError("get_subatlas_sphere not implemented yet")
+
+    def get_subatlas_image(self,mask_img,value=1):
+        """Returns a subatlas (region) based on a mask image
+
+        Args:
+            mask_img (str): Mask image filename
+
+        Returns:
+            AtlasVolumetric: New atlas object
+        """
+        self.read_data(mask_img)
+
 
     def data_to_cifti(self, data, row_axis=None):
         """Transforms data into a cifti image
@@ -362,6 +380,8 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
         """
 
         super().__init__(name, mask_img, structure=structure, space=space)
+
+    def calculate_symmetry(self):
         # Find left and right hemispheric voxels
         indx_left = np.where(self.world[0, :] <= 0)[0]
         indx_right = np.where(self.world[0, :] >= 0)[0]
@@ -416,6 +436,22 @@ class AtlasSurface(Atlas):
         self.structure_index = [i*np.ones(len(v)) for i,v in enumerate(self.vertex)]
         self.structure_index = np.concatenate(self.structure_index)
         self.P = sum([v.shape[0] for v in self.vertex])
+
+    def get_subatlas_circle(self,hem,center,radius):
+        """ Gets a subatlas (region) based on a circle around a center location within current atlas
+        """
+        raise NotImplementedError("get_subatlas_circle not implemented yet")
+
+    def get_subatlas_image(self,hem,mask_img,value=1):
+        """Returns a subatlas (region) based on a mask image
+
+        Args:
+            mask_img (str): Mask image filename
+
+        Returns:
+            AtlasSurface: New atlas object
+        """
+        self.read_data(mask
 
     def data_to_cifti(self, data, row_axis=None):
         """Maps data back into a cifti image
@@ -681,6 +717,8 @@ class AtlasSurfaceSymmetric(AtlasSurface):
             self.vertex[0], self.vertex[1]
         ), "The left and right hemisphere must be symmetric!"
 
+    def calculate_symmetry(self):
+        """ Calculate the symmetry of the surface atlas"""
         # Initialize indices
         # This is the number of vertices before masking
         n_vertex = self.vertex_mask[0].shape[0]
@@ -705,14 +743,13 @@ class AtlasMap:
         """AtlasMap is a class that stores the mapping rules betwween a set of locations in atlas space and an individual space"""
         self.P = np.nan
 
-    def extract_data_group(self, images): 
+    def extract_data_group(self, images):
         """ Extracts the desired atlas locations from a set of images, applied mapping rules and returns the data in group space"""
-        pass 
-
-    def extract_data_native(self, images): 
-        """ Extracts the voxels required for the desired atlas locations from a set of images"""
         pass
 
+    def extract_data_native(self, images):
+        """ Extracts the voxels required for the desired atlas locations from a set of images"""
+        pass
 
 class AtlasMapDeform(AtlasMap):
     def __init__(self, world, deform_img, mask_img):
