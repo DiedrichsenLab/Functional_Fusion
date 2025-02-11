@@ -832,7 +832,7 @@ class AtlasMapDeform(AtlasMap):
             self.vox_weight = self.vox_weight / mw
         pass
 
-class AtlasMapSurf(Altas):
+class AtlasMapSurf(AtlasMap):
     def __init__(self, vertex, white_surf, pial_surf, mask_img):
         """AtlasMapSurf stores the mapping rules for a freesurfer-style surface (pial + white surface pair)
 
