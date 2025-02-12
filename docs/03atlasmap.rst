@@ -74,5 +74,5 @@ Once the Atlas map is built (surface or volume based), you can use it to extract
 
     dnames = ['beta_0001.nii','beta_0002.nii','beta_0003.nii'] # Data files can be 3d- or 4d-niftis
     n_data = amap.extract_data_native(dnames)
-    g_data = amap.map_native_to_group(dnames)
-    g_data = amap.map_native_to_group(n_data) # Equivalent to the above
+    g_data = amap.map_native_to_group(n_data) 
+    g_data = amap.extract_data_group(dnames) # Results in the same as the above two lines
