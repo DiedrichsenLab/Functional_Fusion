@@ -21,7 +21,7 @@ import Functional_Fusion.atlas_map as am
 default_atlas_dir = os.path.dirname(am.__file__) + '/Atlases'
 
 def get_atlas(atlas_str, atlas_dir=default_atlas_dir):
-    """convenience function to return an atlas from a code. 
+    """convenience function to return an atlas from a code.
     For this the atlas has to be standard and defined in the atlas_description.json file. For non-standard atlases (custom ROIs), use the AtlasVolumetric or AtlasSurface classes directly.
 
     Args:
@@ -147,7 +147,7 @@ class Atlas:
         self.space = space
 
     def get_parcel(self, label_img):
-        """adds a label_vec to the atlas that assigns each voxel / node of the atlas to a parcel (region). 
+        """adds a label_vec to the atlas that assigns each voxel / node of the atlas to a parcel (region).
         label_vec[i] = 0 means that the ith voxel / vertex is unassigned
 
         Args:
@@ -164,15 +164,15 @@ class Atlas:
         return self.label_vector, self.labels
 
     def get_subatlas(self, include):
-        """Returns a subatlas (region) based on a label value. 
+        """Returns a subatlas (region) based on a label value.
 
         Args:
-            label_value (int): Label value
+            include (np.array): Boolean array of length P of which brain location to include
 
         Returns:
-            Atlas: New atlas object
+            new_atlas(Atlas): New atlas object
         """
-        pass 
+        pass
 
 class AtlasVolumetric(Atlas):
     def __init__(self, name, mask_img, structure='unknown', space='unknown'):
@@ -231,10 +231,11 @@ class AtlasVolumetric(Atlas):
 
     def get_subatlas(self,include):
         """Returns a subatlas (region) based on a mask image
+
         Args:
-            include (np.array): Logical array of length P (or array of indices) of which brain location in the atlas.  
+            include (np.array): Logical array of length P (or array of indices) of which brain location in the atlas.
         Returns:
-            AtlasVolumetric: New atlas object
+            new_atlas(AtlasVolumetric): New atlas object
         """
         new_atlas = AtlasVolumetric(self.name, self.mask_img,self.structure,self.space)
         new_atlas.vox = self.vox[:,include]
@@ -247,7 +248,7 @@ class AtlasVolumetric(Atlas):
 
         Args:
             center (np.array): 3-vector of center of the sphere in mm
-            radius (float): Radius of the sphere in mm 
+            radius (float): Radius of the sphere in mm
         """
         dist = np.sqrt((self.world - center[:,np.newaxis])**2).sum(axis=0)
         include = dist < radius
@@ -260,12 +261,12 @@ class AtlasVolumetric(Atlas):
             mask_img (str): Mask image filename
 
         Returns:
-            AtlasVolumetric: New atlas object
+            new_atlas (AtlasVolumetric): New atlas object
         """
         data = self.read_data(mask_img)
         include = data == label_value
         return self.get_subatlas(include)
-    
+
     def data_to_cifti(self, data, row_axis=None):
         """Transforms data into a cifti image
 
@@ -279,7 +280,7 @@ class AtlasVolumetric(Atlas):
                 | (None) - default to generate a list of row names that matches the input data
 
         Returns:
-            Cifti2Image: Cifti2Image object
+            img(Cifti2Image): Cifti2Image object
         """
         if isinstance(data, list):
             data = data[0]
@@ -373,7 +374,7 @@ class AtlasVolumetric(Atlas):
             img (str or NiftiImage): Nifti to be sampled
 
         Returns:
-            np.array: Data sample at the atlas position
+            data(np.array): Data sampled at the atlas position
         """
         warnings.DeprecationWarning(
             "sample_nifti is depreciated. Use self.read_data instead"
@@ -412,6 +413,10 @@ class AtlasVolumeSymmetric(AtlasVolumetric):
         super().__init__(name, mask_img, structure=structure, space=space)
 
     def calculate_symmetry(self):
+        """
+        Calculates the symmetry indices (left-right correspondence) of the atlas.
+        Stores the results in the object itself.
+        """
         # Find left and right hemispheric voxels
         indx_left = np.where(self.world[0, :] <= 0)[0]
         indx_right = np.where(self.world[0, :] >= 0)[0]
@@ -445,6 +450,7 @@ class AtlasSurface(Atlas):
 
     def __init__(self, name, mask_img, structure=["cortex_left", "cortex_right"], space="fs32k"):
         """Atlas Surface class constructor
+
         Args:
             name (str): Name of atlas (cortex_left, cortex_right, cerebellum)
             mask_gii (list): list of gifti files of mask image defining atlas locations
@@ -458,7 +464,7 @@ class AtlasSurface(Atlas):
 
         self.structure = structure
         Xmask = [nb.load(mg).agg_data() for mg in mask_img]
-        # Vertex mask is a list of boolean arrays to indicate whether the vertex is included 
+        # Vertex mask is a list of boolean arrays to indicate whether the vertex is included
         self.vertex_mask = [(X > 0) for X in Xmask]
         self.vertex = [np.nonzero(X)[0] for X in self.vertex_mask]
         self.structure_index = [i*np.ones(len(v)) for i,v in enumerate(self.vertex)]
@@ -466,7 +472,14 @@ class AtlasSurface(Atlas):
         self.P = sum([v.shape[0] for v in self.vertex])
 
     def get_hemisphere(self, hem):
-        """ Returns a new atlas object that only contains one hemisphere specified"""
+        """
+        Returns a new atlas object that only contains one hemisphere specified
+
+        Args:
+            hem (int): Hemisphere index (0: left, 1: right)
+        Returns:
+            new_atlas(AtlasSurface): New atlas object
+        """
         new_atlas = copy.copy(self)
         new_atlas.structure = [self.structure[hem]]
         new_atlas.vertex_mask = [self.vertex_mask[hem]]
@@ -475,9 +488,14 @@ class AtlasSurface(Atlas):
         return new_atlas
 
     def get_subatlas(self, include):
-        """Returns a subatlas (region) based on a logical mask. If Hemisphere is given, it only selected the brain structure of that index. 
-        0: left hemisphere, 1: right hemisphere
-        """  
+        """
+        Returns a subatlas (region) based on a logical mask.
+
+        Args:
+            include (np.array): Logical array of length P of which brain location to include
+        Returns:
+            new_atlas(AtlasSurface): New atlas
+        """
         new_atlas = copy.copy(self)
         new_atlas.structure_index = self.structure_index[include]
         for i in range(len(new_atlas.structure)):
@@ -485,32 +503,41 @@ class AtlasSurface(Atlas):
             new_atlas.vertex[i] = new_atlas.vertex[i][inc]
             new_atlas.vertex_mask[i] = np.zeros(self.vertex_mask[i].shape,dtype=bool)
             new_atlas.vertex_mask[i][new_atlas.vertex[i]] = True
-        return new_atlas 
+        return new_atlas
 
-    def get_subatlas_circle(self,hem,center,radius):
+    def get_subatlas_circle(self,center,radius):
         """ Gets a subatlas (region) based on a circle around a center location within current atlas
+
+        Args:
+            hem (int): Hemisphere index (0: left, 1: right)
+            center (np.array): 3-vector of center of the sphere in mm
+            radius (float): Radius of the sphere in mm
+        Returns:
+            new_atlas(AtlasSurface): New atlas object
         """
         raise NotImplementedError("get_subatlas_circle not implemented yet")
 
     def get_subatlas_image(self,mask_img,value=None):
         """Returns a subatlas (region) based on a mask image
-        Usages: 
-            get_subatlas_image('label.gii',hem=0):
-                Takes a single lable gifti and applies it to the left hemisphere
-                subatlas only contains that hemisphere
-            get_subatlas_image('dlabel.nii'):
-                Uses a bihemispheric CIFTI file, potentiall define structure of both hemispheres
-            get_subatlas_image(['label_left.gii','label_right.gii']):
+
+            | Usages:
+            |    get_subatlas_image('label.gii',hem=0):
+            |        Takes a single lable gifti and applies it to the left hemisphere
+            |        subatlas only contains that hemisphere
+            |    get_subatlas_image('dlabel.nii'):
+            |        Uses a bihemispheric CIFTI file, potentiall define structure of both hemispheres
+            |    get_subatlas_image(['label_left.gii','label_right.gii']):
+
         Args:
             mask_img (str): Mask image filename
-
+            value (int): Specific Value of mask imahe to included in the subatlas (default >0)
         Returns:
-            AtlasSurface: New atlas object
+            new_atlas(AtlasSurface): New atlas object
         """
         data = self.read_data(mask_img)
         if value is None:
             include = data >0
-        else: 
+        else:
             include = data == value
         return self.get_subatlas(include)
 
@@ -531,7 +558,7 @@ class AtlasSurface(Atlas):
                 | None - default to generate a list of column names that matches the input data
 
         Returns:
-            Cifti2Image: Cifti2Image object
+            img(Cifti2Image): Cifti2Image object
         """
         if isinstance(data, list):
             # Check #1: the passing data is a list, then it should match
@@ -813,12 +840,24 @@ class AtlasMap:
         self.P = np.nan
 
     def extract_data_group(self, images):
-        """ Extracts the desired atlas locations from a set of images, applied mapping rules and returns the data in group space"""
+        """ Extracts the desired atlas locations from a set of images, applied mapping rules and returns the data in group space
+
+        Args:
+            images (list): List of N image filenames
+        Returns:
+            data_group (ndarray): (N,P) ndarray
+        """
         data = self.extract_data_native(images)
         return self.map_native_to_group(data)
-    
+
     def extract_data_native(self, images):
-        """ Extracts the voxels required for the desired atlas locations from a set of images"""
+        """ Extracts the voxels required for the desired atlas locations from a set of images
+
+        Args:
+            images (list): List of N image filenames
+        Returns:
+            data_group (ndarray): (N,V) array, were V are the number of unique voxels that map to the P atlas locations
+        """
         vols = []
         for j, f in enumerate(images):
             if isinstance(f, str):
@@ -837,18 +876,24 @@ class AtlasMap:
         for j, V in enumerate(vols):
             X = V.get_fdata()
             X = X.ravel()
-            data[j,:] = X[vox] # Get the data 
+            data[j,:] = X[vox] # Get the data
         return data
 
     def map_native_to_group(self, data):
-        """ Maps the data from native space to group space"""
+        """ Maps the data from native space to group space
+
+        Args:
+            data (ndarray): (N,V) array, were V are the number of unique voxels that map to the P atlas locations
+        Returns:
+            data_group (ndarray): (N,P) ndarray
+        """
         vox,vindx = np.unique(self.vox_list,return_inverse=True)
-        vindx = vindx.reshape(self.vox_list.shape) # Undo the flattening 
-        data_full = data[:,vindx] 
+        vindx = vindx.reshape(self.vox_list.shape) # Undo the flattening
+        data_full = data[:,vindx]
         d = data_full * self.vox_weight  # Expanded data
         data_group = np.nansum(d,axis=2) # Sum over the voxels
-        return data_group        
-    
+        return data_group
+
 class AtlasMapDeform(AtlasMap):
     def __init__(self, world, deform_img, mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
