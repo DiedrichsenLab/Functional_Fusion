@@ -1,5 +1,7 @@
 Data Extraction
-###############
+===============
+
+
 
 Extraction reads out the effect-size estimates or timeseries data (the type) from a dataset out in a specific atlas space (the atlas). The result will be stored in a cifti-file in the subjects data directory, with a uniform Spatial and Data dimension.  This process is done can be done for all subject using the function :py:meth:`dataset.DataSet.extract_all`.
 

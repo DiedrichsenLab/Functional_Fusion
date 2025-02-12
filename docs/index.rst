@@ -18,9 +18,10 @@ Documentation
 
    01overview.rst
    02atlas.rst
-   03import.rst
-   04extract.rst
-   05analyze.rst
+   03atlasmap.rst
+   04datasets.rst
+   05extract.rst
+   06analyze.rst
    reference.rst
 
 Indices and tables
