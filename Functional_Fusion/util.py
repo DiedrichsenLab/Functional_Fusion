@@ -274,3 +274,81 @@ def smooth_fs32k_data(input_file, smooth=1, kernel='gaussian',
     if return_data_only:
         os.remove(cifti_out)
         return data
+    
+
+def align_conditions(Ya, Yb, info_a, info_b):
+    """
+    Align two datasets based on shared conditions, align all conditions to the mean of shared conditions,
+    then average shared conditions and append unique conditions.
+
+    Args:
+    Ya (numpy array): Dataset A (subjects x conditions x voxels) or (conditions x voxels)
+    Yb (numpy array): Dataset B (subjects x conditions x voxels) or (conditions x voxels)
+    info_a (pandas.DataFrame): Info file for Dataset A
+    info_b (pandas.DataFrame): Info file for Dataset B
+
+    Returns:
+    combined_data (numpy array): Combined dataset
+    combined_info (pandas.DataFrame): Combined info
+    """
+
+    shared_conditions = np.intersect1d(info_a['cond_code'], info_b['cond_code'])
+    if len(shared_conditions) == 0:
+        raise ValueError("No shared conditions between datasets.")
+
+    # Standardize input dimensions to 3D if needed
+    if len(Ya.shape) == 2:
+        Ya = Ya[None, :, :]
+    if len(Yb.shape) == 2:
+        Yb = Yb[None, :, :]
+
+    # Sort shared conditions and get indices
+    shared_sorted = np.sort(shared_conditions)
+    order_a = []  # Indices for shared conditions in Dataset A
+    order_b = []  # Indices for shared conditions in Dataset B
+
+    # Loop through each condition in the sorted shared conditions array
+    for cond in shared_sorted:
+        # Find the index of the condition in info_a that matches the current condition code
+        idx_a = info_a[info_a['cond_code'] == cond].index[0]
+        # Find the index of the condition in info_b that matches the current condition code
+        idx_b = info_b[info_b['cond_code'] == cond].index[0]
+
+        # Append the indices to the respective lists
+        order_a.append(idx_a)
+        order_b.append(idx_b)
+
+    # Align shared conditions
+    Ya_shared = Ya[:, order_a, :]
+    Yb_shared = Yb[:, order_b, :]
+    Ya_mean, Yb_mean = Ya_shared.mean(1, keepdims=True), Yb_shared.mean(1, keepdims=True)
+    Ya_aligned, Yb_aligned = Ya - Ya_mean, Yb - Yb_mean
+
+    # Average aligned shared conditions
+    shared_avg = (Ya_aligned[:, order_a, :] + Yb_aligned[:, order_b, :]) / 2.0
+
+    # Combine shared and unique conditions
+    unique_a = np.setdiff1d(info_a['cond_code'], shared_sorted)
+    unique_a_indices = info_a['cond_code'].isin(unique_a)
+    unique_b = np.setdiff1d(info_b['cond_code'], shared_sorted)
+    unique_b_indices = info_b['cond_code'].isin(unique_b)
+
+    Ya_aligned_unique = Ya_aligned[:, unique_a_indices, :]
+    Yb_aligned_unique = Yb_aligned[:, unique_b_indices, :]
+    combined_data = np.concatenate([shared_avg, Ya_aligned_unique,
+                                    Yb_aligned_unique], axis=1)
+
+    # Create combined info file
+    shared_info = info_a.loc[order_a, ['cond_name', 'cond_code']].copy()
+    shared_info['source'] = 'averaged'
+    unique_info = pd.concat([info_a[unique_a_indices], info_b[unique_b_indices]])
+    unique_info['source'] = 'Novel'
+    combined_info = pd.concat([shared_info, unique_info[['cond_name', 'cond_code', 'source']]], ignore_index=True)
+
+    if Ya.shape[0] == 1:
+        combined_data = combined_data[0]
+    else:
+        combined_data = combined_data
+
+
+    return combined_data, combined_info
