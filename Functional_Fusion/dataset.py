@@ -773,7 +773,8 @@ class DataSet:
                     ses_id='ses-s1',
                     type='CondHalf',
                     atlas='SUIT3',
-                    smooth=2.0,
+                    smooth=None,
+                    interpolation=1,
                     subj='all'):
         """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
 
@@ -797,7 +798,8 @@ class DataSet:
         for s in T.participant_id:
             print(f'Atlasmap {s}')
             atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
-                                                  smooth=smooth)
+                                                  smooth=smooth
+                                                  interpolation=interpolation)
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id, type=type)
             data = am.get_data_nifti(fnames, atlas_maps)
