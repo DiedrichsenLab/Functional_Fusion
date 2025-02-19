@@ -798,8 +798,8 @@ class DataSet:
         for s in T.participant_id:
             print(f'Atlasmap {s}')
             atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
-                                                  smooth=smooth
-                                                  interpolation=interpolation, interpolation=interpolation)
+                                                smooth=smooth,
+                                                interpolation=interpolation)
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id, type=type)
             data = am.get_data_nifti(fnames, atlas_maps)
