@@ -706,7 +706,7 @@ class DataSet:
                 max = info.shape[0]
         return info_com
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for different spaces
             - SUIT: Using individual normalization from source space. 
             - MNI152NLin2009cSymC: Via indivual SUIT normalization + group
@@ -799,7 +799,7 @@ class DataSet:
             print(f'Atlasmap {s}')
             atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
                                                   smooth=smooth
-                                                  interpolation=interpolation)
+                                                  interpolation=interpolation, interpolation=interpolation)
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id, type=type)
             data = am.get_data_nifti(fnames, atlas_maps)
@@ -938,7 +938,7 @@ class DataSetNative(DataSet):
     nifti-files in Native space.
     """
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space.
         For Native space, we are using indivdual maps for SUIT and surface space.
         Addtiionally, we defines deformations MNI space via the individual normalization into MNI152NLin6Asym (FSL, SPM Segement).
@@ -968,7 +968,7 @@ class DataSetNative(DataSet):
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
         else:
-            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth)
+            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
 class DataSetMNIVol(DataSet):
@@ -982,7 +982,7 @@ class DataSetMNIVol(DataSet):
         super().__init__(base_dir)
         self.space = space
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data stored in MNI space.
         For SUIT and surface space, it goes over deformations estimated on the individual anatomy. If atlas.space matches dataset.space, it uses no deformation, but a direct readout. For mismatching MNI space it tries to find the correct transformation file.
         Args:
@@ -1012,7 +1012,7 @@ class DataSetMNIVol(DataSet):
             atlas_maps[0].build(smooth=smooth)
         # Any other space (SUIT + fs32k)
         else:
-            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth)
+            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
 class DataSetCifti(DataSet):
@@ -1496,7 +1496,7 @@ class DataSetIBC(DataSetNative):
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space.
         Uses the general ones, but overwrites the choice of masks
         Args:
@@ -1528,7 +1528,7 @@ class DataSetIBC(DataSetNative):
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth,additional_mask=add_mask)
         else:
-            atlas_maps=super().get_atlasmaps(atlas, sub, ses_id, smooth=None)
+            atlas_maps=super().get_atlasmaps(atlas, sub, ses_id, smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
     def condense_data(self, data, info,
@@ -1705,7 +1705,7 @@ class DataSetSomatotopic(DataSetMNIVol):
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
 
-    def get_atlasmaps(self, atlas, sub=None, ses_id = None, smooth=None):
+    def get_atlasmaps(self, atlas, sub=None, ses_id = None, smooth=None, interpolation=1):
         """ Gets group atlasmaps.
         Assumes that all scans are in the same space (self.space)
 
@@ -1738,6 +1738,8 @@ class DataSetSomatotopic(DataSetMNIVol):
                 atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
                                                   white, pial, mask))
                 atlas_maps[i].build()
+        else:
+            atlas_maps = super().get_atlasmaps(atlas, sub, ses_id, smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
     def condense_data(self, data, info,
