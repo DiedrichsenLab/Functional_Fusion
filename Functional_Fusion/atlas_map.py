@@ -990,7 +990,7 @@ class AtlasMapDeform(AtlasMap):
             )
             # Distances between atlas coordinates and voxel coordinates
             # TODO: For a lot of voxels, calculating the Euclidian distance is very memory hungry. Build the atlas iteratively to avoid running into memory issues.
-            D = nt.euclidean_dist_sq(atlas_ind, world_vox)
+            D = nt.euclidean_dist_sq(atlas_coord, world_vox)
             # Find voxels with substantial power under gaussian kernel
             W = np.exp(-0.5 * D / (smooth**2))
             W[W < 0.2] = 0
