@@ -2084,7 +2084,7 @@ class DataSetSocial(DataSetNative):
                                         ['run', 'reg_num'],
                                         subset=(info.reg_id >0))
                 data_info['names'] = [
-                    f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                    f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
                 # Baseline substraction
 
             elif type == 'CondRun':
@@ -2094,7 +2094,7 @@ class DataSetSocial(DataSetNative):
                                         ['reg_num'],
                                         subset=(info.reg_id > 0))
                 data_info['names'] = [
-                    f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                    f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
                 # Baseline substraction
 
             elif type == 'CondAll':
@@ -2103,7 +2103,7 @@ class DataSetSocial(DataSetNative):
                                         ['run', 'half', 'reg_num'],
                                         subset=(info.reg_id > 0))
                 data_info['names'] = [
-                    f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
+                    f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
                 # Baseline substraction
 
             # Prewhiten the data
@@ -2114,7 +2114,7 @@ class DataSetSocial(DataSetNative):
             # Load the designmatrix and perform optimal contrast
             X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
             reg_in = np.arange(C.shape[1], dtype=int)
-            CI = matrix.indicator(info.run * info.inst, positive=True)
+            CI = matrix.indicator(info.run * info.instruction, positive=True)
             C = np.c_[C, CI]
 
             data_new = optimal_contrast(data_n, C, X, reg_in)
