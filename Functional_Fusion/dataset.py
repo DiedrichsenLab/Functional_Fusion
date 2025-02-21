@@ -2086,6 +2086,7 @@ class DataSetSocial(DataSetNative):
                 data_info['names'] = [
                     f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
                 # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
             elif type == 'CondRun':
 
@@ -2096,6 +2097,7 @@ class DataSetSocial(DataSetNative):
                 data_info['names'] = [
                     f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
                 # Baseline substraction
+                B = matrix.indicator(data_info.run, positive=True)
 
             elif type == 'CondAll':
                 data_info, C = agg_data(info,
@@ -2105,6 +2107,7 @@ class DataSetSocial(DataSetNative):
                 data_info['names'] = [
                     f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
                 # Baseline substraction
+                B = np.ones((data_info.shape[0],1))
 
             # Prewhiten the data
             data_n = prewhiten_data(data)
