@@ -2120,6 +2120,6 @@ class DataSetSocial(DataSetNative):
             CI = matrix.indicator(info.run * info.instruction, positive=True)
             C = np.c_[C, CI]
 
-            data_new = optimal_contrast(data_n, C, X, reg_in)
+            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
 
         return data_new, data_info
