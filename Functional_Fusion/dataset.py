@@ -1148,7 +1148,7 @@ class DataSetMDTB(DataSetNative):
                 data_info['names'] = [
                     f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
                 # Baseline substraction
-                B = matrix.indicator(data_info.half, positive=True)
+                B = matrix.indicator(data_info.run, positive=True)
 
             # Prewhiten the data
             data_n = prewhiten_data(data)
