@@ -1,5 +1,5 @@
 Using Datasets
-##############
+==============
 
 To use Functional fusion framework you need access to a folder that holds the datasets and atlases.
 
@@ -27,7 +27,7 @@ You can specify subset of sessions, subjects, etc.
 
 Aggregating data
 ----------------
-If you want to average data across runs, you can use the get_dataset function with `type='CondAll'`, or alternatively aggregate the data the following way: 
+If you want to average data across runs, you can use the get_dataset function with `type='CondAll'`, or alternatively aggregate the data the following way:
 
 .. code-block:: python
 
@@ -36,7 +36,7 @@ If you want to average data across runs, you can use the get_dataset function wi
 
 Group averarging data
 ---------------------
-To produce the group-averaged dscalar files for a specfic atlas space and data type, just call: 
+To produce the group-averaged dscalar files for a specfic atlas space and data type, just call:
 
 .. code-block:: python
 
@@ -46,7 +46,7 @@ To produce the group-averaged dscalar files for a specfic atlas space and data t
 Assessing reliability
 ---------------------
 
-We can quickly calculate the reliability of the data across subjects and within subjects across sessions: 
+We can quickly calculate the reliability of the data across subjects and within subjects across sessions:
 
 .. code-block:: python
 
@@ -63,18 +63,18 @@ We can quickly calculate the reliability of the data across subjects and within 
 
 
 Decomposing variances (checking reliability)
--------------------------------------------- 
+--------------------------------------------
 
 A more general way of looking at reliability within and across subjects is to decompose the variance into components related to the group, the subject and the measurement error.
 
-We have activity patterns or sets of activity patterns in a collection of :math:`NxP` matrices. You can have P=1 (activity profile), N=1 (activity pattern) or N>1 and P>1 (activity matrix). Now we have measurements of these activity patterns from different subjects (i) and different runs or repetitions (j). 
-Let's call these :math:`\mathbf{y}_{i,j}`.  These can be either uncentered (relative to rest) or centered to the mean of each voxel (condition difference). 
+We have activity patterns or sets of activity patterns in a collection of :math:`NxP` matrices. You can have P=1 (activity profile), N=1 (activity pattern) or N>1 and P>1 (activity matrix). Now we have measurements of these activity patterns from different subjects (i) and different runs or repetitions (j).
+Let's call these :math:`\mathbf{y}_{i,j}`.  These can be either uncentered (relative to rest) or centered to the mean of each voxel (condition difference).
 
 .. math::
     \mathbf{y}_{i,j} = \mathbf{g} + \mathbf{s}_i + \boldsymbol{\epsilon}_{i,j}
 
 
-We want to estimate the norms (sum of squares) attached to these terms. 
+We want to estimate the norms (sum of squares) attached to these terms.
 
 .. math::
     \begin{array}{c}
@@ -83,18 +83,18 @@ We want to estimate the norms (sum of squares) attached to these terms.
     v_{\epsilon} = E(\mathbf{\epsilon}^T\mathbf{\epsilon})
     \end{array}
 
-We assume that :math:`\mathbf{g}`, :math:`\mathbf{s}`,and :math:`\mathbf{\epsilon}` are mutually independent, i.e. :math:`E(\mathbf{g}^T\mathbf{s})=0`. 
+We assume that :math:`\mathbf{g}`, :math:`\mathbf{s}`,and :math:`\mathbf{\epsilon}` are mutually independent, i.e. :math:`E(\mathbf{g}^T\mathbf{s})=0`.
 
-First, let write out the expected values of the cross-subj, cross-run and within-run sums of squares. 
+First, let write out the expected values of the cross-subj, cross-run and within-run sums of squares.
 
 
 
-Across subjects: 
+Across subjects:
 
 .. math::
     E(\mathbf{y}_{i,j}^T\mathbf{y}_{k,l}) = v_{g}
 
-Within subject, across runs: 
+Within subject, across runs:
 
 .. math::
     E(\mathbf{y}_{i,j}^T\mathbf{y}_{i,k}) = v_{g} + v_{s}

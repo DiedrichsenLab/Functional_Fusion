@@ -1,5 +1,5 @@
-Data Import
-###########
+Datasets and Data organization
+==============================
 
 Each dataset is stored in a separate directory in the `basedir` directory. Depending to the dataset, the preprocessed time series or individual effect-size estimates are stored.
 The Data Set class `DataSet` is designed to be the entry of getting the data in standard format. To be able to reuse a lot of the code across data sets, it is useful if the way the data is
@@ -68,14 +68,14 @@ Import Cortical surfaces from Freesurfer reconstruction
 
 Import SUIT normalization
 -------------------------
-Run SUIT isolation, and normalization outside of the Functional Fusion framework. 
-To produce the cerebellar mask in functional space, you need to combine the functional mask from the GLM (mask.nii), the cerebellar mask from suit (c_anatimical_pcerebe(_corr).nii) and the gray matter segmentation (c_anatomical_seg1.nii) 
+Run SUIT isolation, and normalization outside of the Functional Fusion framework.
+To produce the cerebellar mask in functional space, you need to combine the functional mask from the GLM (mask.nii), the cerebellar mask from suit (c_anatimical_pcerebe(_corr).nii) and the gray matter segmentation (c_anatomical_seg1.nii)
 
 .. code-block:: matlab
 
     mask  = fullfile(glm_dir, 'mask.nii'); % mask for functional image
     suitm  = fullfile(suit_dir, 'c_anatomical_pcereb_corr.nii');
-    gray  = fullfile(suit_dir, c_anatomical_seg1.nii)); % 
+    gray  = fullfile(suit_dir, c_anatomical_seg1.nii)); %
     omask = fullfile(suit_glm_dir, 'maskbrainSUITGrey.nii'); %
     spm_imcalc({mask,suitm,gray}, omask, 'i1>0 & i2>0 & i3>0.01', {});
 
@@ -86,12 +86,10 @@ Additionally, you need to save the non-linear transformation between SUIT and in
 
     suit_save_darteldef(<c_anat_name>,'wdir',workingdirectory)
 
-Then you can run ,,import_suit`` in Python to copy and rename. 
+Then you can run ,,import_suit`` in Python to copy and rename.
 
 Import functional estimates and design matrix from SPM
 ------------------------------------------------------
-
-
 
 
 Add new dataset
