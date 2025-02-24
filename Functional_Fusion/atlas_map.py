@@ -909,7 +909,7 @@ class AtlasMap:
         vox = np.unique(self.vox_list)
         mask = np.zeros(np.prod(self.mask_img.shape),dtype=np.uint8)
         mask[vox] = 1
-        mask = mask(self.mask_image.shape) # Undo the flattening
+        mask = mask.reshape(self.mask_img.shape) # Undo the flattening
         mask_img = nb.Nifti1Image(mask,self.mask_img.affine)
         if (fname is not None):
             nb.save(mask_img,fname)
