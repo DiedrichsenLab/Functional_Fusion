@@ -894,6 +894,27 @@ class AtlasMap:
         data_group = np.nansum(d,axis=2) # Sum over the voxels
         return data_group
 
+    def save_as_image(self, fname=None):
+        """ Save a mask of the voxel in native space that are involved in the ROI. This function is mostly to check the ROI after building it. 
+
+        Args:
+            fname (str): file name for the nifti-file (use *.nii.gz for compression). If None, no file is saved.
+        Returns:
+            mask_img(Nift1Image): Image for the mask 
+        """
+        # Check if is has the attribute vox_list: 
+        if not hasattr(self, 'vox_list'):
+            raise(NameError('vox_list not defined - call build() first'))
+        # make image 
+        vox = np.unique(self.vox_list)
+        mask = np.zeros(np.prod(self.mask_img.shape),dtype=np.uint8)
+        mask[vox] = 1
+        mask = mask(self.mask_image.shape) # Undo the flattening
+        mask_img = nb.Nifti1Image(mask,self.mask_img.affine)
+        if (fname is not None):
+            nb.save(mask_img,fname)
+        return mask_img
+
 class AtlasMapDeform(AtlasMap):
     def __init__(self, world, deform_img, mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
