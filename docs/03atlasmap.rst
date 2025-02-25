@@ -18,7 +18,7 @@ Example of volume-based ROI analysis
     subatlas = atlas_left.get_subatlas_image('Path_to_roi_img.nii')
 
 
-The subatlas will now have the $P$ locations in voxel space. You can use the subatlas.data_to_nifti() function to save data in that group space. For mapping data into the group space, we need to define an AtlasMap.
+The subatlas will now have the ``P`` locations in voxel space. You can use the ``subatlas.data_to_nifti()`` function to save data in that group space. For mapping data into the group space, we need to define an ``AtlasMapDeform``.
 
 .. code-block:: python
 
@@ -27,6 +27,8 @@ The subatlas will now have the $P$ locations in voxel space. You can use the sub
     mask = glm_dir + '/sub-01/mask.nii'                      # Mask in functional space
     amap = am.AtlasMapDeform(subatlas.voxels,deform,mask) # Atlas map
     amap.build(interpolation=1)  # Using Trilinear interpolation (0 for nearest neighbor, 2 for smoothing)
+    # save the ROI mask in native space
+    amap.save_as_image('/sub-01/ROI_mask.nii') 
 
 
 You can the proceed with data extract as shown below.
@@ -50,7 +52,7 @@ Example of surface-based ROI analysis
     # Set the Gifti file for the region (func.gii or label.gii)
     subatlas = atlas_left.get_subatlas_image('Path_to_roi_img.gii')
 
-The subatlas will now have the $P$ locations in vertex space. You can use the subatlas.data_to_cifti() function to save data in that group space. For mapping data into the group space, we need to define an AtlasMap.
+The subatlas will now have the ``P`` locations in vertex space. You can use the ``subatlas.data_to_cifti()`` function to save data in that group space. For mapping data into the group space, we need to define an ``AtlasMapSurf``.
 
 .. code-block:: python
 
@@ -59,7 +61,10 @@ The subatlas will now have the $P$ locations in vertex space. You can use the su
     pial = surf_dir + '/sub-01/sub-01.L.pial.32k.surf.gii'   # Invividual pial surface
     mask = glm_dir + '/sub-01/mask.nii'                      # Mask in functional space
     amap = am.AtlasMapSurf(subatlas.vertex[0],white,pial,mask) # Atlas map
+    # Compute the voxels in native space 
     amap.build()
+    # save the ROI mask in native space
+    amap.save_as_image('/sub-01/ROI_mask.nii') 
 
 Data Extraction using atlas maps
 --------------------------------
@@ -69,6 +74,7 @@ Once the Atlas map is built (surface or volume based), you can use it to extract
 * The function ``extract_data_native()`` will extract the data from all the voxel in native space of the subject that map to group space.
 * The function ``extract_data_group()`` will extract the data in group space.
 * The function ``map_native_to_group()`` will map the data from native to group space.
+* The function ``save_as_image()`` saves the ROI as a 1/0 mask in native space.
 
 .. code-block:: python
 
