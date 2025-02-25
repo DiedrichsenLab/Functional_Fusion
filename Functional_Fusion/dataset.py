@@ -636,6 +636,9 @@ class DataSet:
         elif type == 'Tseries' or type == 'FixTseries':
             # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
             fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii')
+            # If no files are found, throw error
+            if fnames == []:
+                raise ValueError('No timepoints found in timeseries files')
             runs = [int(fname.split('run-')[-1].split('_')[0].split('.')[0]) for fname in fnames]
             runs = np.unique(runs)
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in runs]
