@@ -91,6 +91,27 @@ Then you can run ,,import_suit`` in Python to copy and rename.
 Import functional estimates and design matrix from SPM
 ------------------------------------------------------
 
+Import task-specific beta files (ex: beta_0001.nii) for each subject, and rename them according to subject, session, run, and condition/ regressor (ex: sub-01_ses-01_run-01_reg-00_beta.nii). 
+
+Import the SPM_info.tsv file for each subject and rename according to subject and session (ex: sub-01_ses-01_reginfo.tsv).
+
+Save the prewhitened design matrix (SPM.xX.nKX) as a numpy array (ex: sub-01_ses-01_designmatrix.npy). 
+To do this, run this sequence of code in Matlab:
+
+.. code-block:: matlab
+
+    load('SPM.mat')
+    nKX = SPM.xX.nKX;
+    save('/directory_of_your_choice/nKX_data.mat','nKX')
+
+and this sequence of code in Python: 
+
+.. code-block:: matlab
+    
+        import numpy as np
+        import scipy.io as sio
+        nKX_data = sio.loadmat('/directory_of_your_choice/nKX_data.mat')
+        np.save('/directory_of_your_choice/nKX.npy',nKX_data)
 
 Add new dataset
 ---------------
