@@ -1,10 +1,12 @@
-import os
+import os, time, sys
 import subprocess
+import pandas as pd
+from multiprocessing import Pool, cpu_count
 
 
-
-
-directory = 'Y:\\data\\ExternalOpenData\\HCP_UR100_tfMRI_new'
+directory = '/data/tge/dzhi/projects/HCP_tfMRI'
+if not os.path.exists(directory):
+    directory = 'Y:\\data\\ExternalOpenData\\HCP_UR100_tfMRI_new'
 if not os.path.exists(directory):
     directory = '/cifs/diedrichsen/data/ExternalOpenData/HCP_UR100_tfMRI_new'
 
@@ -69,6 +71,10 @@ def update_outputdir_and_run_feat(base_dir):
                     f.writelines(updated_lines)
                 
                 print(f"Updated output directory in: {fsf_path}")
+                if os.path.exists(output_dir):
+                    to_remove = f"{os.path.splitext(file)[0]}*.feat"
+                    subprocess.run(f"rm -r {os.path.join(root, to_remove)}", 
+                                   shell=True, check=True)
                 
                 # Run FEAT
                 try:
@@ -81,14 +87,59 @@ def update_outputdir_and_run_feat(base_dir):
                     print(f"Unexpected error: {e}")
 
 
+def run_feat_all(set_index):
+    T = pd.read_csv('/data/tge/Tian/HCP_img/subj_list/HCP203_test_set.tsv', delimiter='\t')
+    subj_idx = [set_index, set_index+100]
+    
+    for i in subj_idx:
+        s = T.participant_id[i]
+
+        if not os.path.exists(f'{directory}/{s}/func/ses-WM/tfMRI_WM_RL/tfMRI_WM_RL_hp200_s4_level1.feat'):
+            print(f"-- Start FEAT on subject {s}")
+
+            start = time.perf_counter()
+            this_dir = directory + f'/{s}'
+            # update_outputdir_and_run_feat(this_dir)
+
+            print(this_dir)
+            finish = time.perf_counter()
+            elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+            print(f'-- Done {elapse}')
+        else:
+            print(f'Already processed subject {s}')
+
+
 if __name__ == "__main__":
-    #step 1; change the smoothing kernel in the fsf files
-    find_and_update_fsf_files(directory)
+    # # step 1; change the smoothing kernel in the fsf files
+    # find_and_update_fsf_files(directory)
 
     # # step 2 run feat
-    update_outputdir_and_run_feat(directory)
+    # update_outputdir_and_run_feat(directory)
+
+    if len(sys.argv) != 2:
+        print("Usage: python hcp_tfmri_glm.py <num_cpus>")
+        sys.exit(1)
+
+    T = pd.read_csv('/data/tge/Tian/HCP_img/subj_list/HCP203_test_set.tsv', delimiter='\t')
+
+    # num_cpus = 100  # Get CPUs from SLURM
+    # set_indices = list(range(num_cpus))  # Modify based on the number of parallel tasks
+
+    # # Set up multiprocessing Pool
+    # with Pool(num_cpus) as pool:
+    #     pool.map(run_feat_all, set_indices)  # Distribute tasks across CPUs
+
+    # print("Processing complete.")
 
 
+    s = T.participant_id[int(sys.argv[1])-1]
+    print(f"-- Start FEAT on subject {s}")
+
+    start = time.perf_counter()
+    update_outputdir_and_run_feat(directory + f'/{s}')
+    finish = time.perf_counter()
+    elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+    print(f'-- Done {elapse}')
 
     
 

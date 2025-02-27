@@ -12,9 +12,8 @@ if not Path(base_dir).exists():
 if not Path(base_dir).exists():
     base_dir = '/Volumes/diedrichsen_data$/data'
 
-functional_fusion_dir = f'{base_dir}/FunctionalFusion/HCP_tfMRI'
-HCP_dir = f'{base_dir}/ExternalOpenData/HCP_UR100_tfMRI_new'
-
+functional_fusion_dir = f'/data/tge/Tian/HCP_img'
+HCP_dir = f'/data/tge/dzhi/projects/HCP_tfMRI'
 
 def make_participant_tsv(source_dir, dest_dir):
     if not Path(dest_dir).exists():
@@ -33,13 +32,13 @@ def make_participant_tsv(source_dir, dest_dir):
 
 
 def import_anat_data(source_dir, dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
+    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
-        anat_file = f'{source_dir}/{participant}/anat/T1W.nii'
-        dest_folder = f'{dest_dir}/derivatives/{participant}/anat/'
-        dest_file = f'{dest_folder}/{participant}_T1w.nii'
+        anat_file = f'{source_dir}/{participant}/anat/T1w.nii.gz'
+        dest_folder = f'{dest_dir}/derivatives/{participant}/anat'
+        dest_file = f'{dest_folder}/{participant}_T1w.nii.gz'
 
         if not Path(dest_folder).exists():
             os.makedirs(dest_folder, exist_ok=True)
@@ -52,17 +51,17 @@ def import_anat_data(source_dir, dest_dir):
 
 
 def import_freesurfer(source_dir, dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
+    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
-        participant_number = participant.split("-")[1]
-        pial_L_source = f'{source_dir}/{participant}/SurfaceWB/{participant_number}.L.pial.32k_fs_LR.surf.gii'
-        pial_R_source = f'{source_dir}/{participant}/SurfaceWB/{participant_number}.R.pial.32k_fs_LR.surf.gii'
-        white_L_source = f'{source_dir}/{participant}/SurfaceWB/{participant_number}.L.white.32k_fs_LR.surf.gii'
-        white_R_source = f'{source_dir}/{participant}/SurfaceWB/{participant_number}.R.white.32k_fs_LR.surf.gii'
-        sulc_L_source = f'{source_dir}/{participant}/SurfaceWB/{participant_number}.L.sulc.32k_fs_LR.shape.gii'
-        sulc_R_source = f'{source_dir}/{participant}/SurfaceWB/{participant_number}.R.sulc.32k_fs_LR.shape.gii'
+
+        pial_L_source = f'{source_dir}/{participant}/SurfaceWB/{participant}.L.pial.32k_fs_LR.surf.gii'
+        pial_R_source = f'{source_dir}/{participant}/SurfaceWB/{participant}.R.pial.32k_fs_LR.surf.gii'
+        white_L_source = f'{source_dir}/{participant}/SurfaceWB/{participant}.L.white.32k_fs_LR.surf.gii'
+        white_R_source = f'{source_dir}/{participant}/SurfaceWB/{participant}.R.white.32k_fs_LR.surf.gii'
+        sulc_L_source = f'{source_dir}/{participant}/SurfaceWB/{participant}.L.sulc.32k_fs_LR.shape.gii'
+        sulc_R_source = f'{source_dir}/{participant}/SurfaceWB/{participant}.R.sulc.32k_fs_LR.shape.gii'
 
         pial_L_dest = f'{dest_dir}/derivatives/{participant}/anat/{participant}_space-32k_hemi-L_pial.surf.gii'
         pial_R_dest = f'{dest_dir}/derivatives/{participant}/anat/{participant}_space-32k_hemi-R_pial.surf.gii'
@@ -85,13 +84,13 @@ def import_freesurfer(source_dir, dest_dir):
 
 
 def import_resms(source_dir,dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
+    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
         resms_files = list(Path(f'{source_dir}/{participant}').rglob('sigmasquareds.nii.gz'))
         dest_folder = f'{dest_dir}/derivatives/{participant}/estimates/ses-task'
-        dest_file = f'{dest_folder}/{participant}_ses-task_resms.nii.'
+        dest_file = f'{dest_folder}/{participant}_ses-task_resms.nii'
         if not Path(dest_folder).exists():
             os.makedirs(dest_folder, exist_ok=True)
         resms_data = []
@@ -107,12 +106,12 @@ def import_resms(source_dir,dest_dir):
     return
 
 def import_betas(source_dir, dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
+    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
         # Gather all session directories
-        participant_dir = Path(source_dir) / participant / 'func'
+        participant_dir = Path(source_dir) / str(participant) / 'func'
         session_dirs = [d for d in participant_dir.iterdir() if d.is_dir() and d.name.startswith("ses-")]
 
         session_run_mapping = {}
@@ -151,7 +150,7 @@ def import_betas(source_dir, dest_dir):
                             reg_label = f"reg-{reg_num:02d}"
 
                             # Construct output filename
-                            dest_folder = Path(dest_dir) / "derivatives" / participant / "estimates" / "ses-task"
+                            dest_folder = Path(dest_dir) / "derivatives" / str(participant) / "estimates" / "ses-task"
                             dest_file = dest_folder / f"{participant}_ses-task_run-{global_run_counter:02d}_{reg_label}_beta.nii.gz"
 
                             if not dest_folder.exists():
@@ -174,7 +173,7 @@ def import_betas(source_dir, dest_dir):
     return
 
 def import_masks(source_dir, dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
+    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
@@ -202,12 +201,12 @@ def import_masks(source_dir, dest_dir):
 
 
 def make_reginfo(source_dir, dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
+    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
         reginfo_data = []  # To store reginfo entries
-        participant_dir = Path(source_dir) / participant / "func"
+        participant_dir = Path(source_dir) / str(participant) / "func"
 
         # Get session directories
         session_dirs = [d for d in participant_dir.iterdir() if d.is_dir() and d.name.startswith("ses-")]
@@ -260,7 +259,7 @@ def make_reginfo(source_dir, dest_dir):
                     global_run_counter += 1
 
         # Save reginfo.tsv
-        dest_folder = Path(dest_dir) / "derivatives" / participant / "estimates" / "ses-task"
+        dest_folder = Path(dest_dir) / "derivatives" / str(participant) / "estimates" / "ses-task"
         dest_file = dest_folder / f"{participant}_ses-task_reginfo.tsv"
         if not dest_folder.exists():
             os.makedirs(dest_folder, exist_ok=True)
@@ -274,11 +273,12 @@ def make_reginfo(source_dir, dest_dir):
 
 
 if __name__ == '__main__':
-    make_participant_tsv(HCP_dir, functional_fusion_dir)
-    import_anat_data(HCP_dir, functional_fusion_dir)
-    import_freesurfer(HCP_dir, functional_fusion_dir)
-    import_resms(HCP_dir, functional_fusion_dir)
-    import_masks(HCP_dir, functional_fusion_dir)
+    # make_participant_tsv(HCP_dir, functional_fusion_dir)
+    # import_anat_data(HCP_dir, functional_fusion_dir)
+    # import_freesurfer(HCP_dir, functional_fusion_dir)
+    # import_resms(HCP_dir, functional_fusion_dir)
+    # import_masks(HCP_dir, functional_fusion_dir)
+    
     import_betas(HCP_dir, functional_fusion_dir)
     make_reginfo(HCP_dir, functional_fusion_dir)
 

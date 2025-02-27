@@ -19,11 +19,10 @@ if not Path(base_dir).exists():
     base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 
 
-data_dir = base_dir + '/HCP_tfMRI'
-atlas_dir = base_dir + '/Atlases'
+data_dir = f'/data/tge/Tian/HCP_img'
+atlas_dir = '/data/tge/Tian/UKBB_full/imaging/Atlases'
 
-
-types = ['CondAll']
+types = ['CondAll', 'CondHalf']
 atlases  = ['fs32k']
 session_list = ['ses-task']
 
