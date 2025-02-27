@@ -64,6 +64,22 @@ def make_info(type='Tseries', ses_id='ses-rest1'):
         info.to_csv(
             dest_dir + f'{participant_id}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
 
+def rename_infofile():
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+
+    T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
+    for p, participant_id in enumerate(T.participant_id):
+
+        dest_dir = hcp_dataset.base_dir + \
+                   f'/derivatives/{participant_id}/data/'
+        for file_name in os.listdir(dest_dir):
+            if "_info" in file_name and file_name.endswith(".tsv"):
+                new_name = file_name.replace("info-", "")
+                os.rename(
+                    os.path.join(dest_dir, file_name),
+                    os.path.join(dest_dir, new_name)
+                )
+
 def group_average_hcp(type='Net69Run', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
     hcp_dataset.group_average_data(
@@ -218,6 +234,9 @@ def smooth_hcp_fs32k(bulk, ses_id='ses-s1', type='Tseries', smooth=1, kernel=Non
         
         if os.path.exists(cifti_out):
             print(f"Already smoothed for {s} fs32k {ses_id} {smooth}")
+            if return_data_only:
+                data = nb.load(cifti_out).get_fdata()
+                return data
         else:
             print(f'- Smoothing data for {s} fs32k {ses_id} in {smooth}mm ...')
             contain_nan = False
@@ -296,69 +315,11 @@ if __name__ == "__main__":
     # extract_hcp_timeseries(ses_id='ses-rest2', type='Tseries', atlas='fs32k')
 
     # -- Get connectivity fingerprint --
-<<<<<<< Updated upstream
     dname = 'HCP'
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest1')
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest2')
-=======
-    for t in [162]:
-        get_hcp_fs32k_rsfc(type=f'Ico{t}Run', space='fs32k', ses_id='ses-rest1', 
-                        subj_list='/subj_list/HCP40_training_set.tsv',
-                        smooth=None, kernel='fwhm', thres=None, keeptop=False)
-        get_hcp_fs32k_rsfc(type=f'Ico{t}Run', space='fs32k', ses_id='ses-rest2',
-                        subj_list='/subj_list/test_split/HCP923_test_set_split_1.tsv',
-                        smooth=4, kernel='fwhm', thres=0.1, keeptop=False)
-        # get_hcp_fs32k_rsfc(type='Ico42Run', space='fs32k', ses_id='ses-rest1',
-        #                    subj_list='/subj_list/HCP40_validation_set.tsv',
-        #                    smooth=4, kernel='fwhm')
-        # get_hcp_fs32k_rsfc(type='Ico42Run', space='fs32k', ses_id='ses-rest2',
-        #                    subj_list='/subj_list/HCP40_validation_set.tsv',
-        #                    smooth=4, kernel='fwhm')
-        # get_hcp_fs32k_rsfc(type='Ico42Run', space='fs32k', ses_id='ses-rest1', 
-        #                    subj_list='/subj_list/HCP923_test_set.tsv',
-        #                    smooth=4, kernel='fwhm')
-        # get_hcp_fs32k_rsfc(type='Ico42Run', space='fs32k', ses_id='ses-rest2', 
-        #                    subj_list='/subj_list/HCP923_test_set.tsv',
-        #                    smooth=4, kernel='fwhm')
-
-    #  -- fs32k smoothing (cortex)
-    # smooth_hcp_fs32k(hcp_dir + '/subj_list/HCP40_validation_set.tsv', ses_id='ses-rest1',
-    #                 type=f'Tseries', smooth=4, kernel='fwhm', return_data_only=False)
-    # smooth_hcp_fs32k(hcp_dir + '/subj_list/HCP40_validation_set.tsv', ses_id='ses-rest2',
-    #                 type=f'Tseries', smooth=4, kernel='fwhm', return_data_only=False)
-    
-    #  -- fs32k binarizing (cortex)
-    for t in [0.25, 0.5, 0.75]:
-        binarize_rsfc_fs32k(hcp_dir + '/subj_list/HCP40_training_set.tsv', ses_id='ses-rest1',
-                            type='ICA50Run', smooth=4, kernel='fwhm', thres=t)
-        binarize_rsfc_fs32k(hcp_dir + '/subj_list/HCP40_training_set.tsv', ses_id='ses-rest2',
-                            type='ICA50Run', smooth=4, kernel='fwhm', thres=t)
-    name = 'HCP'
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Net67Run', space='fs32k', ses_id='ses-rest1')
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Net67Run', space='fs32k', ses_id='ses-rest2')
->>>>>>> Stashed changes
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Net67Run', space='SUIT3', ses_id='ses-rest', subj=subject_subset)
-
-
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06All', space='MNISymC3', ses_id='ses-rest1')
-    conn.get_connectivity_fingerprint(dname,
-                                      type='Fus06All', space='MNISymC3', ses_id='ses-rest2')
-
-    # extract_hcp_timeseries(
-    #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')
-
-    # -- Group average --
-    # group_average_hcp(type='Ico162Run', atlas='MNISymC3')
-    # pass
-    # extract_hcp_timeseries(
-    #     ses_id='ses-rest1', type='Tseries', atlas='fs32k')
-    # pass
 
     for t in [162]:
         get_hcp_fs32k_rsfc(type=f'Ico{t}Run', space='fs32k', ses_id='ses-rest1', 

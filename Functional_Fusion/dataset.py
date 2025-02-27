@@ -10,22 +10,19 @@ to a standard data structure that can be used in Diedrichsen lab
 from pathlib import Path
 import numpy as np
 import pandas as pd
-import os
+import os, time, sys
 import os.path as op
-import sys
 
 import Functional_Fusion.util as util
 import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
 import scipy.linalg as sl
 import nibabel as nb
-import nitools as nt
 from numpy import eye, zeros, ones, empty, nansum, sqrt
 from numpy.linalg import pinv, solve
 import warnings
-import SUITPy as suit
 import glob
-import matplotlib.pyplot as plt
+import re
 
 
 def get_dataset_class(base_dir, dataset):
@@ -44,10 +41,15 @@ def get_dataset_class(base_dir, dataset):
     if len(i) == 0:
         raise (NameError(f'Unknown dataset: {dataset}'))
     dsclass = getattr(sys.modules[__name__], T.class_name[int(i)])
-    dir_name = base_dir + '/' + T.dir_name[int(i)]
-    my_dataset = dsclass(dir_name)
+    dir_name = T.dir_name[int(i)]
+    if dir_name[0] == '/':
+        abs_path = dir_name
+    elif dir_name[0] == '.':  # Relative path relative to fusion project
+        abs_path = Path(base_dir).parent + Path(dir_name[1:])
+    else:
+        abs_path = base_dir + '/' + T.dir_name[int(i)]
+    my_dataset = dsclass(abs_path)
     return my_dataset
-
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
                 type=None, smooth=None, info_only=False):
@@ -188,7 +190,11 @@ def agg_data(info, by, over, subset=None):
             original data frame
     Return
         data_info (DataFrame): Reduced data frame
-        C (ndarray): Contrast matrix defining the mapping from full to reduced
+        C (ndarray): Indicator matrix defining the mapping from full to reduced
+    Example: 
+        data,info,mdtb= ds.get_data('MDTB','MNISymDentate1',ses_id='ses-s1',type='CondRun')   
+        cinfo,C = ds.agg_data(info,['cond_num_uni'],['run','half','reg_num','names'])
+        cdata = np.linalg.pinv(C) @ data
     """
     # Subset original data frame as needed
     info_n = info.copy()
@@ -216,7 +222,7 @@ def agg_data(info, by, over, subset=None):
     info_gb = info_n.groupby(by)
     data_info = info_gb.agg(operations).reset_index()
 
-    # Build contrast matrix for averaging
+    # Build indicator matrix for averaging
     C = np.zeros((info.shape[0], data_info.shape[0]))
     for i, (k, v) in enumerate(info_gb.indices.items()):
         C[indx[v], i] = 1
@@ -227,8 +233,8 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
     """ Aggregates data over colums to condense to parcels
 
     Args:
-        data (ndarray): Either 2d or 3d data structure
-        labels (ndarray): 1d-array that gives the labels
+        data (ndarray): Either 2d or 3d data structure, P has to be the last dimension
+        labels (ndarray): 1d-array that gives the labels (P-vector)
         fcn (function): Function to use to aggregate over these
     Returns:
         aggdata (ndarray): Aggregated either 2d or 3d data structure
@@ -245,6 +251,38 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
             data[..., label_vec == l], axis=len(psize) - 1)
     return parcel_data, labels
 
+def combine_parcel_labels(labels_org,labels_new, labelvec_org=None):
+    """ Combines parcel labels from a new atlas to an existing atlas
+    Example call: 
+    mapping, lv = combine_parcel_labels(labels_org,['0','A.L','A.R','S..','M3.'],labelvec_org)
+    To get different aggregations of the Nettekoven atlas
+    * A.L includes A1-4L 
+    * A.R includes A1-4R
+    * S.. includes all S-areas
+    * M3. includes M3L and M3R 
+
+    Args:
+        labels_org (list of str): N-lenght original label names (should include '0' for 0)
+        labels_new (list of str): List of regexpressions for new labels (should include '0' for 0) 
+        labelvec_org (ndarray, optional): Original label vector to remap (P-vector) 
+    Returns:
+        mapping (ndarray): New label indices for the old labels (N-length vector)
+        labelvec_new (ndarray): New label vector (P-vector) - returned if labelvec_org is given
+    """
+    mapping = np.zeros(len(labels_org))
+
+    for i,l in enumerate(labels_new):
+        for j,lo in enumerate(labels_org):
+            if re.match(l,lo):
+                mapping[j] = i
+
+    if labelvec_org is None:
+        return mapping
+    else :
+        labelvec_new = np.zeros(labelvec_org.shape)
+        for i in np.arange(len(mapping)):
+            labelvec_new[labelvec_org == i] = mapping[i]
+        return mapping, labelvec_new 
 
 def optimal_contrast(data, C, X, reg_in=None, baseline=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
@@ -278,14 +316,29 @@ def optimal_contrast(data, C, X, reg_in=None, baseline=None):
         if reg_in is not None:
             d = d[reg_in, :]
         # Now subtract baseline
-        if baseline is not None:
-            Q = d.shape[0]
-            R = eye(Q) - baseline @ pinv(baseline)
-            d = R @ d
+        d = remove_baseline(d,baseline)
         # Put the data in a list:
         data_new.append(d)
     return data_new
 
+def remove_baseline(data, baseline):
+    """ Removes a baseline from the data
+    
+    Arg:
+        data (ndarray): (nsubj x N x P) OR (N x P) array
+        baseline (narray): 1-dimensional array (N,) of partition number or (N x npart) indicator matrix
+    Returns: 
+        data_sub (ndarray): Baseline subtracted data  
+    """
+    if baseline is None:
+        return data 
+    N = data.shape[-2]        # This is the trial dimension  
+    if baseline.ndim == 1: 
+        B = matrix.indicator(baseline)
+    else: 
+        B = baseline
+    R = eye(N) - B @ pinv(B) # Residual forming matrix  
+    return R @ data # Uses broadcasting for >2 dim arrays 
 
 def reliability_within_subj(X, part_vec, cond_vec,
                             voxel_wise=False,
@@ -293,18 +346,21 @@ def reliability_within_subj(X, part_vec, cond_vec,
     """ Calculates the within-subject reliability of a data set
     Data (X) is grouped by condition vector, and the
     partition vector indicates the independent measurements
-
+    Does the calculation for each subejct if X is a 3d array
     Args:
-        X (ndarray): num_subj x num_trials x num_voxel tensor of data
+        X (ndarray): (num_subj x) num_trials x num_voxel tensor of data
         part_vec (ndarray): num_trials partition vector
         cond_vec (ndarray): num_trials condition vector
         voxel_wise (bool): Return the results as map or overall?
         subtract_mean (bool): Remove the mean per voxel before correlation calc?
     Returns:
-        r (ndarray)L: num_subj x num_partition matrix of correlations
+        r (ndarray)L: (num_subj x) num_partition matrix of correlations
     """
     partitions = np.unique(part_vec)
     n_part = partitions.shape[0]
+    if len(X.shape) == 2:
+        X = X.reshape(1, X.shape[0], X.shape[1])
+        single_subj = True
     n_subj = X.shape[0]
     if voxel_wise:
         r = np.zeros((n_subj, n_part, X.shape[2]))
@@ -328,6 +384,8 @@ def reliability_within_subj(X, part_vec, cond_vec,
             else:
                 r[s, pn] = nansum(X1 * X2) / \
                     sqrt(nansum(X1 * X1) * nansum(X2 * X2))
+    if single_subj:
+        r = r[0, :]    
     return r
 
 
@@ -448,8 +506,7 @@ def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
     elif criterion in ['global','subject_wise']:
         Y = X.reshape((1, n_subjects, n_partitions, n_conditions * n_voxels))
     else:
-        Y = np.empty(1)
-        print('invalid criterion')
+        raise(NameError('criterion needs to be global, voxel_wise, condition_wise, or subject_wise'))
     [n_split, _, _, n_features] = Y.shape
 
     # reshape the data to be in the form of (n_split, n_subjects*n_partitions, n_features)
@@ -570,7 +627,7 @@ class DataSet:
             T (pd.DataFrame): Info structure for regressors (reginfo)
         """
         dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
-        
+
         if type[:4] == 'Cond' or type[:4] == 'Task':
             T = pd.read_csv(
                 dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
@@ -579,6 +636,9 @@ class DataSet:
         elif type == 'Tseries' or type == 'FixTseries':
             # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
             fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii')
+            # If no files are found, throw error
+            if fnames == []:
+                raise ValueError('No timepoints found in timeseries files')
             runs = [int(fname.split('run-')[-1].split('_')[0].split('.')[0]) for fname in fnames]
             runs = np.unique(runs)
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in runs]
@@ -636,7 +696,7 @@ class DataSet:
         for s in T.participant_id.iloc[subj]:
             # Get an check the information
             info_raw = pd.read_csv(self.data_dir.format(s)
-                                   + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                                   + f'/{s}_{ses_id}_{type}.tsv', sep='\t')
             # Reduce tsv file when fields are given
             if fields is not None:
                 info = info_raw[fields]
@@ -649,9 +709,14 @@ class DataSet:
                 max = info.shape[0]
         return info_com
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
-        """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for
-        SUIT: Using individual normalization from source space. MNI152NLin2009cSymC & MNI152NLin6AsymC: Via indivual SUIT normalization and the to MNI over group deformation, fs32k: Via individual pial and white surfaces (need to be in source space)
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
+        """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for different spaces
+            - SUIT: Using individual normalization from source space. 
+            - MNI152NLin2009cSymC: Via indivual SUIT normalization + group
+            - MNI152NLin6AsymC: Via indivual SUIT normalization + group
+            - MNI152Lin2009cSym: Via individual MNI normalization
+            - MNI152NLin6Asym: Via individual MNI normalization
+        fs32k: Via individual pial and white surfaces (need to be in source space)
         Other dataset classes will overwrite and extend this function.
 
         Args:
@@ -668,6 +733,8 @@ class DataSet:
                 Built AtlasMap object
         """
         atlas_maps = []
+        adir = self.anatomical_dir.format(sub)
+        edir = self.estimates_dir.format(sub)
         if atlas.space == 'SUIT':
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
@@ -681,9 +748,13 @@ class DataSet:
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
+        elif atlas.space in ['MNI152NLin2009cSym']:
+            # This is direct MNI normalization 
+            deform = adir + f'/{sub}_space-{atlas.space}_xfm.nii'
+            mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
+            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
+            atlas_maps[0].build(smooth=smooth)
         elif atlas.space == 'fs32k':
-            adir = self.anatomical_dir.format(sub)
-            edir = self.estimates_dir.format(sub)
             for i, struc in enumerate(atlas.structure):
                 if struc=='cortex_left':
                     hem = 'L'
@@ -705,7 +776,8 @@ class DataSet:
                     ses_id='ses-s1',
                     type='CondHalf',
                     atlas='SUIT3',
-                    smooth=2.0,
+                    smooth=None,
+                    interpolation=1,
                     subj='all'):
         """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
 
@@ -729,8 +801,8 @@ class DataSet:
         for s in T.participant_id:
             print(f'Atlasmap {s}')
             atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
-                                                  smooth=smooth)
-            print(f'Extract {s}, smooth={smooth}')
+                                                  smooth=smooth, interpolation=interpolation)
+            print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id, type=type)
             data = am.get_data_nifti(fnames, atlas_maps)
             data, info = self.condense_data(data, info, type,
@@ -739,15 +811,10 @@ class DataSet:
             C = myatlas.data_to_cifti(data, info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            if smooth is not None and (smooth > 0):
-                nb.save(C, dest_dir + 
-                        f'/{s}_space-{atlas}_{ses_id}_{type}_desc-sm{smooth}.dscalar.nii')
-            else:
-                nb.save(C, dest_dir + 
-                        f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-            
-            info.to_csv(dest_dir + 
-                        f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+            nb.save(C, dest_dir +
+                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(
+                dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
 
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
@@ -802,7 +869,7 @@ class DataSet:
                 print(f'- Getting data for {s} in {space}')
             # Load the data
             if smooth is not None:
-                C = nb.load(self.data_dir.format(s, smooth)
+                C = nb.load(self.data_dir.format(s)
                             + f'/{s}_space-{space}_{ses_id}_{type}_desc-sm{int(smooth)}.dscalar.nii')
             else:
                 C = nb.load(self.data_dir.format(s)
@@ -812,7 +879,7 @@ class DataSet:
             # Check if this subject data in incomplete
             if this_data.shape[0] != info_com.shape[0]:
                 this_info = pd.read_csv(self.data_dir.format(s)
-                                        + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t')
+                                        + f'/{s}_{ses_id}_{type}.tsv', sep='\t')
                 base = np.asarray(info_com['names'])
                 incomplete = np.asarray(this_info['names'])
                 for j in range(base.shape[0]):
@@ -866,14 +933,14 @@ class DataSet:
                 info = info.drop(columns=['sn'])
 
             info.to_csv(dest_dir +
-                        f'/group_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+                        f'/group_{ses_id}_{type}.tsv', sep='\t', index=False)
 
 class DataSetNative(DataSet):
     """Data set with estimates data stored as
     nifti-files in Native space.
     """
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space.
         For Native space, we are using indivdual maps for SUIT and surface space.
         Addtiionally, we defines deformations MNI space via the individual normalization into MNI152NLin6Asym (FSL, SPM Segement).
@@ -891,15 +958,19 @@ class DataSetNative(DataSet):
             AtlasMap: Built AtlasMap object
         """
         atlas_maps = []
-        if atlas.space == 'MNI152NLin6Asym':
+
+        if atlas.space == ['MNI152NLin2009cSym','MNI152NLin6Asym']:
             # This is for MNI standard space)
-            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+            deform = self.anatomical_dir.format(sub) + f'/{sub}_space-{atlas.space}_xfm.nii'
+            if not os.path.exists(deform):
+                warnings.warn(f'No individual deformation found for {atlas.space} in {sub} - resortinh to MNI_xfm.nii')
+                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
             edir = self.estimates_dir.format(sub)
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth)
         else:
-            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth)
+            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
 class DataSetMNIVol(DataSet):
@@ -913,7 +984,7 @@ class DataSetMNIVol(DataSet):
         super().__init__(base_dir)
         self.space = space
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data stored in MNI space.
         For SUIT and surface space, it goes over deformations estimated on the individual anatomy. If atlas.space matches dataset.space, it uses no deformation, but a direct readout. For mismatching MNI space it tries to find the correct transformation file.
         Args:
@@ -943,7 +1014,7 @@ class DataSetMNIVol(DataSet):
             atlas_maps[0].build(smooth=smooth)
         # Any other space (SUIT + fs32k)
         else:
-            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth)
+            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
 class DataSetCifti(DataSet):
@@ -999,7 +1070,7 @@ class DataSetCifti(DataSet):
             nb.save(C, dest_dir +
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
-                dest_dir + f'/{s}_{ses_id}_info-{type}.tsv', sep='\t', index=False)
+                dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
 
 
 class DataSetMDTB(DataSetNative):
@@ -1071,6 +1142,17 @@ class DataSetMDTB(DataSetNative):
 
                 # Baseline substraction
                 B = np.ones((data_info.shape[0],1))
+
+            elif type == 'TaskRun':
+
+                data_info, C = agg_data(info,
+                                        by=['run', 'task_num'],
+                                        over=['reg_num'],
+                                        subset=(info.instruction == 0))
+                data_info['names'] = [
+                    f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.run, positive=True)
 
             # Prewhiten the data
             data_n = prewhiten_data(data)
@@ -1233,7 +1315,7 @@ class DataSetPontine(DataSetNative):
         self.part_ind = 'half'
 
     def condense_data(self, data, info,
-                      type='TaskHalf',
+                      type='CondHalf',
                       participant_id=None,
                       ses_id=None):
         """ Condense the data from the pontine project after extraction
@@ -1242,9 +1324,8 @@ class DataSetPontine(DataSetNative):
             data (list of ndarray)
             info (dataframe)
             type (str): Type of extraction:
-                'TaskHalf': Conditions with seperate estimates for first and second half of experient (Default)
-                'TaskRun': Conditions with seperate estimates per run
-                    Defaults to 'CondHalf'.
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
             participant_id (str): ID of participant
             ses_id (str): Name of session
 
@@ -1260,24 +1341,24 @@ class DataSetPontine(DataSetNative):
         info['half'] = 2 - (info.run < 9)
         n_cond = np.max(info.reg_id)
 
-        if type == 'TaskHalf':
+        if type == 'CondHalf':
             data_info, C = agg_data(info,
                                     ['half', 'reg_id'],
                                     ['run', 'reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'TaskRun':
+        elif type == 'CondRun':
 
             data_info, C = agg_data(info,
                                     ['run', 'reg_id'],
                                     ['reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
@@ -1287,7 +1368,7 @@ class DataSetPontine(DataSetNative):
                                     ['run', 'half', 'reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = np.ones((data_info.shape[0],1))
 
@@ -1295,15 +1376,14 @@ class DataSetPontine(DataSetNative):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
-        X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy')
+        X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy',allow_pickle=True).item()
         reg_in = np.arange(C.shape[1], dtype=int)
-        CI = matrix.indicator(info.run * info.instruction, positive=True)
+        CI = matrix.indicator(info.run * info.inst, positive=True)
         C = np.c_[C, CI]
 
-        data_new = optimal_contrast(data_n, C, X, reg_in)
+        data_new = optimal_contrast(data_n, C, X['nKX'], reg_in)
 
         return data_new, data_info
-
 
 class DataSetNishi(DataSetNative):
     def __init__(self, dir):
@@ -1424,7 +1504,7 @@ class DataSetIBC(DataSetNative):
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space.
         Uses the general ones, but overwrites the choice of masks
         Args:
@@ -1456,7 +1536,7 @@ class DataSetIBC(DataSetNative):
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth,additional_mask=add_mask)
         else:
-            atlas_maps=super().get_atlasmaps(atlas, sub, ses_id, smooth=None)
+            atlas_maps=super().get_atlasmaps(atlas, sub, ses_id, smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
     def condense_data(self, data, info,
@@ -1633,7 +1713,7 @@ class DataSetSomatotopic(DataSetMNIVol):
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
 
-    def get_atlasmaps(self, atlas, sub=None, ses_id = None, smooth=None):
+    def get_atlasmaps(self, atlas, sub=None, ses_id = None, smooth=None, interpolation=1):
         """ Gets group atlasmaps.
         Assumes that all scans are in the same space (self.space)
 
@@ -1666,6 +1746,8 @@ class DataSetSomatotopic(DataSetMNIVol):
                 atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
                                                   white, pial, mask))
                 atlas_maps[i].build()
+        else:
+            atlas_maps = super().get_atlasmaps(atlas, sub, ses_id, smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
     def condense_data(self, data, info,
@@ -1866,7 +1948,6 @@ class DataSetLanguage(DataSetNative):
                 data_info['names'] = [
                     f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
                 # Baseline substraction
-                B = matrix.indicator(data_info.half, positive=True)
 
             elif type == 'CondRun':
 
@@ -1877,7 +1958,6 @@ class DataSetLanguage(DataSetNative):
                 data_info['names'] = [
                     f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
                 # Baseline substraction
-                B = matrix.indicator(data_info.half, positive=True)
 
             elif type == 'CondAll':
                 data_info, C = agg_data(info,
@@ -1887,7 +1967,6 @@ class DataSetLanguage(DataSetNative):
                 data_info['names'] = [
                     f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
                 # Baseline substraction
-                B = matrix.indicator(data_info.half, positive=True)
 
             # Prewhiten the data
             data_n = prewhiten_data(data)
@@ -1903,6 +1982,72 @@ class DataSetLanguage(DataSetNative):
             data_new = optimal_contrast(data_n, C, X, reg_in)
 
         return data_new, data_info
+
+class DataSetHcpTask(DataSetNative):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.sessions = ['ses-task']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'reg_id'
+        self.cond_name = 'cond_name'
+        self.part_ind = 'half'
+
+    def condense_data(self, data, info,
+                      type='CondHalf',
+                      participant_id=None,
+                      ses_id=None):
+        """ Condense the data in a certain way optimally
+        'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+        'CondRun': Conditions with seperate estimates per run. Defaults to 'CondHalf'.
+
+        Args:
+            data (list): List of extracted datasets
+            info (DataFrame): Data Frame with description of data - row-wise
+            type (str): Type of extraction:
+            participant_id (str): ID of participant
+            ses_id (str): Name of session
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provided
+        """
+
+        # Depending on the type, make a new contrast
+        if type == 'CondHalf':
+            data_info, C = agg_data(info,
+                                    ['half','reg_id'],
+                                    ['run', 'reg_num']
+                                    )
+            data_info['names'] = [
+                f'{d.cond_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+
+        elif type == 'CondRun':
+            data_info, C = agg_data(info,
+                                    ['run', 'reg_id'],
+                                    ['reg_num', 'half']
+                                    )
+            data_info['names'] = [
+                f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
+
+        elif type == 'CondAll':
+
+            data_info, C = agg_data(info,
+                                    ['reg_id'],
+                                    ['run', 'half', 'reg_num']
+                                    )
+            data_info['names'] = [
+                f'{d.cond_name}' for i, d in data_info.iterrows()]
+
+            # Prewhiten the data
+            data_n = prewhiten_data(data)
+
+            # Combine with contrast
+            for i in range(len(data_n)):
+                data_n[i] = pinv(C) @ data_n[i]
+
+            return data_n, data_info
 
 
 class DataSetUkbResting(DataSetMNIVol):
@@ -1990,3 +2135,91 @@ class DataSetUkbResting(DataSetMNIVol):
         if type == 'Tseries':
             info['names'] = info['timepoint']
         return data, info
+
+
+class DataSetSocial(DataSetNative):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.sessions = ['ses-social', 'ses-rest']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'reg_id'
+        self.cond_name = 'condName'
+        self.part_ind = 'half'
+
+    def condense_data(self, data, info,
+                      type='CondHalf',
+                      participant_id=None,
+                      ses_id=None):
+        """ Condense the data from the language localizer project after extraction
+
+        Args:
+            data (list of ndarray)
+            info (dataframe)
+            type (str): Type of extraction:
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
+                    Defaults to 'CondHalf'.
+                'CondAll': Conditions with all estimates combined
+            participant_id (str): ID of participant
+            ses_id (str): Name of session
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provide
+            names: Names for CIFTI-file per row
+        """
+
+        # Depending on the type, make a new contrast
+        info['half'] = 2 - (info.run < 5)
+        if type == 'Tseries' or type == 'FixTseries':
+            info['names'] = info['timepoint']
+            data_new, data_info = data, info
+
+        else:
+            if type == 'CondHalf':
+                data_info, C = agg_data(info,
+                                        ['half', 'reg_id'],
+                                        ['run', 'reg_num'],
+                                        subset=(info.reg_id >0))
+                data_info['names'] = [
+                    f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
+
+            elif type == 'CondRun':
+
+                data_info, C = agg_data(info,
+                                        ['run', 'reg_id'],
+                                        ['reg_num'],
+                                        subset=(info.reg_id > 0))
+                data_info['names'] = [
+                    f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = matrix.indicator(data_info.run, positive=True)
+
+            elif type == 'CondAll':
+                data_info, C = agg_data(info,
+                                        ['reg_id'],
+                                        ['run', 'half', 'reg_num'],
+                                        subset=(info.reg_id > 0))
+                data_info['names'] = [
+                    f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
+                # Baseline substraction
+                B = np.ones((data_info.shape[0],1))
+
+            # Prewhiten the data
+            data_n = prewhiten_data(data)
+
+            dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+
+            # Load the designmatrix and perform optimal contrast
+            X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+            reg_in = np.arange(C.shape[1], dtype=int)
+            CI = matrix.indicator(info.run * info.instruction, positive=True)
+            C = np.c_[C, CI]
+
+            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
+
+        return data_new, data_info

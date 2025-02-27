@@ -1,10 +1,21 @@
 import numpy as np
 from numpy.linalg import inv, pinv
 import nibabel as nb
-import h5py
+import h5py, os, subprocess
 import Functional_Fusion.atlas_map as am
+from pathlib import Path
 
+default_atlas_dir = os.path.dirname(am.__file__) + '/Atlases'
 
+def get_base_dir():
+    possible_dirs = ['/Volumes/diedrichsen_data$/data/FunctionalFusion',
+                     '/srv/diedrichsen/data/FunctionalFusion',
+                     'Y:/data/FunctionalFusion']
+    for directory in possible_dirs:
+        if Path(directory).exists():
+            return directory
+    raise FileNotFoundError('Could not find base_dir')
+    
 def sq_eucl_distances(coordA,coordB):
     D = coordA.reshape(3,-1,1)-coordB.reshape(3,1,-1)
     D = np.sum(D**2,axis=0)
@@ -198,5 +209,213 @@ def get_volumes(data, atlas_name='MNISymC2'):
 
     return nii_vols
 
-            
+def split_string(s):
+    """ Split string into integer and string
 
+    Args:
+        s: input string to be splitted
+
+    Returns:
+        integer part, and string part
+    """
+    # Split string into integer and string
+    for i, char in enumerate(s):
+        if not char.isdigit():
+            return int(s[:i]), s[i:]
+
+
+def smooth_fs32k_data(input_file, smooth=1, kernel='gaussian',
+                      return_data_only=False):
+    """ Smooth cortical data in fs32k space from cifti file, then save as cifti
+        format using workbench command
+
+    Args:
+        input_file: the input cifti file to be smoothed
+        smooth: width of smoothing kernel in mm
+        kernel: the type of smoothing kernel, either "gaussian" or "fwhm"
+        return_data_only: only return the smoothed data but not store any
+
+    Returns:
+        Write in the cifti file of smoothed data
+    """
+    # get the surfaces for smoothing
+    surf_L = default_atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-L_sphere.surf.gii'
+    surf_R = default_atlas_dir + f'/tpl-fs32k/tpl-fs32k_hemi-R_sphere.surf.gii'
+
+    # Making in / out file names
+    dir_path, file_name = os.path.split(input_file)
+    base_name = '.'.join(file_name.split('.')[:-2])
+    ext = '.' + '.'.join(file_name.split('.')[-2:])
+
+    if kernel == 'gaussian':
+        smooth_suffix = f'_desc-sm{smooth}'
+    elif kernel == 'fwhm':
+        smooth_suffix = f'_desc-sm{smooth}fwhm'
+    else:
+        raise ValueError('Only gaussian and fwhm kernels are supported!')
+
+    cifti_out = os.path.join(dir_path, base_name + smooth_suffix + ext)
+
+    # Load data and fill nan with zeros if unsmoothed data contains any
+    contain_nan = False  ## a flag
+    C = nb.load(input_file)
+    if np.isnan(C.get_fdata()).any():
+        contain_nan = True
+        mask = np.isnan(C.get_fdata())
+        C = nb.Cifti2Image(dataobj=np.nan_to_num(C.get_fdata()), header=C.header)
+        input_file = dir_path + f'/tmp' + ext
+        nb.save(C, input_file)
+
+    # Write in smoothed surface data (filled with 0)
+    smooth_cmd = f"wb_command -cifti-smoothing {input_file} " \
+                 f"{smooth} {smooth} COLUMN {cifti_out} " \
+                 f"{f'-{kernel} ' if kernel == 'fwhm' else ''}" \
+                 f"-left-surface {surf_L} -right-surface {surf_R} " \
+                 f"-fix-zeros-surface"
+    subprocess.run(smooth_cmd, shell=True)
+
+    # Double-check if the original data contain NaN values
+    if contain_nan:
+        os.remove(dir_path + f'/tmp' + ext)
+        # Replace 0s back to NaN (we don't want the 0s impact model learning)
+        data = nb.load(cifti_out).get_fdata()
+        data[mask] = np.nan
+        C = nb.Cifti2Image(dataobj=data, header=C.header)
+        nb.save(C, cifti_out)
+
+    if return_data_only:
+        os.remove(cifti_out)
+        return data
+
+
+def stack_sparse_tensors(tensor_list, dim):
+    # Check that all tensors are sparse
+    if not all(tensor.is_sparse for tensor in tensor_list):
+        raise ValueError("All tensors must be sparse.")
+
+    # Get the shape of each tensor (they must match in all dimensions except `dim`)
+    base_shape = tensor_list[0].shape
+    if not all(tensor.shape[:dim] + tensor.shape[dim + 1:] == base_shape[:dim] + base_shape[dim + 1:] for tensor in
+               tensor_list):
+        raise ValueError("All tensors must have the same shape except in the stacking dimension.")
+
+    # Initialize lists for concatenated indices and values
+    all_indices = []
+    all_values = []
+    total_size_dim = sum(tensor.shape[dim] for tensor in tensor_list) if dim == 1 else base_shape[dim]
+
+    # Offset tracker for stacking along `dim`
+    current_offset = 0
+
+    for i, tensor in enumerate(tensor_list):
+        indices = tensor.indices()
+        values = tensor.values()
+
+        # Adjust indices based on the stacking dimension
+        if dim == 0:
+            # Stack along the first dimension by adding a new dimension with the tensor index
+            new_indices = pt.cat([pt.full((1, indices.shape[1]), i, dtype=pt.long), indices], dim=0)
+        elif dim == 1:
+            # Stack along the second dimension by shifting indices in dimension 1
+            new_indices = pt.stack([indices[0], indices[1] + current_offset, indices[2]])
+            current_offset += tensor.shape[1]
+        elif dim == 2:
+            # Stack along the third dimension by shifting indices in dimension 2
+            new_indices = pt.stack([indices[0], indices[1], indices[2] + current_offset])
+            current_offset += tensor.shape[2]
+        else:
+            raise ValueError("Invalid dimension for stacking. Only dimensions 0, 1, or 2 are supported.")
+
+        # Append the adjusted indices and values to the lists
+        all_indices.append(new_indices)
+        all_values.append(values)
+
+    # Concatenate indices and values from all tensors
+    final_indices = pt.cat(all_indices, dim=1)
+    final_values = pt.cat(all_values)
+
+    # Define the new shape after stacking
+    new_shape = list(base_shape)
+    new_shape[dim] = total_size_dim if dim == 1 else len(tensor_list)
+
+    # Create the stacked sparse tensor
+    stacked_tensor = pt.sparse_coo_tensor(final_indices, final_values, tuple(new_shape))
+
+    return stacked_tensor
+
+
+def mask_data_by_percent(arr, high_percent=0.1, low_percent=0.1, z_transfer=False, binarized=False):
+    """Mask out the task activation by given percentile
+
+    Args:
+        arr (np.array): the given matrix to be masked, (num_task, P)
+        percent (float): the number of top percent to keep
+
+    Returns:
+        result (np.int8): the binarized rsFC
+    """
+    # Ensure the input is a NumPy array / set nan to -1
+    arr = np.asarray(arr)
+    if z_transfer:
+        # first demean along the voxel dimension
+        arr = arr - np.nanmean(arr, axis=1, keepdims=True)
+        arr = arr / np.nanstd(arr, axis=1, ddof=0, keepdims=True)
+
+    high_threshold = np.nanpercentile(arr, (1 - high_percent) * 100, axis=1, keepdims=True)
+    low_threshold = np.nanpercentile(arr, low_percent * 100, axis=1, keepdims=True)
+
+    # Apply the threshold to keep the top `percent` values
+    if binarized:
+        # 1. set to 1
+        result = np.where((arr >= high_threshold) | (arr <= low_threshold),
+                          1, 0).astype(np.int8)
+    else:
+        # 2. keep the original values
+        result = np.where((arr >= high_threshold) | (arr <= low_threshold),
+                          arr, 0).astype(np.float32)
+
+    return result
+
+
+def mask_fs32k_data(input_file, high_percent=0.1, low_percent=0.1, binarized=False,
+                    z_transfer=False, return_data_only=False):
+    """ Smooth cortical data in fs32k space from cifti file, then save as cifti
+        format using workbench command
+
+    Args:
+        input_file: the input cifti file to be smoothed
+        smooth: width of smoothing kernel in mm
+        kernel: the type of smoothing kernel, either "gaussian" or "fwhm"
+        return_data_only: only return the smoothed data but not store any
+
+    Returns:
+        Write in the cifti file of smoothed data
+    """
+    # Making in / out file names
+    dir_path, file_name = os.path.split(input_file)
+    base_name = file_name.split('.')[0]
+
+    base_name += '_zstat' if z_transfer else base_name
+    ext = '.' + '.'.join(file_name.split('.')[1:])
+    mask_suffix = f'_masked-hi{high_percent}lo{low_percent}'
+
+    if binarized:
+        mask_suffix = f'_masked-hi{high_percent}lo{low_percent}_binarized'
+    else:
+        mask_suffix = f'_masked-hi{high_percent}lo{low_percent}'
+
+    cifti_out = os.path.join(dir_path, base_name + mask_suffix + ext)
+    # Load data and fill nan with zeros if unsmoothed data contains any
+    C = nb.load(input_file)
+    mask = np.isnan(C.get_fdata())
+    data = mask_data_by_percent(C.get_fdata(), high_percent=high_percent,
+                                low_percent=low_percent, z_transfer=z_transfer,
+                                binarized=binarized)
+
+    # Replace 0s back to NaN (we don't want the 0s impact model learning)
+    data[mask] = np.nan
+    if return_data_only:
+        return data
+    else:
+        C = nb.Cifti2Image(dataobj=data, header=C.header)
+        nb.save(C, cifti_out)

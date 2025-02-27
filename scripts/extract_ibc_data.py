@@ -1,12 +1,13 @@
 # Script for importing the IBC data set from super_cerebellum to general format.
-import os
+import os, time
 import pandas as pd
 import shutil
 from pathlib import Path
 import mat73
 import numpy as np
-import atlas_map as am
-from dataset import DataSetIBC
+import Functional_Fusion.atlas_map as am
+from Functional_Fusion.dataset import DataSetIBC
+import Functional_Fusion.util as ut
 import nibabel as nb
 import SUITPy as suit
 import matplotlib.pyplot as plt
@@ -71,44 +72,6 @@ def extract_all(atlas='MNISym3'):
             ibc_dataset.extract_all_fs32k(ses,type='CondHalf')
         else:
             ibc_dataset.extract_all_suit(ses,type='CondHalf',atlas=atlas)
-
-def smooth_ibc_fs32k(type='CondHalf', smooth=1):
-    myatlas, _ = am.get_atlas('fs32k', atlas_dir)
-    ds = DataSetIBC(data_dir)
-    T = ds.get_participants()
-
-    # get the surfaces for smoothing
-    surf_L = ds.atlas_dir + f'/tpl-fs32k/fs_LR.32k.L.midthickness.surf.gii'
-    surf_R = ds.atlas_dir + f'/tpl-fs32k/fs_LR.32k.R.midthickness.surf.gii'
-
-    for ses_id in ds.sessions:
-        for s in T.participant_id:
-            print(f'- Smoothing data for {s} fs32k {ses_id} in {smooth} mm ...')
-            # Load the unsmoothed data and fill nan with zeros
-            C = nb.load(ds.data_dir.format(s)
-                        + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii')
-            mask = np.isnan(C.get_fdata())
-            C = nb.Cifti2Image(dataobj=np.nan_to_num(C.get_fdata()), header=C.header)
-            nb.save(C, 'tmp.dscalar.nii')
-
-            dest_dir = ds.data_dir.format(s)
-            cifti_out = dest_dir + f'/{s}_space-fs32k_{ses_id}_{type}_' \
-                                   f'desc-sm{smooth}.dscalar.nii'
-
-            # Write in smoothed surface data (filled with 0)
-            smooth_cmd = f"wb_command -cifti-smoothing tmp.dscalar.nii " \
-                         f"{smooth} {smooth} COLUMN {cifti_out} " \
-                         f"-left-surface {surf_L} -right-surface {surf_R} " \
-                         f"-fix-zeros-surface"
-            subprocess.run(smooth_cmd, shell=True)
-            os.remove("tmp.dscalar.nii")
-
-            # Replace 0s back to NaN (we don't want the 0s impact model learning)
-            C = nb.load(cifti_out)
-            data = C.get_fdata()
-            data[mask] = np.nan
-            C = nb.Cifti2Image(dataobj=data, header=C.header)
-            nb.save(C, cifti_out)
 
 def copy_currentAsOld():
     """This function copies the regressor info file as "_old.tsv"
@@ -180,6 +143,41 @@ def correct_condHalf():
 
     pass
 
+def smooth_ibc_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1, kernel='gaussian'):
+    dataset = DataSetIBC(data_dir)
+    T = dataset.get_participants()
+
+    for s in T.participant_id:
+        print(f'Smoothing data for {s} fs32k {ses_id} in {smooth}mm {kernel} ...')
+
+        start = time.perf_counter()
+        file = dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
+        ut.smooth_fs32k_data(file, smooth=smooth, kernel=kernel)
+        finish = time.perf_counter()
+        elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+        print(f"- Done subject {s} - time {elapse}.")
+
+def mask_ibc_fs32k(ses_id='ses-s1', type='CondHalf', high_percent=0.1, low_percent=0.1,
+                        smooth=None, z_transfer=False, binarized=False):
+    myatlas, _ = am.get_atlas('fs32k')
+    dataset = DataSetIBC(data_dir)
+    T = dataset.get_participants()
+
+    for s in T.participant_id:
+        print(f'Mask data for {s} fs32k {ses_id} in high {high_percent} low {low_percent} ...')
+
+        start = time.perf_counter()
+        if smooth is not None:
+            file = dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}_desc-sm{smooth}.dscalar.nii'
+        else:
+            file = dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
+
+        ut.mask_fs32k_data(file, high_percent=high_percent, low_percent=low_percent,
+                           z_transfer=z_transfer, binarized=binarized)
+        finish = time.perf_counter()
+        elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+        print(f"- Done subject {s} - time {elapse}.")
+
 if __name__ == "__main__":
     # copy_currentAsOld()
     # correct_condHalf()
@@ -189,10 +187,20 @@ if __name__ == "__main__":
     # extract_all('MNISymC2')
 
     ################# Smooth IBC fs32k data #################
-    for s in [1,2,3,4,5,6,7]:
-        smooth_ibc_fs32k(type='CondHalf', smooth=s)
+    # for s in [1,2,3,4,5,6,7]:
+    #     smooth_ibc_fs32k(type='CondHalf', smooth=s)
+    ibc_ds = DataSetIBC(data_dir)
+    # for ses_id in ibc_ds.sessions:
+    #     for s in [2,3,5,7,9]:
+    #         smooth_ibc_fs32k(ses_id='ses-01', type='CondHalf', smooth=s, kernel='fwhm')
 
-    # dataset = DataSetIBC(data_dir)
+    for ses_id in ibc_ds.sessions:
+        for s in [3,5,7]:
+            print(f'Doing processing for session {ses_id} in {s}fwhm ...')
+            mask_ibc_fs32k(ses_id=ses_id, type=f'CondHalf', high_percent=0.1,
+                            low_percent=0.1, smooth=f'{s}', z_transfer=True, binarized=False)
+
+    dataset = DataSetIBC(data_dir)
     # for session in dataset.sessions:
     #     dataset.group_average_data(atlas='MNISymC2', ses_id=session)
     #

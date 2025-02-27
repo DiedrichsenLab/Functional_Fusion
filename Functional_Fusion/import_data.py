@@ -204,7 +204,7 @@ def import_tseries(src, dest, sub_id, ses_id, runs, trs=None, mask_file=None):
         sub_id (str): ID of participant
         ses_id (str): ID of session
         runs (list): list of runs to import
-        trs (int): Number of timepoints of the timeseries to import
+        trs (int or list): TRs to import. If trs is an integer, then import until that TR. If trs is a list, then import the TRs specified in the list
         fix (bool): If True, then import the data that is FIX cleaned
     """
     
@@ -223,7 +223,9 @@ def import_tseries(src, dest, sub_id, ses_id, runs, trs=None, mask_file=None):
         if not Path(dest_file).exists():
             if trs is not None: # If TR number is specified, then only import that number of TRs
                 img = nb.load(src_file)
-                data = img.get_fdata()[:,:,:,:trs]
+                if isinstance(trs, (int, np.integer)):  # Check if trs is a scalar integer
+                    trs = range(0, trs)  # Convert to range
+                data = img.get_fdata()[:,:,:,trs]
                 img = nb.Nifti1Image(data, img.affine, img.header)
                 nb.save(img, dest_file)
             else:

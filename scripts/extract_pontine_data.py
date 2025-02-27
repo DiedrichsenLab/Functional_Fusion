@@ -4,8 +4,9 @@ import shutil
 from pathlib import Path
 import mat73
 import numpy as np
-import sys
+import sys, os, time
 import Functional_Fusion.atlas_map as am
+import Functional_Fusion.util as ut
 from Functional_Fusion.dataset import DataSetPontine
 import nibabel as nb
 import SUITPy as suit
@@ -60,12 +61,54 @@ def show_pontine_suit(subj,sess,cond):
     print(f'Showing {D.cond_name[cond]}')
     pass
 
+def smooth_pontine_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1, kernel='gaussian'):
+    dataset = DataSetPontine(data_dir)
+    T = dataset.get_participants()
+
+    for s in T.participant_id:
+        print(f'Smoothing data for {s} fs32k {ses_id} in {smooth}mm {kernel} ...')
+
+        start = time.perf_counter()
+        file = dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
+        ut.smooth_fs32k_data(file, smooth=smooth, kernel=kernel)
+        finish = time.perf_counter()
+        elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+        print(f"- Done subject {s} - time {elapse}.")
+
+def mask_pontine_fs32k(ses_id='ses-s1', type='CondHalf', high_percent=0.1, low_percent=0.1,
+                        smooth=None, z_transfer=False, binarized=False):
+    myatlas, _ = am.get_atlas('fs32k')
+    dataset = DataSetPontine(data_dir)
+    T = dataset.get_participants()
+
+    for s in T.participant_id:
+        print(f'Mask data for {s} fs32k {ses_id} in high {high_percent} low {low_percent} ...')
+
+        start = time.perf_counter()
+        if smooth is not None:
+            file = dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}_desc-sm{smooth}.dscalar.nii'
+        else:
+            file = dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
+
+        ut.mask_fs32k_data(file, high_percent=high_percent, low_percent=low_percent,
+                           z_transfer=z_transfer, binarized=binarized)
+        finish = time.perf_counter()
+        elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+        print(f"- Done subject {s} - time {elapse}.")
+
 if __name__ == "__main__":
+    smooth_pontine_fs32k(ses_id='ses-01', type='TaskHalf', smooth=4, kernel='fwhm')
+
     # extract_pontine_group(type='TaskHalf', atlas='MNISymC3')
     #  extract_pontine_fs32k(ses_id='ses-01',type='TaskHalf')
     # extract_pontine_suit(ses_id='ses-01', type='TaskHalf', atlas='MNISymC2')
     # show_pontine_group(type='TaskHalf', atlas='SUIT3',
     #                    cond='all', savefig=True)
+
+    for s in [2,4,6,8,10]:
+        print(f'Doing processing for {s}fwhm ...')
+        mask_pontine_fs32k(ses_id='ses-01', type=f'TaskHalf', high_percent=0.1,
+                            low_percent=0.1, smooth=f'{s}fwhm', z_transfer=True, binarized=False)
 
     dataset = DataSetPontine(data_dir)
     dataset.extract_all(type='TaskAll', ses_id='ses-01', atlas='MNISymC3')
