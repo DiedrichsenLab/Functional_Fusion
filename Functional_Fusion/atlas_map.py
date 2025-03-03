@@ -254,17 +254,23 @@ class AtlasVolumetric(Atlas):
         include = dist < radius
         return self.get_subatlas(include)
 
-    def get_subatlas_image(self,mask_img,label_value=1):
+    def get_subatlas_image(self,mask_img,label_value=None):
         """Returns a subatlas (region) based on a mask image
+        Selects either any voxel > 0 (default), any voxel == label_value, or any voxel which has a value in the list of label_values. 
 
         Args:
-            mask_img (str): Mask image filename
-
+            mask_img (str): Mask or discrete segmentation image filename
+            label_value (int,list): Value(s) for the target ROI (default None)  
         Returns:
-            new_atlas (AtlasVolumetric): New atlas object
+            new_atlas (AtlasVolumetric): New atlas object            
         """
         data = self.read_data(mask_img)
-        include = data == label_value
+        if label_value is None:
+            include = data>0
+        elif isinstance(label_value,list): 
+            include = any((data == i).all() for i in label_value)
+        else:
+            include = data == label_value
         return self.get_subatlas(include)
 
     def data_to_cifti(self, data, row_axis=None):
@@ -894,6 +900,27 @@ class AtlasMap:
         data_group = np.nansum(d,axis=2) # Sum over the voxels
         return data_group
 
+    def save_as_image(self, fname=None):
+        """ Save a mask of the voxel in native space that are involved in the ROI. This function is mostly to check the ROI after building it. 
+
+        Args:
+            fname (str): file name for the nifti-file (use *.nii.gz for compression). If None, no file is saved.
+        Returns:
+            mask_img(Nift1Image): Image for the mask 
+        """
+        # Check if is has the attribute vox_list: 
+        if not hasattr(self, 'vox_list'):
+            raise(NameError('vox_list not defined - call build() first'))
+        # make image 
+        vox = np.unique(self.vox_list)
+        mask = np.zeros(np.prod(self.mask_img.shape),dtype=np.uint8)
+        mask[vox] = 1
+        mask = mask.reshape(self.mask_img.shape) # Undo the flattening
+        mask_img = nb.Nifti1Image(mask,self.mask_img.affine)
+        if (fname is not None):
+            nb.save(mask_img,fname)
+        return mask_img
+
 class AtlasMapDeform(AtlasMap):
     def __init__(self, world, deform_img, mask_img):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
@@ -1063,7 +1090,6 @@ class AtlasMapSurf(AtlasMap):
         self.vox_list = self.vox_list.T
         self.vox_weight = self.vox_weight.T
 
-
 def get_data_nifti(fnames, atlas_maps):
     """Extracts the data for a list of fnames
     for a list of atlas_maps. This is usually called by DataSet.extract_data()
@@ -1137,3 +1163,66 @@ def get_data_cifti(fnames, atlases):
     for i in range(n_atlas):
         data[i] = np.vstack(data[i])
     return data
+
+def exclude_overlapping_voxels(amap, exclude='all', exclude_thres=0.9):
+    """
+    Ensures that ROIs do not share voxels by excluding overlapping voxels based on their weights.
+
+    Parameters:
+        amap (list): A list of AtlasMapSurf objects, each containing:
+                     - 'vox_list': (N, M) np.array of voxel indices (M = number of dimensions, e.g., 3 for [x, y, z])
+                     - 'vox_weight': (N, M) np.array of weights corresponding to vox_list
+        exclude (str or list of tuple): If 'all', compare all ROI pairs. Otherwise, provide a list of (i, j) tuples.
+        exclude_thres (float): Threshold to determine which ROI retains a voxel.
+
+    Returns:
+        list: Updated amap with overlapping voxels removed.
+    """
+
+    # Initialize exclusion masks
+    for roi in amap:
+        roi.excl_mask = np.zeros(roi.vox_list.shape, dtype=bool).flatten()
+
+    # Create list of ROI pairs to compare
+    if exclude == 'all':
+        exclude_pairs = [(i, j) for i in range(len(amap)) for j in range(i, len(amap))]
+    else:
+        exclude_pairs = exclude  # User-provided list of pairs
+
+    # Process each pair of ROIs
+    for j, k in exclude_pairs:
+        vox_j, weight_j = amap[j].vox_list, amap[j].vox_weight
+        vox_k, weight_k = amap[k].vox_list, amap[k].vox_weight
+
+        EQ = vox_j.flatten()[:, np.newaxis] == vox_k.flatten()[np.newaxis, :]
+
+        idx_j, idx_k = np.where(EQ)
+
+        for idx_j_v, idx_k_v in zip(idx_j, idx_k):
+            wj, wk = weight_j.flatten()[idx_j_v], weight_k.flatten()[idx_k_v]
+            total_weight = wj + wk
+
+            if total_weight == 0:
+                amap[j].excl_mask[idx_j_v] = True
+                amap[k].excl_mask[idx_k_v] = True
+            else:
+                frac_j = wj / total_weight
+                frac_k = wk / total_weight
+
+                if frac_j > exclude_thres:  # Keep voxel in j, exclude from k
+                    amap[k].excl_mask[idx_k_v] = True
+                elif frac_k > exclude_thres:  # Keep voxel in k, exclude from j
+                    amap[j].excl_mask[idx_j_v] = True
+                else:  # Exclude from both
+                    amap[j].excl_mask[idx_j_v] = True
+                    amap[k].excl_mask[idx_k_v] = True
+
+        # Apply exclusion mask to each ROI
+    for roi in amap:
+        mask = ~roi.excl_mask  # Keep only unexcluded voxels
+        roi.vox_list = roi.vox_list.flatten()[mask]  # Reshape vox_list to keep valid entries
+        roi.vox_weight = roi.vox_weight.flatten()[mask]
+        roi.num_excl = np.sum(roi.excl_mask)  # Count excluded voxels
+        del roi.excl_mask  # Remove temporary mask
+
+    return amap
