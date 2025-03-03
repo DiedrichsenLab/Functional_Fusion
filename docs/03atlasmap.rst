@@ -63,6 +63,8 @@ Example of surface-based ROI analysis
     # Set the Gifti file for the region (func.gii or label.gii)
     subatlas = atlas_left.get_subatlas_image('Path_to_roi_img.gii')
 
+As for the volume-based ROI you can also specify a label_value to pick out a specific (set of) ROIs from a discrete segementation atlas. 
+
 The subatlas will now have the ``P`` locations in vertex space. You can use the ``subatlas.data_to_cifti()`` function to save data in that group space. For mapping data into the group space, we need to define an ``AtlasMapSurf``.
 
 .. code-block:: python
