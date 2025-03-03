@@ -801,7 +801,8 @@ class DataSet:
         for s in T.participant_id:
             print(f'Atlasmap {s}')
             atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
-                                                  smooth=smooth, interpolation=interpolation)
+                                                smooth=smooth,
+                                                interpolation=interpolation)
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id, type=type)
             data = am.get_data_nifti(fnames, atlas_maps)
@@ -968,7 +969,7 @@ class DataSetNative(DataSet):
             edir = self.estimates_dir.format(sub)
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
+            atlas_maps[0].build(smooth=None)
         else:
             atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth, interpolation=interpolation)
         return atlas_maps
@@ -1125,7 +1126,7 @@ class DataSetMDTB(DataSetNative):
                 data_info, C = agg_data(info,
                                         ['run', 'cond_num'],
                                         [],
-                                        subset=(info.instruction == 0))
+                                        subset=(info.instruction == 0)) 
                 data_info['names'] = [
                     f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
 
@@ -1307,7 +1308,7 @@ class DataSetPontine(DataSetNative):
         self.part_ind = 'half'
 
     def condense_data(self, data, info,
-                      type='TaskHalf',
+                      type='CondHalf',
                       participant_id=None,
                       ses_id=None):
         """ Condense the data from the pontine project after extraction
@@ -1316,9 +1317,8 @@ class DataSetPontine(DataSetNative):
             data (list of ndarray)
             info (dataframe)
             type (str): Type of extraction:
-                'TaskHalf': Conditions with seperate estimates for first and second half of experient (Default)
-                'TaskRun': Conditions with seperate estimates per run
-                    Defaults to 'CondHalf'.
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
             participant_id (str): ID of participant
             ses_id (str): Name of session
 
@@ -1334,24 +1334,24 @@ class DataSetPontine(DataSetNative):
         info['half'] = 2 - (info.run < 9)
         n_cond = np.max(info.reg_id)
 
-        if type == 'TaskHalf':
+        if type == 'CondHalf':
             data_info, C = agg_data(info,
                                     ['half', 'reg_id'],
                                     ['run', 'reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'TaskRun':
+        elif type == 'CondRun':
 
             data_info, C = agg_data(info,
                                     ['run', 'reg_id'],
                                     ['reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
@@ -1361,7 +1361,7 @@ class DataSetPontine(DataSetNative):
                                     ['run', 'half', 'reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = np.ones((data_info.shape[0],1))
 
@@ -1369,15 +1369,14 @@ class DataSetPontine(DataSetNative):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
-        X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy')
+        X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy',allow_pickle=True).item()
         reg_in = np.arange(C.shape[1], dtype=int)
-        CI = matrix.indicator(info.run * info.instruction, positive=True)
+        CI = matrix.indicator(info.run * info.inst, positive=True)
         C = np.c_[C, CI]
 
-        data_new = optimal_contrast(data_n, C, X, reg_in)
+        data_new = optimal_contrast(data_n, C, X['nKX'], reg_in)
 
         return data_new, data_info
-
 
 class DataSetNishi(DataSetNative):
     def __init__(self, dir):

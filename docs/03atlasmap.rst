@@ -14,8 +14,19 @@ Example of volume-based ROI analysis
 
     # Define the the region, get only left hemisphere
     atlas,_ = am.get_atlas('MNI152NLin6AsymC')
-    # Set the Gifti file for the region (func.gii or label.gii)
+    # Get a Nifti-file of the group atlas. If it is a 0/1 ROI image:
     subatlas = atlas_left.get_subatlas_image('Path_to_roi_img.nii')
+
+
+If you have a discrete segmentation volumetric atlas with different ROIs in it, you can pick out specific values from the file: 
+
+.. code-block:: python
+
+    # Get a the areas 18 from the dseg file: 
+    subatlas = atlas_left.get_subatlas_image('myatlas_dseg.nii',label_value=18)
+    # Or if you multiple possible values 
+    subatlas = atlas_left.get_subatlas_image('myatlas_dseg.nii',label_value=[2,18])
+
 
 
 The subatlas will now have the ``P`` locations in voxel space. You can use the ``subatlas.data_to_nifti()`` function to save data in that group space. For mapping data into the group space, we need to define an ``AtlasMapDeform``.
@@ -51,6 +62,8 @@ Example of surface-based ROI analysis
 
     # Set the Gifti file for the region (func.gii or label.gii)
     subatlas = atlas_left.get_subatlas_image('Path_to_roi_img.gii')
+
+As for the volume-based ROI you can also specify a label_value to pick out a specific (set of) ROIs from a discrete segementation atlas. 
 
 The subatlas will now have the ``P`` locations in vertex space. You can use the ``subatlas.data_to_cifti()`` function to save data in that group space. For mapping data into the group space, we need to define an ``AtlasMapSurf``.
 
