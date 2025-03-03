@@ -254,17 +254,23 @@ class AtlasVolumetric(Atlas):
         include = dist < radius
         return self.get_subatlas(include)
 
-    def get_subatlas_image(self,mask_img,label_value=1):
+    def get_subatlas_image(self,mask_img,label_value=None):
         """Returns a subatlas (region) based on a mask image
+        Selects either any voxel > 0 (default), any voxel == label_value, or any voxel which has a value in the list of label_values. 
 
         Args:
-            mask_img (str): Mask image filename
-
+            mask_img (str): Mask or discrete segmentation image filename
+            label_value (int,list): Value(s) for the target ROI (default None)  
         Returns:
-            new_atlas (AtlasVolumetric): New atlas object
+            new_atlas (AtlasVolumetric): New atlas object            
         """
         data = self.read_data(mask_img)
-        include = data == label_value
+        if label_value is None:
+            include = data>0
+        elif isinstance(label_value,list): 
+            include = any((data == i).all() for i in label_value)
+        else:
+            include = data == label_value
         return self.get_subatlas(include)
 
     def data_to_cifti(self, data, row_axis=None):
