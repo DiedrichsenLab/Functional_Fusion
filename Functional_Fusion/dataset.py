@@ -966,7 +966,7 @@ class DataSetNative(DataSet):
             edir = self.estimates_dir.format(sub)
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
+            atlas_maps[0].build(smooth=None)
         else:
             atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth, interpolation=interpolation)
         return atlas_maps
@@ -1123,7 +1123,7 @@ class DataSetMDTB(DataSetNative):
                 data_info, C = agg_data(info,
                                         ['run', 'cond_num'],
                                         [],
-                                        subset=(info.inst == 0)) 
+                                        subset=(info.instruction == 0)) 
                 data_info['names'] = [
                     f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
 
