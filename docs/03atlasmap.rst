@@ -48,6 +48,8 @@ You can the proceed with data extract as shown below.
 Example of surface-based ROI analysis
 -------------------------------------
 
+The first step to define a surface-based ROI is to get the atlas for the corresponding hemisphere for the group surface atlas. 
+
 .. code-block:: python
 
     # Import atlas map
@@ -60,29 +62,37 @@ Example of surface-based ROI analysis
     # Equivalently you could have used
     atlas_left,_ = am.get_atlas('fs32k_L')
 
+A surface-based ROI is usually defined in a gifti- or cifti-file that indicates whether the surface node is part of the ROI or not (0/1). Sometime we have discrete parcellation files (*.label.gii or _dseg.nii) that indicates multiple ROIS with integer numbers. As for the volume-based ROI you can also specify a label_value to pick out a specific (set of) ROIs from a discrete segementation atlas. 
+
+.. code-block:: python
+
     # Set the Gifti file for the region (func.gii or label.gii)
+    # This one uses any value >0 as part of the ROI
     subatlas = atlas_left.get_subatlas_image('Path_to_roi_img.gii')
+    # Here an example of using one specific value
+    subatlas = atlas_left.get_subatlas_image('Path_to_roi_img.gii', label_value=18)
 
-As for the volume-based ROI you can also specify a label_value to pick out a specific (set of) ROIs from a discrete segementation atlas. 
 
-The subatlas will now have the ``P`` locations in vertex space. You can use the ``subatlas.data_to_cifti()`` function to save data in that group space. For mapping data into the group space, we need to define an ``AtlasMapSurf``.
+The subatlas will now have the ``P`` locations in vertex group space. You can use the ``subatlas.data_to_cifti()`` function to save data in that group space. 
+
+For mapping data between group space and individual space, we need to define an ``AtlasMapSurf``. This is done over the individual pial and whilte surface. 
 
 .. code-block:: python
 
     #  Define atlas map
     white = surf_dir + '/sub-01/sub-01.L.white.32k.surf.gii' # Individual white surface
     pial = surf_dir + '/sub-01/sub-01.L.pial.32k.surf.gii'   # Invividual pial surface
-    mask = glm_dir + '/sub-01/mask.nii'                      # Mask in functional space
+    mask = glm_dir + '/sub-01/mask.nii'                      # Mask in functional space for that subject
     amap = am.AtlasMapSurf(subatlas.vertex[0],white,pial,mask) # Atlas map
     # Compute the voxels in native space 
     amap.build()
-    # save the ROI mask in native space
+    # save the ROI mask in native space for checking only 
     amap.save_as_image('/sub-01/ROI_mask.nii') 
 
 Data Extraction using atlas maps
 --------------------------------
 
-Once the Atlas map is built (surface or volume based), you can use it to extract data from the native space of the subject.
+Once the Atlas map is built (surface or volume-based), you can use it to extract data from the native space of the subject.
 
 * The function ``extract_data_native()`` will extract the data from all the voxel in native space of the subject that map to group space.
 * The function ``extract_data_group()`` will extract the data in group space.
@@ -91,7 +101,17 @@ Once the Atlas map is built (surface or volume based), you can use it to extract
 
 .. code-block:: python
 
-    dnames = ['beta_0001.nii','beta_0002.nii','beta_0003.nii'] # Data files can be 3d- or 4d-niftis
+    dnames = ['beta_0001.nii','beta_0002.nii','beta_0003.nii'] # Data files that you want to map can be 3d- or 4d-niftis
+        
+    # This extract all the relevant voxels in native space (use for RSA)
     n_data = amap.extract_data_native(dnames)
+
+    # this statement maps the data to group space 
+    g_data = amap.extract_data_group(dnames)
+
+    # Actually, the mapping to group space consists of the following 2 lines of code: 
+    n_data = amap.extract_data_native(dnames)
+    # This maps native data to group space 
     g_data = amap.map_native_to_group(n_data) 
-    g_data = amap.extract_data_group(dnames) # Results in the same as the above two lines
+
+The advantage of ussing map_native_to_group is that you can do some computation on data in native space and then map and save it in group space for subsequent analysis. 
