@@ -181,10 +181,15 @@ class AtlasVolumetric(Atlas):
 
         Args:
             name (str): Name of atlas (atlas string)
-            mask_img (str): file name of mask image defining atlas location
+            mask_img (str): file name of mask image or mask image defining atlas location
         """
         super().__init__(name, structure=structure, space=space)
-        self.mask_img = nb.load(mask_img)
+        if isinstance(mask_img,str):
+            self.mask_img = nb.load(mask_img)
+        elif isinstance(mask_img,nb.Nifti1Image):
+            self.mask_img  = mask_img
+        else: 
+            raise(NameError('mask image needs to be string or Nifti1image'))
         Xmask = self.mask_img.get_fdata()
         Xmask = Xmask > 0
         i, j, k = np.where(Xmask > 0)
@@ -267,10 +272,12 @@ class AtlasVolumetric(Atlas):
         data = self.read_data(mask_img)
         if label_value is None:
             include = data>0
-        elif isinstance(label_value,list): 
-            include = any((data == i).all() for i in label_value)
+        elif isinstance(label_value,list):
+            include = np.zeros(data.shape[0],dtype=bool)
+            for i in label_value:
+                include = np.logical_or(include,data==i)
         else:
-            include = data == label_value
+            include = (data == label_value)
         return self.get_subatlas(include)
 
     def data_to_cifti(self, data, row_axis=None):
