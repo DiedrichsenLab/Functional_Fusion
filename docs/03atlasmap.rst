@@ -15,7 +15,7 @@ Example of volume-based ROI analysis
     # Define the the region, get only left hemisphere
     atlas,_ = am.get_atlas('MNI152NLin6AsymC')
     # Get a Nifti-file of the group atlas. If it is a 0/1 ROI image:
-    subatlas = atlas_left.get_subatlas_image('Path_to_roi_img.nii')
+    subatlas = atlas.get_subatlas_image('Path_to_roi_img.nii')
 
 
 If you have a discrete segmentation volumetric atlas with different ROIs in it, you can pick out specific values from the file: 
@@ -36,7 +36,7 @@ The subatlas will now have the ``P`` locations in voxel space. You can use the `
     #  Define atlas map
     deform = '/sub-01_to_atlasspace_xfm.nii'                 # Deformation file
     mask = glm_dir + '/sub-01/mask.nii'                      # Mask in functional space
-    amap = am.AtlasMapDeform(subatlas.voxels,deform,mask) # Atlas map
+    amap = am.AtlasMapDeform(atlas.world,deform,mask) # Atlas map
     amap.build(interpolation=1)  # Using Trilinear interpolation (0 for nearest neighbor, 2 for smoothing)
     # save the ROI mask in native space
     amap.save_as_image('/sub-01/ROI_mask.nii') 
