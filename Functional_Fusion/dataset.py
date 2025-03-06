@@ -361,6 +361,9 @@ def reliability_within_subj(X, part_vec, cond_vec,
     if len(X.shape) == 2:
         X = X.reshape(1, X.shape[0], X.shape[1])
         single_subj = True
+    else:
+        single_subj = False
+    
     n_subj = X.shape[0]
     if voxel_wise:
         r = np.zeros((n_subj, n_part, X.shape[2]))
