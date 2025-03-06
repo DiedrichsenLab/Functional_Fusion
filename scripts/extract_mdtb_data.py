@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
 
     # Exctract Rest timeseries & connectivity fingerprint
-    # mdtb_dataset = DataSetMDTB(mdtb_dir)   
+    mdtb_dataset = DataSetMDTB(mdtb_dir)   
     # Need to first rerun GLM to get residuals using script mdtb_rerun_glm.py
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Fus06ResRun', space='MNISymC3', ses_id='ses-s1', subj=subject_subset)
@@ -172,8 +172,8 @@ if __name__ == "__main__":
     #                                   type='Ico642Run', space='fs32k', ses_id='ses-rest', subj=None)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Fus06All', space='MNISymC3', ses_id='ses-s2', subj=subject_subset)
-    # conn.get_connectivity_fingerprint(dname,
-    #                                   type='Fus06FixRun', space='fs32k', ses_id='ses-rest', subj=subject_subset)
+    conn.get_connectivity_fingerprint(dname,
+                                      type='Fus06FixRun', space='fs32k', ses_id='ses-rest', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Fus06FixRun', space='fs32k', ses_id='ses-s1', subj=subject_subset)
     # conn.get_connectivity_fingerprint(dname,
