@@ -375,6 +375,10 @@ class AtlasVolumetric(Atlas):
                 img, self.world[0, :], self.world[1, :], self.world[2, :],
                 interpolation
             )
+        if isinstance(img, list):
+            data = nt.sample_images(
+                img, self.world
+            )
         else:
             raise(NameError("Unknown image type"))
         return data.T # Return the data as NxP array
