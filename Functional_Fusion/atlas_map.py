@@ -1248,6 +1248,8 @@ def exclude_overlapping_voxels(amap, exclude='all', exclude_thres=0.9):
 
         idx_j, idx_k = np.where(EQ)
 
+        print(f'found {len(idx_j)} overlapping voxels')
+
         for idx_j_v, idx_k_v in zip(idx_j, idx_k):
             wj, wk = weight_j.flatten()[idx_j_v], weight_k.flatten()[idx_k_v]
             total_weight = wj + wk
