@@ -1130,12 +1130,15 @@ class AtlasMapSurf(AtlasMap):
             indices[i, :, :] = (1 - depths[i]) * c1 + depths[i] * c2
 
         self.vox_list, good = nt.coords_to_linvidxs(indices, self.mask_img, mask=True)
-        all = good.sum(axis=0)
+        # all = good.sum(axis=0)
+        _, invx, count = np.unique(self.vox_list, return_inverse=True, return_counts=True)
         # print(f'{self.name} has {np.sum(all==0)} vertices without data')
-        all[all == 0] = 1
-        self.vox_weight = good / all
+        # all[all == 0] = 1
+        self.vox_weight = count[invx]# good / all
         self.vox_list = self.vox_list.T
-        self.vox_weight = self.vox_weight.T
+        self.vox_weight =  self.vox_weight.T
+
+        pass
 
 def get_data_nifti(fnames, atlas_maps):
     """Extracts the data for a list of fnames
