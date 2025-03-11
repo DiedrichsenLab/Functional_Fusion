@@ -132,6 +132,46 @@ def parcel_recombine(label_vector,parcels_selected,label_id=None,label_name=None
         raise ValueError('parcels_selected must be a list')
     return label_vector_new, label_id_new, label_name_new
 
+
+def parcel_combine(img, output_filename=None):
+    """
+    Combines multiple ROI mask NIfTI files into a single NIfTI file where each ROI has a unique integer label.
+
+    Parameters:
+    - roi_files (list of str or Nifti1Image): List of paths to NIfTI mask files or list of NIfTI mask files.
+    - output_filename (str): Path to save the combined NIfTI file.
+
+    Returns:
+    - Saves a NIfTI file where each ROI has a unique label.
+    """
+    # Load the first image to get shape and affine transformation
+    if isinstance(img[0], str):
+        reference_img = nb.load(img[0])
+    if isinstance(img[0], nb.Nifti1Image):
+        reference_img = img[0]
+    combined_data = np.zeros(reference_img.shape, dtype=np.int16)
+
+    # Assign unique labels to each ROI
+    for i, mask in enumerate(img, start=1):
+        if isinstance(mask, str):
+            roi_img = nb.load(mask)
+        if isinstance(mask, nb.Nifti1Image):
+            roi_img = mask
+        roi_data = roi_img.get_fdata()
+
+        # Ensure binary mask (in case input masks have non-binary values)
+        roi_mask = roi_data > 0
+
+        # Assign a unique label to this ROI
+        combined_data[roi_mask] = i
+
+    # Save the combined ROI mask as a new NIfTI file
+    combined_img = nb.Nifti1Image(combined_data, reference_img.affine, reference_img.header)
+    nb.save(combined_img, output_filename)
+
+    return combined_img
+
+
 class Atlas:
     def __init__(self, name, structure='unknown', space='unknown'):
         """ The Atlas class implements the mapping from the P brain locations back to the defining
@@ -374,10 +414,6 @@ class AtlasVolumetric(Atlas):
             data = nt.sample_image(
                 img, self.world[0, :], self.world[1, :], self.world[2, :],
                 interpolation
-            )
-        if isinstance(img, list):
-            data = nt.sample_images(
-                img, self.world
             )
         else:
             raise(NameError("Unknown image type"))
