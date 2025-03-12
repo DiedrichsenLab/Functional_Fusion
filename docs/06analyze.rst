@@ -43,8 +43,9 @@ To produce the group-averaged dscalar files for a specfic atlas space and data t
     dataset_obj.group_average_data(atlas='MNISymDentate1',ses_id='ses-s1',type='CondRun')
 
 
-Assessing reliability
----------------------
+Assessing reliability within and across individuals
+---------------------------------------------------
+
 
 We can quickly calculate the reliability of the data across subjects and within subjects across sessions:
 
