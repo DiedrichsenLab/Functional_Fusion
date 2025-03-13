@@ -229,7 +229,7 @@ def agg_data(info, by, over, subset=None):
     return data_info, C
 
 
-def agg_parcels(data, label_vec, fcn=np.nanmean, *args, **kwargs):
+def agg_parcels(data, label_vec, fcn=np.nanmean, **kwargs):
     """ Aggregates data over colums to condense to parcels
 
     Args:
@@ -248,7 +248,7 @@ def agg_parcels(data, label_vec, fcn=np.nanmean, *args, **kwargs):
     parcel_data = np.zeros(psize)
     for i, l in enumerate(labels):
         parcel_data[..., i] = fcn(
-            data[..., label_vec == l], axis=len(psize) - 1, *args, **kwargs)
+            data[..., label_vec == l], axis=len(psize) - 1, **kwargs)
     return parcel_data, labels
 
 def combine_parcel_labels(labels_org,labels_new, labelvec_org=None):
