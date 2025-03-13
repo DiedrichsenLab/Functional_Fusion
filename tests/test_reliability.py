@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 def sim_data(n_subjects=10,
              n_part=4,
              n_conditions=5,
-             n_vox=20,
+             n_vox=200,
              var_comp = [1,1,1]):
     """Simulate data with group, subject and error variance.
     Args:
@@ -35,11 +35,12 @@ def sim_data(n_subjects=10,
 
 
 if __name__ == "__main__":
-    data,cond_vec,part_vec = sim_data(var_comp=[1,0.2,1],n_subjects=10,n_part=8,n_conditions=5,n_vox=20)
-    data=data+1
-    var_est1 = rel.decompose_subj_group(data,cond_vec,part_vec,separate='none',subtract_mean=False)
-    var_est2 = rel.decompose_subj_group(data,cond_vec,part_vec,separate='none',subtract_mean=True)
-    var_est3 = rel.decompose_subj_group(data,cond_vec,part_vec,separate='voxel_wise',subtract_mean=True)
+    data,cond_vec,part_vec = sim_data(var_comp=[1,0.2,1],n_subjects=10,n_part=3,n_conditions=5,n_vox=1000)
+    # data=data+1
+    var_est1 = rel.decompose_subj_group(data,cond_vec,part_vec,separate='subject_wise',subtract_mean=False)
+    print((var_est1[:,0]+var_est1[:,1])/var_est1.sum(axis=1))
+    var_est2 = rel.within_subj(data,cond_vec,part_vec,separate='none',subtract_mean=False)
+    print(var_est2)
 
 
 
