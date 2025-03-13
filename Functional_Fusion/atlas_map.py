@@ -1244,10 +1244,26 @@ def exclude_overlapping_voxels(amap, exclude='all', exclude_thres=0.9):
         vox_j, weight_j = amap[j].vox_list, amap[j].vox_weight
         vox_k, weight_k = amap[k].vox_list, amap[k].vox_weight
 
-        EQ = vox_j.flatten()[:, np.newaxis] == vox_k.flatten()[np.newaxis, :]
+        # EQ = vox_j.flatten()[:, np.newaxis] == vox_k.flatten()[np.newaxis, :]
+        #
+        # idx_j, idx_k = np.where(EQ)
+        vox_j = vox_j.flatten()
+        vox_k = vox_k.flatten()
 
-        idx_j, idx_k = np.where(EQ)
+        # Sort vox_k and keep track of the original indices
+        sort_idx = np.argsort(vox_k)
+        vox_k_sorted = vox_k[sort_idx]
 
+        # Check which elements in vox_j exist in vox_k
+        mask = np.isin(vox_j, vox_k_sorted)
+
+        # Find the corresponding indices in vox_k
+        idx_j = np.where(mask)[0]  # Indices in vox_j
+        idx_k = np.searchsorted(vox_k_sorted, vox_j[mask])  # Indices in sorted vox_k
+
+        # Convert back to original vox_k indices
+        idx_k = sort_idx[idx_k]
+        
         print(f'found {len(idx_j)} overlapping voxels')
 
         for idx_j_v, idx_k_v in zip(idx_j, idx_k):
