@@ -51,8 +51,33 @@ def compare_between():
     print(var_est2)
 
 
+def test_size():
+    data,cond_vec,part_vec = sim_data(var_comp=[1,0,1],n_subjects=10,n_part=8,n_conditions=5,n_vox=200)
+    var_est1 = rel.decompose_subj_group(data,cond_vec,part_vec,separate='subject_wise',subtract_mean=True)
+    print(var_est1.shape)
+
+
+    var_est2 = rel.within_subj(data,cond_vec,part_vec,separate='condition_wise',subtract_mean=True)
+    print(var_est2.shape)
+
+    var_est3 = rel.within_subj(data,cond_vec,part_vec,separate='voxel_wise',subtract_mean=True)
+    print(var_est3.shape)
+
+    var_est4 = rel.between_subj(data,cond_vec,separate='condition_wise',subtract_mean=True)
+    print(var_est4.shape)
+
+    var_est5 = rel.between_subj(data,cond_vec,separate='voxel_wise',subtract_mean=True)
+    print(var_est5.shape)
+
+    var_est6 = rel.within_subj_loo(data,cond_vec,part_vec,separate='voxel_wise',subtract_mean=True)
+    print(var_est6.shape)
+
+    var_est7 = rel.between_subj_loo(data,cond_vec,separate='none',subtract_mean=True)
+    print(var_est7.shape)
+    pass 
+
 if __name__ == "__main__":
-    compare_between()
+    test_size()
 
 
     pass

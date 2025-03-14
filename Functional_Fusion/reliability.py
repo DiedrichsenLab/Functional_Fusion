@@ -134,8 +134,8 @@ def between_subj(data, cond_vec=None,
     r = v_s / (v_s + v_e)
     return r
 
-def within_subj_loo(data, part_vec, 
-                          cond_vec,
+def within_subj_loo(data, cond_vec,
+                          part_vec, 
                           separate='voxel_wise',
                           subtract_mean=True):
     """ Calculates the within-subject reliability of a data set
@@ -144,8 +144,8 @@ def within_subj_loo(data, part_vec,
     Does the calculation for each subejct if X is a 3d array
     Args:
         X (ndarray): (num_subj x) num_trials x num_voxel tensor of data
-        part_vec (ndarray): num_trials partition vector
         cond_vec (ndarray): num_trials condition vector
+        part_vec (ndarray): num_trials partition vector
         separate (str): {'none','voxel_wise','condition_wise'}
         subtract_mean (bool): Remove the mean per voxel before correlation calc?
     Returns:
