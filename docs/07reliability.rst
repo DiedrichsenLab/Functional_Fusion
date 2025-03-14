@@ -1,14 +1,14 @@
 Reliability
 ===========
 
-In general the activity data from a subject is a :math:`NxP` matrix with ``N`` being the number of trials and ``P`` the number of voxels. The conditions are indicated by ``cond_vec`` and the partitions (independent measures) by ``part_vec``.  We have ``K`` conditions and ``M`` partitions.
-The data can have ``P=1`` (activity profile), ``K=1`` (activity pattern) or ``N>1`` and ``P>1`` (activity matrix). In most cases, the ``data`` is a 3D-array with dimensions ``n_subjects x N x P ``.
+In general the activity data from a subject is a :math:`NxP` matrix with *N* being the number of trials and *P* the number of voxels. The conditions are indicated by ``cond_vec`` and the partitions (independent measures) by ``part_vec``.  We have *K* conditions and *M* partitions.
+The data can have ``P=1`` (activity profile), ``K=1`` (activity pattern) or ``N>1`` and ``P>1`` (activity matrix). In most cases, the ``data`` is a 3D-array with dimensions ``n_subjects x N x P``.
 
 
 Reliability within individual
 -----------------------------
 
-As a measure of functional signal-to-noise ratio, we can calculate the reliability of activity patterns across runs. The measured activity pattern from subject i in run j (:math:`\mathbf{y}_{i,j}`) can be thought of consisting of the signal in subject i :math:`\mathbf{s}_{i}` and measurement noise :math:`\boldsymbol{\epsilon}_{i,j}`.
+As a measure of functional signal-to-noise ratio, we can calculate the reliability of activity patterns across runs. The measured activity pattern from subject *i* in run *j* (:math:`\mathbf{y}_{i,j}`) can be thought of consisting of the signal in subject i :math:`\mathbf{s}_{i}` and measurement noise :math:`\boldsymbol{\epsilon}_{i,j}`.
 
 .. math::
     \mathbf{y}_{i,j} = \mathbf{s}_i + \boldsymbol{\epsilon}_{i,j}
@@ -16,8 +16,8 @@ As a measure of functional signal-to-noise ratio, we can calculate the reliabili
 For each subject, we can calculate the variances (or second moments) of these patterns across voxels and / or conditions:
 
 .. math::
-    \begin{array}
-    v_{s} = mathbf{s}_i^T\mathbf{s}_i\\
+    \begin{array}{c}
+    v_s = \mathbf{s}_i^T\mathbf{s}_i\\
     v_{\epsilon} = E(\mathbf{\epsilon}^T\mathbf{\epsilon})
     \end{array}
 
@@ -26,12 +26,12 @@ The correlation of the measured activity patterns across runs then is:
 .. math::
     r_{run} = \frac{v_{s}}{v_{s} + v_{\epsilon}}
 
-This reliability measure is the reliability of one measurement (run). The (theoretical) reliability of the mean activity pattern (across $N$ measurement runs) then would be: 
+This reliability measure is the reliability of one measurement (run). The (theoretical) reliability of the mean activity pattern (across *N* measurement runs) then would be: 
 
 .. math::
     r_{whole} = \frac{v_{s}}{v_{s} + v_{\epsilon}/N}
 
-With a bit of Algebra, you can calculate the theoretical reliability of the mean activity pattern from the reliability across runs: 
+With a bit of algebra, you can calculate the theoretical reliability of the mean activity pattern from the reliability across runs: 
 
 .. math::
     r_{whole} = \frac{r_{run} N}{r_{run} (N-1) +1}
@@ -56,7 +56,7 @@ Reliability across individuals
 Similarly, we can calculate the reliability of the mean activity patterns across subjects. The underlying model here is that all subjects have a shared group pattern :math:`\mathbf{g}` and a subject-specific pattern :math:`\mathbf{s}_i`. The logic is the same as above, but now we are looking at the reliability of the group pattern across subjects.
 
 .. math::
-    \mathbf{y}_{i,j} = \mathbf{g} + \mathbf{s}_i 
+    \mathbf{y}_{i} = \mathbf{g} + \mathbf{s}_i 
 
 .. code-block:: python
 

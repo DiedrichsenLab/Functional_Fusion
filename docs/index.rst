@@ -22,6 +22,7 @@ Documentation
    04datasets.rst
    05extract.rst
    06analyze.rst
+   07reliability.rst
    reference.rst
 
 Indices and tables
