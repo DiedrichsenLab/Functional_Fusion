@@ -1,50 +1,9 @@
-Using Datasets
-==============
-
-To use Functional fusion framework you need access to a folder that holds the datasets and atlases.
-
-.. code-block:: python
-
-    import Functional_Fusion.dataset as ds
-    import Function_Fusion.utils as ut
-    import nibabel as nb
-    base_dir = ut.get_base_dir()
-
-
-Loading Data
-------------
-Loading the data to get a ``n_subj x n_cond x n_voxels`` tensor:
-
-.. code-block:: python
-
-    X,info,dataset_obj = ds.get_dataset(base_dir,
-            dataset='MDTB',
-            atlas='fs32k',
-            sess='all',
-            type='CondRun')
-
-You can specify subset of sessions, subjects, etc.
-
-Aggregating data
-----------------
-If you want to average data across runs, you can use the get_dataset function with `type='CondAll'`, or alternatively aggregate the data the following way:
-
-.. code-block:: python
-
-    cinfo,C = ds.agg_data(info,['cond_num_uni'],['run','half','reg_num','names'])
-    cdata = np.linalg.pinv(C) @ data
-
-Group averaging data
---------------------
-To produce the group-averaged dscalar files for a specfic atlas space and data type, just call:
-
-.. code-block:: python
-
-    dataset_obj.group_average_data(atlas='MNISymDentate1',ses_id='ses-s1',type='CondRun')
-
-
 Reliability
 ===========
+
+In general the activity data from a subject is a :math:`NxP` matrix with ``N`` being the number of trials and ``P`` the number of voxels. The conditions are indicated by ``cond_vec`` and the partitions (independent measures) by ``part_vec``.  We have ``K`` conditions and ``M`` partitions.
+The data can have ``P=1`` (activity profile), ``K=1`` (activity pattern) or ``N>1`` and ``P>1`` (activity matrix). In most cases, the ``data`` is a 3D-array with dimensions ``n_subjects x N x P ``.
+
 
 Reliability within individual
 -----------------------------
@@ -151,20 +110,28 @@ To develop estimators for these quantities we replace the Expectation with the m
 
 .. code-block:: python
 
-    # Get the data per subject: Note that the data is averaged across partitions in any case:  
+    # To get the group,subject, and run decomposition (fSNR) of the data:  
     data,info = dataset.get_data('MNISymC3',ses,'CondAll')
-    rw = reliability.within_subj(data,
-            cond_vec=info.reg_id,
-            separate='None',
-            subtract_mean=True)
-
-
-
-
-Separating the anylsis by voxel, condition, subject, or run
-------------------------------------------------------------
-As in input activity patterns or sets of activity patterns in a collection of :math:`NxP` matrices. You can have P=1 (activity profile), N=1 (activity pattern) or N>1 and P>1 (activity matrix). 
+    var = rel.decompose_subj_group(data,
+                cond_vec,
+                part_vec,
+                separate='subject_wise',
+                subtract_mean=True)
 
 Mean substraction
 -----------------
-We have activity patterns or sets of activity patterns in a collection of :math:`NxP` matrices. You can have P=1 (activity profile), N=1 (activity pattern) or N>1 and P>1 (activity matrix). 
+All reliability functions have an optional input parameter ``subtract_mean``. The default setting is ``subtract_mean=True``. This means that the mean activity in each voxel in each partition (across conditions) is subtracted out before computing the variances or correlations. Thus reliability and noise estiamtes are based on **differences between conditions** but do not reflect the activation of a voxel relative to the implicit baseline. 
+
+If you set ``subtract_mean=False``, the mean activity in each voxel in each partition is not subtracted out. This means that the reliability and noise estimates are based both on the **mean activity pattern**  across conditions, as well as **differences between conditions**. Usually, this leads to much higher reliabilities, as the mean activity pattern if often stronger than the differences between conditions. 
+
+Separating the analysis by voxel and condition
+----------------------------------------------
+For all functions, you can specify the parameter ``separate``. The default setting is ``separate='None'``. This means that the reliability is calculated across all voxels and conditions. If you set ``separate='voxel_wise'``, the reliability is calculated for each voxel separately. If you set ``separate='cond_wise'``, the reliability is calculated for each condition separately. 
+
+Leave-one-out reliability
+-------------------------
+We also provide a function that calculates the correlation of the pattern within each run with the average pattern for the other runs (``reliability.within_subj_loo``). The separate measures for each run are useful to spot a run that has bad signal-to-noise, or for which there was an error in the processing. 
+
+Similarly, we also provide a function that calculates the correlation of the pattern for each subject with the average pattern for the other subjects (``reliability.between_subj_loo``). The subject-specific measure can be used for spotting outlier subjects or subjects for which an error occurred. The average of the loo-correlation can also serves as lower noise-ceiling for group models. 
+
+*Note that the reliability measures across runs (or across subjects) are not strictly independent, so care needs to be taken when using these  measures in statistical tests.* 

@@ -25,7 +25,7 @@ def within_subj(data, cond_vec, part_vec,
         separate (str): {'none','voxel_wise','condition_wise'}
         subtract_mean (bool): Remove the mean per voxel in partition across conditions?
     Returns:
-        r (ndarray)L: (num_subj x) num_partition matrix of correlations
+        r (ndarray): (n_subjects x) n_separate array of correlations
     """
     partitions = np.unique(part_vec)
     n_part = partitions.shape[0]

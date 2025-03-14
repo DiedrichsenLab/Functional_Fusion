@@ -40,6 +40,7 @@ def compare_within():
     print((var_est1[:,0]+var_est1[:,1])/var_est1.sum(axis=1))
     var_est2 = rel.within_subj(data,cond_vec,part_vec,separate='none',subtract_mean=False)
     print(var_est2)
+    pass
 
 def compare_between():
     data,cond_vec,part_vec = sim_data(var_comp=[1,0,1],n_subjects=10,n_part=1,n_conditions=5,n_vox=1000)
