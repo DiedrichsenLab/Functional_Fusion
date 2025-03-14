@@ -18,6 +18,7 @@ def within_subj(data, cond_vec, part_vec,
     Data (X) is grouped by condition vector, and the
     partition vector indicates the independent measurements
     Does the calculation for each subject if X is a 3d array
+
     Args:
         data (ndarray): (num_subj x) num_trials x num_voxel tensor of data
         cond_vec (ndarray): num_trials condition vector
@@ -142,12 +143,14 @@ def within_subj_loo(data, cond_vec,
     Data (X) is grouped by condition vector, and the
     partition vector indicates the independent measurements
     Does the calculation for each subejct if X is a 3d array
+    
     Args:
         X (ndarray): (num_subj x) num_trials x num_voxel tensor of data
         cond_vec (ndarray): num_trials condition vector
         part_vec (ndarray): num_trials partition vector
         separate (str): {'none','voxel_wise','condition_wise'}
         subtract_mean (bool): Remove the mean per voxel before correlation calc?
+    
     Returns:
         r (ndarray): (num_subj x) num_partition matrix of correlations
     """
