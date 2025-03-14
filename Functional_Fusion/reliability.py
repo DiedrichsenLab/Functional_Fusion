@@ -81,46 +81,57 @@ def within_subj(data, cond_vec, part_vec,
         r = r[0]
     return r
 
-def between_subj(X, cond_vec=None,
+def between_subj(data, cond_vec=None,
                              separate='none',
                              subtract_mean=True):
     """ Calculates the average between-subject reliability
     The data is averaged across multiple measurements
-    first - so the reliability are for the mean patterns
+    first - so the reliability is for the mean patterns
 
     Args:
-        X (ndarray): num_subj x num_trials x num_voxel tensor of data
-        part_vec (ndarray): num_trials partition vector
-        voxel_wise (bool): Return the results as map or overall?
+        datas (ndarray): num_subj x num_trials x num_voxel tensor of data
+        cond_vec (ndarray): num_trials condition vector (otherwise assumed to be identity)
+        separate (str): {'none','voxel_wise','condition_wise'}
         subtract_mean (bool): Remove the mean per voxel before correlation calc?
 
     Returns:
         r (ndarray): num_subj vector of correlations
     """
-    n_subj = X.shape[0]
-    n_trials = X.shape[1]
+    n_subj,n_trials,n_voxels = data.shape
     if cond_vec is not None:
         Z = matrix.indicator(cond_vec)
     else:
         Z = eye(n_trials)
-    subj_vec = np.arange(n_subj)
-    if voxel_wise:
-        r = np.zeros((n_subj, X.shape[2]))
+    n_cond = Z.shape[1]
+    X = np.zeros((n_subj,n_cond,n_voxels))
+    for s in range(n_subj):
+        X[s,:,:] = util.nan_linear_model(Z, data[s,:,:])
+    if subtract_mean:
+        X=X-np.nanmean(X,axis=1,keepdims=True)
+
+    # rearrange the data to be in the form of (n_separate, n_subjects,n_partitions, n_features)
+    if separate == 'voxel_wise':
+        Y = X.transpose([2, 0, 1])
+    elif separate == 'condition_wise':
+        Y = X.transpose([1, 0, 2])
+    elif separate in ['none']:
+        Y = X.reshape((1,n_subj, n_cond * n_voxels))
     else:
-        r = np.zeros((n_subj,))
-    for s, i in enumerate(subj_vec):
-        X1 = util.nan_linear_model(Z, X[s, :, :])
-        i2 = subj_vec != s
-        X2 = util.nan_linear_model(Z, np.nanmean(X[i2, :, :], axis=0))
-        if subtract_mean:
-            X1 -= np.nanmean(X1, axis=0)
-            X2 -= np.nanmean(X2, axis=0)
-        if voxel_wise:
-            r[i, :] = nansum(X1 * X2, axis=0) / \
-                sqrt(nansum(X1 * X1, axis=0)
-                     * nansum(X2 * X2, axis=0))
-        else:
-            r[i] = nansum(X1 * X2) / sqrt(nansum(X1 * X1) * nansum(X2 * X2))
+        raise(NameError('separate needs to be none, voxel_wise, or condition_wise'))
+
+    # This computes the sums of squares-matrix for each split separately (broadcasting)
+    YY = np.matmul(Y,Y.transpose([0,2,1]))
+    # Get the mean of ondiagonal and offdiagonal elements
+    ondiag = np.where(np.eye(n_subj))
+    offdiag = np.where(1-np.eye(n_subj))
+
+    # Average the within-partition and across-partition cross-products for each subject and separate split
+    SS_1 = np.nanmean(YY[:,ondiag[0],ondiag[1]],axis=1)
+    SS_2 = np.nanmean(YY[:,offdiag[0],offdiag[1]],axis=1)
+
+    v_e = (SS_1 - SS_2)
+    v_s = (SS_2)
+    r = v_s / (v_s + v_e)
     return r
 
 

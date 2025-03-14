@@ -33,8 +33,7 @@ def sim_data(n_subjects=10,
     part_vec = np.repeat(np.arange(n_part),n_conditions)
     return data,cond_vec,part_vec
 
-
-if __name__ == "__main__":
+def compare_within():
     data,cond_vec,part_vec = sim_data(var_comp=[1,0.2,1],n_subjects=10,n_part=3,n_conditions=5,n_vox=1000)
     # data=data+1
     var_est1 = rel.decompose_subj_group(data,cond_vec,part_vec,separate='subject_wise',subtract_mean=False)
@@ -42,6 +41,17 @@ if __name__ == "__main__":
     var_est2 = rel.within_subj(data,cond_vec,part_vec,separate='none',subtract_mean=False)
     print(var_est2)
 
+def compare_between():
+    data,cond_vec,part_vec = sim_data(var_comp=[1,0,1],n_subjects=10,n_part=1,n_conditions=5,n_vox=1000)
+    # data=data+1
+    var_est1 = rel.decompose_subj_group(data,cond_vec,part_vec,separate='subject_wise',subtract_mean=True)
+    print(var_est1[:,0]/(var_est1[:,1]+var_est1[:,2]))
+    var_est2 = rel.between_subj(data,cond_vec,separate='condition_wise',subtract_mean=True)
+    print(var_est2)
+
+
+if __name__ == "__main__":
+    compare_between()
 
 
     pass
