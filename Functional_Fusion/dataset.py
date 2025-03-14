@@ -372,6 +372,18 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3', type='CondHalf',
             Rel[i, :] = np.nanmean(np.nanmean(r, axis=0), axis=0)
     return Rel, dataset.sessions
 
+def reliability_within_subj(X, part_vec, cond_vec,voxel_wise=False,
+                            subtract_mean=True):
+    raise(NameError('Depreciated. Use reliability.within_subj_loo'))
+
+def reliability_between_subj(X, cond_vec=None,voxel_wise=False,
+                             subtract_mean=True):
+    raise(NameError('Depreciated. Use reliability.between_subj_loo'))
+
+def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
+    raise(NameError('Depreciated. Use reliability.decompose_subj_group'))
+
+
 class DataSet:
     def __init__(self, base_dir):
         """DataSet class:
