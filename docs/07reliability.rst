@@ -118,6 +118,44 @@ To develop estimators for these quantities we replace the Expectation with the m
                 separate='subject_wise',
                 subtract_mean=True)
 
+Decomposing variances (subject-specific scaling)
+------------------------------------------------
+In situations where the data of subjects are scaled differently, the variance of group, individual, and measurement noise is also scaled accordingly.
+
+.. math::
+    \mathbf{y}_{i,j} = (\mathbf{g} + \mathbf{s}_i + \boldsymbol{\epsilon}_{i,j}) \times \text{scale}_{i}
+
+Therefore, the variance components will be scaled too:
+
+.. math::
+    \begin{array}{c}
+    v_{g,i} = v_{g} \times \text{scale}_{i}^2\\
+    v_{s,i} = v_{s} \times \text{scale}_{i}^2\\
+    v_{\epsilon,i} = v_{\epsilon} \times \text{scale}_{i}^2
+    \end{array}
+
+Considering the scaling factors, we can rewrite the expected values of the cross-subj, cross-run and within-run sums of squares:
+
+Across subjects:
+
+.. math::
+    E(\mathbf{y}_{i,j}^T\mathbf{y}_{k,l}) = \text{scale}_{i} \times \text{scale}_{k} \times v_{g}
+
+Within subject, across runs:
+
+.. math::
+    E(\mathbf{y}_{i,j}^T\mathbf{y}_{i,k}) = \text{scale}_{i}^2 (v_{g} + v_{s})
+
+Within observation:
+
+.. math::
+    E(\mathbf{y}_{i,j}^T\mathbf{y}_{i,j}) =  \text{scale}_{i}^2 (v_{g} + v_{s} + v_{\epsilon})
+
+.. code-block:: python
+
+    # To get the group,subject, and run decomposition (fSNR) of the data (subject-specific scaled):  
+    var = decompose_variance_scaled(data)
+
 Mean substraction
 -----------------
 All reliability functions have an optional input parameter ``subtract_mean``. The default setting is ``subtract_mean=True``. This means that the mean activity in each voxel in each partition (across conditions) is subtracted out before computing the variances or correlations. Thus reliability and noise estiamtes are based on **differences between conditions** but do not reflect the activation of a voxel relative to the implicit baseline. 

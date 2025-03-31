@@ -329,6 +329,52 @@ def decompose_subj_group(data, cond_vec, part_vec,
     return variances
 
 
+def decompose_variance_scaled(data):
+    """ Decomposes variance of group, subject, and measurement noise. This is an upgraded version to handle subject-specific scaling.
+    Args:
+        data (ndarray (n_sub, n_rep, n_A, n_B)): the data to decompose, at least 2 for each dimension
+    Returns:
+        v_g (ndarray (n_sub,)): group variance scaled for each subject
+        v_s (ndarray (n_sub,)): subject variance scaled for each subject
+        v_e (ndarray (n_sub,)): measurement noise variance scaled for each subject
+    """
+
+    n_sub, n_rep, n_A, n_B = data.shape
+    n_features = n_A * n_B
+    data = data.reshape((n_sub, n_rep, n_features))    # Shape: (n_sub, n_rep, n_features)
+
+    product_matrices = np.einsum('srf,tkf->stkr', data, data) / n_features  # Shape: (n_sub, n_sub, n_rep, n_rep)
+
+    # Masks
+    mask_self_sub = np.eye(n_sub, dtype=bool)[:, :, None, None] # Shape: (n_sub, n_sub, 1, 1)
+    mask_self_rep = np.eye(n_rep, dtype=bool)[None, None, :, :] # Shape: (1, 1, n_rep, n_rep)
+    
+    # Cross-subject (type 1)
+    # Remove self-pairs by masking
+    type_1 = np.where(mask_self_sub, 0, product_matrices)   # Set self-pairs to 0
+    # Mean over repetitions
+    SS_1 = np.nansum(type_1, axis=(2, 3)) / (n_rep**2)  # Shape: (n_sub, n_sub)
+
+    # Within-subject, diff reps (type 2)
+    # Remove other-pairs and self-reps by masking
+    type_2 = np.where(mask_self_sub, product_matrices, 0)   # Set other-pairs to 0
+    type_2 = np.where(mask_self_rep, 0, type_2) # Set self-reps to 0
+    # Mean over repetitions
+    SS_2 = np.diagonal(np.nansum(type_2, axis=(2,3)) / (n_rep**2-n_rep), axis1=0, axis2=1)    # Shape: (n_sub)
+
+    # Within-subject, same reps (type 3)
+    type_3 = np.where(mask_self_sub, product_matrices, 0)   # Set other-pairs to 0
+    type_3 = np.where(mask_self_rep, type_3, 0) # Set other-reps to 0
+    # Mean over repetitions
+    SS_3 = np.diagonal(np.nansum(type_3, axis=(2,3)) / (n_rep), axis1=0, axis2=1)   # Shape: (n_sub)
+
+    v_e = SS_3 - SS_2
+    v_g = np.nansum(np.sqrt(SS_2[:, None] / SS_2) * SS_1, axis=1) / (n_sub-1)    # Shape: (n_sub)
+    v_s = SS_2 - v_g
+
+    return np.c_[v_g, v_s, v_e]
+
+
 def flat2ndarray(flat_data, part_vec, cond_vec):
     """
     convert flat data (n_subjects x n_trials x n_voxels) into a 4d ndarray (n_subjects x n_partitions x n_conditions x n_voxels). Also works on
