@@ -4,6 +4,7 @@ import nibabel as nb
 import h5py, os, subprocess
 import Functional_Fusion.atlas_map as am
 from pathlib import Path
+import pandas as pd
 
 default_atlas_dir = os.path.dirname(am.__file__) + '/Atlases'
 
@@ -350,5 +351,174 @@ def align_conditions(Ya, Yb, info_a, info_b):
     else:
         combined_data = combined_data
 
-
     return combined_data, combined_info
+
+
+def recenter_dataset(data, info, type = 'CondAll', baseline_code = ['rest']):
+    """
+    Recenter the dataset by subtracting a baseline (single condition or the average of a list of conditions).
+
+    Args:
+        data (numpy array): Dataset (subjects x conditionsXrepititions x voxels) 
+        info (pandas.DataFrame): corresponding info file
+        type (str): 'CondAll' or 'CondRun' or 'CondHalf'
+        baseline_code (str or list): condition code for baseline, or a list of condition codes
+    Returns:
+        data_recentered (numpy array): Baseline-subtracted data (subjects x conditionsXrepititions x voxels)
+    """
+    # make sure data has subject dimension
+    if len(data.shape) == 2:
+        data = data[None, :, :]
+    
+    # initialize the recentered data matrix
+    data_recentered = np.zeros(data.shape)
+    if type == 'CondAll':
+        for i in range(data.shape[0]):
+            # get the baseline  conditions
+            baseline_data = data[i, info['cond_code'].isin(baseline_code), :]
+            # average across the baseline conditions
+            baseline_mean = np.nanmean(baseline_data, axis=0)
+            # subtract the baseline mean from the data (centering)
+            data_recentered[i, :, :] = data[i, :, :] - baseline_mean
+
+    elif type == 'CondHalf':
+        halves = sorted(info['half'].unique())
+        for half in halves:
+            half_mask = info['half'] == half
+            half_indices = np.where(half_mask)[0]
+            for i in range(data.shape[0]):
+                baseline_data = data[i, half_indices][info.loc[half_indices, 'cond_code'].isin(baseline_code), :]
+                baseline_mean = np.nanmean(baseline_data, axis=0)
+                data_recentered[i, half_indices, :] = data[i, half_indices, :] - baseline_mean
+
+    elif type == 'CondRun':
+        runs = sorted(info['run'].unique())
+        for run in runs:
+            run_mask = info['run'] == run
+            run_indices = np.where(run_mask)[0]
+            for i in range(data.shape[0]):
+                baseline_data = data[i, run_indices][info.loc[run_indices, 'cond_code'].isin(baseline_code), :]
+                baseline_mean = np.nanmean(baseline_data, axis=0)
+                data_recentered[i, run_indices, :] = data[i, run_indices, :] - baseline_mean
+
+    return data_recentered
+
+
+def merge_aligned_blocks(recentered_data_a, recentered_data_b, info_a, info_b, type_key=None, repetition=None):
+    """"
+    Merges two datasets by averaging shared conditions and appending unique conditions. Does this per run/half if type_key is given and it's "run" or "half".
+    
+    Args:
+        recentered_data_a (numpy array): Dataset A (subjects x conditions x voxels)
+        recentered_data_b (numpy array): Dataset B (subjects x conditions x voxels)
+        info_a (pandas DataFrame): Info file for Dataset A
+        info_b (pandas DataFrame): Info file for Dataset B
+        type_key (str): Key to filter the data by a specific condition type (e.g., 'half', 'run')
+        repetition (str): (which run or half) to do the averging across datasets for.
+
+        returns:
+            data_merged (numpy array): Merged dataset (subjects x conditions x voxels)
+            info (pandas DataFrame): Merged info file for the combined dataset
+    """
+    if type_key:
+        a_mask = info_a[type_key] == repetition
+        b_mask = info_b[type_key] == repetition
+        shared = np.intersect1d(info_a.loc[a_mask, 'cond_code'], info_b.loc[b_mask, 'cond_code'])
+    else:
+        a_mask = b_mask = slice(None)
+        shared = np.intersect1d(info_a['cond_code'], info_b['cond_code'])
+
+    # find the shared conditions in both datasets
+    shared = np.sort(shared)
+    a_shared = a_mask & info_a['cond_code'].isin(shared)
+    b_shared = b_mask & info_b['cond_code'].isin(shared)
+
+    # average the shared conditions for the current run/half
+    d_shared = (recentered_data_a[:, a_shared, :] + recentered_data_b[:, b_shared, :]) / 2
+
+    # find the unique conditions in both datasets
+    a_unique = a_mask & ~info_a['cond_code'].isin(shared)
+    b_unique = b_mask & ~info_b['cond_code'].isin(shared)
+
+    # get the unique conditions for the current run/half
+    d_a_unique = recentered_data_a[:, a_unique, :]
+    d_b_unique = recentered_data_b[:, b_unique, :]
+
+    # concatenate the data
+    data_merged = np.concatenate([d_shared, d_a_unique, d_b_unique], axis=1)
+
+    # create the merged info file
+    cols = ['cond_name', 'cond_code'] + ([type_key] if type_key else [])
+    i_shared = info_a.loc[a_shared, cols].copy()
+    i_shared['source'] = 'averaged'
+    i_a = info_a.loc[a_unique, cols].copy()
+    i_a['source'] = 'A'
+    i_b = info_b.loc[b_unique, cols].copy()
+    i_b['source'] = 'B'
+    info_merged = pd.concat([i_shared, i_a, i_b], ignore_index=True)
+
+    return data_merged, info_merged
+
+
+def combine_datasets(data_a, data_b, info_a, info_b, type='CondAll', baseline_code=['rest']):
+    """
+    Combines two datasets by recentering each to a shared baseline and then merging into a single dataset.
+
+    Args:
+        data_a, data_b (numpy arrays): Datasets to be aligned (subjects x conditions x voxels)
+            - subjects must be the same in both datasets
+            - datasets must have the same number of voxels (i.e., same space)
+        info_a, info_b (DataFrames): info files for each dataset
+        type (str): 'CondAll', 'CondRun', or 'CondHalf'
+        baseline_code (str or list): condition code for baseline, or a list of condition codes
+
+    Returns:
+        combined_data (numpy array): combined dataset (subjects x conditions x voxels)
+        combined_info (DataFrame): Merged info file for the combined dataset
+    """
+    # check if the datasets have the same number of subjects and voxels
+    if data_a.shape[0] != data_b.shape[0]:
+        raise ValueError("Datasets have different number of subjects.")
+    if data_a.shape[2] != data_b.shape[2]:
+        raise ValueError("Datasets have different number of voxels.")
+    
+    # center the datasets
+    data_a_recentered = recenter_dataset(data_a, info_a, type= type, baseline_code=baseline_code)
+    data_b_recentered = recenter_dataset(data_b, info_b, type=type, baseline_code=baseline_code)
+
+    # identify shared conditions
+    shared = np.intersect1d(info_a['cond_code'], info_b['cond_code'])
+    if len(shared) == 0:
+        raise ValueError("No shared conditions found between datasets.")
+    
+    if type in ['CondHalf', 'CondRun']:
+        key = 'half' if type == 'CondHalf' else 'run'
+        data_list, info_list = [], []
+        for val in sorted(set(info_a[key]) & set(info_b[key])):
+            d, i = merge_aligned_blocks(data_a_recentered, data_b_recentered, info_a, info_b, key, val)
+            data_list.append(d); info_list.append(i)
+        data_comb = np.concatenate(data_list, axis=1)
+        info_comb = pd.concat(info_list, ignore_index=True)
+    else:
+        data_comb, info_comb = merge_aligned_blocks(data_a_recentered, data_b_recentered, info_a, info_b)
+
+    return data_comb, info_comb
+
+
+
+
+
+if __name__ == "__main__":
+    data_1 = np.random.rand(24, 29, 100)
+    data_2 = np.random.rand(24, 29, 100)
+    data = np.concatenate([data_1, data_2], axis=1)
+    info_1 = pd.DataFrame({'cond_code': np.random.choice(range(29), 29,replace=False),
+                        'cond_name': [f'cond_{i}' for i in range(29)],'half': 1})
+    info_2 = pd.DataFrame({'cond_code': np.random.choice(range(29), 29,replace=False),
+                        'cond_name': [f'cond_{i}' for i in range(29)],'half': 2})
+    info_final = pd.concat([info_1, info_2], ignore_index=True)
+    
+    # make cond_code string
+    info_final['cond_code'] = info_final['cond_code'].astype(str)
+    data_recentered = recenter_dataset(data, info_final, type='CondHalf', baseline_code=['1','2'])
+    pass
