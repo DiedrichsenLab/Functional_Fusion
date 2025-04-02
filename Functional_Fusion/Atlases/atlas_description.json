@@ -47,14 +47,6 @@
         "structure": "cerebellum",
         "normspace": "FSL",
         "type": "AtlasVolumetric"},
-      "MNIAsym": {
-         "dir": "tpl-MNI152NLin6Asym",
-         "space": "MNI152NLin6Asym",
-         "res": 1,
-         "mask": "tpl-MNI152NLin6Asym_res-1_GMmask.nii",
-         "structure": "wholebrain",
-         "normspace": "FSL",
-         "type": "AtlasVolumetric"},
       "MNIAsymBg1": {
          "dir": "tpl-MNI152NLin6Asym",
          "space": "MNI152NLin6Asym",

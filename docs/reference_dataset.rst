@@ -15,13 +15,7 @@ Dataset Functions
 
 .. autofunction:: dataset.optimal_contrast
 
-.. autofunction:: dataset.reliability_within_subj
-
-.. autofunction:: dataset.reliability_between_subj
-
 .. autofunction:: dataset.reliability_maps
-
-.. autofunction:: dataset.decompose_pattern_into_group_indiv_noise
 
 
 General dataset classes

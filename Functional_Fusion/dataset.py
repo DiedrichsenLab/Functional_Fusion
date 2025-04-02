@@ -340,97 +340,6 @@ def remove_baseline(data, baseline):
     R = eye(N) - B @ pinv(B) # Residual forming matrix  
     return R @ data # Uses broadcasting for >2 dim arrays 
 
-def reliability_within_subj(X, part_vec, cond_vec,
-                            voxel_wise=False,
-                            subtract_mean=True):
-    """ Calculates the within-subject reliability of a data set
-    Data (X) is grouped by condition vector, and the
-    partition vector indicates the independent measurements
-    Does the calculation for each subejct if X is a 3d array
-    Args:
-        X (ndarray): (num_subj x) num_trials x num_voxel tensor of data
-        part_vec (ndarray): num_trials partition vector
-        cond_vec (ndarray): num_trials condition vector
-        voxel_wise (bool): Return the results as map or overall?
-        subtract_mean (bool): Remove the mean per voxel before correlation calc?
-    Returns:
-        r (ndarray)L: (num_subj x) num_partition matrix of correlations
-    """
-    partitions = np.unique(part_vec)
-    n_part = partitions.shape[0]
-    if len(X.shape) == 2:
-        X = X.reshape(1, X.shape[0], X.shape[1])
-        single_subj = True
-    n_subj = X.shape[0]
-    if voxel_wise:
-        r = np.zeros((n_subj, n_part, X.shape[2]))
-    else:
-        r = np.zeros((n_subj, n_part))
-    Z = matrix.indicator(cond_vec)
-    for s in np.arange(n_subj):
-        for pn, part in enumerate(partitions):
-            i1 = part_vec == part
-            i2 = part_vec != part
-            X1 = util.nan_linear_model(Z[i1, :], X[s, i1, :])
-            X2 = util.nan_linear_model(Z[i2, :], X[s, i2, :])
-            # Check if this partition contains nan row
-            if subtract_mean:
-                X1 -= np.nanmean(X1, axis=0)
-                X2 -= np.nanmean(X2, axis=0)
-            if voxel_wise:
-                r[s, pn, :] = nansum(X1 * X2, axis=0) / \
-                    sqrt(nansum(X1 * X1, axis=0)
-                         * nansum(X2 * X2, axis=0))
-            else:
-                r[s, pn] = nansum(X1 * X2) / \
-                    sqrt(nansum(X1 * X1) * nansum(X2 * X2))
-    if single_subj:
-        r = r[0, :]    
-    return r
-
-
-def reliability_between_subj(X, cond_vec=None,
-                             voxel_wise=False,
-                             subtract_mean=True):
-    """ Calculates the correlation of the responses of each of the subjects with the mean of the other subjects.
-    If cond_vec is given, the data is averaged across multiple measurem
-    first.
-
-    Args:
-        X (ndarray): num_subj x num_trials x num_voxel tensor of data
-        part_vec (ndarray): num_trials partition vector
-        voxel_wise (bool): Return the results as map or overall?
-        subtract_mean (bool): Remove the mean per voxel before correlation calc?
-
-    Returns:
-        r (ndarray): num_subj vector of correlations
-    """
-    n_subj = X.shape[0]
-    n_trials = X.shape[1]
-    if cond_vec is not None:
-        Z = matrix.indicator(cond_vec)
-    else:
-        Z = eye(n_trials)
-    subj_vec = np.arange(n_subj)
-    if voxel_wise:
-        r = np.zeros((n_subj, X.shape[2]))
-    else:
-        r = np.zeros((n_subj,))
-    for s, i in enumerate(subj_vec):
-        X1 = util.nan_linear_model(Z, X[s, :, :])
-        i2 = subj_vec != s
-        X2 = util.nan_linear_model(Z, np.nanmean(X[i2, :, :], axis=0))
-        if subtract_mean:
-            X1 -= np.nanmean(X1, axis=0)
-            X2 -= np.nanmean(X2, axis=0)
-        if voxel_wise:
-            r[i, :] = nansum(X1 * X2, axis=0) / \
-                sqrt(nansum(X1 * X1, axis=0)
-                     * nansum(X2 * X2, axis=0))
-        else:
-            r[i] = nansum(X1 * X2) / sqrt(nansum(X1 * X1) * nansum(X2 * X2))
-    return r
-
 def reliability_maps(base_dir, dataset_name, atlas='MNISymC3', type='CondHalf',
                      subtract_mean=True, voxel_wise=True, subject_wise=False):
     """    Calculates the average within subject reliability maps across sessions for a single dataset
@@ -463,117 +372,17 @@ def reliability_maps(base_dir, dataset_name, atlas='MNISymC3', type='CondHalf',
             Rel[i, :] = np.nanmean(np.nanmean(r, axis=0), axis=0)
     return Rel, dataset.sessions
 
+def reliability_within_subj(X, part_vec, cond_vec,voxel_wise=False,
+                            subtract_mean=True):
+    raise(NameError('Depreciated. Use reliability.within_subj_loo'))
+
+def reliability_between_subj(X, cond_vec=None,voxel_wise=False,
+                             subtract_mean=True):
+    raise(NameError('Depreciated. Use reliability.between_subj_loo'))
+
 def decompose_pattern_into_group_indiv_noise(data, criterion='global'):
-    """
-    this function decompose a collection of (across subjects and partitions) activity patterns (N condition x P voxels)
-    into group, individual and noise components, returns the variance estimates of each component.
+    raise(NameError('Depreciated. Use reliability.decompose_subj_group'))
 
-    Args:
-        data (list,ndarray):
-            * either a list of numpy ndarrays [sub-01: (n_partitions_01 x n_conditions x n_voxels), sub-02: (n_partitions_02 x n_conditions x n_voxels), ...]
-            * or an ndarray of shape n_subjects x n_partitions x n_conditions x n_voxels, i.e., S x R x N x P
-        criterion (str):
-            * 'global':         partition variance components for the whole pattern (N x P) -> returns a single row
-            * 'voxel_wise':     partition variance components for each voxel separately -> returns as many rows as voxels
-            * 'condition_wise':     partition variance components for each condition separately -> returns as many rows as conditions
-            * 'subject_wise':   partition variance components for the whole pattern (NxP) -> but return split by Subjects
-    Returns:
-        variances: (K x 3 ndarray): v_g, v_s, v_e (variance for group, subject, and noise), where K is the number of voxels, conditions, subjects, or 1
-    """
-
-    if isinstance(data, list):
-        n_subjects = len(data)
-        n_conditions = data[0].shape[1]
-        n_voxels = data[0].shape[2]
-        n_partitions_each_subject = [x.shape[0] for x in data]
-        n_partitions = np.max(n_partitions_each_subject)
-
-        # X = np.full((n_subjects, n_partitions, n_conditions, n_voxels), np.nan)
-        X = np.full((n_subjects, n_partitions, n_conditions, n_voxels), 0)
-
-        for subjI in np.arange(n_subjects):
-            X[subjI, 0:n_partitions_each_subject[subjI]] = data[subjI]
-
-    else:
-        [n_subjects, n_partitions, n_conditions, n_voxels] = data.shape
-        X = data
-
-    # rearrange the data to be in the form of (n_split, n_subjects,n_partitions, n_features)
-    if criterion == 'voxel_wise':
-        Y = X.transpose([3, 0, 1, 2])
-    elif criterion == 'condition_wise':
-        Y = X.transpose([2, 0, 1, 3])
-    elif criterion in ['global','subject_wise']:
-        Y = X.reshape((1, n_subjects, n_partitions, n_conditions * n_voxels))
-    else:
-        raise(NameError('criterion needs to be global, voxel_wise, condition_wise, or subject_wise'))
-    [n_split, _, _, n_features] = Y.shape
-
-    # reshape the data to be in the form of (n_split, n_subjects*n_partitions, n_features)
-    Y = Y.reshape((n_split, n_subjects * n_partitions, n_features))
-    subj_vec = np.kron(np.arange(n_subjects), np.ones(n_partitions))
-    part_vec = np.kron(np.ones(n_subjects), np.arange(n_partitions))
-    N = n_subjects * n_partitions
-    same_subj = np.equal(subj_vec.reshape(N,1),subj_vec.reshape(1,N))
-    same_part = np.equal(part_vec.reshape(N,1),part_vec.reshape(1,N))
-
-    # This computes the sums of squares-matrix for each split separately (broadcasting)
-    YY = np.matmul(Y,Y.transpose((0,2,1)))
-
-    # Find cross-products of same subject and same partition
-    if criterion == 'subject_wise':
-        SS_1 = np.zeros((n_subjects,))
-        SS_2 = np.zeros((n_subjects,))
-        SS_3 = np.zeros((n_subjects,))
-        for s in np.arange(n_subjects):
-            # Get the rows pertaining to the subject
-            YYs = YY[:,subj_vec==s,:]
-            same_subj_s = same_subj[subj_vec==s,:]
-            same_part_s = same_part[subj_vec==s,:]
-            SS_1[s] = np.nanmean(YYs[:,~same_subj_s],axis=1)
-            SS_2[s] = np.nanmean(YYs[:,same_subj_s & ~same_part_s],axis=1)
-            SS_3[s] = np.nanmean(YYs[:,same_subj_s & same_part_s],axis=1)
-    else:
-        SS_1 = np.nanmean(YY[:,~same_subj],axis=1)
-        SS_2 = np.nanmean(YY[:,same_subj & ~same_part],axis=1)
-        SS_3 = np.nanmean(YY[:,same_subj & same_part],axis=1)
-
-    # Compute the variances from the sums of squares
-    v_e = (SS_3 - SS_2) / n_features
-    v_s = (SS_2 - SS_1) / n_features
-    v_g = SS_1 / n_features
-    variances = np.c_[v_g, v_s, v_e]
-
-    return variances
-
-
-def flat2ndarray(flat_data, part_vec, cond_vec):
-    """
-    convert flat data (n_subjects x n_trials x n_voxels) into a 4d ndarray (n_subjects x n_partitions x n_conditions x n_voxels)
-
-    Args:
-        flat_data (nd-array): n_subjects x n_obs x n_voxels array
-        part_vec: (nd-array): n_obs -vector for partition index
-        cond_vec: (nd-array): n_obs -vector for condition index
-
-    Returns:
-        data: (nd-array): n_subjects x n_partitions x n_conditions x n_voxels
-    """
-
-    [n_subjects, n_obs, n_voxels] = flat_data.shape
-
-    unique_partitions = np.unique(part_vec)
-    n_partitions = unique_partitions.size
-
-    unique_conditions = np.unique(cond_vec)
-    n_conditions = unique_conditions.size
-
-    data = np.zeros((n_subjects, n_partitions, n_conditions, n_voxels))
-
-    for partI in np.arange(n_partitions):
-        for condI in np.arange(n_conditions):
-            trial_inds = np.where(cond_vec == unique_conditions[condI] and part_vec == unique_partitions[partI])
-            data[:, partI, condI, :] = np.mean(flat_data[:, trial_inds, :], axis=1)
 
 class DataSet:
     def __init__(self, base_dir):
@@ -636,6 +445,9 @@ class DataSet:
         elif type == 'Tseries' or type == 'FixTseries':
             # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
             fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii')
+            # If no files are found, throw error
+            if fnames == []:
+                raise ValueError('No timepoints found in timeseries files')
             runs = [int(fname.split('run-')[-1].split('_')[0].split('.')[0]) for fname in fnames]
             runs = np.unique(runs)
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}.nii' for r in runs]
@@ -706,7 +518,7 @@ class DataSet:
                 max = info.shape[0]
         return info_com
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for different spaces
             - SUIT: Using individual normalization from source space. 
             - MNI152NLin2009cSymC: Via indivual SUIT normalization + group
@@ -773,7 +585,8 @@ class DataSet:
                     ses_id='ses-s1',
                     type='CondHalf',
                     atlas='SUIT3',
-                    smooth=2.0,
+                    smooth=None,
+                    interpolation=1,
                     subj='all'):
         """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
 
@@ -797,7 +610,8 @@ class DataSet:
         for s in T.participant_id:
             print(f'Atlasmap {s}')
             atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
-                                                  smooth=smooth)
+                                                smooth=smooth,
+                                                interpolation=interpolation)
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id, type=type)
             data = am.get_data_nifti(fnames, atlas_maps)
@@ -936,7 +750,7 @@ class DataSetNative(DataSet):
     nifti-files in Native space.
     """
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space.
         For Native space, we are using indivdual maps for SUIT and surface space.
         Addtiionally, we defines deformations MNI space via the individual normalization into MNI152NLin6Asym (FSL, SPM Segement).
@@ -964,9 +778,9 @@ class DataSetNative(DataSet):
             edir = self.estimates_dir.format(sub)
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
+            atlas_maps[0].build(smooth=None)
         else:
-            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth)
+            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
 class DataSetMNIVol(DataSet):
@@ -980,7 +794,7 @@ class DataSetMNIVol(DataSet):
         super().__init__(base_dir)
         self.space = space
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data stored in MNI space.
         For SUIT and surface space, it goes over deformations estimated on the individual anatomy. If atlas.space matches dataset.space, it uses no deformation, but a direct readout. For mismatching MNI space it tries to find the correct transformation file.
         Args:
@@ -1010,7 +824,7 @@ class DataSetMNIVol(DataSet):
             atlas_maps[0].build(smooth=smooth)
         # Any other space (SUIT + fs32k)
         else:
-            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth)
+            atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
 class DataSetCifti(DataSet):
@@ -1121,7 +935,7 @@ class DataSetMDTB(DataSetNative):
                 data_info, C = agg_data(info,
                                         ['run', 'cond_num'],
                                         [],
-                                        subset=(info.instruction == 0))
+                                        subset=(info.instruction == 0)) 
                 data_info['names'] = [
                     f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
 
@@ -1148,7 +962,7 @@ class DataSetMDTB(DataSetNative):
                 data_info['names'] = [
                     f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
                 # Baseline substraction
-                B = matrix.indicator(data_info.half, positive=True)
+                B = matrix.indicator(data_info.run, positive=True)
 
             # Prewhiten the data
             data_n = prewhiten_data(data)
@@ -1303,7 +1117,7 @@ class DataSetPontine(DataSetNative):
         self.part_ind = 'half'
 
     def condense_data(self, data, info,
-                      type='TaskHalf',
+                      type='CondHalf',
                       participant_id=None,
                       ses_id=None):
         """ Condense the data from the pontine project after extraction
@@ -1312,9 +1126,8 @@ class DataSetPontine(DataSetNative):
             data (list of ndarray)
             info (dataframe)
             type (str): Type of extraction:
-                'TaskHalf': Conditions with seperate estimates for first and second half of experient (Default)
-                'TaskRun': Conditions with seperate estimates per run
-                    Defaults to 'CondHalf'.
+                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+                'CondRun': Conditions with seperate estimates per run
             participant_id (str): ID of participant
             ses_id (str): Name of session
 
@@ -1330,24 +1143,24 @@ class DataSetPontine(DataSetNative):
         info['half'] = 2 - (info.run < 9)
         n_cond = np.max(info.reg_id)
 
-        if type == 'TaskHalf':
+        if type == 'CondHalf':
             data_info, C = agg_data(info,
                                     ['half', 'reg_id'],
                                     ['run', 'reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
-        elif type == 'TaskRun':
+        elif type == 'CondRun':
 
             data_info, C = agg_data(info,
                                     ['run', 'reg_id'],
                                     ['reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
@@ -1357,7 +1170,7 @@ class DataSetPontine(DataSetNative):
                                     ['run', 'half', 'reg_num'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
+                f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = np.ones((data_info.shape[0],1))
 
@@ -1365,15 +1178,14 @@ class DataSetPontine(DataSetNative):
         data_n = prewhiten_data(data)
 
         # Load the designmatrix and perform optimal contrast
-        X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy')
+        X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy',allow_pickle=True).item()
         reg_in = np.arange(C.shape[1], dtype=int)
-        CI = matrix.indicator(info.run * info.instruction, positive=True)
+        CI = matrix.indicator(info.run * info.inst, positive=True)
         C = np.c_[C, CI]
 
-        data_new = optimal_contrast(data_n, C, X, reg_in)
+        data_new = optimal_contrast(data_n, C, X['nKX'], reg_in)
 
         return data_new, data_info
-
 
 class DataSetNishi(DataSetNative):
     def __init__(self, dir):
@@ -1494,7 +1306,7 @@ class DataSetIBC(DataSetNative):
         fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         return fnames, T
 
-    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None):
+    def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space.
         Uses the general ones, but overwrites the choice of masks
         Args:
@@ -1526,7 +1338,7 @@ class DataSetIBC(DataSetNative):
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(smooth=smooth,additional_mask=add_mask)
         else:
-            atlas_maps=super().get_atlasmaps(atlas, sub, ses_id, smooth=None)
+            atlas_maps=super().get_atlasmaps(atlas, sub, ses_id, smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
     def condense_data(self, data, info,
@@ -1703,7 +1515,7 @@ class DataSetSomatotopic(DataSetMNIVol):
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
 
-    def get_atlasmaps(self, atlas, sub=None, ses_id = None, smooth=None):
+    def get_atlasmaps(self, atlas, sub=None, ses_id = None, smooth=None, interpolation=1):
         """ Gets group atlasmaps.
         Assumes that all scans are in the same space (self.space)
 
@@ -1736,6 +1548,8 @@ class DataSetSomatotopic(DataSetMNIVol):
                 atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
                                                   white, pial, mask))
                 atlas_maps[i].build()
+        else:
+            atlas_maps = super().get_atlasmaps(atlas, sub, ses_id, smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
     def condense_data(self, data, info,
@@ -2084,8 +1898,9 @@ class DataSetSocial(DataSetNative):
                                         ['run', 'reg_num'],
                                         subset=(info.reg_id >0))
                 data_info['names'] = [
-                    f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                    f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
                 # Baseline substraction
+                B = matrix.indicator(data_info.half, positive=True)
 
             elif type == 'CondRun':
 
@@ -2094,8 +1909,9 @@ class DataSetSocial(DataSetNative):
                                         ['reg_num'],
                                         subset=(info.reg_id > 0))
                 data_info['names'] = [
-                    f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                    f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
                 # Baseline substraction
+                B = matrix.indicator(data_info.run, positive=True)
 
             elif type == 'CondAll':
                 data_info, C = agg_data(info,
@@ -2103,8 +1919,9 @@ class DataSetSocial(DataSetNative):
                                         ['run', 'half', 'reg_num'],
                                         subset=(info.reg_id > 0))
                 data_info['names'] = [
-                    f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
+                    f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
                 # Baseline substraction
+                B = np.ones((data_info.shape[0],1))
 
             # Prewhiten the data
             data_n = prewhiten_data(data)
@@ -2114,9 +1931,9 @@ class DataSetSocial(DataSetNative):
             # Load the designmatrix and perform optimal contrast
             X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
             reg_in = np.arange(C.shape[1], dtype=int)
-            CI = matrix.indicator(info.run * info.inst, positive=True)
+            CI = matrix.indicator(info.run * info.instruction, positive=True)
             C = np.c_[C, CI]
 
-            data_new = optimal_contrast(data_n, C, X, reg_in)
+            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
 
         return data_new, data_info
