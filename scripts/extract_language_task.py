@@ -24,7 +24,7 @@ atlas_dir = base_dir + '/Atlases'
 
 
 types = ['CondRun']
-atlases  = ['MNISymThalamus1']
+atlases  = ['MNISymPontine1']
 session_list = ['ses-localizer_cond_fm']
 
 
