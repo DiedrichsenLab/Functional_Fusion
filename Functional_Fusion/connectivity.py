@@ -233,10 +233,10 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
             space='fs32k', ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
         data_cortex_subj = data_cortex_subj.squeeze()
 
-        # Get cerebellar data
-        data_cereb_subj, info_cereb = dset.get_data(
+        # Get source data
+        data_source_subj, info_source = dset.get_data(
                 space=space, ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
-        data_cereb_subj = data_cereb_subj.squeeze()
+        data_source_subj = data_source_subj.squeeze()
 
         if target[:3] == 'Net' or target[:3] == 'Fus':
             names = [f'Network_{i}' for i in range(1, int(res)+1)]
@@ -261,9 +261,9 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 
         # Calculate the connectivity fingerprint
         coef = connectivity_fingerprint(
-            data_cereb_subj, network_timecourse, info_cereb, type)
+            data_source_subj, network_timecourse, info_source, type)
         # Make info
-        runs = np.repeat([info_cereb.run.unique()], len(names))
+        runs = np.repeat([info_source.run.unique()], len(names))
         net_id = np.tile(np.arange(len(names)),
                          int(coef.shape[0] / len(names))) + 1
         if type == 'Run':

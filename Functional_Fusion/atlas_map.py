@@ -182,10 +182,15 @@ class AtlasVolumetric(Atlas):
 
         Args:
             name (str): Name of atlas (atlas string)
-            mask_img (str): file name of mask image defining atlas location
+            mask_img (str): file name of mask image or mask image defining atlas location
         """
         super().__init__(name, structure=structure, space=space)
-        self.mask_img = nb.load(mask_img)
+        if isinstance(mask_img,str):
+            self.mask_img = nb.load(mask_img)
+        elif isinstance(mask_img,nb.Nifti1Image):
+            self.mask_img  = mask_img
+        else: 
+            raise(NameError('mask image needs to be string or Nifti1image'))
         Xmask = self.mask_img.get_fdata()
         Xmask = Xmask > 0
         i, j, k = np.where(Xmask > 0)
@@ -255,17 +260,25 @@ class AtlasVolumetric(Atlas):
         include = dist < radius
         return self.get_subatlas(include)
 
-    def get_subatlas_image(self,mask_img,label_value=1):
+    def get_subatlas_image(self,mask_img,label_value=None):
         """Returns a subatlas (region) based on a mask image
+        Selects either any voxel > 0 (default), any voxel == label_value, or any voxel which has a value in the list of label_values. 
 
         Args:
-            mask_img (str): Mask image filename
-
+            mask_img (str): Mask or discrete segmentation image filename
+            label_value (int,list): Value(s) for the target ROI (default None)  
         Returns:
-            new_atlas (AtlasVolumetric): New atlas object
+            new_atlas (AtlasVolumetric): New atlas object            
         """
         data = self.read_data(mask_img)
-        include = data == label_value
+        if label_value is None:
+            include = data>0
+        elif isinstance(label_value,list):
+            include = np.zeros(data.shape[0],dtype=bool)
+            for i in label_value:
+                include = np.logical_or(include,data==i)
+        else:
+            include = (data == label_value)
         return self.get_subatlas(include)
 
     def data_to_cifti(self, data, row_axis=None):

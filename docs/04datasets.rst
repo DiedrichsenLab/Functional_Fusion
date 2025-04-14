@@ -113,7 +113,6 @@ and this sequence of code in Python:
         nKX_data = sio.loadmat('/directory_of_your_choice/nKX_data.mat')
         np.save('/directory_of_your_choice/nKX.npy',nKX_data)
 
-Add new dataset
 ---------------
 
 Add the information to dataset_description.
