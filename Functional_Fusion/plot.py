@@ -230,7 +230,7 @@ def plot_thalamus(data,
         for j,z in enumerate(z_coords):
             nlp.plot_img(fc[i],
             display_mode="z",
-            cut_coords=10,
+            cut_coords=12,
             bg_img=bg[i],
             black_bg=True,
             #axes=axes[j,i],
