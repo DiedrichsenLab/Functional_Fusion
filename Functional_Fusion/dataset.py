@@ -1872,7 +1872,7 @@ class DataSetSocial(DataSetNative):
         self.part_info = pd.read_csv(
             self.base_dir + '/participants.tsv', delimiter='\t')
         if exclude_pilot:
-            self.part_info = self.part_info[self.part_info.pilot == 0]
+            self.part_info = self.part_info[self.part_info.pilot == 0].reset_index()
         return self.part_info
 
     def condense_data(self, data, info,
