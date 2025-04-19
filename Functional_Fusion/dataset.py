@@ -628,7 +628,7 @@ class DataSet:
 
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
-                 subj=None, fields=None, smooth=None, verbose=False):
+                 subj=None, fields=None, smooth=None, verbose=False, pilot=False):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -1860,7 +1860,7 @@ class DataSetSocial(DataSetNative):
         self.cond_name = 'condName'
         self.part_ind = 'half'
 
-    def get_participants(self, exclude_pilot=True):
+    def get_participants(self, exclude_pilot=False):
         """ returns a data frame with all participants
         available in the study. The fields in the data frame correspond to the
         standard columns in participant.tsv.
@@ -1876,51 +1876,6 @@ class DataSetSocial(DataSetNative):
         return self.part_info
     
 
-    def extract_all(self,
-                    ses_id='ses-s1',
-                    type='CondHalf',
-                    atlas='SUIT3',
-                    smooth=None,
-                    interpolation=1,
-                    subj='all',
-                    exclude_pilot=True):
-        """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
-
-        Args:
-            ses_id (str):
-                Session. Defaults to 'ses-s1'.
-            type (str):
-                Type for condense_data. Defaults to 'CondHalf'.
-            atlas (str):
-                Short atlas string. Defaults to 'SUIT3'.
-            smooth (float):
-                Smoothing kernel. Defaults to 2.0.
-            subj (list / str):
-                List of Subject numbers to get use. Default = 'all'
-        """
-        myatlas, _ = am.get_atlas(atlas)
-        # create and calculate the atlas map for each participant
-        T = self.get_participants(exclude_pilot=exclude_pilot)
-        if subj != 'all':
-            T = T.iloc[subj]
-        for s in T.participant_id:
-            print(f'Atlasmap {s}')
-            atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
-                                                smooth=smooth,
-                                                interpolation=interpolation)
-            print(f'Extract {s}')
-            fnames, info = self.get_data_fnames(s, ses_id, type=type)
-            data = am.get_data_nifti(fnames, atlas_maps)
-            data, info = self.condense_data(data, info, type,
-                                            participant_id=s, ses_id=ses_id)
-            # Write out data as CIFTI file
-            C = myatlas.data_to_cifti(data, info.names)
-            dest_dir = self.data_dir.format(s)
-            Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
-            info.to_csv(
-                dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
 
     def condense_data(self, data, info,
                       type='CondHalf',
