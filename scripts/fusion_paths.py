@@ -10,6 +10,7 @@ def set_base_dir():
     possible_dirs = [
         '/Volumes/diedrichsen_data$/data/',
         '/srv/diedrichsen/data/',
+        '/cifs/diedrichsen/data/',
         'Y:\data\\',
         '/Users/callithrix/Documents/Projects//',
         '/Users/jdiedrichsen/Data//',
