@@ -143,7 +143,7 @@ def connectivity_fingerprint(source, target, info, type, threshold=None, keeptop
     return np.vstack(coefs) 
 
 
-def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None):
+def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None, exclude_pilot=True):
     """Extracts the connectivity fingerprint for each network in the HCP data
     Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse 
                     Alternatively, average cortical timecourse within each Icosahedron parcel to get network timecourse
@@ -165,7 +165,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     # Load dataset
     dset = ds.get_dataset_class(data_dir, dname)
 
-    T = dset.get_participants()
+    T = dset.get_participants(exclude_pilot=exclude_pilot)
 
     # Deal with subset of subjects
     if subj is None:
