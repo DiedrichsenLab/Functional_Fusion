@@ -36,9 +36,9 @@ With a bit of algebra, you can calculate the theoretical reliability of the mean
 .. math::
     r_{whole} = \frac{r_{run} N}{r_{run} (N-1) +1}
 
-This is basically the same idea as Cronbach's alpha. 
+This is the [Spearman-brown prediction formula](https://en.wikipedia.org/wiki/Spearman%E2%80%93Brown_prediction_formula), and similar to Cronbach's alpha. 
 
-We can quickly calculate the reliability of the data within each subjects across different runs:
+We can quickly calculate the reltiability of the data within each subjects across different runs:
 
 .. code-block:: python
 
