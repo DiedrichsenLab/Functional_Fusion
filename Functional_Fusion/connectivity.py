@@ -221,6 +221,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         
     for p, row in enumerate(T.itertuples()):
         participant_id = row.participant_id
+        print(f'Extracting fingerprint for {participant_id}')
 
         # Get the subject's data
         # Get cortical data
