@@ -1860,7 +1860,7 @@ class DataSetSocial(DataSetNative):
         self.cond_name = 'condName'
         self.part_ind = 'half'
 
-    def get_participants(self, exclude_pilot=False):
+    def get_participants(self, exclude_pilot=True):
         """ returns a data frame with all participants
         available in the study. The fields in the data frame correspond to the
         standard columns in participant.tsv.
