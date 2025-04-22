@@ -243,16 +243,15 @@ def plot_thalamus(data,
 
     return axes
 
-
 def plot_olive(data,
                  bg_img=None,
                  fig=None,
                  gridspec=None,
-                 z_coords = [0,0,-64,0,0,-49],
+                 z_coords = [-31,-29,-54,-31,-29,-47],
                  cscale = [None,None],
                  cmap = 'cold_hot',
                  threshold = None):
-    """Generate the plot for detate nucleus 
+    """Generate the plot for inferior olivary nucleus 
     For fine control of the visulization, see https://nilearn.github.io/dev/modules/generated/nilearn.plotting.plot_img.html
 
     Args:
@@ -260,7 +259,7 @@ def plot_olive(data,
         bg_img (nifti1image): Background image. Defaults to None.
         fig (plt.figure): pre-specified matplotlib figure. 
         gridspec (Gridspec): A 6 x 2 Gridspec to plot the dentate data.
-        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-35,-37,-39,-42].
+        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-60,-37,-39,-53].
         cscale (list): [lower and upper] range for colorscale. None sets it to 2% percentile of data (asymmetric). 
         cmap (str, colormap, ndarray): Name, colormap, or Nx3 ndarray. Defaults to 'cold_hot'. 
         threshold (numeric): Single threshold: will plot data abs(y)> th
@@ -271,7 +270,7 @@ def plot_olive(data,
     dn,_ = am.get_atlas('MNISymOlive1')
     if bg_img is None:
         adir = ut.default_atlas_dir
-        bg_img = nb.load(adir + '/tpl-MNI152NLin2009cSym/tpl-MNI152NLin2009cSym_res-1_thalamus.nii')
+        bg_img = nb.load(adir + '/tpl-MNI152NLin2009cSym/tpl-MNI152NLin2009cSym_res-1_olive.nii')
     
     # Project the functional data into the atlas space
     fcn_img = dn.data_to_nifti(data)
@@ -286,9 +285,11 @@ def plot_olive(data,
     if isinstance(cmap,np.ndarray):
         cmap = ListedColormap(cmap)
 
-    # Cut out the left and right dentate at the voxel coordinates
-    c1 = np.array([[-34,-39,-8],[0,-39,-8]]).T # Lower left corner of image
-    c2 = np.array([[1,5,19],[33,5,19]]).T # Upper right corner of image
+    # Cut out the left and right olive at the voxel coordinates
+    
+    c1 = np.array([[-11,-45,-56],[0,-45,-56]]).T # Lower left corner of each image
+    c2 = np.array([[0,-18,-29],[11,-18,-29]]).T # Upper right corner of each image
+
     v1 = nt.affine_transform_mat(c1,inv(bg_img.affine)).astype(int)
     v2 = nt.affine_transform_mat(c2,inv(bg_img.affine)).astype(int)
 
@@ -317,8 +318,8 @@ def plot_olive(data,
             cut_coords=12,
             bg_img=bg[i],
             black_bg=True,
-            #axes=axes[j,i],
             axes = axes[i],
+            #axes=axes[j,i],
             threshold=threshold,
             vmin=cscale[0],
             vmax=cscale[1],
@@ -326,3 +327,4 @@ def plot_olive(data,
             annotate=False)
 
     return axes
+
