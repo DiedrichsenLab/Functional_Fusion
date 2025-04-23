@@ -628,7 +628,7 @@ class DataSet:
 
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
-                 subj=None, fields=None, smooth=None, verbose=False, pilot=False):
+                 subj=None, fields=None, smooth=None, verbose=False):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -1872,7 +1872,7 @@ class DataSetSocial(DataSetNative):
         self.part_info = pd.read_csv(
             self.base_dir + '/participants.tsv', delimiter='\t')
         if exclude_pilot:
-            self.part_info = self.part_info[self.part_info.pilot == 0]
+            self.part_info = self.part_info[self.part_info.pilot == 0].reset_index()
         return self.part_info
     
 
