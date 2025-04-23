@@ -208,6 +208,8 @@ def plot_thalamus(data,
     v1 = nt.affine_transform_mat(c1,inv(bg_img.affine)).astype(int)
     v2 = nt.affine_transform_mat(c2,inv(bg_img.affine)).astype(int)
 
+    
+
     bg = [] # Slice background data
     fc = [] # Sliced functional data
     for i in range(2):
@@ -247,7 +249,7 @@ def plot_thalamus2(data,
                  bg_img=None,
                  fig=None,
                  gridspec=None,
-                 z_coords = [-31,-33,-7,-37,-38,7],   #-31, -33, -7, -37, -33, 7
+                 z_coords = [-7,-5,-3,1, 8,12,15],  
                  cscale = [None,None],
                  cmap = 'cold_hot',
                  threshold = None):
@@ -286,8 +288,8 @@ def plot_thalamus2(data,
         cmap = ListedColormap(cmap)
 
     # Cut out the left and right dentate at the voxel coordinates
-    c1 = np.array([[-34,-39,-8],[0,-39,-8]]).T # Lower left corner of image
-    c2 = np.array([[1,5,19],[33,5,19]]).T # Upper right corner of image
+    c1 = np.array([[-34,-39,-10],[0,-39,-10]]).T # Lower left corner of image
+    c2 = np.array([[0,5,18],[34,5,18]]).T # Upper right corner of image
     v1 = nt.affine_transform_mat(c1,inv(bg_img.affine)).astype(int)
     v2 = nt.affine_transform_mat(c2,inv(bg_img.affine)).astype(int)
 
@@ -302,7 +304,7 @@ def plot_thalamus2(data,
         if fig is None:
             #fig = plt.figure(figsize=(15,6),facecolor='black')
             fig = plt.figure(figsize=(2,10),facecolor='black')
-        gridspec = fig.add_gridspec(6, 2,hspace=0.1,wspace=0.1)
+        gridspec = fig.add_gridspec(7, 2,hspace=0.1,wspace=0.1)
         #gridspec = fig.add_gridspec(1, 2,wspace=0.1)
     
     # axes
