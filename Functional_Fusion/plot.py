@@ -164,25 +164,26 @@ def plot_thalamus2(data,
                  bg_img=None,
                  fig=None,
                  gridspec=None,
-                 z_coords = [-31,-33,-7,-37,-38,7],   #-31, -33, -7, -37, -33, 7
+                 z_coords = [-31,-33,-7,-37,-38,7],   #these are z-coordinates with x, y at 0
                  cscale = [None,None],
                  cmap = 'cold_hot',
                  threshold = None):
-    """Generate the plot for detate nucleus 
+    
+    """Generate the plot for thalamus 
     For fine control of the visulization, see https://nilearn.github.io/dev/modules/generated/nilearn.plotting.plot_img.html
 
     Args:
         data (ndarray): 
         bg_img (nifti1image): Background image. Defaults to None.
         fig (plt.figure): pre-specified matplotlib figure. 
-        gridspec (Gridspec): A 6 x 2 Gridspec to plot the dentate data.
-        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-35,-37,-39,-42].
+        gridspec (Gridspec): A 2 x 2 Gridspec to plot the dentate data.
+        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-7,-37,-38,7].
         cscale (list): [lower and upper] range for colorscale. None sets it to 2% percentile of data (asymmetric). 
         cmap (str, colormap, ndarray): Name, colormap, or Nx3 ndarray. Defaults to 'cold_hot'. 
         threshold (numeric): Single threshold: will plot data abs(y)> th
     
     Returns: 
-        axes (array): 6 x2 array of subplots.
+        axes (array): 1x2 array of subplots 
     """
     dn,_ = am.get_atlas('MNISymThalamus1')
     if bg_img is None:
@@ -202,7 +203,7 @@ def plot_thalamus2(data,
     if isinstance(cmap,np.ndarray):
         cmap = ListedColormap(cmap)
 
-    # Cut out the left and right dentate at the voxel coordinates
+    # Cut out the left and right dentate at the voxel coordinates: x determines width of left/ right window, y determines height; z values must encompass the z-coordinates defined prior
     c1 = np.array([[-34,-39,-8],[0,-39,-8]]).T # Lower left corner of image
     c2 = np.array([[1,5,19],[33,5,19]]).T # Upper right corner of image
     v1 = nt.affine_transform_mat(c1,inv(bg_img.affine)).astype(int)
@@ -253,21 +254,22 @@ def plot_thalamus(data,
                  cscale = [None,None],
                  cmap = 'cold_hot',
                  threshold = None):
-    """Generate the plot for detate nucleus 
+    
+    """Generate the plot for thalamus  
     For fine control of the visulization, see https://nilearn.github.io/dev/modules/generated/nilearn.plotting.plot_img.html
 
     Args:
         data (ndarray): 
         bg_img (nifti1image): Background image. Defaults to None.
         fig (plt.figure): pre-specified matplotlib figure. 
-        gridspec (Gridspec): A 6 x 2 Gridspec to plot the dentate data.
-        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-35,-37,-39,-42].
+        gridspec (Gridspec): A 7 x 2 Gridspec to plot the dentate data.
+        z_coords (list): Z-coordinate slice to plot. Defaults to [-7,-5,-3,1, 8,12,15].
         cscale (list): [lower and upper] range for colorscale. None sets it to 2% percentile of data (asymmetric). 
         cmap (str, colormap, ndarray): Name, colormap, or Nx3 ndarray. Defaults to 'cold_hot'. 
         threshold (numeric): Single threshold: will plot data abs(y)> th
     
     Returns: 
-        axes (array): 6 x2 array of subplots.
+        axes (array): 7 x2 array of subplots.
     """
     dn,_ = am.get_atlas('MNISymThalamus1')
     if bg_img is None:
@@ -336,6 +338,7 @@ def plot_olive2(data,
                  cscale = [None,None],
                  cmap = 'cold_hot',
                  threshold = None):
+    
     """Generate the plot for inferior olivary nucleus 
     For fine control of the visulization, see https://nilearn.github.io/dev/modules/generated/nilearn.plotting.plot_img.html
 
@@ -343,15 +346,16 @@ def plot_olive2(data,
         data (ndarray): 
         bg_img (nifti1image): Background image. Defaults to None.
         fig (plt.figure): pre-specified matplotlib figure. 
-        gridspec (Gridspec): A 6 x 2 Gridspec to plot the dentate data.
-        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-60,-37,-39,-53].
+        gridspec (Gridspec): A 1 x 2 Gridspec to plot the dentate data.
+        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-29,-54,-31,-29,-47].
         cscale (list): [lower and upper] range for colorscale. None sets it to 2% percentile of data (asymmetric). 
         cmap (str, colormap, ndarray): Name, colormap, or Nx3 ndarray. Defaults to 'cold_hot'. 
         threshold (numeric): Single threshold: will plot data abs(y)> th
     
     Returns: 
-        axes (array): 6 x2 array of subplots.
+        axes (array): 1 x2 array of subplots.
     """
+
     dn,_ = am.get_atlas('MNISymOlive1')
     if bg_img is None:
         adir = ut.default_atlas_dir
@@ -418,6 +422,7 @@ def plot_olive(data,
                  cscale = [None,None],
                  cmap = 'cold_hot',
                  threshold = None):
+    
     """Generate the plot for inferior olivary nucleus 
     For fine control of the visulization, see https://nilearn.github.io/dev/modules/generated/nilearn.plotting.plot_img.html
 
@@ -426,7 +431,7 @@ def plot_olive(data,
         bg_img (nifti1image): Background image. Defaults to None.
         fig (plt.figure): pre-specified matplotlib figure. 
         gridspec (Gridspec): A 6 x 2 Gridspec to plot the dentate data.
-        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-60,-37,-39,-53].
+        z_coords (list): Z-coordinate slice to plot. Defaults to [-47,-49, -50,-51,-52,-54].
         cscale (list): [lower and upper] range for colorscale. None sets it to 2% percentile of data (asymmetric). 
         cmap (str, colormap, ndarray): Name, colormap, or Nx3 ndarray. Defaults to 'cold_hot'. 
         threshold (numeric): Single threshold: will plot data abs(y)> th
@@ -502,7 +507,8 @@ def plot_rednucleus(data,
                  cscale = [None,None],
                  cmap = 'cold_hot',
                  threshold = None):
-    """Generate the plot for inferior olivary nucleus 
+    
+    """Generate the plot for red nucleus 
     For fine control of the visulization, see https://nilearn.github.io/dev/modules/generated/nilearn.plotting.plot_img.html
 
     Args:
@@ -510,7 +516,7 @@ def plot_rednucleus(data,
         bg_img (nifti1image): Background image. Defaults to None.
         fig (plt.figure): pre-specified matplotlib figure. 
         gridspec (Gridspec): A 6 x 2 Gridspec to plot the dentate data.
-        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-60,-37,-39,-53].
+        z_coords (list): Z-coordinate slice to plot. Defaults to [-13,-12,-10,-8,-7,-5].
         cscale (list): [lower and upper] range for colorscale. None sets it to 2% percentile of data (asymmetric). 
         cmap (str, colormap, ndarray): Name, colormap, or Nx3 ndarray. Defaults to 'cold_hot'. 
         threshold (numeric): Single threshold: will plot data abs(y)> th
@@ -586,6 +592,7 @@ def plot_pontine(data,
                  cscale = [None,None],
                  cmap = 'cold_hot',
                  threshold = None):
+    
     """Generate the plot for pontine
     For fine control of the visulization, see https://nilearn.github.io/dev/modules/generated/nilearn.plotting.plot_img.html
 
@@ -593,14 +600,14 @@ def plot_pontine(data,
         data (ndarray): 
         bg_img (nifti1image): Background image. Defaults to None.
         fig (plt.figure): pre-specified matplotlib figure. 
-        gridspec (Gridspec): A 6 x 2 Gridspec to plot the dentate data.
-        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-60,-37,-39,-53].
+        gridspec (Gridspec): A 7 x 2 Gridspec to plot the dentate data.
+        z_coords (list): Z-coordinate slice to plot. Defaults to [-47, -43,-40,-35, -30, -26, -21].
         cscale (list): [lower and upper] range for colorscale. None sets it to 2% percentile of data (asymmetric). 
         cmap (str, colormap, ndarray): Name, colormap, or Nx3 ndarray. Defaults to 'cold_hot'. 
         threshold (numeric): Single threshold: will plot data abs(y)> th
     
     Returns: 
-        axes (array): 6 x2 array of subplots.
+        axes (array): 7 x2 array of subplots.
     """
     dn,_ = am.get_atlas('MNISymPontine1')
     if bg_img is None:
@@ -675,14 +682,14 @@ def plot_pontine2(data,
         data (ndarray): 
         bg_img (nifti1image): Background image. Defaults to None.
         fig (plt.figure): pre-specified matplotlib figure. 
-        gridspec (Gridspec): A 6 x 2 Gridspec to plot the dentate data.
-        z_coords (list): Z-coordinate slice to plot. Defaults to [-31,-33,-60,-37,-39,-53].
+        gridspec (Gridspec): A 1 x 2 Gridspec to plot the dentate data.
+        z_coords (list): Z-coordinate slice to plot. Defaults to [-47, -43,-40,-35, -30, -26, -21].
         cscale (list): [lower and upper] range for colorscale. None sets it to 2% percentile of data (asymmetric). 
         cmap (str, colormap, ndarray): Name, colormap, or Nx3 ndarray. Defaults to 'cold_hot'. 
         threshold (numeric): Single threshold: will plot data abs(y)> th
     
     Returns: 
-        axes (array): 6 x2 array of subplots.
+        axes (array): 1 x2 array of subplots.
     """
     dn,_ = am.get_atlas('MNISymPontine1')
     if bg_img is None:
