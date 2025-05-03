@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import Functional_Fusion.dataset as ds
 import scripts.fusion_paths as paths
+import inspect
 
 
 base_dir = paths.set_base_dir()
@@ -165,7 +166,16 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     # Load dataset
     dset = ds.get_dataset_class(data_dir, dname)
 
-    T = dset.get_participants(exclude_subjects=exclude_subjects)
+    method = dset.get_participants
+    sig = inspect.signature(method)
+
+    if 'exclude_subjects' in sig.parameters:
+        T = dset.get_participants(exclude_subjects=exclude_subjects)
+    else:
+        T = dset.get_participants()
+
+
+    
 
     # Deal with subset of subjects
     if subj is None:
