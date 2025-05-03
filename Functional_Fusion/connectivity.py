@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import Functional_Fusion.dataset as ds
 import scripts.fusion_paths as paths
+import inspect
 
 
 base_dir = paths.set_base_dir()
@@ -143,7 +144,7 @@ def connectivity_fingerprint(source, target, info, type, threshold=None, keeptop
     return np.vstack(coefs) 
 
 
-def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None):
+def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', subj=None, exclude_subjects=True):
     """Extracts the connectivity fingerprint for each network in the HCP data
     Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse 
                     Alternatively, average cortical timecourse within each Icosahedron parcel to get network timecourse
@@ -161,16 +162,42 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         space (str): Space of the cortical data ('MNISymC2', 'MNISymC3', 'fs32k')
         ses_id (str): Session ID
         subj (list): List of subjects to extract the fingerprint for
+        exclude_subjects (bool, optional): Whether to exclude specific subjects defined in the participants table. Defaults to True.
+
     """
     # Load dataset
     dset = ds.get_dataset_class(data_dir, dname)
 
-    T = pd.read_csv(f'{data_dir}/{dname}/participants.tsv', sep='\t')
+    method = dset.get_participants
+    sig = inspect.signature(method)
+
+    if 'exclude_subjects' in sig.parameters:
+        T = dset.get_participants(exclude_subjects=exclude_subjects)
+    else:
+        T = dset.get_participants()
+   
 
     # Deal with subset of subjects
-    if subj is not None:
-        subj = [T.participant_id.tolist().index(s) for s in subj]
+    if subj is None:
+        # only get data from subjects that have rest, if specified in dataset description
+        if type == 'Tseries' and 'ses-rest' in T.columns:
+            T = T[T['ses-rest'] == 1]
+    elif isinstance(subj, str):
+        subj = [subj]
+        T = T[T.participant_id==subj]
+    elif isinstance(subj, (int,np.integer)):
         T = T.iloc[subj]
+    elif isinstance(subj, (list, np.ndarray)):
+        if isinstance(subj[0], (int,np.integer)):
+            T = T.iloc[subj]
+        elif isinstance(subj[0], str):
+            T = T[T['participant_id'].isin(subj)]
+
+        else:
+            raise (NameError('subj must be a list of strings or integers'))
+    else:
+        raise (NameError('subj must be a str, int, list or ndarray'))
+
 
     # Load the cortical networks
     type_parts = re.findall('[A-Z][^A-Z]*', type)        
@@ -204,16 +231,17 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         
     for p, row in enumerate(T.itertuples()):
         participant_id = row.participant_id
+        print(f'Extracting fingerprint for {participant_id}')
 
         # Get the subject's data
         # Get cortical data
         data_cortex_subj, _ = dset.get_data(
-            space='fs32k', ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
+            space='fs32k', ses_id=ses_id, type=load_tseries_type, subj=[row.participant_id])
         data_cortex_subj = data_cortex_subj.squeeze()
 
         # Get source data
         data_source_subj, info_source = dset.get_data(
-                space=space, ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
+                space=space, ses_id=ses_id, type=load_tseries_type, subj=[row.participant_id])
         data_source_subj = data_source_subj.squeeze()
 
         if target[:3] == 'Net' or target[:3] == 'Fus':
