@@ -162,6 +162,8 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         space (str): Space of the cortical data ('MNISymC2', 'MNISymC3', 'fs32k')
         ses_id (str): Session ID
         subj (list): List of subjects to extract the fingerprint for
+        exclude_subjects (bool, optional): Whether to exclude specific subjects defined in the participants table. Defaults to True.
+
     """
     # Load dataset
     dset = ds.get_dataset_class(data_dir, dname)
@@ -173,9 +175,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         T = dset.get_participants(exclude_subjects=exclude_subjects)
     else:
         T = dset.get_participants()
-
-
-    
+   
 
     # Deal with subset of subjects
     if subj is None:
