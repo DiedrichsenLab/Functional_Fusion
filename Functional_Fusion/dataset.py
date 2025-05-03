@@ -1860,7 +1860,7 @@ class DataSetSocial(DataSetNative):
         self.cond_name = 'condName'
         self.part_ind = 'half'
 
-    def get_participants(self, exclude_pilot=True):
+    def get_participants(self, exclude_subjects=False):
         """ returns a data frame with all participants
         available in the study. The fields in the data frame correspond to the
         standard columns in participant.tsv.
@@ -1871,8 +1871,8 @@ class DataSetSocial(DataSetNative):
         """
         self.part_info = pd.read_csv(
             self.base_dir + '/participants.tsv', delimiter='\t')
-        if exclude_pilot:
-            self.part_info = self.part_info[self.part_info.pilot == 0].reset_index()
+        if exclude_subjects:
+            self.part_info = self.part_info[self.part_info.exclude == 0].reset_index()
         return self.part_info
     
 
