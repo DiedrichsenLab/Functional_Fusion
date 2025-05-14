@@ -248,8 +248,8 @@ def plot_thalamus2(data,
 
 def plot_thalamus(data,
                 bg_img=True,
-               # z_coords = [8],
-                z_coords = [-7,-5,-3,1, 8,12,15], 
+                z_coords = [1,8],
+                #z_coords = [-7,-5,-3,1, 8,12,15], 
                 cscale = [None,None],
                 cmap = 'cold_hot',
                 threshold = None,
@@ -316,8 +316,8 @@ def plot_thalamus(data,
    # Initialize the figure and axes if not provided.
    if gridspec is None:
        if fig is None:
-             fig = plt.figure(figsize=(2,8),facecolor='none')
-       gridspec = fig.add_gridspec(7, 2,hspace=0.1,wspace=0)
+             fig = plt.figure(figsize=(8,20),facecolor='none')
+       gridspec = fig.add_gridspec(2, 2,hspace=0.1,wspace=0)
   
    #axes
    axes = gridspec.subplots()
