@@ -80,10 +80,11 @@ def ortho(data, voxel, fig=None, cursor=False, background=None, **kwargs):
     return (fig, xax, yax, zax)
 
 def plot_dentate(data,
-                 bg_img=None,
+                 bg_img=True,
                  fig=None,
                  gridspec=None,
-                 z_coords = [-31,-33,-35,-37,-39,-42],
+                 z_coords = [-35, -37],
+                 #z_coords = [-31,-33,-35,-37,-39,-42],
                  cscale = [None,None],
                  cmap = 'cold_hot',
                  threshold = None):
@@ -107,6 +108,8 @@ def plot_dentate(data,
     if bg_img is None:
         adir = ut.default_atlas_dir
         bg_img = nb.load(adir + '/tpl-MNI152NLin2009cSym/tpl-MNI152NLin2009cSym_res-1_dentate.nii')
+    if bg_img is True:
+       bg_img = nb.load('/Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/RegionOfInterest_BOLDMNI/template.nii')
     
     # Project the functional data into the atlas space
     fcn_img = dn.data_to_nifti(data)
@@ -127,35 +130,47 @@ def plot_dentate(data,
     v1 = nt.affine_transform_mat(c1,inv(bg_img.affine)).astype(int)
     v2 = nt.affine_transform_mat(c2,inv(bg_img.affine)).astype(int)
 
-    bg = [] # Slice background data
-    fc = [] # Sliced functional data
-    for i in range(2):
-        bg.append(bg_img.slicer[v1[0,i]:v2[0,i]+1,v1[1,i]:v2[1,i]+1,v1[2,i]:v2[2,i]+1])
-        fc.append(fcn_img.slicer[v1[0,i]:v2[0,i]+1,v1[1,i]:v2[1,i]+1,v1[2,i]:v2[2,i]+1])
+    # use this if you want to have the dentate nuclei for right and left represented on separate anatomical bg images
+
+    #bg = [] # Slice background data
+    #fc = [] # Sliced functional data
+    #for i in range(2):
+     #   bg.append(bg_img.slicer[v1[0,i]:v2[0,i]+1,v1[1,i]:v2[1,i]+1,v1[2,i]:v2[2,i]+1])
+      #  fc.append(fcn_img.slicer[v1[0,i]:v2[0,i]+1,v1[1,i]:v2[1,i]+1,v1[2,i]:v2[2,i]+1])
 
     # Initialize the figure and axes if not provided.
+    
     if gridspec is None:
         if fig is None:
-            fig = plt.figure(figsize=(2,10),facecolor='black')
-        gridspec = fig.add_gridspec(6, 2,hspace=0.1,wspace=0.1)
-    
-    # axes
+            fig = plt.figure(figsize=(8, len(z_coords) * 2), facecolor='black')
+        gridspec = fig.add_gridspec(len(z_coords), 1, hspace=0.1)
+
     axes = gridspec.subplots()
 
+    # use this if you want to have the dentate nuclei for right and left represented on separate anatomical bg images
+
+    #if gridspec is None:
+      #  if fig is None:
+      #      fig = plt.figure(figsize=(8,20),facecolor='black')
+     #   gridspec = fig.add_gridspec(2, 2,hspace=0.1,wspace=0)
+    
+    # axes
+   # axes = gridspec.subplots()
+
     # Now use the nibabel plotting functions to plot the images
-    for i in range(2):
-        for j,z in enumerate(z_coords):
-            nlp.plot_img(fc[i],
-            display_mode="z",
-            cut_coords=[z],
-            bg_img=bg[i],
-            black_bg=True,
-            axes=axes[j,i],
-            threshold=threshold,
-            vmin=cscale[0],
-            vmax=cscale[1],
-            cmap=cmap,
-            annotate=False)
+    #for i in range(2):
+    for j,z in enumerate(z_coords):
+        nlp.plot_img(fcn_img,  #use fc[i] to have dentate nuclei for right and left represented on separate anatomical bg images
+        display_mode="z",
+        cut_coords=[z],
+        bg_img=bg_img,   #bg_img = bg[i] for no anatomical in bg 
+        black_bg=True,
+        axes=axes[j],
+        threshold=0.1,
+        vmin=cscale[0],
+        vmax=cscale[1],
+        cmap=cmap,
+        annotate=False)
 
     return axes
 
@@ -275,15 +290,14 @@ def plot_thalamus(data,
        axes (array): 7 x2 array of subplots.
    """
    dn,_ = am.get_atlas('MNISymThalamus1')
-   #if bg_img is None:
-    #   adir = ut.default_atlas_dir
-     #  bg_img = nb.load(adir + '/tpl-MNI152NLin2009cSym/tpl-MNI152NLin2009cSym_res-1_thalamus.nii')
+   if bg_img is None:
+       adir = ut.default_atlas_dir
+       bg_img = nb.load(adir + '/tpl-MNI152NLin2009cSym/tpl-MNI152NLin2009cSym_res-1_thalamus.nii')
    if bg_img is True:
        bg_img = nb.load('/Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/RegionOfInterest_BOLDMNI/template.nii')
   
    # Project the functional data into the atlas space
    fcn_img = dn.data_to_nifti(data)
-
 
    # If cscale is not provided, calculate it from the data:
    if cscale[0] is None:
@@ -303,35 +317,23 @@ def plot_thalamus(data,
    v1 = nt.affine_transform_mat(c1,inv(bg_img.affine)).astype(int)
    v2 = nt.affine_transform_mat(c2,inv(bg_img.affine)).astype(int)
 
-
-   bg = [] # Slice background data
-   fc = [] # Sliced functional data
-
-
-   for i in range(2):
-       bg.append(bg_img.slicer[v1[0,i]:v2[0,i]+1,v1[1,i]:v2[1,i]+1,v1[2,i]:v2[2,i]+1])
-       fc.append(fcn_img.slicer[v1[0,i]:v2[0,i]+1,v1[1,i]:v2[1,i]+1,v1[2,i]:v2[2,i]+1])
-
-
-   # Initialize the figure and axes if not provided.
    if gridspec is None:
-       if fig is None:
-             fig = plt.figure(figsize=(8,20),facecolor='none')
-       gridspec = fig.add_gridspec(2, 2,hspace=0.1,wspace=0)
-  
-   #axes
+         if fig is None:
+            fig = plt.figure(figsize=(8, len(z_coords) * 2), facecolor='black')
+         gridspec = fig.add_gridspec(len(z_coords), 1, hspace=0.1)
+   
    axes = gridspec.subplots()
 
 
    # Now use the nibabel plotting functions to plot the images
-   for i in range(2):
-       for j,z in enumerate(z_coords):
-           nlp.plot_img(fc[i],
+  # for i in range(2):
+   for j,z in enumerate(z_coords):
+        nlp.plot_img(fcn_img,
            display_mode="z",
            cut_coords=[z],
            bg_img=bg_img,
            black_bg=True,
-           axes=axes[j,i],
+           axes=axes[j],
            threshold=0.1,
            vmin=cscale[0],
            vmax=cscale[1],
