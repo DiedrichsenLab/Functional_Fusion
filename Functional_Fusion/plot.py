@@ -605,9 +605,11 @@ def plot_rednucleus(data,
     return axes
 
 def plot_pontine(data,
-                 bg_img=None,
+                 bg_img=True,
                  fig=None,
                  gridspec=None,
+                 x_coords = [-6, 6],
+                 #x_coords = [-16, -13, -6, 6, 13, 16],
                  #z_coords = [-47, -43,-40,-35, -30, -26, -21],
                  cscale = [None,None],
                  cmap = 'cold_hot',
@@ -633,6 +635,8 @@ def plot_pontine(data,
     if bg_img is None:
         adir = ut.default_atlas_dir
         bg_img = nb.load(adir + '/tpl-MNI152NLin2009cSym/tpl-MNI152NLin2009cSym_res-1_pontine.nii')
+    if bg_img is True:
+       bg_img = nb.load('/Volumes/diedrichsen_data$/data/Cerebellum/Pontine7T/RegionOfInterest_BOLDMNI/template.nii')
     
     # Project the functional data into the atlas space
     fcn_img = dn.data_to_nifti(data)
@@ -649,41 +653,36 @@ def plot_pontine(data,
 
     # Cut out the left and right olive at the voxel coordinates
     
-    c1 = np.array([[-27,-48,-50],[0,-48,-50]]).T # Lower left corner of each image
-    c2 = np.array([[0,-5,-18],[27,-5,-18]]).T # Upper right corner of each image
+    c1 = np.array([[-17,-21,-43],[-17,-40,-43]]).T # Lower left corner of each image
+    c2 = np.array([[17,-40,-20],[17,-21,-20]]).T # Upper right corner of each image
 
     v1 = nt.affine_transform_mat(c1,inv(bg_img.affine)).astype(int)
     v2 = nt.affine_transform_mat(c2,inv(bg_img.affine)).astype(int)
 
-    bg = [] # Slice background data
-    fc = [] # Sliced functional data
-    for i in range(2):
-        bg.append(bg_img.slicer[v1[0,i]:v2[0,i]+1,v1[1,i]:v2[1,i]+1,v1[2,i]:v2[2,i]+1])
-        fc.append(fcn_img.slicer[v1[0,i]:v2[0,i]+1,v1[1,i]:v2[1,i]+1,v1[2,i]:v2[2,i]+1])
-
     # Initialize the figure and axes if not provided.
     if gridspec is None:
-        if fig is None:
-            fig = plt.figure(figsize=(2,10),facecolor='black')
-        gridspec = fig.add_gridspec(7, 2,hspace=0.1,wspace=0.1)
+         if fig is None:
+            fig = plt.figure(figsize=(8, len(x_coords) * 2), facecolor='black')
+         gridspec = fig.add_gridspec(len(x_coords), 1, hspace=0.1)
     
     # axes
     axes = gridspec.subplots()
 
     # Now use the nibabel plotting functions to plot the images
-    for i in range(2):
-        for j,z in enumerate(z_coords):
-            nlp.plot_img(fc[i],
-            display_mode="z",
-            cut_coords=[z],
-            bg_img=bg[i],
-            black_bg=True,
-            axes=axes[j,i],
-            threshold=threshold,
-            vmin=cscale[0],
-            vmax=cscale[1],
-            cmap=cmap,
-            annotate=False)
+    for j,x in enumerate(x_coords):
+        nlp.plot_img(fcn_img,
+        display_mode="x",
+        cut_coords=[x],
+        bg_img=bg_img,
+        black_bg=True,
+        axes=axes[j],
+        threshold=0.1,
+        vmin=cscale[0],
+        vmax=cscale[1],
+        cmap=cmap,
+        annotate=False)
+
+    fig.tight_layout()
 
     return axes
 
