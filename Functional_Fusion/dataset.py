@@ -412,7 +412,7 @@ class DataSet:
         self.part_ind = None  # Partition Indicator (field in tsv file )
         self.cond_name = None  # Condition Names (field in tsv file )
 
-    def get_participants(self):
+    def get_participants(self, exclude_subjects=True):
         """ returns a data frame with all participants
         available in the study. The fields in the data frame correspond to the
         standard columns in participant.tsv.
@@ -423,6 +423,12 @@ class DataSet:
         """
         self.part_info = pd.read_csv(
             self.base_dir + '/participants.tsv', delimiter='\t')
+        
+        if exclude_subjects and 'exclude' in self.part_info.columns:
+            # Exclude subjects that have been specified in the exclude column
+            # 1 = exclude, 0 = include
+            self.part_info = self.part_info[self.part_info.exclude == 0].reset_index()
+        
         return self.part_info
 
     def get_data_fnames(self, participant_id, session_id=None, type='Cond'):
@@ -1858,24 +1864,7 @@ class DataSetSocial(DataSetNative):
         self.default_type = 'CondHalf'
         self.cond_ind = 'reg_id'
         self.cond_name = 'condName'
-        self.part_ind = 'half'
-
-    def get_participants(self, exclude_subjects=False):
-        """ returns a data frame with all participants
-        available in the study. The fields in the data frame correspond to the
-        standard columns in participant.tsv.
-        https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html
-
-        Returns:
-            Pinfo (pandas data frame): participant information in standard bids format
-        """
-        self.part_info = pd.read_csv(
-            self.base_dir + '/participants.tsv', delimiter='\t')
-        if exclude_subjects:
-            self.part_info = self.part_info[self.part_info.exclude == 0].reset_index()
-        return self.part_info
-    
-
+        self.part_ind = 'half'  
 
     def condense_data(self, data, info,
                       type='CondHalf',
