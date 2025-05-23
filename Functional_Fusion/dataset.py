@@ -423,10 +423,14 @@ class DataSet:
         """
         self.part_info = pd.read_csv(
             self.base_dir + '/participants.tsv', delimiter='\t')
-        if exclude_subjects and 'exclude' in self.part_info.columns:
+        if exclude_subjects and 'exclude' not in self.part_info.columns:
+            # If no exclude column is present, raise error
+            raise ValueError('No exclude column in participant.tsv')
+        elif exclude_subjects and 'exclude' in self.part_info.columns:
             # Exclude subjects that have been specified in the exclude column
             # 1 = exclude, 0 = include
             self.part_info = self.part_info[self.part_info.exclude == 0].reset_index()
+        
         return self.part_info
 
     def get_data_fnames(self, participant_id, session_id=None, type='Cond'):
