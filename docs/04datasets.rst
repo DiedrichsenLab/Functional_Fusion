@@ -1,5 +1,5 @@
-Datasets and Data organization
-==============================
+Datasets and Data Import
+========================
 
 Each dataset is stored in a separate directory in the `basedir` directory. Depending to the dataset, the preprocessed time series or individual effect-size estimates are stored.
 The Data Set class `DataSet` is designed to be the entry of getting the data in standard format. To be able to reuse a lot of the code across data sets, it is useful if the way the data is
@@ -9,44 +9,83 @@ Directory structure
 -------------------
 The folder structure of derivatives (example for DataSetNative)
 
+:: 
 
-|    derivatives/
-|        │   README.md
-|        │
-|        └───group/
-|        │
-|        │       similar to the subject-folder
-|        │
-|        └───sub-<label>/
-|                └───anat/
-|                │       sub-<id>_T1w.nii                             # Native space T1w (space defining)
-|                │       sub-<id>_label-CSF_probseg.nii               # probabilistic segmentation (CSF)
-|                │       sub-<id>_label-GM_probseg.nii                # probabilistic segmentation (GM)
-|                │       sub-<id>_label-WM_probseg.nii                # probabilistic segmentation (WM)
-|                │       sub-<id>_space-32k_hemi-L_white.surf.gii     # 32K white matter surface
-|                │       sub-<id>_space-32k_hemi-L_pial.surf.gii      # 32K pial surfaceces
-|                |       sub-<id>_desc-brain_mask.nii                 # Mask of within brain tissue
-|                └───suit/
-|                │       sub-<id>_label-GMc_probseg.nii                # probabilistic segmentation (GM-cereb)
-|                │       sub-<id>_label-WMc_probseg.nii                # probabilistic segmentation (WM-cereb)
-|                │       sub-<id>_label-GMb_probseg.nii                # probabilistic segmentation (GM-rest)
-|                │       sub-<id>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
-|                │       sub-<id>_desc-cereb_mask.nii                  # hand corrected cerebellar mask in functional space
-|                |       sub-<id>_space-SUIT_xfm.nii                   # coordinate transformation file into native
-|                └───estimates/
-|        		 |   └───ses-s1/
-|                |          sub-<label>_ses-<label>_designmatrix.npy                    # Design matrix used for estimation
-|                |          sub-<label>_ses-<label>_mask.nii                            # Brain mask in functional space
-|                |          sub-<label>_ses-<label>_reginfo.tsv                         # Information on regression estimate values structure
-|                |                                                                      # TSV-file with obligatory columns
-|                |                                                                      #      run: run number (reflected in file name)
-|                |                                                                      #      reg_id: regressor id (reflected in file name)
-|                |                                                                      #      reg_num: column number of regressor in design matrix
-|                |          sub-<label>_ses-<label>_resms.nii                           # Model Variance (ResMS.nii in SPM, sigmasquareds.nii.gz in FSL)
-|                |          sub-<label>_ses-<label>_run-<label>_reg-<label>_beta.nii    # Parameter estimates (beta_0001.nii in SPM, pe1.nii.gz in FSL)
-|                └───data/
-|                           sub-<label>_ses-<label>_space-<label>_<type>.nii            # Cifti file with extracted data
-|                           sub-<label>_ses-<label>_<type>.nii                          # tsv file with information for the rows
+    basedir/
+    |--- participant.tsv: # TSV file with subject information/
+    |--- README.md:       # General information file for data/
+    |--- derivatives/
+    | |--- ffimport
+    | | |--- sub-<id>/
+    | | | |---anat/
+    | | | | |---- sub-<id>_T1w.nii                             # Native space T1w (space defining)
+    | | | | |---- sub-<id>_label-CSF_probseg.nii               # probabilistic segmentation (CSF)
+    | | | | |---- sub-<id>_label-GM_probseg.nii                # probabilistic segmentation (GM)
+    | | | | |---- sub-<id>_label-WM_probseg.nii                # probabilistic segmentation (WM)
+    | | | | |---- sub-<id>_space-32k_hemi-L_white.surf.gii     # 32K white matter surface
+    | | | | |---- sub-<id>_space-32k_hemi-L_pial.surf.gii      # 32K pial surfaceces
+    | | | | |---- sub-<id>_desc-brain_mask.nii                 # Mask of within brain tissue
+    | | | | |---- sub-<id>_label-GMc_probseg.nii                # probabilistic segmentation (GM-cereb)
+    | | | | |---- sub-<id>_label-WMc_probseg.nii                # probabilistic segmentation (WM-cereb)
+    | | | | |---- sub-<id>_label-GMb_probseg.nii                # probabilistic segmentation (GM-rest)
+    | | | | |---- sub-<id>_label-WMb_probseg.nii                # probabilistic segmentation (WM-rest)
+    | | | | |---- sub-<id>_desc-cereb_mask.nii                 # hand corrected cerebellar mask in functional space
+    | | | | |---- sub-<id>_space-SUIT_xfm.nii                  # coordinate transformation file into SUIT
+    | | | | |---- sub-<id>_space-MNI_xfm.nii                   # coordinate transformation file into MNI152Nonlin
+    | | | |---func/ 
+    | | | | |---- ses-<id>
+    | | | | | |--- sub-<id>_ses-<id>_designmatrix.npy   # Design matrix used for estimation (optional)
+    | | | | | |--- sub-<id>_ses-<id>_mask.nii           # Brain mask in functional space
+    | | | | | |--- sub-<id>_ses-<id>_reginfo.tsv        # Information on regression estimate values gressor in design matrix
+    | | | | | |--- sub-<id>_ses-<id>_resms.nii          # Model Variance (ResMS.nii in SPM, sigmasquareds.nii.gz in FSL)
+    | | | | | |--- sub-<id>_ses-<id>_run-<id>_reg-<id>_beta.nii    # Parameter estimates (beta_0001.nii in SPM, pe1.nii.gz in FSL)
+    | | | | | |--- sub-<id>_ses-<id>_run-<id>.nii       # Preprocessed time series file (4D, optional)
+    | | | | | |--- ....                                   
+    | | | | |---- ses-<id>
+    | | | | | |--- ....                                 # Second session 
+    | |--- ffextract
+    | | |--- group/                                         # Group averaged data 
+    | | | |--- group_ses-<id>_info-<type>.tsv               # Information file for specific session / data type
+    | | | |--- group_space-<id>_ses-<id>_<type>.dscalar.nii # Extracted data for specific space / session / data type
+    | | | |--- ...
+    | | |--- sub-<id>/
+    | | | |--- sub_<id>_ses-<id>_info-<type>.tsv               # Information file for specific session / data type
+    | | | |--- sub_<id>_space-<id>_ses-<id>_<type>.dscalar.nii # Extracted data for specific space / session / data type
+    | | | |--- ...
+
+
+
+participant.tsv file
+-----------------------
+
+`participant.tsv` is a tab-delimted text file that contains the subject information with the following recommended columns:
+
+* participant_id: Subject ID with prepended sub- (e.g. sub-01)
+* sex: M or F 
+* age: Age of the subject in years since birth
+
+Optional columns include: 
+
+* handedness: L or R
+* group: Group of the subject 
+* exclude: 0 or 1 (1 = exclude from analysis)
+
+
+reginfo.tsv file
+-------------------
+
+`reginfo.tsv`` is a tab-delimted text file that contains the information for a specific functional session for the regression estimates. By default these regression estimates are save 
+under the name `sub-<id>_run-<id>_reg-<id>_beta.nii`, where numerical ids are printed with 2 places (i.e 01, 02, 03). 
+
+The file should contain the following columns:
+
+* run: Run number (numerical): Run number 
+* reg_id: Regressor ID (numerical) 
+
+Optional columns can include: 
+
+* 
+* 
 
 
 Import Anatomical and MNI normalization parameters from SPM (Segement)
