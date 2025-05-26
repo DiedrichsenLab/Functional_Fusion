@@ -15,10 +15,10 @@ MDTB-S1	intervalTiming	IntervalTiming	intrval	NA
 MDTB-S1	motorImagery	MotorImagery	mtrimgry	NA				
 MDTB-S1	motorSequence	FingerSimple	fingr	simple				
 MDTB-S1	motorSequence	FingerSeq	fingr	sequence				
-MDTB-S1	nBack	Verbal0Back	vnbck	0bck				
-MDTB-S1	nBack	Verbal2Back	vnbck	2bck				
-MDTB-S1	nBackPic	Object0Back	picnbck	0bck				
-MDTB-S1	nBackPic	Object2Back	picnbck	2bck				
+MDTB-S1	nBack	Verbal0Back	nbckverb	0bck				
+MDTB-S1	nBack	Verbal2Back	nbckverb	2bck				
+MDTB-S1	nBackPic	Object0Back	nbckpic	0bck				
+MDTB-S1	nBackPic	Object2Back	nbckpic	2bck				
 MDTB-S1	spatialNavigation	SpatialNavigation	spatialnav	NA				
 MDTB-S1	stroop	StroopIncon	stroop	incon				
 MDTB-S1	stroop	StroopCon	stroop	con				
@@ -46,8 +46,8 @@ MDTB-S2	motorSequence2	FingerSeq	fingr	sequence
 MDTB-S2	mentalRotation	MentalRotEasy	mntalrot	easy				
 MDTB-S2	mentalRotation	MentalRotMed	mntalrot	med				
 MDTB-S2	mentalRotation	MentalRotDiff	mntalrot	diff				
-MDTB-S2	nBackPic2	Object0Back	picnbck	0bck				
-MDTB-S2	nBackPic2	Object2Back	picnbck	2bck				
+MDTB-S2	nBackPic2	Object0Back	nbckpic	0bck				
+MDTB-S2	nBackPic2	Object2Back	nbckpic	2bck				
 MDTB-S2	emotionProcess	BodyMotionIntact	biomotion	normal				
 MDTB-S2	emotionProcess	BodyMotionScram	biomotion	scrambeled				
 MDTB-S2	respAlt	RespAltEasy	respalt	easy				
