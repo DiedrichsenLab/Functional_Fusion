@@ -1,0 +1,7 @@
+Dataset,task_name,task_code,cond_code
+MDTB,Intruction,instr,
+,,,
+MDTB,Visual_search,vissearch,easy
+,,vissearch,medium
+,,vissearch,hard
+HCP,motor,,

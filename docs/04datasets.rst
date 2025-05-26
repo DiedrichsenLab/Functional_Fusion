@@ -74,18 +74,23 @@ Optional columns include:
 reginfo.tsv file
 -------------------
 
-`reginfo.tsv`` is a tab-delimted text file that contains the information for a specific functional session for the regression estimates. By default these regression estimates are save 
+`sub-<id>_ses-<id>_reginfo.tsv`` is a tab-delimted text file that contains the information for a specific functional session for the regression estimates. By default these regression estimates are save 
 under the name `sub-<id>_run-<id>_reg-<id>_beta.nii`, where numerical ids are printed with 2 places (i.e 01, 02, 03). 
 
 The file should contain the following columns:
 
 * run: Run number (numerical): Run number 
 * reg_id: Regressor ID (numerical) 
+* task_code: Multi-letter unique string that identifies the task (e.g. "vissearch")   
+* cond_code: Multi-letter unique string that identifies the condition within task (e.g. "easy"). 
 
-Optional columns can include: 
+The overall signifier for the condition is `<task_code>_<cond_code>` or `<task_code>` if condition code is empty.
 
-* 
-* 
+Other optional columns may include: 
+
+* task_name: Long name of the task (e.g. "Visual_Search")
+
+
 
 
 Import Anatomical and MNI normalization parameters from SPM (Segement)
