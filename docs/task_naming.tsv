@@ -1,7 +1,7 @@
 Dataset	task_name	cond_name	task_code	cond_code				
 MDTB-S1	GoNoGo	NoGo	gng	ngo				
 MDTB-S1	GoNoGo	Go	gng	go				Notes:
-MDTB-S1	ToM	ToM	ToM	NA				task_name and cond_name directly extracted from info files
+MDTB-S1	ToM	ToM	tom	NA				task_name and cond_name directly extracted from info files
 MDTB-S1	actionObservation	VideoAct	actobserv	action				task_code and cond_code are suggestions for codes (same for similar tasks across two datasets)
 MDTB-S1	actionObservation	VideoKnots	actobserv	knot				
 MDTB-S1	affective	UnpleasantScenes	affect	unpleasant				
@@ -24,211 +24,380 @@ MDTB-S1	stroop	StroopIncon	stroop	incon
 MDTB-S1	stroop	StroopCon	stroop	con				
 MDTB-S1	verbGeneration	VerbGen	vrbgen	generate				
 MDTB-S1	verbGeneration	WordRead	vrbgen	wordread				
-MDTB-S1	visualSearch	VisualSearchSmall	visualSearch	small				
-MDTB-S1	visualSearch	VisualSearchMed	visualSearch	med				
-MDTB-S1	visualSearch	VisualSearchLarge	visualSearch	large				
+MDTB-S1	visualSearch	VisualSearchSmall	vissearch	small				
+MDTB-S1	visualSearch	VisualSearchMed	vissearch	med				
+MDTB-S1	visualSearch	VisualSearchLarge	vissearch	large				
 MDTB-S1	rest	rest	rest	NA				
-MDTB-S2	CPRO	CPRO						
-MDTB-S2	prediction	Prediction						
-MDTB-S2	prediction	PredictViol						
-MDTB-S2	prediction	PredictScram						
-MDTB-S2	verbGeneration2	VerbGen						
-MDTB-S2	verbGeneration2	WordRead						
-MDTB-S2	spatialNavigation2	SpatialNavigation						
-MDTB-S2	spatialMap	SpatialMapEasy						
-MDTB-S2	spatialMap	SpatialMapMed						
-MDTB-S2	spatialMap	SpatialMedDiff						
-MDTB-S2	natureMovie	NatureMovie						
-MDTB-S2	romanceMovie	RomanceMovie						
-MDTB-S2	landscapeMovie	LandscapeMovie						
-MDTB-S2	motorSequence2	FingerSimple						
-MDTB-S2	motorSequence2	FingerSeq						
-MDTB-S2	mentalRotation	MentalRotEasy						
-MDTB-S2	mentalRotation	MentalRotMed						
-MDTB-S2	mentalRotation	MentalRotDiff						
-MDTB-S2	nBackPic2	Object0Back						
-MDTB-S2	nBackPic2	Object2Back						
-MDTB-S2	emotionProcess	BodyMotionIntact						
-MDTB-S2	emotionProcess	BodyMotionScram						
-MDTB-S2	respAlt	RespAltEasy						
-MDTB-S2	respAlt	RespAltMed						
-MDTB-S2	respAlt	RespAltDiff						
-MDTB-S2	visualSearch2	VisualSearchSmall						
-MDTB-S2	visualSearch2	VisualSearchMed						
-MDTB-S2	visualSearch2	VisualSearchLarge						
-MDTB-S2	ToM2	ToM						
-MDTB-S2	actionObservation2	VideoAct						
-MDTB-S2	actionObservation2	VideoKnots						
-MDTB-S2	rest2	rest						
-Pontine	Instruct           							
-Pontine	visual_search      							
-Pontine	finger_sequence    							
-Pontine	theory_of_mind     							
-Pontine	n_back             							
-Pontine	semantic_prediction							
-Pontine	action_observation 							
-Pontine	flexion_extension  							
-Pontine	rest               							
-Pontine	romance_movie      							
-Language	Instruct                 							
-Language	rest                     							
-Language	word_reading             							
-Language	verb_GENERATION          							
-Language	action_observation_action							
-Language	action_observation_knot  							
-Language	intact_passage           							
-Language	degraded_passage         							
-Language	tongue_movement          							
-Language	finger_sequence          							
-Language	theory_of_mind           							
-Language	auditory_narrative       							
-Language	n_back                   							
-Language	oddball                  							
-Language	demand_grid              							
-Language	romance_movie            							
-Language	spatial_navigation       							
-Language	sentence_reading         							
-Language	nonword_reading          							
-HCP-task	EMOTION	FACES						
-HCP-task	EMOTION	SHAPES						
-HCP-task	GAMBLING	PUNISH						
-HCP-task	GAMBLING	REWARD						
-HCP-task	LANGUAGE	MATH						
-HCP-task	LANGUAGE	STORY						
-HCP-task	MOTOR	CUE						
-HCP-task	MOTOR	LF						
-HCP-task	MOTOR	LH						
-HCP-task	MOTOR	RF						
-HCP-task	MOTOR	RH						
-HCP-task	MOTOR	T						
-HCP-task	RELATIONAL	MATCH						
-HCP-task	RELATIONAL	REL						
-HCP-task	SOCIAL	RANDOM						
-HCP-task	SOCIAL	TOM						
-HCP-task	WM	2BK_BODY						
-HCP-task	WM	2BK_FACE						
-HCP-task	WM	2BK_PLACE						
-HCP-task	WM	2BK_TOOL						
-HCP-task	WM	0BK_BODY						
-HCP-task	WM	0BK_FACE						
-HCP-task	WM	0BK_PLACE						
-HCP-task	WM	0BK_TOOL						
-Demand	n_back	nback_E_face 						
-Demand	n_back	nback_E_house 						
-Demand	n_back	nback_H_face 						
-Demand	n_back	nback_H_house 						
-Demand	switch	switch_E_face 						
-Demand	switch	switch_E_house 						
-Demand	switch	switch_H_face 						
-Demand	switch	switch_H_house 						
-Demand	stop	stop_E_face						
-Demand	stop	stop_E_house 						
-Demand	stop	stop_H_face 						
-Demand	stop	stop_H_house 						
-Somatotopic	motor	hand_right 						
-Somatotopic	motor	tongue 						
-Somatotopic	motor	hand_left 						
-Somatotopic	motor	foot_right 						
-Somatotopic	motor	foot_left 						
-Somatotopic	motor	glutes 						
-WMFS_ses-02	wm	L2F_encode 						
-WMFS_ses-02	wm	L2F_retriev						
-WMFS_ses-02	wm	L2B_encode 						
-WMFS_ses-02	wm	L2B_retriev						
-WMFS_ses-02	wm	L4F_encode 						
-WMFS_ses-02	wm	L4F_retriev						
-WMFS_ses-02	wm	L4B_encode 						
-WMFS_ses-02	wm	L4B_retriev						
-WMFS_ses-02	wm	L6F_encode 						
-WMFS_ses-02	wm	L6F_retriev						
-WMFS_ses-02	wm	L6B_encode 						
-WMFS_ses-02	wm	L6B_retriev						
-WMFS_ses-01	fs	LL   						
-WMFS_ses-01	fs	LM   						
-WMFS_ses-01	fs	LH   						
-WMFS_ses-01	fs	ML   						
-WMFS_ses-01	fs	HL   						
-Social	demand_grid							
-Social	rest							
-Social	action_prediction_greeting_easy							
-Social	action_prediction_greeting_hard							
-Social	action_prediction_soccer_easy							
-Social	action_prediction_soccer_hard							
-Social	faux_pas_social							
-Social	faux_pas_control							
-Social	frith_happe_tom							
-Social	frith_happe_random							
-Social	frith_happe_gd							
-Social	liking_like							
-Social	liking_dislike							
-Social	movie_romance							
-Social	movie_nature							
-Social	picture_sequence_fbelief							
-Social	picture_sequence_tbelief							
-Social	rmet_emotion							
-Social	rmet_age							
-Social	strange_stories_social							
-Social	strange_stories_control							
-Social	theory_of_mind_belief							
-Social	theory_of_mind_photo							
-IBC-archi	ArchiStandard	audio_computation						
-IBC-archi	ArchiStandard	audio_left_hand						
-IBC-archi	ArchiStandard	audio_right_hand						
-IBC-archi	ArchiStandard	audio_sentence						
-IBC-archi	ArchiStandard	horizontal_checkerboard						
-IBC-archi	ArchiStandard	vertical_checkerboard						
-IBC-archi	ArchiStandard	video_computation						
-IBC-archi	ArchiStandard	video_left_hand						
-IBC-archi	ArchiStandard	video_right_hand						
-IBC-archi	ArchiStandard	video_sentence						
-IBC-archi	ArchiSpatial	object_grasp						
-IBC-archi	ArchiSpatial	object_orientation						
-IBC-archi	ArchiSpatial	rotation_hand						
-IBC-archi	ArchiSpatial	rotation_side						
-IBC-archi	ArchiSpatial	saccade						
-IBC-archi	ArchiSocial	false_belief_audio						
-IBC-archi	ArchiSocial	false_belief_video						
-IBC-archi	ArchiSocial	mechanistic_audio						
-IBC-archi	ArchiSocial	mechanistic_video						
-IBC-archi	ArchiSocial	non_speech						
-IBC-archi	ArchiSocial	speech						
-IBC-archi	ArchiSocial	triangle_intention						
-IBC-archi	ArchiSocial	triangle_random						
-IBC-archi	ArchiEmotional	expression_control						
-IBC-archi	ArchiEmotional	expression_gender						
-IBC-archi	ArchiEmotional	expression_intention						
-IBC-archi	ArchiEmotional	face_control						
-IBC-archi	ArchiEmotional	face_gender						
-IBC-archi	ArchiEmotional	face_trusty						
-IBC-hcp1	HcpEmotion	face						
-IBC-hcp1	HcpEmotion	shape						
-IBC-hcp1	HcpGambling	neutral						
-IBC-hcp1	HcpGambling	punishment						
-IBC-hcp1	HcpGambling	reward						
-IBC-hcp1	HcpMotor	cue						
-IBC-hcp1	HcpMotor	left_foot						
-IBC-hcp1	HcpMotor	left_hand						
-IBC-hcp1	HcpMotor	right_foot						
-IBC-hcp1	HcpMotor	right_hand						
-IBC-hcp1	HcpMotor	tongue						
-IBC-hcp1	HcpLanguage	math						
-IBC-hcp1	HcpLanguage	story						
-IBC-hcp2	HcpRelational	control						
-IBC-hcp2	HcpRelational	relational						
-IBC-hcp2	HcpSocial	mental						
-IBC-hcp2	HcpSocial	random						
-IBC-hcp2	HcpWm	0back_body						
-IBC-hcp2	HcpWm	0back_face						
-IBC-hcp2	HcpWm	0back_place						
-IBC-hcp2	HcpWm	0back_tools						
-IBC-hcp2	HcpWm	2back_body						
-IBC-hcp2	HcpWm	2back_face						
-IBC-hcp2	HcpWm	2back_place						
-IBC-hcp2	HcpWm	2back_tools						
-IBC-rsvplanguage	RSVPLanguage	complex_sentence						
-IBC-rsvplanguage	RSVPLanguage	consonant_string						
-IBC-rsvplanguage	RSVPLanguage	jabberwocky						
-IBC-rsvplanguage	RSVPLanguage	probe						
-IBC-rsvplanguage	RSVPLanguage	pseudoword_list						
-IBC-rsvplanguage	RSVPLanguage	simple_sentence						
-IBC-rsvplanguage	RSVPLanguage	word_list						
+MDTB-S2	CPRO	CPRO	cpro	NA				
+MDTB-S2	prediction	Prediction	sntncpredict	normal				
+MDTB-S2	prediction	PredictViol	sntncpredict	violation				
+MDTB-S2	prediction	PredictScram	sntncpredict	scrambeled				
+MDTB-S2	verbGeneration2	VerbGen	vrbgen	generate				
+MDTB-S2	verbGeneration2	WordRead	vrbgen	wordread				
+MDTB-S2	spatialNavigation2	SpatialNavigation	spatialnav	NA				
+MDTB-S2	spatialMap	SpatialMapEasy	sptialmap	easy				
+MDTB-S2	spatialMap	SpatialMapMed	sptialmap	med				
+MDTB-S2	spatialMap	SpatialMedDiff	sptialmap	diff				
+MDTB-S2	natureMovie	NatureMovie	movie	nature				
+MDTB-S2	romanceMovie	RomanceMovie	movie	romance				
+MDTB-S2	landscapeMovie	LandscapeMovie	movie	landscape				
+MDTB-S2	motorSequence2	FingerSimple	fingr	simple				
+MDTB-S2	motorSequence2	FingerSeq	fingr	sequence				
+MDTB-S2	mentalRotation	MentalRotEasy	mntalrot	easy				
+MDTB-S2	mentalRotation	MentalRotMed	mntalrot	med				
+MDTB-S2	mentalRotation	MentalRotDiff	mntalrot	diff				
+MDTB-S2	nBackPic2	Object0Back	picnbck	0bck				
+MDTB-S2	nBackPic2	Object2Back	picnbck	2bck				
+MDTB-S2	emotionProcess	BodyMotionIntact	biolmotion	normal				
+MDTB-S2	emotionProcess	BodyMotionScram	biolmotion	scrambeled				
+MDTB-S2	respAlt	RespAltEasy	respalt	easy				
+MDTB-S2	respAlt	RespAltMed	respalt	med				
+MDTB-S2	respAlt	RespAltDiff	respalt	diff				
+MDTB-S2	visualSearch2	VisualSearchSmall	vissearch	small				
+MDTB-S2	visualSearch2	VisualSearchMed	vissearch	med				
+MDTB-S2	visualSearch2	VisualSearchLarge	vissearch	large				
+MDTB-S2	ToM2	ToM	tom	NA				
+MDTB-S2	actionObservation2	VideoAct	actobserv	action				
+MDTB-S2	actionObservation2	VideoKnots	actobserv	knot				
+MDTB-S2	rest2	rest	rest	NA				
+Pontine	Instruct           		instrct	NA				
+Pontine	visual_search      		vissearch	NA				
+Pontine	finger_sequence    		fingr	NA				
+Pontine	theory_of_mind     		tom	Na				
+Pontine	n_back             		picnbck	NA				
+Pontine	semantic_prediction		sntncpredict	NA				
+Pontine	action_observation 		actobserv	NA				
+Pontine	flexion_extension  		foot	flexextend				
+Pontine	rest               		rest	Na				
+Pontine	romance_movie      		movie	romance				
+Language	Instruct                 		instrct	NA				
+Language	rest                     		rest	NA				
+Language	word_reading             		vrbgen	wordread				
+Language	verb_GENERATION          		vrbgen	generate				
+Language	action_observation_action		actobserv	action				
+Language	action_observation_knot  		actobserv	knot				
+Language	intact_passage           		pssglisten	intact				
+Language	degraded_passage         		pssglisten	degraded				
+Language	tongue_movement          		tongue	NA				
+Language	finger_sequence          		fingr	sequence				
+Language	theory_of_mind           		tom	NA				
+Language	auditory_narrative       		audnarrative	NA				
+Language	n_back                   		picnbck	NA				
+Language	oddball                  		oddball	NA				
+Language	demand_grid              		dmndgrid	NA				
+Language	romance_movie            		movie	romance				
+Language	spatial_navigation       		spatialnav	NA				
+Language	sentence_reading         		read	sentence				
+Language	nonword_reading          		read	noword				
+HCP-task	EMOTION	FACES	hcpemotion	faces				
+HCP-task	EMOTION	SHAPES	hcpemotion	shapes				
+HCP-task	GAMBLING	PUNISH	hcpgamble	punish				
+HCP-task	GAMBLING	REWARD	hcpgamble	reward				
+HCP-task	LANGUAGE	MATH	hcplanguage	math				
+HCP-task	LANGUAGE	STORY	hcplanguage	story				
+HCP-task	MOTOR	CUE	motor	cue				
+HCP-task	MOTOR	LF	motor	lf				
+HCP-task	MOTOR	LH	motor	lh				
+HCP-task	MOTOR	RF	motor	rf				
+HCP-task	MOTOR	RH	motor	rh				
+HCP-task	MOTOR	T	motor	tongue				
+HCP-task	RELATIONAL	MATCH	hcprelation	match				
+HCP-task	RELATIONAL	REL	hcprelation	rel				
+HCP-task	SOCIAL	RANDOM	hcpsocial	random				
+HCP-task	SOCIAL	TOM	hcpsocial	tom				
+HCP-task	WM	2BK_BODY	hcpwm	2bckbody				
+HCP-task	WM	2BK_FACE	hcpwm	2bckface				
+HCP-task	WM	2BK_PLACE	hcpwm	2bckplace				
+HCP-task	WM	2BK_TOOL	hcpwm	2bcktool				
+HCP-task	WM	0BK_BODY	hcpwm	0bckbody				
+HCP-task	WM	0BK_FACE	hcpwm	0bckface				
+HCP-task	WM	0BK_PLACE	hcpwm	0bckplace				
+HCP-task	WM	0BK_TOOL	hcpwm	0bcktool				
+Demand	n_back	nback_E_face 	dmndnbck	nbckeface				
+Demand	n_back	nback_E_house 	dmndnbck	nbckehouse				
+Demand	n_back	nback_H_face 	dmndnbck	nbckhface				
+Demand	n_back	nback_H_house 	dmndnbck	nbckhhouse				
+Demand	switch	switch_E_face 	dmndswitch	switcheface				
+Demand	switch	switch_E_house 	dmndswitch	switchehouse				
+Demand	switch	switch_H_face 	dmndswitch	switchhface				
+Demand	switch	switch_H_house 	dmndswitch	switchhhouse				
+Demand	stop	stop_E_face	dmndstop	stopeface				
+Demand	stop	stop_E_house 	dmndstop	stopehouse				
+Demand	stop	stop_H_face 	dmndstop	stophface				
+Demand	stop	stop_H_house 	dmndstop	stophhouse				
+Somatotopic	motor	hand_right 	motor	rh				
+Somatotopic	motor	tongue 	motor	tongue				
+Somatotopic	motor	hand_left 	motor	lh				
+Somatotopic	motor	foot_right 	motor	rf				
+Somatotopic	motor	foot_left 	motor	lf				
+Somatotopic	motor	glutes 	motor	glutes				
+WMFS_ses-02	wm	L2F_encode 	wm	l2fencode 				
+WMFS_ses-02	wm	L2F_retriev	wm	l2fretriev				
+WMFS_ses-02	wm	L2B_encode 	wm	l2bencode 				
+WMFS_ses-02	wm	L2B_retriev	wm	l2bretriev				
+WMFS_ses-02	wm	L4F_encode 	wm	l4fencode 				
+WMFS_ses-02	wm	L4F_retriev	wm	l4fretriev				
+WMFS_ses-02	wm	L4B_encode 	wm	l4bencode 				
+WMFS_ses-02	wm	L4B_retriev	wm	l4bretriev				
+WMFS_ses-02	wm	L6F_encode 	wm	l6fencode 				
+WMFS_ses-02	wm	L6F_retriev	wm	l6fretriev				
+WMFS_ses-02	wm	L6B_encode 	wm	l6bencode 				
+WMFS_ses-02	wm	L6B_retriev	wm	l6bretriev				
+WMFS_ses-01	fs	LL   	frcspeed	ll				
+WMFS_ses-01	fs	LM   	frcspeed	lm				
+WMFS_ses-01	fs	LH   	frcspeed	lh				
+WMFS_ses-01	fs	ML   	frcspeed	ml				
+WMFS_ses-01	fs	HL   	frcspeed	hl				
+Social	demand_grid		dmndgrid	NA				
+Social	rest		rest	NA				
+Social	action_prediction_greeting_easy		actpredict	greetingeasy				
+Social	action_prediction_greeting_hard		actpredict	greetinghard				
+Social	action_prediction_soccer_easy		actpredict	soccereasy				
+Social	action_prediction_soccer_hard		actpredict	soccerhard				
+Social	faux_pas_social		fauxpas	social				
+Social	faux_pas_control		fauxpas	control				
+Social	frith_happe_tom		frithhappe	tom				
+Social	frith_happe_random		frithhappe	random				
+Social	frith_happe_gd		frithhappe	gd				
+Social	liking_like		liking	like				
+Social	liking_dislike		liking	dislike				
+Social	movie_romance		movie	romance				
+Social	movie_nature		movie	nature				
+Social	picture_sequence_fbelief		picseq	fbelief				
+Social	picture_sequence_tbelief		picseq	tbelief				
+Social	rmet_emotion		rmet	emotion				
+Social	rmet_age		rmet	age				
+Social	strange_stories_social		strngstories	social				
+Social	strange_stories_control		strngstories	control				
+Social	theory_of_mind_belief		tom	belief				
+Social	theory_of_mind_photo		tom	photo				
+IBC-archi	ArchiStandard	audio_computation	ArchiStandard	audio_computation				
+IBC-archi	ArchiStandard	audio_left_hand	ArchiStandard	audio_left_hand				
+IBC-archi	ArchiStandard	audio_right_hand	ArchiStandard	audio_right_hand				
+IBC-archi	ArchiStandard	audio_sentence	ArchiStandard	audio_sentence				
+IBC-archi	ArchiStandard	horizontal_checkerboard	ArchiStandard	horizontal_checkerboard				
+IBC-archi	ArchiStandard	vertical_checkerboard	ArchiStandard	vertical_checkerboard				
+IBC-archi	ArchiStandard	video_computation	ArchiStandard	video_computation				
+IBC-archi	ArchiStandard	video_left_hand	ArchiStandard	video_left_hand				
+IBC-archi	ArchiStandard	video_right_hand	ArchiStandard	video_right_hand				
+IBC-archi	ArchiStandard	video_sentence	ArchiStandard	video_sentence				
+IBC-archi	ArchiSpatial	object_grasp	ArchiSpatial	object_grasp				
+IBC-archi	ArchiSpatial	object_orientation	ArchiSpatial	object_orientation				
+IBC-archi	ArchiSpatial	rotation_hand	ArchiSpatial	rotation_hand				
+IBC-archi	ArchiSpatial	rotation_side	ArchiSpatial	rotation_side				
+IBC-archi	ArchiSpatial	saccade	ArchiSpatial	saccade				
+IBC-archi	ArchiSocial	false_belief_audio	ArchiSocial	false_belief_audio				
+IBC-archi	ArchiSocial	false_belief_video	ArchiSocial	false_belief_video				
+IBC-archi	ArchiSocial	mechanistic_audio	ArchiSocial	mechanistic_audio				
+IBC-archi	ArchiSocial	mechanistic_video	ArchiSocial	mechanistic_video				
+IBC-archi	ArchiSocial	non_speech	ArchiSocial	non_speech				
+IBC-archi	ArchiSocial	speech	ArchiSocial	speech				
+IBC-archi	ArchiSocial	triangle_intention	ArchiSocial	triangle_intention				
+IBC-archi	ArchiSocial	triangle_random	ArchiSocial	triangle_random				
+IBC-archi	ArchiEmotional	expression_control	ArchiEmotional	expression_control				
+IBC-archi	ArchiEmotional	expression_gender	ArchiEmotional	expression_gender				
+IBC-archi	ArchiEmotional	expression_intention	ArchiEmotional	expression_intention				
+IBC-archi	ArchiEmotional	face_control	ArchiEmotional	face_control				
+IBC-archi	ArchiEmotional	face_gender	ArchiEmotional	face_gender				
+IBC-archi	ArchiEmotional	face_trusty	ArchiEmotional	face_trusty				
+IBC-clips4	Wedge	left_meridian	Wedge	left_meridian				
+IBC-clips4	Wedge	lower_left	Wedge	lower_left				
+IBC-clips4	Wedge	lower_meridian	Wedge	lower_meridian				
+IBC-clips4	Wedge	lower_right	Wedge	lower_right				
+IBC-clips4	Wedge	right_meridian	Wedge	right_meridian				
+IBC-clips4	Wedge	upper_left	Wedge	upper_left				
+IBC-clips4	Wedge	upper_meridian	Wedge	upper_meridian				
+IBC-clips4	Wedge	upper_right	Wedge	upper_right				
+IBC-clips4	Wedge	left_meridian	Wedge	left_meridian				
+IBC-clips4	Wedge	lower_left	Wedge	lower_left				
+IBC-clips4	Wedge	lower_meridian	Wedge	lower_meridian				
+IBC-clips4	Wedge	lower_right	Wedge	lower_right				
+IBC-clips4	Wedge	right_meridian	Wedge	right_meridian				
+IBC-clips4	Wedge	upper_left	Wedge	upper_left				
+IBC-clips4	Wedge	upper_meridian	Wedge	upper_meridian				
+IBC-clips4	Wedge	upper_right	Wedge	upper_right				
+IBC-clips4	Ring	foveal	Ring	foveal				
+IBC-clips4	Ring	middle	Ring	middle				
+IBC-clips4	Ring	peripheral	Ring	peripheral				
+IBC-enumeration	VSTM	vstm_response_num_1	VSTM	vstm_response_num_1				
+IBC-enumeration	VSTM	vstm_response_num_2	VSTM	vstm_response_num_2				
+IBC-enumeration	VSTM	vstm_response_num_3	VSTM	vstm_response_num_3				
+IBC-enumeration	VSTM	vstm_response_num_4	VSTM	vstm_response_num_4				
+IBC-enumeration	VSTM	vstm_response_num_5	VSTM	vstm_response_num_5				
+IBC-enumeration	VSTM	vstm_response_num_6	VSTM	vstm_response_num_6				
+IBC-enumeration	VSTM	vstm_response_num_1	VSTM	vstm_response_num_1				
+IBC-enumeration	VSTM	vstm_response_num_2	VSTM	vstm_response_num_2				
+IBC-enumeration	VSTM	vstm_response_num_3	VSTM	vstm_response_num_3				
+IBC-enumeration	VSTM	vstm_response_num_4	VSTM	vstm_response_num_4				
+IBC-enumeration	VSTM	vstm_response_num_5	VSTM	vstm_response_num_5				
+IBC-enumeration	VSTM	vstm_response_num_6	VSTM	vstm_response_num_6				
+IBC-enumeration	Enumeration	enumeration_response_num_1	Enumeration	enumeration_response_num_1				
+IBC-enumeration	Enumeration	enumeration_response_num_2	Enumeration	enumeration_response_num_2				
+IBC-enumeration	Enumeration	enumeration_response_num_3	Enumeration	enumeration_response_num_3				
+IBC-enumeration	Enumeration	enumeration_response_num_4	Enumeration	enumeration_response_num_4				
+IBC-enumeration	Enumeration	enumeration_response_num_5	Enumeration	enumeration_response_num_5				
+IBC-enumeration	Enumeration	enumeration_response_num_6	Enumeration	enumeration_response_num_6				
+IBC-enumeration	Enumeration	enumeration_response_num_7	Enumeration	enumeration_response_num_7				
+IBC-enumeration	Enumeration	enumeration_response_num_8	Enumeration	enumeration_response_num_8				
+IBC-enumeration	Enumeration	enumeration_response_num_1	Enumeration	enumeration_response_num_1				
+IBC-enumeration	Enumeration	enumeration_response_num_2	Enumeration	enumeration_response_num_2				
+IBC-enumeration	Enumeration	enumeration_response_num_3	Enumeration	enumeration_response_num_3				
+IBC-enumeration	Enumeration	enumeration_response_num_4	Enumeration	enumeration_response_num_4				
+IBC-enumeration	Enumeration	enumeration_response_num_5	Enumeration	enumeration_response_num_5				
+IBC-enumeration	Enumeration	enumeration_response_num_6	Enumeration	enumeration_response_num_6				
+IBC-enumeration	Enumeration	enumeration_response_num_7	Enumeration	enumeration_response_num_7				
+IBC-enumeration	Enumeration	enumeration_response_num_8	Enumeration	enumeration_response_num_8				
+IBC-hcp1	HcpEmotion	face	hcpemotion	faces				
+IBC-hcp1	HcpEmotion	shape	hcpemotion	shapes				
+IBC-hcp1	HcpGambling	neutral	hcpgamble	neutral				
+IBC-hcp1	HcpGambling	punishment	hcpgamble	punish				
+IBC-hcp1	HcpGambling	reward	hcpgamble	reward				
+IBC-hcp1	HcpMotor	cue	motor	cue				
+IBC-hcp1	HcpMotor	left_foot	motor	lf				
+IBC-hcp1	HcpMotor	left_hand	motor	lh				
+IBC-hcp1	HcpMotor	right_foot	motor	rf				
+IBC-hcp1	HcpMotor	right_hand	motor	rh				
+IBC-hcp1	HcpMotor	tongue	motor	tongue				
+IBC-hcp1	HcpLanguage	math	hcplanguage	math				
+IBC-hcp1	HcpLanguage	story	hcplanguage	story				
+IBC-hcp2	HcpRelational	control	hcprelation	match				
+IBC-hcp2	HcpRelational	relational	hcprelation	rel				
+IBC-hcp2	HcpSocial	mental	hcpsocial	tom				
+IBC-hcp2	HcpSocial	random	hcpsocial	random				
+IBC-hcp2	HcpWm	0back_body	hcpwm	0bckbody				
+IBC-hcp2	HcpWm	0back_face	hcpwm	0bckface				
+IBC-hcp2	HcpWm	0back_place	hcpwm	0bckplace				
+IBC-hcp2	HcpWm	0back_tools	hcpwm	0bcktool				
+IBC-hcp2	HcpWm	2back_body	hcpwm	2bckbody				
+IBC-hcp2	HcpWm	2back_face	hcpwm	2bckface				
+IBC-hcp2	HcpWm	2back_place	hcpwm	2bckplace				
+IBC-hcp2	HcpWm	2back_tools	hcpwm	2bcktool				
+IBC-lyon1	Moto	finger_left	Moto	finger_left				
+IBC-lyon1	Moto	finger_right	Moto	finger_right				
+IBC-lyon1	Moto	fixation_left	Moto	fixation_left				
+IBC-lyon1	Moto	fixation_right	Moto	fixation_right				
+IBC-lyon1	Moto	foot_left	Moto	foot_left				
+IBC-lyon1	Moto	foot_right	Moto	foot_right				
+IBC-lyon1	Moto	hand_left	Moto	hand_left				
+IBC-lyon1	Moto	hand_right	Moto	hand_right				
+IBC-lyon1	Moto	saccade_left	Moto	saccade_left				
+IBC-lyon1	Moto	saccade_right	Moto	saccade_right				
+IBC-lyon1	Moto	tongue_left	Moto	tongue_left				
+IBC-lyon1	Moto	tongue_right	Moto	tongue_right				
+IBC-lyon1	MCSE	high_salience_left	MCSE	high_salience_left				
+IBC-lyon1	MCSE	high_salience_right	MCSE	high_salience_right				
+IBC-lyon1	MCSE	low_salience_left	MCSE	low_salience_left				
+IBC-lyon1	MCSE	low_salience_right	MCSE	low_salience_right				
+IBC-lyon1	MVEB	2_letters_different	MVEB	2_letters_different				
+IBC-lyon1	MVEB	2_letters_same	MVEB	2_letters_same				
+IBC-lyon1	MVEB	4_letters_different	MVEB	4_letters_different				
+IBC-lyon1	MVEB	4_letters_same	MVEB	4_letters_same				
+IBC-lyon1	MVEB	6_letters_same	MVEB	6_letters_same				
+IBC-lyon1	MVEB	6_letters_different	MVEB	6_letters_different				
+IBC-lyon1	MVEB	p_startup	MVEB	p_startup				
+IBC-lyon1	MVEB	response	MVEB	response				
+IBC-lyon1	MVIS	2_dots	MVIS	2_dots				
+IBC-lyon1	MVIS	2_dots_control	MVIS	2_dots_control				
+IBC-lyon1	MVIS	4_dots	MVIS	4_dots				
+IBC-lyon1	MVIS	4_dots_control	MVIS	4_dots_control				
+IBC-lyon1	MVIS	6_dots	MVIS	6_dots				
+IBC-lyon1	MVIS	6_dots_control	MVIS	6_dots_control				
+IBC-lyon1	MVIS	p_startup	MVIS	p_startup				
+IBC-lyon1	MVIS	response	MVIS	response				
+IBC-lyon2	Lec1	pseudoword	Lec1	pseudoword				
+IBC-lyon2	Lec1	random_string	Lec1	random_string				
+IBC-lyon2	Lec1	word	Lec1	word				
+IBC-lyon2	Lec2	attend	Lec2	attend				
+IBC-lyon2	Lec2	unattend	Lec2	unattend				
+IBC-lyon2	Audi	alphabet	Audi	alphabet				
+IBC-lyon2	Audi	animals	Audi	animals				
+IBC-lyon2	Audi	cough	Audi	cough				
+IBC-lyon2	Audi	environment	Audi	environment				
+IBC-lyon2	Audi	human	Audi	human				
+IBC-lyon2	Audi	laugh	Audi	laugh				
+IBC-lyon2	Audi	music	Audi	music				
+IBC-lyon2	Audi	reverse	Audi	reverse				
+IBC-lyon2	Audi	silence	Audi	silence				
+IBC-lyon2	Audi	speech	Audi	speech				
+IBC-lyon2	Audi	suomi	Audi	suomi				
+IBC-lyon2	Audi	tear	Audi	tear				
+IBC-lyon2	Audi	yawn	Audi	yawn				
+IBC-lyon2	Visu	animal	Visu	animal				
+IBC-lyon2	Visu	characters	Visu	characters				
+IBC-lyon2	Visu	face	Visu	face				
+IBC-lyon2	Visu	house	Visu	house				
+IBC-lyon2	Visu	pseudoword	Visu	pseudoword				
+IBC-lyon2	Visu	scene	Visu	scene				
+IBC-lyon2	Visu	scrambled	Visu	scrambled				
+IBC-lyon2	Visu	target_fruit	Visu	target_fruit				
+IBC-lyon2	Visu	tool	Visu	tool				
+IBC-mathlang	MathLanguage	arithmetic_fact_auditory	MathLanguage	arithmetic_fact_auditory				
+IBC-mathlang	MathLanguage	arithmetic_fact_visual	MathLanguage	arithmetic_fact_visual				
+IBC-mathlang	MathLanguage	arithmetic_principle_auditory	MathLanguage	arithmetic_principle_auditory				
+IBC-mathlang	MathLanguage	arithmetic_principle_visual	MathLanguage	arithmetic_principle_visual				
+IBC-mathlang	MathLanguage	colorlessg_auditory	MathLanguage	colorlessg_auditory				
+IBC-mathlang	MathLanguage	colorlessg_visual	MathLanguage	colorlessg_visual				
+IBC-mathlang	MathLanguage	context_auditory	MathLanguage	context_auditory				
+IBC-mathlang	MathLanguage	context_visual	MathLanguage	context_visual				
+IBC-mathlang	MathLanguage	general_auditory	MathLanguage	general_auditory				
+IBC-mathlang	MathLanguage	general_visual	MathLanguage	general_visual				
+IBC-mathlang	MathLanguage	geometry_fact_auditory	MathLanguage	geometry_fact_auditory				
+IBC-mathlang	MathLanguage	geometry_fact_visual	MathLanguage	geometry_fact_visual				
+IBC-mathlang	MathLanguage	theory_of_mind_auditory	MathLanguage	theory_of_mind_auditory				
+IBC-mathlang	MathLanguage	theory_of_mind_visual	MathLanguage	theory_of_mind_visual				
+IBC-mathlang	MathLanguage	wordlist_auditory	MathLanguage	wordlist_auditory				
+IBC-mathlang	MathLanguage	wordlist_visual	MathLanguage	wordlist_visual				
+IBC-mtt1	MTTWE	we_after_close_event	MTTWE	we_after_close_event				
+IBC-mtt2	MTTWE	we_after_far_event	MTTWE	we_after_far_event				
+IBC-mtt3	MTTWE	we_all_event_response	MTTWE	we_all_event_response				
+IBC-mtt4	MTTWE	we_all_reference	MTTWE	we_all_reference				
+IBC-mtt5	MTTWE	we_all_space_cue	MTTWE	we_all_space_cue				
+IBC-mtt6	MTTWE	we_all_time_cue	MTTWE	we_all_time_cue				
+IBC-mtt7	MTTWE	we_before_close_event	MTTWE	we_before_close_event				
+IBC-mtt8	MTTWE	we_before_far_event	MTTWE	we_before_far_event				
+IBC-mtt9	MTTWE	we_eastside_close_event	MTTWE	we_eastside_close_event				
+IBC-mtt10	MTTWE	we_eastside_far_event	MTTWE	we_eastside_far_event				
+IBC-mtt11	MTTWE	we_westside_close_event	MTTWE	we_westside_close_event				
+IBC-mtt12	MTTWE	we_westside_far_event	MTTWE	we_westside_far_event				
+IBC-mtt2	MTTNS	sn_after_close_event	MTTNS	sn_after_close_event				
+IBC-mtt3	MTTNS	sn_after_far_event	MTTNS	sn_after_far_event				
+IBC-mtt4	MTTNS	sn_all_event_response	MTTNS	sn_all_event_response				
+IBC-mtt5	MTTNS	sn_all_reference	MTTNS	sn_all_reference				
+IBC-mtt6	MTTNS	sn_all_space_cue	MTTNS	sn_all_space_cue				
+IBC-mtt7	MTTNS	sn_all_time_cue	MTTNS	sn_all_time_cue				
+IBC-mtt8	MTTNS	sn_before_close_event	MTTNS	sn_before_close_event				
+IBC-mtt9	MTTNS	sn_before_far_event	MTTNS	sn_before_far_event				
+IBC-mtt10	MTTNS	sn_northside_close_event	MTTNS	sn_northside_close_event				
+IBC-mtt11	MTTNS	sn_northside_far_event	MTTNS	sn_northside_far_event				
+IBC-mtt12	MTTNS	sn_southside_close_event	MTTNS	sn_southside_close_event				
+IBC-mtt13	MTTNS	sn_southside_far_event	MTTNS	sn_southside_far_event				
+IBC-preference	PreferenceFood	food_constant	PreferenceFood	food_constant				
+IBC-preference	PreferencePaintings	painting_constant	PreferencePaintings	painting_constant				
+IBC-preference	PreferenceFaces	face_constant	PreferenceFaces	face_constant				
+IBC-preference	PreferenceHouses	house_constant	PreferenceHouses	house_constant				
+IBC-rsvplanguage	RSVPLanguage	complex_sentence	RSVPLanguage	complex_sentence				
+IBC-rsvplanguage	RSVPLanguage	consonant_string	RSVPLanguage	consonant_string				
+IBC-rsvplanguage	RSVPLanguage	jabberwocky	RSVPLanguage	jabberwocky				
+IBC-rsvplanguage	RSVPLanguage	probe	RSVPLanguage	probe				
+IBC-rsvplanguage	RSVPLanguage	pseudoword_list	RSVPLanguage	pseudoword_list				
+IBC-rsvplanguage	RSVPLanguage	simple_sentence	RSVPLanguage	simple_sentence				
+IBC-rsvplanguage	RSVPLanguage	word_list	RSVPLanguage	word_list				
+IBC-self	Self	correct_rejection	Self	correct_rejection				
+IBC-self	Self	encode_other	Self	encode_other				
+IBC-self	Self	encode_self	Self	encode_self				
+IBC-self	Self	recognition_other_hit	Self	recognition_other_hit				
+IBC-self	Self	recognition_self_hit	Self	recognition_self_hit				
+IBC-self	Bang	no_talk	Bang	no_talk				
+IBC-self	Bang	talk	Bang	talk				
+IBC-spatialnavigation	SpatialNavigation	control	SpatialNavigation	control				
+IBC-spatialnavigation	SpatialNavigation	experimental	SpatialNavigation	experimental				
+IBC-spatialnavigation	SpatialNavigation	intersection	SpatialNavigation	intersection				
+IBC-spatialnavigation	SpatialNavigation	navigation	SpatialNavigation	navigation				
+IBC-spatialnavigation	SpatialNavigation	pointing_control	SpatialNavigation	pointing_control				
+IBC-spatialnavigation	SpatialNavigation	pointing_experimental	SpatialNavigation	pointing_experimental				
+IBC-tom	TheoryOfMind	belief	TheoryOfMind	belief				
+IBC-tom	TheoryOfMind	photo	TheoryOfMind	photo				
+IBC-tom	EmotionalPain	emotional_pain	EmotionalPain	emotional_pain				
+IBC-tom	EmotionalPain	physical_pain	EmotionalPain	physical_pain				
+IBC-tom	PainMovie	mental	PainMovie	mental				
+IBC-tom	PainMovie	pain	PainMovie	pain				
