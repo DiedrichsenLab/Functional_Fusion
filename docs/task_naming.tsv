@@ -48,8 +48,8 @@ MDTB-S2	mentalRotation	MentalRotMed	mntalrot	med
 MDTB-S2	mentalRotation	MentalRotDiff	mntalrot	diff				
 MDTB-S2	nBackPic2	Object0Back	picnbck	0bck				
 MDTB-S2	nBackPic2	Object2Back	picnbck	2bck				
-MDTB-S2	emotionProcess	BodyMotionIntact	biolmotion	normal				
-MDTB-S2	emotionProcess	BodyMotionScram	biolmotion	scrambeled				
+MDTB-S2	emotionProcess	BodyMotionIntact	biomotion	normal				
+MDTB-S2	emotionProcess	BodyMotionScram	biomotion	scrambeled				
 MDTB-S2	respAlt	RespAltEasy	respalt	easy				
 MDTB-S2	respAlt	RespAltMed	respalt	med				
 MDTB-S2	respAlt	RespAltDiff	respalt	diff				
@@ -67,8 +67,8 @@ Pontine	theory_of_mind     		tom	Na
 Pontine	n_back             		picnbck	NA				
 Pontine	semantic_prediction		sntncpredict	NA				
 Pontine	action_observation 		actobserv	NA				
-Pontine	flexion_extension  		foot	flexextend				
-Pontine	rest               		rest	Na				
+Pontine	flexion_extension  		motor 	feetflexext				
+Pontine	rest               		rest	NA				
 Pontine	romance_movie      		movie	romance				
 Language	Instruct                 		instrct	NA				
 Language	rest                     		rest	NA				
@@ -96,10 +96,10 @@ HCP-task	GAMBLING	REWARD	hcpgamble	reward
 HCP-task	LANGUAGE	MATH	hcplanguage	math				
 HCP-task	LANGUAGE	STORY	hcplanguage	story				
 HCP-task	MOTOR	CUE	motor	cue				
-HCP-task	MOTOR	LF	motor	lf				
-HCP-task	MOTOR	LH	motor	lh				
-HCP-task	MOTOR	RF	motor	rf				
-HCP-task	MOTOR	RH	motor	rh				
+HCP-task	MOTOR	LF	motor	lfoot				
+HCP-task	MOTOR	LH	motor	lhand				
+HCP-task	MOTOR	RF	motor	rfoot				
+HCP-task	MOTOR	RH	motor	rhand				
 HCP-task	MOTOR	T	motor	tongue				
 HCP-task	RELATIONAL	MATCH	hcprelation	match				
 HCP-task	RELATIONAL	REL	hcprelation	rel				
@@ -125,23 +125,23 @@ Demand	stop	stop_E_face	dmndstop	stopeface
 Demand	stop	stop_E_house 	dmndstop	stopehouse				
 Demand	stop	stop_H_face 	dmndstop	stophface				
 Demand	stop	stop_H_house 	dmndstop	stophhouse				
-Somatotopic	motor	hand_right 	motor	rh				
+Somatotopic	motor	hand_right 	motor	rhand				
 Somatotopic	motor	tongue 	motor	tongue				
-Somatotopic	motor	hand_left 	motor	lh				
-Somatotopic	motor	foot_right 	motor	rf				
-Somatotopic	motor	foot_left 	motor	lf				
+Somatotopic	motor	hand_left 	motor	lhand				
+Somatotopic	motor	foot_right 	motor	rfoot				
+Somatotopic	motor	foot_left 	motor	lfoot				
 Somatotopic	motor	glutes 	motor	glutes				
-WMFS_ses-02	wm	L2F_encode 	wm	l2fencode 				
+WMFS_ses-02	wm	L2F_encode	wm	l2fencode				
 WMFS_ses-02	wm	L2F_retriev	wm	l2fretriev				
-WMFS_ses-02	wm	L2B_encode 	wm	l2bencode 				
+WMFS_ses-02	wm	L2B_encode	wm	l2bencode				
 WMFS_ses-02	wm	L2B_retriev	wm	l2bretriev				
-WMFS_ses-02	wm	L4F_encode 	wm	l4fencode 				
+WMFS_ses-02	wm	L4F_encode	wm	l4fencode				
 WMFS_ses-02	wm	L4F_retriev	wm	l4fretriev				
-WMFS_ses-02	wm	L4B_encode 	wm	l4bencode 				
+WMFS_ses-02	wm	L4B_encode	wm	l4bencode				
 WMFS_ses-02	wm	L4B_retriev	wm	l4bretriev				
-WMFS_ses-02	wm	L6F_encode 	wm	l6fencode 				
+WMFS_ses-02	wm	L6F_encode	wm	l6fencode				
 WMFS_ses-02	wm	L6F_retriev	wm	l6fretriev				
-WMFS_ses-02	wm	L6B_encode 	wm	l6bencode 				
+WMFS_ses-02	wm	L6B_encode	wm	l6bencode				
 WMFS_ses-02	wm	L6B_retriev	wm	l6bretriev				
 WMFS_ses-01	fs	LL   	frcspeed	ll				
 WMFS_ses-01	fs	LM   	frcspeed	lm				
@@ -219,18 +219,18 @@ IBC-clips4	Wedge	upper_right	Wedge	upper_right
 IBC-clips4	Ring	foveal	Ring	foveal				
 IBC-clips4	Ring	middle	Ring	middle				
 IBC-clips4	Ring	peripheral	Ring	peripheral				
-IBC-enumeration	VSTM	vstm_response_num_1	VSTM	vstm_response_num_1				
-IBC-enumeration	VSTM	vstm_response_num_2	VSTM	vstm_response_num_2				
-IBC-enumeration	VSTM	vstm_response_num_3	VSTM	vstm_response_num_3				
-IBC-enumeration	VSTM	vstm_response_num_4	VSTM	vstm_response_num_4				
-IBC-enumeration	VSTM	vstm_response_num_5	VSTM	vstm_response_num_5				
-IBC-enumeration	VSTM	vstm_response_num_6	VSTM	vstm_response_num_6				
-IBC-enumeration	VSTM	vstm_response_num_1	VSTM	vstm_response_num_1				
-IBC-enumeration	VSTM	vstm_response_num_2	VSTM	vstm_response_num_2				
-IBC-enumeration	VSTM	vstm_response_num_3	VSTM	vstm_response_num_3				
-IBC-enumeration	VSTM	vstm_response_num_4	VSTM	vstm_response_num_4				
-IBC-enumeration	VSTM	vstm_response_num_5	VSTM	vstm_response_num_5				
-IBC-enumeration	VSTM	vstm_response_num_6	VSTM	vstm_response_num_6				
+IBC-enumeration	VSTM	vstm_response_num_1	VSTM	response1				
+IBC-enumeration	VSTM	vstm_response_num_2	VSTM	response2				
+IBC-enumeration	VSTM	vstm_response_num_3	VSTM	response3				
+IBC-enumeration	VSTM	vstm_response_num_4	VSTM	response4				
+IBC-enumeration	VSTM	vstm_response_num_5	VSTM	response5				
+IBC-enumeration	VSTM	vstm_response_num_6	VSTM	response6				
+IBC-enumeration	VSTM	vstm_response_num_1	VSTM	response1				
+IBC-enumeration	VSTM	vstm_response_num_2	VSTM	response2				
+IBC-enumeration	VSTM	vstm_response_num_3	VSTM	response3				
+IBC-enumeration	VSTM	vstm_response_num_4	VSTM	response4				
+IBC-enumeration	VSTM	vstm_response_num_5	VSTM	response5				
+IBC-enumeration	VSTM	vstm_response_num_6	VSTM	response6				
 IBC-enumeration	Enumeration	enumeration_response_num_1	Enumeration	enumeration_response_num_1				
 IBC-enumeration	Enumeration	enumeration_response_num_2	Enumeration	enumeration_response_num_2				
 IBC-enumeration	Enumeration	enumeration_response_num_3	Enumeration	enumeration_response_num_3				
@@ -253,10 +253,10 @@ IBC-hcp1	HcpGambling	neutral	hcpgamble	neutral
 IBC-hcp1	HcpGambling	punishment	hcpgamble	punish				
 IBC-hcp1	HcpGambling	reward	hcpgamble	reward				
 IBC-hcp1	HcpMotor	cue	motor	cue				
-IBC-hcp1	HcpMotor	left_foot	motor	lf				
-IBC-hcp1	HcpMotor	left_hand	motor	lh				
-IBC-hcp1	HcpMotor	right_foot	motor	rf				
-IBC-hcp1	HcpMotor	right_hand	motor	rh				
+IBC-hcp1	HcpMotor	left_foot	motor	lfoot				
+IBC-hcp1	HcpMotor	left_hand	motor	lhand				
+IBC-hcp1	HcpMotor	right_foot	motor	rfoot				
+IBC-hcp1	HcpMotor	right_hand	motor	rhand				
 IBC-hcp1	HcpMotor	tongue	motor	tongue				
 IBC-hcp1	HcpLanguage	math	hcplanguage	math				
 IBC-hcp1	HcpLanguage	story	hcplanguage	story				
