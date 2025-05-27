@@ -9,31 +9,31 @@ MDTB-S1	affective	PleasantScenes	affect	pleasant
 MDTB-S1	arithmetic	Math	arith	math				
 MDTB-S1	arithmetic	DigitJudgement	arith	digitjudgement				
 MDTB-S1	checkerBoard	CheckerBoard	checkbrd	NA				
-MDTB-S1	emotional	SadFaces	emotional	sad				
-MDTB-S1	emotional	HappyFaces	emotional	happy				
+MDTB-S1	emotional	SadFaces	emotface	sad				
+MDTB-S1	emotional	HappyFaces	emotface	happy				
 MDTB-S1	intervalTiming	IntervalTiming	intrval	NA				
 MDTB-S1	motorImagery	MotorImagery	mtrimgry	NA				
 MDTB-S1	motorSequence	FingerSimple	fingr	simple				
 MDTB-S1	motorSequence	FingerSeq	fingr	sequence				
-MDTB-S1	nBack	Verbal0Back	nbckverb	0bck				
-MDTB-S1	nBack	Verbal2Back	nbckverb	2bck				
-MDTB-S1	nBackPic	Object0Back	nbckpic	0bck				
-MDTB-S1	nBackPic	Object2Back	nbckpic	2bck				
+MDTB-S1	nBack	Verbal0Back	nbckverb	2bcknrep				
+MDTB-S1	nBack	Verbal2Back	nbckverb	2bckrep				
+MDTB-S1	nBackPic	Object0Back	nbckpic	2bcknrep				
+MDTB-S1	nBackPic	Object2Back	nbckpic	2bckrep				
 MDTB-S1	spatialNavigation	SpatialNavigation	spatialnav	NA				
 MDTB-S1	stroop	StroopIncon	stroop	incon				
 MDTB-S1	stroop	StroopCon	stroop	con				
 MDTB-S1	verbGeneration	VerbGen	vrbgen	generate				
-MDTB-S1	verbGeneration	WordRead	vrbgen	wordread				
+MDTB-S1	verbGeneration	WordRead	vrbgen	read				
 MDTB-S1	visualSearch	VisualSearchSmall	vissearch	small				
 MDTB-S1	visualSearch	VisualSearchMed	vissearch	med				
 MDTB-S1	visualSearch	VisualSearchLarge	vissearch	large				
 MDTB-S1	rest	rest	rest	NA				
 MDTB-S2	CPRO	CPRO	cpro	NA				
-MDTB-S2	prediction	Prediction	sntncpredict	normal				
+MDTB-S2	prediction	Prediction	sntncpredict	nviolation				
 MDTB-S2	prediction	PredictViol	sntncpredict	violation				
 MDTB-S2	prediction	PredictScram	sntncpredict	scrambeled				
 MDTB-S2	verbGeneration2	VerbGen	vrbgen	generate				
-MDTB-S2	verbGeneration2	WordRead	vrbgen	wordread				
+MDTB-S2	verbGeneration2	WordRead	vrbgen	read				
 MDTB-S2	spatialNavigation2	SpatialNavigation	spatialnav	NA				
 MDTB-S2	spatialMap	SpatialMapEasy	sptialmap	easy				
 MDTB-S2	spatialMap	SpatialMapMed	sptialmap	med				
@@ -46,8 +46,8 @@ MDTB-S2	motorSequence2	FingerSeq	fingr	sequence
 MDTB-S2	mentalRotation	MentalRotEasy	mntalrot	easy				
 MDTB-S2	mentalRotation	MentalRotMed	mntalrot	med				
 MDTB-S2	mentalRotation	MentalRotDiff	mntalrot	diff				
-MDTB-S2	nBackPic2	Object0Back	nbckpic	0bck				
-MDTB-S2	nBackPic2	Object2Back	nbckpic	2bck				
+MDTB-S2	nBackPic2	Object0Back	nbckpic	2bcknrep				
+MDTB-S2	nBackPic2	Object2Back	nbckpic	2bckrep				
 MDTB-S2	emotionProcess	BodyMotionIntact	biomotion	normal				
 MDTB-S2	emotionProcess	BodyMotionScram	biomotion	scrambeled				
 MDTB-S2	respAlt	RespAltEasy	respalt	easy				
@@ -64,7 +64,7 @@ Pontine	Instruct           		instrct	NA
 Pontine	visual_search      		vissearch	NA				
 Pontine	finger_sequence    		fingr	NA				
 Pontine	theory_of_mind     		tom	Na				
-Pontine	n_back             		picnbck	NA				
+Pontine	n_back             		nbckpic	2back				
 Pontine	semantic_prediction		sntncpredict	NA				
 Pontine	action_observation 		actobserv	NA				
 Pontine	flexion_extension  		motor 	feetflexext				
@@ -72,19 +72,19 @@ Pontine	rest               		rest	NA
 Pontine	romance_movie      		movie	romance				
 Language	Instruct                 		instrct	NA				
 Language	rest                     		rest	NA				
-Language	word_reading             		vrbgen	wordread				
+Language	word_reading             		vrbgen	read				
 Language	verb_GENERATION          		vrbgen	generate				
 Language	action_observation_action		actobserv	action				
 Language	action_observation_knot  		actobserv	knot				
 Language	intact_passage           		pssglisten	intact				
 Language	degraded_passage         		pssglisten	degraded				
-Language	tongue_movement          		tongue	NA				
+Language	tongue_movement          		motor	tongue				
 Language	finger_sequence          		fingr	sequence				
 Language	theory_of_mind           		tom	NA				
 Language	auditory_narrative       		audnarrative	NA				
-Language	n_back                   		picnbck	NA				
+Language	n_back                   		nbackpic	2back				
 Language	oddball                  		oddball	NA				
-Language	demand_grid              		dmndgrid	NA				
+Language	demand_grid              		dmndgrid	g12s3b2				
 Language	romance_movie            		movie	romance				
 Language	spatial_navigation       		spatialnav	NA				
 Language	sentence_reading         		read	sentence				
@@ -113,10 +113,10 @@ HCP-task	WM	0BK_BODY	hcpwm	0bckbody
 HCP-task	WM	0BK_FACE	hcpwm	0bckface				
 HCP-task	WM	0BK_PLACE	hcpwm	0bckplace				
 HCP-task	WM	0BK_TOOL	hcpwm	0bcktool				
-Demand	n_back	nback_E_face 	dmndnbck	nbckeface				
-Demand	n_back	nback_E_house 	dmndnbck	nbckehouse				
-Demand	n_back	nback_H_face 	dmndnbck	nbckhface				
-Demand	n_back	nback_H_house 	dmndnbck	nbckhhouse				
+Demand	n_back	nback_E_face 	dmndnbck	e_face				
+Demand	n_back	nback_E_house 	dmndnbck	e_house				
+Demand	n_back	nback_H_face 	dmndnbck	h_face				
+Demand	n_back	nback_H_house 	dmndnbck	h_house				
 Demand	switch	switch_E_face 	dmndswitch	switcheface				
 Demand	switch	switch_E_house 	dmndswitch	switchehouse				
 Demand	switch	switch_H_face 	dmndswitch	switchhface				
@@ -143,8 +143,8 @@ WMFS_ses-02	wm	L6F_encode	wm	l6fencode
 WMFS_ses-02	wm	L6F_retriev	wm	l6fretriev				
 WMFS_ses-02	wm	L6B_encode	wm	l6bencode				
 WMFS_ses-02	wm	L6B_retriev	wm	l6bretriev				
-WMFS_ses-01	fs	LL   	frcspeed	ll				
-WMFS_ses-01	fs	LM   	frcspeed	lm				
+WMFS_ses-01	fs	LL   	frcspeed	lf_ls				
+WMFS_ses-01	fs	LM   	frcspeed	lf_ms				
 WMFS_ses-01	fs	LH   	frcspeed	lh				
 WMFS_ses-01	fs	ML   	frcspeed	ml				
 WMFS_ses-01	fs	HL   	frcspeed	hl				
