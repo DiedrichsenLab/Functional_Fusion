@@ -9,7 +9,6 @@ def clean_hcp_tfmri(dir,subject_list,task_map):
     """
     1.Clean up the HCP tfMRI dataset tsv files, maintain task_name,cond_name,run,reg_id and remove everything else.
     2.add matching task_code and conde_code columns using the taks_naming.tsv file.
-    * done for both estimates and extracted tsv files
 
 
     Parameters:
