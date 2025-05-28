@@ -36,7 +36,7 @@ def copy_dataset(source_dir, dest_dir, dataset, subject_list=None):
         dst = os.path.join(dst_path, 'derivatives', 'ffimport',subj,'anat')
         save_copy(src, dst)
         # Copy files in anatomical folder
-        src = os.path.join(src_path, 'derivatives', subj,'anat')
+        src = os.path.join(src_path, 'derivatives', subj,'suit')
         dst = os.path.join(dst_path, 'derivatives', 'ffimport',subj,'anat')
         save_copy(src, dst)
         # Copy files in data folder to ffextract
