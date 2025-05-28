@@ -15,7 +15,11 @@ import matplotlib.pyplot as plt
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
+    base_dir = '/cifs/diedrichsen/data/FunctionalFusion'
+if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
+
+
 
 data_dir = base_dir + '/Pontine'
 atlas_dir = base_dir + '/Atlases'
@@ -79,7 +83,7 @@ def smooth_pontine_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1, kernel='gau
         print(f"- Done subject {s} - time {elapse}.")
 
 if __name__ == "__main__":
-    smooth_pontine_fs32k(ses_id='ses-01', type='TaskHalf', smooth=4, kernel='fwhm')
+    # smooth_pontine_fs32k(ses_id='ses-01', type='TaskHalf', smooth=4, kernel='fwhm')
 
     # extract_pontine_group(type='TaskHalf', atlas='MNISymC3')
     #  extract_pontine_fs32k(ses_id='ses-01',type='TaskHalf')
@@ -88,7 +92,7 @@ if __name__ == "__main__":
     #                    cond='all', savefig=True)
 
     dataset = DataSetPontine(data_dir)
-    dataset.extract_all(type='TaskAll', ses_id='ses-01', atlas='MNISymC3')
+    dataset.extract_all(type='CondRun', ses_id='ses-s1', atlas='MNISymC3', subj=[8,11,12,16])
     # dataset.group_average_data(atlas='MNISymC3')
     # dataset.plot_cerebellum(savefig=True, atlas='MNISymC3', colorbar=True)
     pass
