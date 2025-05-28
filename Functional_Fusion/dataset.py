@@ -412,17 +412,27 @@ class DataSet:
         self.part_ind = None  # Partition Indicator (field in tsv file )
         self.cond_name = None  # Condition Names (field in tsv file )
 
-    def get_participants(self):
+    def get_participants(self, exclude_subjects=True):
         """ returns a data frame with all participants
         available in the study. The fields in the data frame correspond to the
         standard columns in participant.tsv.
         https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html
+
+        Args:
+            exclude_subjects (bool): If True, excludes subjects that have been specified
+                in the exclude column of the participants.tsv file.
 
         Returns:
             Pinfo (pandas data frame): participant information in standard bids format
         """
         self.part_info = pd.read_csv(
             self.base_dir + '/participants.tsv', delimiter='\t')
+        
+        if exclude_subjects and 'exclude' in self.part_info.columns:
+            # Exclude subjects that have been specified in the exclude column
+            # 1 = exclude, 0 = include
+            self.part_info = self.part_info[self.part_info.exclude == 0].reset_index()
+        
         return self.part_info
 
     def get_data_fnames(self, participant_id, session_id=None, type='Cond'):
@@ -471,7 +481,7 @@ class DataSet:
                 
         return fnames, T
 
-    def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None):
+    def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None, exclude_subjects=True):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -481,11 +491,14 @@ class DataSet:
             subj (ndarray): Subject numbers to get - by default all
             fields (list): Column names of info stucture that are returned
                 these are also be tested to be equivalent across subjects
+            exclude_subjects (bool): If True, excludes subjects that have been specified
+                in the exclude column of the participants.tsv file.
+
         Returns:
             Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
             info (DataFramw): Data frame with common descriptor
         """
-        T = self.get_participants()
+        T = self.get_participants(exclude_subjects=exclude_subjects)
 
         # only get data from subjects that have rest, if specified in dataset description
         if type == 'Tseries' and 'ses-rest' in T.columns:
@@ -587,7 +600,8 @@ class DataSet:
                     atlas='SUIT3',
                     smooth=None,
                     interpolation=1,
-                    subj='all'):
+                    subj='all',
+                    exclude_subjects=True):
         """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
 
         Args:
@@ -601,10 +615,13 @@ class DataSet:
                 Smoothing kernel. Defaults to 2.0.
             subj (list / str):
                 List of Subject numbers to get use. Default = 'all'
+            exclude_subjects (bool):
+                If True, excludes subjects that have been specified
+                in the exclude column of the participants.tsv file.
         """
         myatlas, _ = am.get_atlas(atlas)
         # create and calculate the atlas map for each participant
-        T = self.get_participants()
+        T = self.get_participants(exclude_subjects=exclude_subjects)
         if subj != 'all':
             T = T.iloc[subj]
         for s in T.participant_id:
@@ -628,7 +645,7 @@ class DataSet:
 
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
-                 subj=None, fields=None, smooth=None, verbose=False):
+                 subj=None, exclude_subjects=True, fields=None, smooth=None, verbose=False):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -636,13 +653,15 @@ class DataSet:
             ses_id (str): Session ID (Defaults to 'ses-s1').
             type (str): Type of data (Defaults to 'CondHalf').
             subj (ndarray, str, or list):  Subject numbers /names to get [None = all]
+            exclude_subjects (bool): If True, excludes subjects that have been specified
+                in the exclude column of the participants.tsv file.
             fields (list): Column names of info stucture that are returned
                 these are also be tested to be equivalent across subjects
         Returns:
             Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
             info (DataFramw): Data frame with common descriptor
         """
-        T = self.get_participants()
+        T = self.get_participants(exclude_subjects=exclude_subjects)
         # Assemble the data
         Data = None
         # Deal with subset of subject option
@@ -651,7 +670,7 @@ class DataSet:
             # only get data from subjects that have rest, if specified in dataset description
             if type == 'Tseries' and 'ses-rest' in T.columns:
                 subj = T[T['ses-rest'] == 1].participant_id.tolist()
-        elif isinstance(subj, str):
+        elif isinstance(subj, str) or subj in T.participant_id.tolist():
             subj = [subj]
         elif isinstance(subj, (int,np.integer)):
             subj = [T.participant_id.iloc[subj]]
@@ -849,12 +868,14 @@ class DataSetCifti(DataSet):
             f'{dirw}/{participant_id}_{session_id}_resms.dscalar.nii')
         return fnames, T
 
-    def extract_all(self, ses_id='ses-s1', type='CondHalf', atlas='SUIT3'):
+    def extract_all(self, ses_id='ses-s1', type='CondHalf', atlas='SUIT3', exclude_subjects=True):
         """Extracts cerebellar data. Saves the results as CIFTI files in the data directory.
         Args:
             ses_id (str, optional): Session. Defaults to 'ses-s1'.
             type (str, optional): Type - defined in ger_data. Defaults to 'CondHalf'.
             atlas (str, optional): Short atlas string. Defaults to 'SUIT3'.
+            exclude_subjects (bool): If True, excludes subjects that have been specified
+                in the exclude column of the participants.tsv file.
         """
         myatlas, _ = am.get_atlas(atlas)
         # Get the correct map into CIFTI-format
@@ -866,7 +887,7 @@ class DataSetCifti(DataSet):
         elif isinstance(myatlas, am.AtlasSurface):
             atlas_map = myatlas
         # Extract the data for each participant
-        T = self.get_participants()
+        T = self.get_participants(exclude_subjects=exclude_subjects)
         for s in T.participant_id:
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id)
@@ -1858,24 +1879,7 @@ class DataSetSocial(DataSetNative):
         self.default_type = 'CondHalf'
         self.cond_ind = 'reg_id'
         self.cond_name = 'condName'
-        self.part_ind = 'half'
-
-    def get_participants(self, exclude_subjects=False):
-        """ returns a data frame with all participants
-        available in the study. The fields in the data frame correspond to the
-        standard columns in participant.tsv.
-        https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html
-
-        Returns:
-            Pinfo (pandas data frame): participant information in standard bids format
-        """
-        self.part_info = pd.read_csv(
-            self.base_dir + '/participants.tsv', delimiter='\t')
-        if exclude_subjects:
-            self.part_info = self.part_info[self.part_info.exclude == 0].reset_index()
-        return self.part_info
-    
-
+        self.part_ind = 'half'  
 
     def condense_data(self, data, info,
                       type='CondHalf',
