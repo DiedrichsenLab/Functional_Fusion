@@ -6,8 +6,8 @@ function [ output_args ] = hcptask_imana( what, varargin )
 % Add dependencies to path
 if isdir('/Volumes/diedrichsen_data$/data')
     workdir='/Volumes/diedrichsen_data$/data';
-elseif isdir('/srv/diedrichsen/data')
-    workdir='/srv/diedrichsen/data';
+elseif isdir('/cifs/diedrichsen/data')
+    workdir='/cifs/diedrichsen/data';
 else
     fprintf('Workdir not found. Mount or connect to server and try again.');
 end
@@ -44,7 +44,7 @@ switch what
             copyfile(anat_name,n_anat_name);
             
             % go to subject directory for suit and isolate segment
-            suit_isolate_seg({n_anat_name}, 'keeptempfiles', 1);
+            suit_isolate_seg({n_anat_name}, 'keeptempfiles', 0);
         end % s (sn)
     case 'SUIT:normalise_dartel'   % SUIT normalization using dartel
         % LAUNCH SPM FMRI BEFORE RUNNING!!!!!
