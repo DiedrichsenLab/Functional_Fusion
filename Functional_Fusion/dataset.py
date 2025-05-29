@@ -52,7 +52,8 @@ def get_dataset_class(base_dir, dataset):
     return my_dataset
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
-                type=None, smooth=None, info_only=False):
+                type=None, smooth=None, info_only=False,
+                exclude_subjects=True):
     """get_dataset tensor and data set object
 
     Args:
@@ -84,7 +85,7 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
     info_l = []
     data_l = []
     for s in sess:
-        dat, inf = my_dataset.get_data(atlas, s, type, subj, smooth=smooth)
+        dat, inf = my_dataset.get_data(atlas, s, type, subj, smooth=smooth, exclude_subjects=exclude_subjects)
         data_l.append(dat)
         inf['sess'] = [s] * inf.shape[0]
         info_l.append(inf)
@@ -687,7 +688,7 @@ class DataSet:
             type = self.default_type
 
         info_com = self.get_info(
-            subj=subj, ses_id=ses_id, type=type, fields=fields)
+            subj=subj, ses_id=ses_id, type=type, fields=fields,exclude_subjects=exclude_subjects)
 
         # Loop again to assemble the data
         Data_list = []
