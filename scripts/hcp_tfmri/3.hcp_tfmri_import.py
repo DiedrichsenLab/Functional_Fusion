@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from Functional_Fusion.import_data import *
+import Functional_Fusion.import_data as fi
 import os
 import nibabel as nb
 import numpy as np
@@ -12,8 +12,8 @@ if not Path(base_dir).exists():
 if not Path(base_dir).exists():
     base_dir = '/Volumes/diedrichsen_data$/data'
 
-functional_fusion_dir = f'{base_dir}/FunctionalFusion/HCP_tfMRI'
-HCP_dir = f'{base_dir}/ExternalOpenData/HCP_UR100_tfMRI_new'
+functional_fusion_dir = f'{base_dir}/FunctionalFusion_new/HCP_tfMRI'
+HCP_dir = f'{base_dir}/ExternalOpenData/HCP_UR100_tfMRI_full'
 
 
 def make_participant_tsv(source_dir, dest_dir):
@@ -47,6 +47,22 @@ def import_anat_data(source_dir, dest_dir):
         # copy anat file
         shutil.copyfile(anat_file, dest_file)
         print(f'Copied {anat_file} to {dest_file} for participant {participant}')
+
+    return
+
+
+def import_suit_data(source_dir, dest_dir):
+    participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
+    participants = participants["participant_id"]
+
+    for participant in participants:
+
+        source_folder = f'{source_dir}/{participant}/suit'
+        dest_folder = f'{dest_dir}/derivatives/ffimport/{participant}/anat/'
+        dest_file = f'{dest_folder}/{participant}_T1w.nii'
+
+        fi.import_suit(source_folder, dest_folder, 'T1w', participant)
+        print(f'Copied participant {participant}')
 
     return
 
@@ -274,12 +290,12 @@ def make_reginfo(source_dir, dest_dir):
 
 
 if __name__ == '__main__':
-    make_participant_tsv(HCP_dir, functional_fusion_dir)
-    import_anat_data(HCP_dir, functional_fusion_dir)
-    import_freesurfer(HCP_dir, functional_fusion_dir)
-    import_resms(HCP_dir, functional_fusion_dir)
-    import_masks(HCP_dir, functional_fusion_dir)
-    import_betas(HCP_dir, functional_fusion_dir)
-    make_reginfo(HCP_dir, functional_fusion_dir)
-
+    # make_participant_tsv(HCP_dir, functional_fusion_dir)
+    # import_anat_data(HCP_dir, functional_fusion_dir)
+    # import_freesurfer(HCP_dir, functional_fusion_dir)
+    # import_resms(HCP_dir, functional_fusion_dir)
+    # import_masks(HCP_dir, functional_fusion_dir)
+    # import_betas(HCP_dir, functional_fusion_dir)
+    # make_reginfo(HCP_dir, functional_fusion_dir)
+    import_suit_data(HCP_dir, functional_fusion_dir)
 
