@@ -44,7 +44,7 @@ switch what
             copyfile(anat_name,n_anat_name);
             
             % go to subject directory for suit and isolate segment
-            suit_isolate_seg({n_anat_name}, 'keeptempfiles', 0);
+            suit_isolate_seg({n_anat_name}, 'keeptempfiles', 1);
         end % s (sn)
     case 'SUIT:normalise_dartel'   % SUIT normalization using dartel
         % LAUNCH SPM FMRI BEFORE RUNNING!!!!!
@@ -55,10 +55,11 @@ switch what
         for s = sn
             subj = D.participant_id{s};
             suit_subj_dir = fullfile(base_dir, subj, 'suit');
+            gunzip(fullfile(suit_subj_dir,'cerebellum_Unet_dseg.nii.gz'));
             
             job.subjND.gray       = {fullfile(suit_subj_dir, 'c_T1w_seg1.nii')};
             job.subjND.white      = {fullfile(suit_subj_dir, 'c_T1w_seg2.nii')};
-            job.subjND.isolation  = {fullfile(suit_subj_dir, 'c_T1w_pcereb_corr.nii')};
+            job.subjND.isolation  = {fullfile(suit_subj_dir, 'cerebellum_Unet_dseg.nii')};
             suit_normalize_dartel(job);
         end % s (subjects)    
     case 'SUIT:save_dartel_def'    
@@ -70,10 +71,7 @@ switch what
         for s = sn
             subj = D.participant_id{s};
             suit_subj_dir = fullfile(base_dir, subj, 'suit');
-
-            cd(suit_subj_dir);
-            anat_name = sprintf('', subj_str{s});
-            suit_save_darteldef(anat_name);
+            suit_save_darteldef('T1w','wdir',suit_subj_dir);
         end % s (subjects)
     case 'SUIT:mask_cereb'         % Make cerebellar mask using SUIT
         % Example usage: nishimoto_imana('SUIT:mask_cereb', 'glm', 1, 'ses', 1)
