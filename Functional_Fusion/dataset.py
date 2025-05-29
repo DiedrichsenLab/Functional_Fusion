@@ -402,7 +402,7 @@ class DataSet:
         self.estimates_dir = base_dir + '/derivatives/{0}/estimates'
         self.func_dir = base_dir + '/derivatives/{0}/func'
         self.suit_dir = base_dir + '/derivatives/{0}/suit'
-        self.data_dir = base_dir + '/derivatives/{0}/data'
+        self.data_dir = base_dir + '/derivatives/ffextract/{0}/'
         # assume that the common atlas directory is on the level before
         self.atlas_dir = os.path.join(os.path.dirname(base_dir), 'Atlases')
         # Some information that a standard data set should have
@@ -1838,18 +1838,10 @@ class DataSetHcpTask(DataSetNative):
         """
 
         # Depending on the type, make a new contrast
-        if type == 'CondHalf':
-            data_info, C = agg_data(info,
-                                    ['half','reg_id'],
-                                    ['run', 'reg_num']
-                                    )
-            data_info['names'] = [
-                f'{d.cond_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
-
-        elif type == 'CondRun':
+        if type == 'CondRun':
             data_info, C = agg_data(info,
                                     ['run', 'reg_id'],
-                                    ['reg_num', 'half']
+                                    []
                                     )
             data_info['names'] = [
                 f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
@@ -1858,7 +1850,7 @@ class DataSetHcpTask(DataSetNative):
 
             data_info, C = agg_data(info,
                                     ['reg_id'],
-                                    ['run', 'half', 'reg_num']
+                                    []
                                     )
             data_info['names'] = [
                 f'{d.cond_name}' for i, d in data_info.iterrows()]
