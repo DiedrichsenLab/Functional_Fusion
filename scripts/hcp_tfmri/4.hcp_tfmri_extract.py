@@ -24,7 +24,7 @@ atlas_dir = base_dir + '/Atlases'
 
 
 types = ['CondAll','CondRun']
-atlases  = ['fs32k']
+atlases  = ['MNISymC3']
 session_list = ['ses-task']
 
 
@@ -40,4 +40,4 @@ for ses in session_list:
         print(f'extracting type {type}')
         for atlas in atlases:
             print(f'extracting atlas: {atlas}')
-            dataset.extract_all(ses_id = ses,type = type, atlas = atlas, smooth=None, subj='all')
+            dataset.extract_all(ses_id = ses,type = type, atlas = atlas, smooth=None, subj=[0])

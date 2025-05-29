@@ -397,11 +397,11 @@ class DataSet:
             basedir (str): basis directory
         """
         self.base_dir = base_dir
-        self.surface_dir = base_dir + '/derivatives/{0}/anat'
-        self.anatomical_dir = base_dir + '/derivatives/{0}/anat'
-        self.estimates_dir = base_dir + '/derivatives/{0}/estimates'
-        self.func_dir = base_dir + '/derivatives/{0}/func'
-        self.suit_dir = base_dir + '/derivatives/{0}/suit'
+        self.surface_dir = base_dir + '/derivatives/ffimport/{0}/anat'
+        self.anatomical_dir = base_dir + '/derivatives/ffimport/{0}/anat'
+        self.estimates_dir = base_dir + '/derivatives/ffimport/{0}/func'
+        self.func_dir = base_dir + '/derivatives/ffimport/{0}/func'
+        self.suit_dir = base_dir + '/derivatives/ffimport/{0}/anat'
         self.data_dir = base_dir + '/derivatives/ffextract/{0}/'
         # assume that the common atlas directory is on the level before
         self.atlas_dir = os.path.join(os.path.dirname(base_dir), 'Atlases')
@@ -1844,7 +1844,7 @@ class DataSetHcpTask(DataSetNative):
                                     []
                                     )
             data_info['names'] = [
-                f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
 
         elif type == 'CondAll':
 
@@ -1853,7 +1853,7 @@ class DataSetHcpTask(DataSetNative):
                                     []
                                     )
             data_info['names'] = [
-                f'{d.cond_name}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}_' for i, d in data_info.iterrows()]
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
