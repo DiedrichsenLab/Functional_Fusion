@@ -17,7 +17,7 @@ end
 global base_dir
 
 base_dir = sprintf('%s/ExternalOpenData/HCP_UR100_tfMRI_full',workdir);
-
+ff_dir = sprintf('%s/FunctionalFusion_new/HCP_tfMRI/derivatives',workdir);
 % defining the names of other directories
 wb_dir   = 'surfaceWB';
 
@@ -44,7 +44,7 @@ switch what
             copyfile(anat_name,n_anat_name);
             
             % go to subject directory for suit and isolate segment
-            suit_isolate_seg({n_anat_name}, 'keeptempfiles', 0);
+            suit_isolate_seg({n_anat_name}, 'keeptempfiles', 1);
         end % s (sn)
     case 'SUIT:normalise_dartel'   % SUIT normalization using dartel
         % LAUNCH SPM FMRI BEFORE RUNNING!!!!!
@@ -55,10 +55,11 @@ switch what
         for s = sn
             subj = D.participant_id{s};
             suit_subj_dir = fullfile(base_dir, subj, 'suit');
+            gunzip(fullfile(suit_subj_dir,'cerebellum_Unet_dseg.nii.gz'));
             
             job.subjND.gray       = {fullfile(suit_subj_dir, 'c_T1w_seg1.nii')};
             job.subjND.white      = {fullfile(suit_subj_dir, 'c_T1w_seg2.nii')};
-            job.subjND.isolation  = {fullfile(suit_subj_dir, 'c_T1w_pcereb_corr.nii')};
+            job.subjND.isolation  = {fullfile(suit_subj_dir, 'cerebellum_Unet_dseg.nii')};
             suit_normalize_dartel(job);
         end % s (subjects)    
     case 'SUIT:save_dartel_def'    
@@ -70,33 +71,24 @@ switch what
         for s = sn
             subj = D.participant_id{s};
             suit_subj_dir = fullfile(base_dir, subj, 'suit');
-
-            cd(suit_subj_dir);
-            anat_name = sprintf('', subj_str{s});
-            suit_save_darteldef(anat_name);
+            suit_save_darteldef('T1w','wdir',suit_subj_dir);
         end % s (subjects)
     case 'SUIT:mask_cereb'         % Make cerebellar mask using SUIT
         % Example usage: nishimoto_imana('SUIT:mask_cereb', 'glm', 1, 'ses', 1)
         
-        sn       = subj_id; % list of subjects
-        glm      = 1;           % glm number
-        ses = 1;
-        
-        vararginoptions(varargin, {'sn', 'glm', 'ses'})
-
-        
+        sn = [1:50];
+        vararginoptions(varargin, {'sn'});
+               
         for s = sn
-            suit_dir = fullfile(base_dir, subj_str{s}, 'suit', 'anat');
-            glm_dir = fullfile(base_dir, subj_str{s}, 'estimates', sprintf('glm%02d', glm), sprintf('ses-%02d', ses));
+            subj = D.participant_id{s};
+
+            suit_subj_dir = fullfile(base_dir, subj, 'suit');
+            func_dir = fullfile(ff_dir, 'ffimport',subj, 'func','ses-task');
+            anat_dir = fullfile(ff_dir, 'ffimport',subj, 'anat');
+            suit = fullfile(suit_subj_dir, 'c_T1w_seg1.nii'); 
+            mask  = fullfile(func_dir, sprintf('%s_ses-task_mask.nii',subj));  % mask for functional image
+            omask = fullfile(anat_dir, sprintf('%s_desc-cereb_mask.nii',subj));  % output mask image - grey matter
             
-            mask  = fullfile(glm_dir, 'mask.nii'); % mask for functional image
-            
-            suit  = fullfile(suit_dir, 'cereb_prob_corr_grey');
-%             suit  = fullfile(suit_dir, sprintf('c1%s_T1w_lpi.nii', subj_str{s})); % cerebellar mask grey (corrected)
-            suit_glm_dir = fullfile(base_dir, subj_str{s}, 'suit', sprintf('glm%02d', glm), sprintf('ses-%02d', ses)); dircheck(suit_glm_dir);
-            omask = fullfile(suit_glm_dir, 'maskbrainSUITGrey2.nii'); % output mask image - grey matter
-            
-            cd(suit_dir);
             spm_imcalc({mask,suit}, omask, 'i1>0 & i2>0.', {});
         end % s (sn)    
        

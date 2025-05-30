@@ -17,11 +17,17 @@ def clean_hcp_tfmri(dir,subject_list,task_map):
     """
 
     # Filter to HCP-task dataset only
-    task_map = task_map[task_map['Dataset'] == 'HCP-task']
+    task_map = task_map[task_map['Dataset'] == 'HCP']
+
+    participants_tsv = os.path.join(dir,'HCP_tfMRI', 'participants.tsv')
+
+    if not subject_list:
+        T = pd.read_csv(participants_tsv, sep='\t')
+        subject_list = T['participant_id'].tolist()
 
     # Loop through each subject
     for subject in subject_list:
-        subject_dir = os.path.join(dir, 'HCP_tfMRI', 'derivatives', subject, 'estimates')
+        subject_dir = os.path.join(dir, 'HCP_tfMRI', 'derivatives','ffimport', subject, 'func')
         if not os.path.exists(subject_dir):
             print(f"{subject_dir} not found.")
             continue
@@ -36,7 +42,7 @@ def clean_hcp_tfmri(dir,subject_list,task_map):
                     df = pd.read_csv(tsv_path, sep='\t')
 
                     # keep some columns that are fine
-                    cols_to_keep = ['task_name', 'cond_name', 'run', 'reg_id']
+                    cols_to_keep = ['run','task_name', 'cond_name', 'reg_id']
                     df = df[[col for col in cols_to_keep if col in df.columns]]
 
                     # add task_code and cond_code
@@ -64,7 +70,7 @@ if __name__=='__main__':
     task_map = pd.read_csv(taskmap_file, sep='\t')
 
     # what to cleanup
-    subject_list = ['sub-101309']
+    subject_list = None
     clean_hcp_tfmri(ff_dir, subject_list, task_map)
 
 
