@@ -2,6 +2,7 @@
 
 import os
 import pandas as pd
+import numpy as np
 
 
 
@@ -48,11 +49,118 @@ def clean_hcp_tfmri(dir,subject_list,task_map):
                     # add task_code and cond_code
                     df = df.merge(task_map[['task_name', 'cond_name', 'task_code', 'cond_code']],
                                   on=['task_name', 'cond_name'], how='left')
+                    
+                    df['half'] = np.where(df['run'] <= 7, 1, 2)
 
                     # overwrite the tsv file
                     df.to_csv(tsv_path, sep='\t', index=False)
                     print(f"Cleaned: {tsv_path}")
 
+def clean_MDTB(dir,subject_list,task_map):
+    """
+    1.Clean up the mdtb dataset tsv files, maintain task_name,cond_name,run,reg_id and remove everything else.
+    2.add matching task_code and conde_code columns using the taks_naming.tsv file.
+
+
+    Parameters:
+    - dir (str): Path to the hcp tfMRI dataset directory (after copying)
+    - subject_list (list): List of subject folder names to clean up
+    """
+
+    # Filter to HCP-task dataset only
+    task_map = task_map[task_map['Dataset'] == 'MDTB']
+
+    participants_tsv = os.path.join(dir,'MDTB', 'participants.tsv')
+
+    if not subject_list:
+        T = pd.read_csv(participants_tsv, sep='\t')
+        subject_list = T['participant_id'].tolist()
+
+    # Loop through each subject
+    for subject in subject_list:
+        subject_dir = os.path.join(dir, 'MDTB', 'derivatives','ffimport', subject, 'func')
+        if not os.path.exists(subject_dir):
+            print(f"{subject_dir} not found.")
+            continue
+        for session_name in os.listdir(subject_dir):
+            session_path = os.path.join(subject_dir, session_name)
+            if not os.path.isdir(session_path):
+                continue # skip if not a directoy needed since there is a dsstore file
+
+            for fname in os.listdir(session_path):
+                if fname.endswith('.tsv'):
+                    tsv_path = os.path.join(session_path, fname)
+                    df = pd.read_csv(tsv_path, sep='\t')
+
+                    # keep some columns that are fine
+                    cols_to_keep = ['run','task_name', 'cond_name', 'reg_id','instruction','common']
+                    df = df[[col for col in cols_to_keep if col in df.columns]]
+
+                    # add task_code and cond_code
+                    df = df.merge(task_map[['task_name', 'cond_name', 'task_code', 'cond_code']],
+                                  on=['task_name', 'cond_name'], how='left')
+                    
+                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+
+
+                    # overwrite the tsv file
+                    df.to_csv(tsv_path, sep='\t', index=False)
+                    print(f"Cleaned: {tsv_path}")
+
+def clean_pontine(dir,subject_list,task_map):
+    """
+    1.Clean up the mdtb dataset tsv files, maintain task_name,cond_name,run,reg_id and remove everything else.
+    2.add matching task_code and conde_code columns using the taks_naming.tsv file.
+
+
+    Parameters:
+    - dir (str): Path to the hcp tfMRI dataset directory (after copying)
+    - subject_list (list): List of subject folder names to clean up
+    """
+
+    # Filter to HCP-task dataset only
+    task_map = task_map[task_map['Dataset'] == 'Pontine']
+
+    participants_tsv = os.path.join(dir,'Pontine', 'participants.tsv')
+
+    if not subject_list:
+        T = pd.read_csv(participants_tsv, sep='\t')
+        subject_list = T['participant_id'].tolist()
+
+    # Loop through each subject
+    for subject in subject_list:
+        subject_dir = os.path.join(dir, 'Pontine', 'derivatives','ffimport', subject, 'func')
+        if not os.path.exists(subject_dir):
+            print(f"{subject_dir} not found.")
+            continue
+        for session_name in os.listdir(subject_dir):
+            session_path = os.path.join(subject_dir, session_name)
+            if not os.path.isdir(session_path):
+                continue # skip if not a directoy needed since there is a dsstore file
+
+            for fname in os.listdir(session_path):
+                if fname.endswith('.tsv'):
+                    tsv_path = os.path.join(session_path, fname)
+                    df = pd.read_csv(tsv_path, sep='\t')
+
+                    # keep some columns that are fine
+                    cols_to_keep = ['run','taskName', 'inst', 'reg_id']
+                    df = df[[col for col in cols_to_keep if col in df.columns]]
+
+                    # rename  taskName to task_name and inst to instruction
+                    df.rename(columns={'taskName': 'task_name', 'inst': 'instruction'}, inplace=True)
+
+
+                    # add task_code and cond_code
+                    df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
+                                  on=['task_name'], how='left')
+                    
+                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+
+
+                    # overwrite the tsv file
+                    df.to_csv(tsv_path, sep='\t', index=False)
+                    print(f"Cleaned: {tsv_path}")
 
 
 if __name__=='__main__':
@@ -68,10 +176,12 @@ if __name__=='__main__':
     taskmap_file = os.path.join(script_dir, '..', '..', 'docs', 'task_naming.tsv')
     taskmap_file = os.path.abspath(taskmap_file)
     task_map = pd.read_csv(taskmap_file, sep='\t')
+    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
+
 
     # what to cleanup
-    subject_list = None
-    clean_hcp_tfmri(ff_dir, subject_list, task_map)
+    subject_list = ['sub-01']
+    clean_pontine(ff_dir, subject_list, task_map)
 
 
 

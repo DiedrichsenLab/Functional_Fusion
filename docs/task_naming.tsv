@@ -1,4 +1,5 @@
 Dataset	ses	task_name	cond_name	task_code	cond_code	description			
+MDTB	s1	Instruct	Instruct	instrct	NA				
 MDTB	s1	GoNoGo	NoGo	gng	ngo				
 MDTB	s1	GoNoGo	Go	gng	go				Notes:
 MDTB	s1	ToM	ToM	tom	NA				task_name and cond_name directly extracted from info files
@@ -28,6 +29,7 @@ MDTB	s1	visualSearch	VisualSearchSmall	vissearch	small
 MDTB	s1	visualSearch	VisualSearchMed	vissearch	med				
 MDTB	s1	visualSearch	VisualSearchLarge	vissearch	large				
 MDTB	s1	rest	rest	rest	NA				
+MDTB	s2	Instruct	Instruct	instrct	NA				
 MDTB	s2	CPRO	CPRO	cpro	NA				
 MDTB	s2	prediction	Prediction	sntncpredict	nviolation				
 MDTB	s2	prediction	PredictViol	sntncpredict	violation				
