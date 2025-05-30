@@ -188,7 +188,7 @@ class AtlasVolumetric(Atlas):
             self.mask_img = nb.load(mask_img)
         elif isinstance(mask_img,nb.Nifti1Image):
             self.mask_img  = mask_img
-        else: 
+        else:
             raise(NameError('mask image needs to be string or Nifti1image'))
         Xmask = self.mask_img.get_fdata()
         Xmask = Xmask > 0
@@ -261,13 +261,13 @@ class AtlasVolumetric(Atlas):
 
     def get_subatlas_image(self,mask_img,label_value=None):
         """Returns a subatlas (region) based on a mask image
-        Selects either any voxel > 0 (default), any voxel == label_value, or any voxel which has a value in the list of label_values. 
+        Selects either any voxel > 0 (default), any voxel == label_value, or any voxel which has a value in the list of label_values.
 
         Args:
             mask_img (str): Mask or discrete segmentation image filename
-            label_value (int,list): Value(s) for the target ROI (default None)  
+            label_value (int,list): Value(s) for the target ROI (default None)
         Returns:
-            new_atlas (AtlasVolumetric): New atlas object            
+            new_atlas (AtlasVolumetric): New atlas object
         """
         data = self.read_data(mask_img)
         if label_value is None:
@@ -602,16 +602,12 @@ class AtlasSurface(Atlas):
             row_axis = [f"row {r:03}" for r in range(data.shape[0])]
             row_axis = nb.cifti2.ScalarAxis(row_axis)
         elif hasattr(row_axis, "__iter__"):
-            assert data.shape[0] == len(
-                row_axis
-            ), "The length of row_axis should match the data!"
+            assert data.shape[0] == len(row_axis), "The length of row_axis should match the data!"
             row_axis = nb.cifti2.ScalarAxis(row_axis)
         elif isinstance(row_axis, nb.cifti2.cifti2_axes.Axis):
             pass
         else:
-            raise ValueError(
-                "The input row_axis instance type does not meet the requirement!"
-            )
+            raise ValueError("The input row_axis instance type does not meet the requirement!")
 
         bm = self.get_brain_model_axis()
         header = nb.Cifti2Header.from_axes((row_axis, bm))
@@ -644,8 +640,7 @@ class AtlasSurface(Atlas):
                 img = [img]
         if isinstance(img, list):
             if len(img) != len(self.structure):
-                raise (NameError(
-                    "Number of images needs to match len(self.structure)"))
+                raise (NameError("Number of images needs to match len(self.structure)"))
             data = []
             for i, im in enumerate(img):
                 if isinstance(im, str):
@@ -715,13 +710,9 @@ class AtlasSurface(Atlas):
         # Make the brain Structure models
         for i, name in enumerate(self.structure):
             if i == 0:
-                bm = nb.cifti2.BrainModelAxis.from_mask(
-                    self.vertex_mask[i], name=self.structure[i]
-                )
+                bm = nb.cifti2.BrainModelAxis.from_mask(self.vertex_mask[i], name=self.structure[i])
             else:
-                bm = bm + nb.cifti2.BrainModelAxis.from_mask(
-                    self.vertex_mask[i], name=self.structure[i]
-                )
+                bm = bm + nb.cifti2.BrainModelAxis.from_mask(self.vertex_mask[i], name=self.structure[i])
         return bm
 
     def get_parcel_axis(self):
@@ -908,17 +899,17 @@ class AtlasMap:
         return data_group
 
     def save_as_image(self, fname=None):
-        """ Save a mask of the voxel in native space that are involved in the ROI. This function is mostly to check the ROI after building it. 
+        """ Save a mask of the voxel in native space that are involved in the ROI. This function is mostly to check the ROI after building it.
 
         Args:
             fname (str): file name for the nifti-file (use *.nii.gz for compression). If None, no file is saved.
         Returns:
-            mask_img(Nift1Image): Image for the mask 
+            mask_img(Nift1Image): Image for the mask
         """
-        # Check if is has the attribute vox_list: 
+        # Check if is has the attribute vox_list:
         if not hasattr(self, 'vox_list'):
             raise(NameError('vox_list not defined - call build() first'))
-        # make image 
+        # make image
         vox = np.unique(self.vox_list)
         mask = np.zeros(np.prod(self.mask_img.shape),dtype=np.uint8)
         mask[vox] = 1
