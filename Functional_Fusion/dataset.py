@@ -63,6 +63,8 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
         sess (str or list): Sessions. Defaults to 'all'.
         subj (ndarray, str, or list):  Subject numbers /names to get [None = all]
         type (str): 'CondHalf','CondRun', etc....
+        exclude_subjects (bool): If True, excludes subjects that have been specified
+                in the exclude column of the participants.tsv file.
     Returns:
         data (nd.array):nsubj x ncond x nvox data tensor
         info (pd.DataFrame): Dataframe with info about the data
