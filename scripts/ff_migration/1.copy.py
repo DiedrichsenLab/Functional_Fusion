@@ -77,10 +77,10 @@ if __name__=='__main__':
 
     # what to copy
     dataset = 'Language'
-    subject_list = ['sub-103111']
+    subject_list = ['sub-02','sub-03']
 
     # copy files
-    copy_dataset(source_dir, dest_dir, dataset, subject_list=None)
+    copy_dataset(source_dir, dest_dir, dataset, subject_list=subject_list)
 
 
     pass

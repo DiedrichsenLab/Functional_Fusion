@@ -161,7 +161,89 @@ def clean_pontine(dir,subject_list,task_map):
                     # overwrite the tsv file
                     df.to_csv(tsv_path, sep='\t', index=False)
                     print(f"Cleaned: {tsv_path}")
+def clean_language(dir,subject_list,task_map):
+    """
+    1.Clean up the mdtb dataset tsv files, maintain task_name,cond_name,run,reg_id and remove everything else.
+    2.add matching task_code and conde_code columns using the taks_naming.tsv file.
 
+
+    Parameters:
+    - dir (str): Path to the hcp tfMRI dataset directory (after copying)
+    - subject_list (list): List of subject folder names to clean up
+    """
+
+    # Filter to HCP-task dataset only
+    task_map = task_map[task_map['Dataset'] == 'Language']
+
+    participants_tsv = os.path.join(dir,'Language', 'participants.tsv')
+
+    if not subject_list:
+        T = pd.read_csv(participants_tsv, sep='\t')
+        subject_list = T['participant_id'].tolist()
+
+    # Loop through each subject
+    for subject in subject_list:
+        subject_dir = os.path.join(dir, 'Language', 'derivatives','ffimport', subject, 'func')
+        if not os.path.exists(subject_dir):
+            print(f"{subject_dir} not found.")
+            continue
+        for session_name in os.listdir(subject_dir):
+            session_path = os.path.join(subject_dir, session_name)
+            if not os.path.isdir(session_path):
+                continue # skip if not a directoy needed since there is a dsstore file
+
+            for fname in os.listdir(session_path):
+                if fname.endswith('.tsv'):
+                    tsv_path = os.path.join(session_path, fname)
+                    df = pd.read_csv(tsv_path, sep='\t')
+
+                    # if tsv path has the word localizer
+                    if 'localizer' in tsv_path:
+                        # keep some columns that are fine
+                        cols_to_keep = ['run','taskName', 'inst', 'reg_id']
+                        df = df[[col for col in cols_to_keep if col in df.columns]]
+
+                        # rename  taskName to task_name and inst to instruction
+                        df.rename(columns={'taskName': 'task_name', 'inst': 'instruction'}, inplace=True)
+
+
+                        # add task_code and cond_code
+                        df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
+                                    on=['task_name'], how='left')
+                        
+                        df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+                    elif 'sencoding_category' in tsv_path:
+                        # keep some columns that are fine
+                        cols_to_keep = ['run','taskName', 'inst', 'reg_id']
+                        df = df[[col for col in cols_to_keep if col in df.columns]]
+
+                        # rename  taskName to task_name and inst to instruction
+                        df.rename(columns={'taskName': 'task_name', 'inst': 'instruction'}, inplace=True)
+
+
+                        # add task_code and cond_code
+                        df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
+                                    on=['task_name'], how='left')
+                        
+                        df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+
+                    elif 'sencoding_trial' in tsv_path:
+                        # keep some columns that are fine
+                        cols_to_keep = ['run','taskName', 'inst', 'reg_id']
+                        df = df[[col for col in cols_to_keep if col in df.columns]]
+
+                        # rename  taskName to task_name and inst to instruction
+                        df.rename(columns={'taskName': 'task_name', 'inst': 'instruction'}, inplace=True)
+
+                        
+                        # if run is less than 11 then half 1 else half 2
+                        df['half'] = np.where(df['run'] < 11, 1, 2)
+
+
+
+                    # overwrite the tsv file
+                    df.to_csv(tsv_path, sep='\t', index=False)
+                    print(f"Cleaned: {tsv_path}")
 
 if __name__=='__main__':
     # dirs
@@ -180,8 +262,8 @@ if __name__=='__main__':
 
 
     # what to cleanup
-    subject_list = ['sub-01']
-    clean_pontine(ff_dir, subject_list, task_map)
+    subject_list = ['sub-03']
+    clean_language(ff_dir, subject_list, task_map)
 
 
 
