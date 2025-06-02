@@ -20,8 +20,8 @@ data_dir = base_dir + '/HCP_tfMRI'
 atlas_dir = base_dir + '/Atlases'
 
 
-type='CondRun'
-atlas  ='fs32k'
+type='CondAll'
+atlas  ='MNISymC3'
 
 
 dataset = DataSetHcpTask(data_dir)

@@ -20,9 +20,10 @@ Documentation
    02atlas.rst
    03atlasmap.rst
    04datasets.rst
-   05extract.rst
-   06analyze.rst
-   07reliability.rst
+   05import.rst
+   06extract.rst
+   07analyze.rst
+   08reliability.rst
    reference.rst
 
 Indices and tables
