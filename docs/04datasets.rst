@@ -80,6 +80,7 @@ under the name `sub-<id>_run-<id>_reg-<id>_beta.nii`, where numerical ids are pr
 The file should contain the following columns:
 
 * run: Run number (numerical): Run number 
+* half: Half number (numerical): 1 or 2, for a split-half analysis
 * reg_id: Regressor ID (numerical) 
 * task_code: Multi-letter unique string that identifies the task (e.g. "vissearch")   
 * cond_code: Multi-letter unique string that identifies the condition within task (e.g. "easy"). 
@@ -89,8 +90,6 @@ The overall signifier for the condition is `<task_code>_<cond_code>` or `<task_c
 Other optional columns may include: 
 
 * task_name: Long name of the task (e.g. "Visual_Search")
-
-
 
 
 Import Anatomical and MNI normalization parameters from SPM (Segement)

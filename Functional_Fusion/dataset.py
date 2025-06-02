@@ -1840,8 +1840,8 @@ class DataSetHcpTask(DataSetNative):
         # Depending on the type, make a new contrast
         if type == 'CondRun':
             data_info, C = agg_data(info,
-                                    ['run', 'reg_id'],
-                                    []
+                                    by=['run', 'reg_id'],
+                                    over=[]
                                     )
             data_info['names'] = [
                 f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
@@ -1849,8 +1849,8 @@ class DataSetHcpTask(DataSetNative):
         elif type == 'CondAll':
 
             data_info, C = agg_data(info,
-                                    ['reg_id'],
-                                    []
+                                    by=['reg_id'],
+                                    over=['run','half']
                                     )
             data_info['names'] = [
                 f'{d.task_code}_{d.cond_code}_' for i, d in data_info.iterrows()]
@@ -1861,7 +1861,6 @@ class DataSetHcpTask(DataSetNative):
         # Combine with contrast
         for i in range(len(data_n)):
             data_n[i] = pinv(C) @ data_n[i]
-            
         return data_n, data_info
 
 class DataSetSocial(DataSetNative):

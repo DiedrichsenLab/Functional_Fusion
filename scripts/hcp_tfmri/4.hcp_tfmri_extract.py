@@ -34,10 +34,10 @@ for ses in session_list:
     participants_tsv = pd.read_csv(f'{data_dir}/participants.tsv',sep = '\t')
     subj_list = participants_tsv['participant_id'].tolist()
 
-    subj_list = ['sub-101309']
+    # subj_list = ['sub-101309']
 
     for type in types:
         print(f'extracting type {type}')
         for atlas in atlases:
             print(f'extracting atlas: {atlas}')
-            dataset.extract_all(ses_id = ses,type = type, atlas = atlas, smooth=None, subj=[0])
+            dataset.extract_all(ses_id = ses,type = type, atlas = atlas, smooth=None)
