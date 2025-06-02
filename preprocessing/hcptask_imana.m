@@ -85,11 +85,12 @@ switch what
             suit_subj_dir = fullfile(base_dir, subj, 'suit');
             func_dir = fullfile(ff_dir, 'ffimport',subj, 'func','ses-task');
             anat_dir = fullfile(ff_dir, 'ffimport',subj, 'anat');
-            suit = fullfile(suit_subj_dir, 'c_T1w_seg1.nii'); 
+            suit = fullfile(suit_subj_dir, 'c_T1w_seg1.nii');
+            suitm = fullfile(suit_subj_dir, 'cerebellum_Unet_dseg.nii')
             mask  = fullfile(func_dir, sprintf('%s_ses-task_mask.nii',subj));  % mask for functional image
             omask = fullfile(anat_dir, sprintf('%s_desc-cereb_mask.nii',subj));  % output mask image - grey matter
             
-            spm_imcalc({mask,suit}, omask, 'i1>0 & i2>0.', {});
+            spm_imcalc({mask,suitm,suit}, omask, 'i1>0 & i2>0 & i3>0', {});
         end % s (sn)    
        
 end

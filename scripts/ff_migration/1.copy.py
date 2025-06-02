@@ -76,7 +76,7 @@ if __name__=='__main__':
     dest_dir = f'{datashare_dir}/FunctionalFusion_new/'
 
     # what to copy
-    dataset = 'HCP_tfMRI'
+    dataset = 'IBC'
     subject_list = ['sub-103111']
 
     # copy files
