@@ -76,11 +76,11 @@ if __name__=='__main__':
     dest_dir = f'{datashare_dir}/FunctionalFusion_new/'
 
     # what to copy
-    dataset = 'IBC'
-    subject_list = ['sub-103111']
+    dataset = 'Language'
+    subject_list = ['sub-02','sub-03']
 
     # copy files
-    copy_dataset(source_dir, dest_dir, dataset, subject_list=None)
+    copy_dataset(source_dir, dest_dir, dataset, subject_list=subject_list)
 
 
     pass

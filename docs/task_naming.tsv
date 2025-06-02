@@ -1,4 +1,5 @@
 Dataset	ses	task_name	cond_name	task_code	cond_code	description			
+MDTB	s1	Instruct	Instruct	instrct	NA				
 MDTB	s1	GoNoGo	NoGo	gng	ngo				
 MDTB	s1	GoNoGo	Go	gng	go				Notes:
 MDTB	s1	ToM	ToM	tom	NA				task_name and cond_name directly extracted from info files
@@ -28,6 +29,7 @@ MDTB	s1	visualSearch	VisualSearchSmall	vissearch	small
 MDTB	s1	visualSearch	VisualSearchMed	vissearch	med				
 MDTB	s1	visualSearch	VisualSearchLarge	vissearch	large				
 MDTB	s1	rest	rest	rest	NA				
+MDTB	s2	Instruct	Instruct	instrct	NA				
 MDTB	s2	CPRO	CPRO	cpro	NA				
 MDTB	s2	prediction	Prediction	sntncpredict	nviolation				
 MDTB	s2	prediction	PredictViol	sntncpredict	violation				
@@ -393,3 +395,107 @@ IBC	tom	EmotionalPain	emotional_pain	emotionalpain	emotionalpain
 IBC	tom	EmotionalPain	physical_pain	emotionalpain	physicalpain				
 IBC	tom	PainMovie	mental	painmovie	mental				
 IBC	tom	PainMovie	pain	painmovie	pain				
+Nishimoto	s1	AnimalPhoto     		animal	photo				
+Nishimoto	s1	AnimalVoice     		animal	voice				
+Nishimoto	s1	CalcEasy        		calc	easy				
+Nishimoto	s1	CalcHard        		calc	hard				
+Nishimoto	s1	CategoryFluency 		categoryfluency	NA				
+Nishimoto	s1	Clock           		clock	NA				
+Nishimoto	s1	ComparePeople   		comparepeople	NA				
+Nishimoto	s1	CountDot        		count	dot				
+Nishimoto	s1	CountTone       		count	tone				
+Nishimoto	s1	CountryMap      		countrymap	NA				
+Nishimoto	s1	DailyPhoto      		daily	photo				
+Nishimoto	s1	DailySound      		daily	sound				
+Nishimoto	s1	DecideFood      		decide	food				
+Nishimoto	s1	DecidePeople    		decide	people				
+Nishimoto	s1	DecidePresent   		decide	present				
+Nishimoto	s1	DecideShopping  		decide	shopping				
+Nishimoto	s1	DetectColor     		detect	color				
+Nishimoto	s1	DetectDifference		detect	difference				
+Nishimoto	s1	DetectTargetMov 		detect	targetmov				
+Nishimoto	s1	DetectTargetPic 		detect	targetpic				
+Nishimoto	s1	DomesiticName   		domesitic	name				
+Nishimoto	s1	DomesiticPlace  		domesitic	place				
+Nishimoto	s1	EmotionFace     		emotion	face				
+Nishimoto	s1	EmotionVoice    		emotion	voice				
+Nishimoto	s1	EyeBlink        		eyeblink	NA				
+Nishimoto	s1	EyeMoveEasy     		eyemove	easy				
+Nishimoto	s1	EyeMoveHard     		eyemove	hard				
+Nishimoto	s1	FeedbackPos     		feedbackpos	NA				
+Nishimoto	s1	Flag            		flag	NA				
+Nishimoto	s1	ForeignListen   		foreign	listen				
+Nishimoto	s1	ForeignListenQ  		foreign	listenq				
+Nishimoto	s1	ForeignRead     		foreign	read				
+Nishimoto	s1	ForeignReadQ    		foreign	readq				
+Nishimoto	s1	Harmony         		harmony	NA				
+Nishimoto	s1	ImagineFuture   		imagine	future				
+Nishimoto	s1	ImagineIf       		imagine	elf				
+Nishimoto	s1	ImagineMove     		imagine	move				
+Nishimoto	s1	ImaginePlace    		imagine	place				
+Nishimoto	s1	LanguageSound   		languagesound	NA				
+Nishimoto	s1	LetterFluency   		letterfluency	NA				
+Nishimoto	s1	MapIcon         		mapicon	NA				
+Nishimoto	s1	MatchDigit      		match	digit				
+Nishimoto	s1	MatchLetter     		match	letter				
+Nishimoto	s1	MatchNameEasy   		match	nameeasy				
+Nishimoto	s1	MatchNameHard   		match	namehard				
+Nishimoto	s1	MemoryDigit     		memory	digit				
+Nishimoto	s1	MemoryLetter    		memory	letter				
+Nishimoto	s1	MemoryNameEasy  		memory	nameeasy				
+Nishimoto	s1	MemoryNameHard  		memory	namehard				
+Nishimoto	s1	Metaphor        		metaphor	NA				
+Nishimoto	s1	MirrorImage     		mirrorimage	NA				
+Nishimoto	s1	Money           		money	NA				
+Nishimoto	s1	MoralImpersonal 		moral	impersonal				
+Nishimoto	s1	MoralPersonal   		moral	personal				
+Nishimoto	s1	MusicCategory   		musiccategory	NA				
+Nishimoto	s1	PressLR         		press	lr				
+Nishimoto	s1	PressLeft       		press	left				
+Nishimoto	s1	PressOrdEasy    		press	ordheasy				
+Nishimoto	s1	PressOrdHard    		press	ordhard				
+Nishimoto	s1	PressRight      		press	right				
+Nishimoto	s1	PropLogic       		proplogic	NA				
+Nishimoto	s1	RateBeautyMov   		rate	beautymov				
+Nishimoto	s1	RateBeautyPic   		rate	beautypic				
+Nishimoto	s1	RateBeautySound 		rate	beautysound				
+Nishimoto	s1	RateConfidence  		rate	confidence				
+Nishimoto	s1	RateDeliciousMov		rate	deliciousmov				
+Nishimoto	s1	RateDeliciousPic		rate	deliciouspic				
+Nishimoto	s1	RateDisgustMov  		rate	disgustmov				
+Nishimoto	s1	RateDisgustPic  		rate	disgustpic				
+Nishimoto	s1	RateDisgustSound		rate	disgustsound				
+Nishimoto	s1	RateHappyMov    		rate	happymov				
+Nishimoto	s1	RateHappyPic    		rate	happypic				
+Nishimoto	s1	RateNoisy       		rate	noisy				
+Nishimoto	s1	RatePainfulMov  		rate	painfulmov				
+Nishimoto	s1	RatePainfulPic  		rate	painfulpic				
+Nishimoto	s1	RatePoem        		rate	poem				
+Nishimoto	s1	RateSexyMovF    		rate	sexymovf				
+Nishimoto	s1	RateSexyMovM    		rate	sexymovm				
+Nishimoto	s1	RateSexyPicF    		rate	sexypicf				
+Nishimoto	s1	RateSexyPicM    		rate	sexypicm				
+Nishimoto	s1	RateSleepy      		rate	sleepy				
+Nishimoto	s1	RateTired       		rate	tired				
+Nishimoto	s1	RecallFace      		recal	face				
+Nishimoto	s1	RecallKnowledge 		recal	knowledge				
+Nishimoto	s1	RecallPast      		recal	past				
+Nishimoto	s1	RecallTaskEasy  		recal	talkeasy				
+Nishimoto	s1	RecallTaskHard  		recal	talkhard				
+Nishimoto	s1	Recipe          		recipe	NA				
+Nishimoto	s1	RelationLogic   		relationlogic	NA				
+Nishimoto	s1	RestClose       		rest	close				
+Nishimoto	s1	RestOpen        		rest	open				
+Nishimoto	s1	Rhythm          		rhythm	NA				
+Nishimoto	s1	Sarcasm         		sarcasm	NA				
+Nishimoto	s1	SoundLeft       		sound	left				
+Nishimoto	s1	SoundPlace      		sound	place				
+Nishimoto	s1	SoundRight      		sound	right				
+Nishimoto	s1	StateMap        		statemap	NA				
+Nishimoto	s1	TimeMov         		time	move				
+Nishimoto	s1	TimeSound       		time	sound				
+Nishimoto	s1	TimeValue       		time	value				
+Nishimoto	s1	TrafficSign     		trafficsign	NA				
+Nishimoto	s1	WordMeaning     		wordmeaning	NA				
+Nishimoto	s1	WorldName       		world	name				
+Nishimoto	s1	WorldPlace      		world	place				
