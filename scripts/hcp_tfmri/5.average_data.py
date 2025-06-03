@@ -21,7 +21,7 @@ atlas_dir = base_dir + '/Atlases'
 
 
 type='CondAll'
-atlas  ='MNISymC3'
+atlas  ='fs32k'
 
 
 dataset = DataSetHcpTask(data_dir)

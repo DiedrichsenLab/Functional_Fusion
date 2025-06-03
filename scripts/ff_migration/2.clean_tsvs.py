@@ -100,7 +100,7 @@ def clean_MDTB(dir,subject_list,task_map):
                     df = df.merge(task_map[['task_name', 'cond_name', 'task_code', 'cond_code']],
                                   on=['task_name', 'cond_name'], how='left')
                     
-                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+                    df['half'] = np.where(df['run'] < 9, 1, 2)
 
 
                     # overwrite the tsv file
@@ -155,7 +155,7 @@ def clean_pontine(dir,subject_list,task_map):
                     df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
                                   on=['task_name'], how='left')
                     
-                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+                    df['half'] = np.where(df['run'] < 9, 1, 2)
 
 
                     # overwrite the tsv file
@@ -245,6 +245,57 @@ def clean_language(dir,subject_list,task_map):
                     df.to_csv(tsv_path, sep='\t', index=False)
                     print(f"Cleaned: {tsv_path}")
 
+def clean_nishimoto(dir,subject_list,task_map):
+    """
+    1.Clean up the mdtb dataset tsv files, maintain task_name,cond_name,run,reg_id and remove everything else.
+    2.add matching task_code and conde_code columns using the taks_naming.tsv file.
+
+
+    Parameters:
+    - dir (str): Path to the hcp tfMRI dataset directory (after copying)
+    - subject_list (list): List of subject folder names to clean up
+    """
+
+    # Filter to HCP-task dataset only
+    task_map = task_map[task_map['Dataset'] == 'Nishimoto']
+
+    participants_tsv = os.path.join(dir,'Nishimoto', 'participants.tsv')
+
+    if not subject_list:
+        T = pd.read_csv(participants_tsv, sep='\t')
+        subject_list = T['participant_id'].tolist()
+
+    # Loop through each subject
+    for subject in subject_list:
+        subject_dir = os.path.join(dir, 'Nishimoto', 'derivatives','ffimport', subject, 'func')
+        if not os.path.exists(subject_dir):
+            print(f"{subject_dir} not found.")
+            continue
+        for session_name in os.listdir(subject_dir):
+            session_path = os.path.join(subject_dir, session_name)
+            if not os.path.isdir(session_path):
+                continue # skip if not a directoy needed since there is a dsstore file
+
+            for fname in os.listdir(session_path):
+                if fname.endswith('.tsv'):
+                    tsv_path = os.path.join(session_path, fname)
+                    df = pd.read_csv(tsv_path, sep='\t')
+
+                    # keep some columns that are fine
+                    cols_to_keep = ['run','task_name', 'reg_id','n_rep']
+                    df = df[[col for col in cols_to_keep if col in df.columns]]
+
+                    # add task_code and cond_code
+                    df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
+                                  on=['task_name'], how='left')
+                    
+                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+
+
+                    # overwrite the tsv file
+                    df.to_csv(tsv_path, sep='\t', index=False)
+                    print(f"Cleaned: {tsv_path}")
+
 if __name__=='__main__':
     # dirs
     datashare_dir = 'Y:/data/'
@@ -262,8 +313,8 @@ if __name__=='__main__':
 
 
     # what to cleanup
-    subject_list = ['sub-03']
-    clean_language(ff_dir, subject_list, task_map)
+    subject_list = None
+    clean_nishimoto(ff_dir, subject_list, task_map)
 
 
 

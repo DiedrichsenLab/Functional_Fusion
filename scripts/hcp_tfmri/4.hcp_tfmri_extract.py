@@ -24,7 +24,7 @@ atlas_dir = base_dir + '/Atlases'
 
 
 types = ['CondAll','CondRun']
-atlases  = ['MNISymC3']
+atlases  = ['MNISymC3','fs32k']
 session_list = ['ses-task']
 
 
