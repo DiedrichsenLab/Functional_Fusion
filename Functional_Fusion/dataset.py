@@ -402,7 +402,7 @@ class DataSet:
         self.estimates_dir = base_dir + '/derivatives/ffimport/{0}/func'
         self.func_dir = base_dir + '/derivatives/ffimport/{0}/func'
         self.suit_dir = base_dir + '/derivatives/ffimport/{0}/anat'
-        self.data_dir = base_dir + '/derivatives/ffextract/{0}/'
+        self.data_dir = base_dir + '/derivatives/ffextract/{0}'
         # assume that the common atlas directory is on the level before
         self.atlas_dir = os.path.join(os.path.dirname(base_dir), 'Atlases')
         # Some information that a standard data set should have
