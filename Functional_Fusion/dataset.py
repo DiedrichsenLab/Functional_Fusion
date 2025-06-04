@@ -670,7 +670,7 @@ class DataSet:
             # only get data from subjects that have rest, if specified in dataset description
             if type == 'Tseries' and 'ses-rest' in T.columns:
                 subj = T[T['ses-rest'] == 1].participant_id.tolist()
-        elif isinstance(subj, str) or subj in T.participant_id.tolist():
+        elif isinstance(subj, str) and subj in T.participant_id.tolist():
             subj = [subj]
         elif isinstance(subj, (int,np.integer)):
             subj = [T.participant_id.iloc[subj]]
