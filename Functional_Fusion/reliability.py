@@ -198,8 +198,8 @@ def between_subj_loo(data, cond_vec=None,
                             separate='none',
                             subtract_mean=True):
     """ Calculates the correlation of the responses of each of the subjects with the mean of the other subjects. 
-    If cond_vec is given, the data is averaged across multiple measurem
-    first.
+    This serves as a lower noise ceiling for any group model (a model that predicts the same value for all subjects).
+    If cond_vec is given, the data is averaged across multiple measurem first.
 
     Args:
         data (ndarray): num_subj x num_trials x num_voxel tensor of data
@@ -239,6 +239,54 @@ def between_subj_loo(data, cond_vec=None,
         else:
             r[i] = nansum(X1 * X2) / sqrt(nansum(X1 * X1) * nansum(X2 * X2))
     return r
+
+def between_subj_avrg(data, cond_vec=None,
+                            separate='none',
+                            subtract_mean=True):
+    """ Calculates the correlation of the responses of each of the subjects with the mean of all subjects. 
+    This serves as a upper noise ceiling for any group model (a model that predicts the same value for all subjects).
+    If cond_vec is given, the data is averaged across multiple measure of each condition first.
+
+    Args:
+        data (ndarray): num_subj x num_trials x num_voxel tensor of data
+        cond_vec (ndarray): num_trials condition vector
+        separate (str): {'none','voxel_wise','condition_wise'}
+        subtract_mean (bool): Remove the mean per voxel before correlation calc?
+
+    Returns:
+        r (ndarray): num_subj vector of correlations 
+    """
+    n_subj = data.shape[0]
+    n_trials = data.shape[1]
+    if cond_vec is not None:
+        Z = matrix.indicator(cond_vec)
+    else:
+        Z = eye(n_trials)
+    subj_vec = np.arange(n_subj)
+    if separate == 'voxel_wise':
+        r = np.zeros((n_subj, data.shape[2]))
+    elif separate=='condition_wise':
+        raise(NameError('condition_wise not implemented yet'))
+    elif separate=='none':
+        r = np.zeros((n_subj,))
+    else:
+        raise(NameError('separate needs to be none, voxel_wise, or condition_wise'))
+    X2 = util.nan_linear_model(Z, np.nanmean(data, axis=0))
+    if subtract_mean:
+        X2 -= np.nanmean(X2, axis=0)
+    for s, i in enumerate(subj_vec):
+        X1 = util.nan_linear_model(Z, data[s, :, :])
+        if subtract_mean:
+            X1 -= np.nanmean(X1, axis=0)
+        if separate=='voxel_wise':
+            r[i, :] = nansum(X1 * X2, axis=0) / \
+                sqrt(nansum(X1 * X1, axis=0)
+                     * nansum(X2 * X2, axis=0))
+        else:
+            r[i] = nansum(X1 * X2) / sqrt(nansum(X1 * X1) * nansum(X2 * X2))
+    return r
+
+
 
 def decompose_subj_group(data, cond_vec, part_vec,
                          separate='none',
