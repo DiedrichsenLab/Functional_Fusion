@@ -593,6 +593,113 @@ class DataSet:
         else:
             raise ValueError(f'Atlas space {atlas.space} not supported for extraction')
         return atlas_maps
+    
+    def condense_data(self, data, info,
+                      type='CondHalf',
+                      participant_id=None,
+                      ses_id=None):
+        """ Condense the data in a certain way optimally
+        'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
+        'CondRun': Conditions with seperate estimates per run.
+        'CondAll': Conditions with a single estimate averaging over all runs.
+        'TaskHalf': Task with seperate estimates for first and second half of experiment
+        'TaskRun': Task with seperate estimates per run.
+        'TaskAll': Task with a single estimate averaging over all runs.
+
+        Args:
+            data (list): List of extracted datasets
+            info (DataFrame): Data Frame with description of data - row-wise
+            type (str): Type of extraction:
+            participant_id (str): ID of participant
+            ses_id (str): Name of session
+
+        Returns:
+            Y (list of np.ndarray):
+                A list (len = numatlas) with N x P_i numpy array of prewhitened data
+            T (pd.DataFrame):
+                A data frame with information about the N numbers provided
+        """
+
+        info['cond_code'] = info['cond_code'].fillna('task')  # for tasks that have no condition code
+
+        # Depending on the type, make a new contrast
+        if type == 'CondHalf':
+            data_info, C = agg_data(info,
+                                    ['half', 'task_code','cond_code'],
+                                    ['run','reg_id'],
+                                    subset=(info.instruction == 0))
+            data_info['names'] = [
+                f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
+            # Baseline substraction
+            B = matrix.indicator(data_info.half, positive=True)
+
+        elif type == 'CondRun':
+            data_info, C = agg_data(info,
+                                    ['run', 'task_code','cond_code'],
+                                    ['half','reg_id'],
+                                    subset=(info.instruction == 0)) 
+            data_info['names'] = [
+                f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
+
+            # Baseline substraction
+            B = matrix.indicator(data_info.run, positive=True)
+
+        elif type == 'CondAll':
+
+            data_info, C = agg_data(info,
+                                    ['task_code','cond_code'],
+                                    ['run', 'half','reg_id'],
+                                    subset=(info.instruction == 0))
+            data_info['names'] = [
+                f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
+
+            # Baseline substraction
+            B = np.ones((data_info.shape[0],1))
+
+        elif type == 'TaskRun':
+
+            data_info, C = agg_data(info,
+                                    by=['task_code'],
+                                    over=['half'],
+                                    subset=(info.instruction == 0))
+            data_info['names'] = [
+                f'{d.task_code}_run{d.run}' for i, d in data_info.iterrows()]
+            # Baseline substraction
+            B = matrix.indicator(data_info.run, positive=True)
+
+        elif type == 'TaskHalf':
+            data_info, C = agg_data(info,
+                                    by=['task_code', 'half'],
+                                    over=['run'],
+                                    subset=(info.instruction == 0))
+            data_info['names'] = [
+                f'{d.task_code}_half{d.half}' for i, d in data_info.iterrows()]
+            # Baseline substraction
+            B = matrix.indicator(data_info.half, positive=True)
+        elif type == 'TaskAll':
+            data_info, C = agg_data(info,
+                                    by=['task_code'],
+                                    over=['run', 'half'],
+                                    subset=(info.instruction == 0))
+            data_info['names'] = [
+                f'{d.task_code}' for i, d in data_info.iterrows()]
+            # Baseline substraction
+            B = np.ones((data_info.shape[0],1))
+
+        # Prewhiten the data
+        data_n = prewhiten_data(data)
+
+        # Load the designmatrix and perform optimal contrast
+        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
+        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
+        reg_in = np.arange(C.shape[1], dtype=int)
+        #  contrast for all instructions
+        CI = matrix.indicator(info.run * info.instruction, positive=True)
+        C = np.c_[C, CI]
+        data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
+
+        return data_new, data_info
+
 
     def extract_all(self,
                     ses_id='ses-s1',
@@ -642,8 +749,7 @@ class DataSet:
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
-
-
+            
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
                  subj=None, exclude_subjects=True, fields=None, smooth=None, verbose=False):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
@@ -941,60 +1047,8 @@ class DataSetMDTB(DataSetNative):
             data_new, data_info = data, info
 
         else:
-            if type == 'CondHalf':
-                data_info, C = agg_data(info,
-                                        ['half', 'cond_num'],
-                                        ['run'],
-                                        subset=(info.instruction == 0))
-                data_info['names'] = [
-                    f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
-                # Baseline substraction
-                B = matrix.indicator(data_info.half, positive=True)
-
-            elif type == 'CondRun':
-                data_info, C = agg_data(info,
-                                        ['run', 'cond_num'],
-                                        ['half'],
-                                        subset=(info.instruction == 0)) 
-                data_info['names'] = [
-                    f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
-
-                # Baseline substraction
-                B = matrix.indicator(data_info.run, positive=True)
-            elif type == 'CondAll':
-
-                data_info, C = agg_data(info,
-                                        ['cond_num'],
-                                        ['run', 'half'],
-                                        subset=(info.instruction == 0))
-                data_info['names'] = [
-                    f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
-
-                # Baseline substraction
-                B = np.ones((data_info.shape[0],1))
-
-            elif type == 'TaskRun':
-
-                data_info, C = agg_data(info,
-                                        by=['run', 'task_num'],
-                                        over=['half'],
-                                        subset=(info.instruction == 0))
-                data_info['names'] = [
-                    f'{d.task_code}_run{d.run}' for i, d in data_info.iterrows()]
-                # Baseline substraction
-                B = matrix.indicator(data_info.run, positive=True)
-
-            # Prewhiten the data
-            data_n = prewhiten_data(data)
-
-            # Load the designmatrix and perform optimal contrast
-            dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-            X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
-            reg_in = np.arange(C.shape[1], dtype=int)
-            #  contrast for all instructions
-            CI = matrix.indicator(info.run * info.instruction, positive=True)
-            C = np.c_[C, CI]
-            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
+            data_new,data_info = super().condense_data(data, info, type,
+                                                        participant_id=participant_id, ses_id=ses_id)
 
         return data_new, data_info
 
