@@ -19,6 +19,7 @@ def clean_hcp_tfmri(dir,subject_list,task_map):
 
     # Filter to HCP-task dataset only
     task_map = task_map[task_map['Dataset'] == 'HCP']
+    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
 
     participants_tsv = os.path.join(dir,'HCP_tfMRI', 'participants.tsv')
 
@@ -59,6 +60,7 @@ def clean_hcp_tfmri(dir,subject_list,task_map):
 def clean_MDTB(dir,subject_list,task_map):
     # Filter to HCP-task dataset only
     task_map = task_map[task_map['Dataset'] == 'MDTB']
+    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
 
     participants_tsv = os.path.join(dir,'MDTB', 'participants.tsv')
 
@@ -83,15 +85,18 @@ def clean_MDTB(dir,subject_list,task_map):
                     df = pd.read_csv(tsv_path, sep='\t')
 
                     # keep some columns that are fine
-                    cols_to_keep = ['run','task_name', 'cond_name','task_num','cond_num', 'reg_id','instruction','common']
+                    cols_to_keep = ['run','task_name', 'cond_name', 'reg_id','instruction','common']
                     df = df[[col for col in cols_to_keep if col in df.columns]]
+
+                    # strip white spaces in task_name and cond_name
+                    df['task_name'] = df['task_name'].str.strip()
+                    df['cond_name'] = df['cond_name'].str.strip()
 
                     # add task_code and cond_code
                     df = df.merge(task_map[['task_name', 'cond_name', 'task_code', 'cond_code']],
                                   on=['task_name', 'cond_name'], how='left')
                     
                     df['half'] = np.where(df['run'] < 9, 1, 2)
-
 
                     # overwrite the tsv file
                     df.to_csv(tsv_path, sep='\t', index=False)
@@ -101,6 +106,7 @@ def clean_pontine(dir,subject_list,task_map):
 
     # Filter to HCP-task dataset only
     task_map = task_map[task_map['Dataset'] == 'Pontine']
+    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
 
     participants_tsv = os.path.join(dir,'Pontine', 'participants.tsv')
 
@@ -131,6 +137,10 @@ def clean_pontine(dir,subject_list,task_map):
                     # rename  taskName to task_name and inst to instruction
                     df.rename(columns={'taskName': 'task_name', 'inst': 'instruction'}, inplace=True)
 
+                    # strip white spaces in task_name
+                    df['task_name'] = df['task_name'].str.strip()
+
+
 
                     # add task_code and cond_code
                     df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
@@ -145,6 +155,7 @@ def clean_pontine(dir,subject_list,task_map):
 def clean_language(dir,subject_list,task_map):
     # Filter to HCP-task dataset only
     task_map = task_map[task_map['Dataset'] == 'Language']
+    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
 
     participants_tsv = os.path.join(dir,'Language', 'participants.tsv')
 
@@ -167,68 +178,35 @@ def clean_language(dir,subject_list,task_map):
                 if fname.endswith('.tsv'):
                     tsv_path = os.path.join(session_path, fname)
                     df = pd.read_csv(tsv_path, sep='\t')
+                    
+                    # keep some columns that are fine
+                    cols_to_keep = ['run','taskName', 'inst', 'reg_id']
+                    df = df[[col for col in cols_to_keep if col in df.columns]]
 
-                    # if tsv path has the word localizer
-                    if 'localizer' in tsv_path:
-                        # keep some columns that are fine
-                        cols_to_keep = ['run','taskName', 'inst', 'reg_id']
-                        df = df[[col for col in cols_to_keep if col in df.columns]]
+                    # rename  taskName to task_name and inst to instruction
+                    df.rename(columns={'taskName': 'task_name', 'inst': 'instruction'}, inplace=True)
 
-                        # rename  taskName to task_name and inst to instruction
-                        df.rename(columns={'taskName': 'task_name', 'inst': 'instruction'}, inplace=True)
-
-                        # strip white spaces in task_name
-                        df['task_name'] = df['task_name'].str.strip()
+                    # strip white spaces in task_name
+                    df['task_name'] = df['task_name'].str.strip()
 
 
-                        # add task_code and cond_code
-                        df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
-                                    on=['task_name'], how='left')
-                        
-                        df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
-                    elif 'sencoding_category' in tsv_path:
-                        # keep some columns that are fine
-                        cols_to_keep = ['run','taskName', 'inst', 'reg_id']
-                        df = df[[col for col in cols_to_keep if col in df.columns]]
-
-                        # rename  taskName to task_name and inst to instruction
-                        df.rename(columns={'taskName': 'task_name', 'inst': 'instruction'}, inplace=True)
-
-                        # strip white spaces in task_name
-                        df['task_name'] = df['task_name'].str.strip()
-
-
-                        # add task_code and cond_code
-                        df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
-                                    on=['task_name'], how='left')
-                        
-                        df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
-
-                    elif 'sencoding_trial' in tsv_path:
-                        # keep some columns that are fine
-                        cols_to_keep = ['run','taskName', 'inst', 'reg_id']
-                        df = df[[col for col in cols_to_keep if col in df.columns]]
-
-                        # rename  taskName to task_name and inst to instruction
-                        df.rename(columns={'taskName': 'task_name', 'inst': 'instruction'}, inplace=True)
-
-                        # strip white spaces in task_name
-                        df['task_name'] = df['task_name'].str.strip()
-
-                        
-                        # if run is less than 11 then half 1 else half 2
-                        df['half'] = np.where(df['run'] < 11, 1, 2)
-
-
+                    # add task_code and cond_code
+                    df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
+                                on=['task_name'], how='left')
+                    
+                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
 
                     # overwrite the tsv file
                     df.to_csv(tsv_path, sep='\t', index=False)
                     print(f"Cleaned: {tsv_path}")
 
+
+
 def clean_nishimoto(dir,subject_list,task_map):
 
     # Filter to HCP-task dataset only
     task_map = task_map[task_map['Dataset'] == 'Nishimoto']
+    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
 
     participants_tsv = os.path.join(dir,'Nishimoto', 'participants.tsv')
 
@@ -253,14 +231,17 @@ def clean_nishimoto(dir,subject_list,task_map):
                     df = pd.read_csv(tsv_path, sep='\t')
 
                     # keep some columns that are fine
-                    cols_to_keep = ['run','task_name', 'reg_id','n_rep']
+                    cols_to_keep = ['run','task_name', 'reg_id']
                     df = df[[col for col in cols_to_keep if col in df.columns]]
+
+                    # strip white spaces in task_name
+                    df['task_name'] = df['task_name'].str.strip()
 
                     # add task_code and cond_code
                     df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
                                   on=['task_name'], how='left')
                     
-                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+                    df['half'] = 2 - (df.run < (len(np.unique(df.run)) / 2 + 1))
 
 
                     # overwrite the tsv file
@@ -271,6 +252,7 @@ def clean_demand(dir,subject_list,task_map):
 
     # Filter to HCP-task dataset only
     task_map = task_map[task_map['Dataset'] == 'Demand']
+    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
 
     participants_tsv = os.path.join(dir,'Demand', 'participants.tsv')
 
@@ -295,18 +277,23 @@ def clean_demand(dir,subject_list,task_map):
                     df = pd.read_csv(tsv_path, sep='\t')
 
                     # keep some columns that are fine
-                    cols_to_keep = ['run','task','cond_name','pe_id','level','material', 'reg_id']
+                    cols_to_keep = ['run','task','cond_name', 'reg_id']
                     df = df[[col for col in cols_to_keep if col in df.columns]]
 
                     # rename task to task_name
                     df.rename(columns={'task': 'task_name'}, inplace=True)
 
+                    # strip white spaces in task_name and cond_name
+                    df['task_name'] = df['task_name'].astype(str).str.strip()
+                    df['cond_name'] = df['cond_name'].astype(str).str.strip()
+                    task_map['task_name'] = task_map['task_name'].astype(str).str.strip()
+                    task_map['cond_name'] = task_map['cond_name'].astype(str).str.strip()
                     # add task_code and cond_code
                     df = df.merge(task_map[['task_name', 'cond_name', 'task_code', 'cond_code']],
                                   on=['task_name', 'cond_name'], how='left')
                     
                     
-                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+                    df['half'] = (df.run % 2) + 1
 
 
                     # overwrite the tsv file
@@ -316,6 +303,7 @@ def clean_demand(dir,subject_list,task_map):
 def clean_somatotopic(dir,subject_list,task_map):
     # Filter to HCP-task dataset only
     task_map = task_map[task_map['Dataset'] == 'Somatotopic']
+    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
 
     participants_tsv = os.path.join(dir,'Somatotopic', 'participants.tsv')
 
@@ -340,19 +328,26 @@ def clean_somatotopic(dir,subject_list,task_map):
                     df = pd.read_csv(tsv_path, sep='\t')
 
                     # keep some columns that are fine
-                    cols_to_keep = ['run','task','cond_name', 'reg_id','orig_ses','orig_run','orig_reg']
+                    cols_to_keep = ['run','task','cond_name', 'reg_id']
                     df = df[[col for col in cols_to_keep if col in df.columns]]
                     
 
                     # rename task to task_name
                     df.rename(columns={'task': 'task_name'}, inplace=True)
 
+                    # strip white spaces in task_name and cond_name
+                    df['task_name'] = df['task_name'].str.strip()
+                    df['cond_name'] = df['cond_name'].str.strip()
+
+
+
+
                     # add task_code and cond_code
                     df = df.merge(task_map[['task_name', 'cond_name', 'task_code', 'cond_code']],
                                   on=['task_name', 'cond_name'], how='left')
                     
                     
-                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+                    df['half'] = (df.run % 2) + 1
 
 
                     # overwrite the tsv file
@@ -362,6 +357,7 @@ def clean_somatotopic(dir,subject_list,task_map):
 def clean_wmfs(dir,subject_list,task_map):
     # Filter to HCP-task dataset only
     task_map = task_map[task_map['Dataset'] == 'WMFS']
+    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
 
     participants_tsv = os.path.join(dir,'WMFS', 'participants.tsv')
 
@@ -386,7 +382,7 @@ def clean_wmfs(dir,subject_list,task_map):
                     df = pd.read_csv(tsv_path, sep='\t')
 
                     # keep some columns that are fine
-                    cols_to_keep = ['run','task_name','cond_name', 'phase','error','speed','force','load','recall','reg_id']
+                    cols_to_keep = ['run','task_name','cond_name','reg_id']
                     df = df[[col for col in cols_to_keep if col in df.columns]]
 
                     #remove white spaces in task_name and cond_name
@@ -399,7 +395,7 @@ def clean_wmfs(dir,subject_list,task_map):
                                   on=['task_name', 'cond_name'], how='left')
                     
                     
-                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+                    df['half'] = 2 - (df.run < 3)
 
 
                     # overwrite the tsv file
@@ -409,6 +405,7 @@ def clean_wmfs(dir,subject_list,task_map):
 def clean_social(dir,subject_list,task_map):
     # Filter to HCP-task dataset only
     task_map = task_map[task_map['Dataset'] == 'Social']
+    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
 
     participants_tsv = os.path.join(dir,'Social', 'participants.tsv')
 
@@ -439,11 +436,14 @@ def clean_social(dir,subject_list,task_map):
                     # rename Instruction to instruction
                     df.rename(columns={'Instruction': 'instruction'}, inplace=True)
 
+                    # strip white spaces in task_name
+                    df['task_name'] = df['task_name'].str.strip()
+
                     # add task_code and cond_code
                     df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
                                   on=['task_name'], how='left')
                     
-                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+                    df['half'] = 2 - (df.run < 5)
 
 
                     # overwrite the tsv file
@@ -502,7 +502,7 @@ if __name__=='__main__':
     taskmap_file = os.path.join(script_dir, '..', '..', 'docs', 'task_naming.tsv')
     taskmap_file = os.path.abspath(taskmap_file)
     task_map = pd.read_csv(taskmap_file, sep='\t')
-    task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
+    
 
 
     # what to cleanup
