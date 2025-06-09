@@ -76,9 +76,8 @@ if __name__=='__main__':
     dest_dir = f'{datashare_dir}/FunctionalFusion_new/'
 
     # what to copy
-    dataset = 'HCP'
-    subject_list = None  
-
+    dataset = 'MDTB'
+    subject_list = None
     # copy files
     copy_dataset(source_dir, dest_dir, dataset, subject_list=subject_list)
 

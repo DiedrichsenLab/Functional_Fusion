@@ -1,26 +1,26 @@
-Dataset	ses	task_name	cond_name	task_code	cond_code	description			
-MDTB	s1	Instruct	Instruct	instrct	NA				
+Dataset	ses	task_name	cond_name	task_code	cond_code	description	Unnamed: 7	Unnamed: 8	Unnamed: 9
+MDTB	s1	Instruct	Instruct	instrct					
 MDTB	s1	GoNoGo	NoGo	gng	ngo				
 MDTB	s1	GoNoGo	Go	gng	go				Notes:
-MDTB	s1	ToM	ToM	tom	NA				task_name and cond_name directly extracted from info files
+MDTB	s1	ToM	ToM	tom					task_name and cond_name directly extracted from info files
 MDTB	s1	actionObservation	VideoAct	actobserv	action				task_code and cond_code are suggestions for codes (same for similar tasks across two datasets)
 MDTB	s1	actionObservation	VideoKnots	actobserv	knot				
 MDTB	s1	affective	UnpleasantScenes	affect	unpleasant				
 MDTB	s1	affective	PleasantScenes	affect	pleasant				
 MDTB	s1	arithmetic	Math	arith	math				
 MDTB	s1	arithmetic	DigitJudgement	arith	digitjudgement				
-MDTB	s1	checkerBoard	CheckerBoard	checkbrd	NA				
+MDTB	s1	checkerBoard	CheckerBoard	checkbrd					
 MDTB	s1	emotional	SadFaces	emotface	sad				
 MDTB	s1	emotional	HappyFaces	emotface	happy				
-MDTB	s1	intervalTiming	IntervalTiming	intrval	NA				
-MDTB	s1	motorImagery	MotorImagery	mtrimgry	NA				
+MDTB	s1	intervalTiming	IntervalTiming	intrval					
+MDTB	s1	motorImagery	MotorImagery	mtrimgry					
 MDTB	s1	motorSequence	FingerSimple	fingr	simple				
 MDTB	s1	motorSequence	FingerSeq	fingr	sequence				
 MDTB	s1	nBack	Verbal0Back	nbckverb	2bcknrep				
 MDTB	s1	nBack	Verbal2Back	nbckverb	2bckrep				
 MDTB	s1	nBackPic	Object0Back	nbckpic	2bcknrep				
 MDTB	s1	nBackPic	Object2Back	nbckpic	2bckrep				
-MDTB	s1	spatialNavigation	SpatialNavigation	spatialnav	NA				
+MDTB	s1	spatialNavigation	SpatialNavigation	spatialnav					
 MDTB	s1	stroop	StroopIncon	stroop	incon				
 MDTB	s1	stroop	StroopCon	stroop	con				
 MDTB	s1	verbGeneration	VerbGen	vrbgen	generate				
@@ -28,15 +28,15 @@ MDTB	s1	verbGeneration	WordRead	vrbgen	read
 MDTB	s1	visualSearch	VisualSearchSmall	vissearch	small				
 MDTB	s1	visualSearch	VisualSearchMed	vissearch	med				
 MDTB	s1	visualSearch	VisualSearchLarge	vissearch	large				
-MDTB	s1	rest	rest	rest	NA				
-MDTB	s2	Instruct	Instruct	instrct	NA				
-MDTB	s2	CPRO	CPRO	cpro	NA				
+MDTB	s1	rest	rest	rest					
+MDTB	s2	Instruct	Instruct	instrct					
+MDTB	s2	CPRO	CPRO	cpro					
 MDTB	s2	prediction	Prediction	sntncpredict	nviolation				
 MDTB	s2	prediction	PredictViol	sntncpredict	violation				
 MDTB	s2	prediction	PredictScram	sntncpredict	scrambeled				
 MDTB	s2	verbGeneration2	VerbGen	vrbgen	generate				
 MDTB	s2	verbGeneration2	WordRead	vrbgen	read				
-MDTB	s2	spatialNavigation2	SpatialNavigation	spatialnav	NA				
+MDTB	s2	spatialNavigation2	SpatialNavigation	spatialnav					
 MDTB	s2	spatialMap	SpatialMapEasy	sptialmap	easy				
 MDTB	s2	spatialMap	SpatialMapMed	sptialmap	med				
 MDTB	s2	spatialMap	SpatialMedDiff	sptialmap	diff				
@@ -58,39 +58,39 @@ MDTB	s2	respAlt	RespAltDiff	respalt	diff
 MDTB	s2	visualSearch2	VisualSearchSmall	vissearch	small				
 MDTB	s2	visualSearch2	VisualSearchMed	vissearch	med				
 MDTB	s2	visualSearch2	VisualSearchLarge	vissearch	large				
-MDTB	s2	ToM2	ToM	tom	NA				
+MDTB	s2	ToM2	ToM	tom					
 MDTB	s2	actionObservation2	VideoAct	actobserv	action				
 MDTB	s2	actionObservation2	VideoKnots	actobserv	knot				
-MDTB	s2	rest2	rest	rest	NA				
-Pontine	s1	Instruct           		instrct	NA				
-Pontine	s1	visual_search      		vissearch	NA				
-Pontine	s1	finger_sequence    		fingr	NA				
-Pontine	s1	theory_of_mind     		tom	Na				
-Pontine	s1	n_back             		nbckpic	2back				
-Pontine	s1	semantic_prediction		sntncpredict	NA				
-Pontine	s1	action_observation 		actobserv	NA				
-Pontine	s1	flexion_extension  		motor 	feetflexext				
-Pontine	s1	rest               		rest	NA				
-Pontine	s1	romance_movie      		movie	romance				
-Language	localizer_cond	Instruct                 		instrct	NA				
-Language	localizer_cond	rest                     		rest	NA				
-Language	localizer_cond	word_reading             		vrbgen	read				
-Language	localizer_cond	verb_GENERATION          		vrbgen	generate				
+MDTB	s2	rest2	rest	rest					
+Pontine	s1	Instruct		instrct					
+Pontine	s1	visual_search		vissearch					
+Pontine	s1	finger_sequence		fingr					
+Pontine	s1	theory_of_mind		tom	Na				
+Pontine	s1	n_back		nbckpic	2back				
+Pontine	s1	semantic_prediction		sntncpredict					
+Pontine	s1	action_observation		actobserv					
+Pontine	s1	flexion_extension		motor 	feetflexext				
+Pontine	s1	rest		rest					
+Pontine	s1	romance_movie		movie	romance				
+Language	localizer_cond	Instruct		instrct					
+Language	localizer_cond	rest		rest					
+Language	localizer_cond	word_reading		vrbgen	read				
+Language	localizer_cond	verb_GENERATION		vrbgen	generate				
 Language	localizer_cond	action_observation_action		actobserv	action				
-Language	localizer_cond	action_observation_knot  		actobserv	knot				
-Language	localizer_cond	intact_passage           		pssglisten	intact				
-Language	localizer_cond	degraded_passage         		pssglisten	degraded				
-Language	localizer_cond	tongue_movement          		motor	tongue				
-Language	localizer_cond	finger_sequence          		fingr	sequence				
-Language	localizer_cond	theory_of_mind           		tom	NA				
-Language	localizer_cond	auditory_narrative       		audnarrative	NA				
-Language	localizer_cond	n_back                   		nbckpic	2bck				
-Language	localizer_cond	oddball                  		oddball	NA				
-Language	localizer_cond	demand_grid              		dmndgrid	g12s3b2	"a 3x4 grid is shown, 3 times (steps), 2 boxes lit in each step"			
-Language	localizer_cond	romance_movie            		movie	romance				
-Language	localizer_cond	spatial_navigation       		spatialnav	NA				
-Language	localizer_cond	sentence_reading         		read	sentence				
-Language	localizer_cond	nonword_reading          		read	noword				
+Language	localizer_cond	action_observation_knot		actobserv	knot				
+Language	localizer_cond	intact_passage		pssglisten	intact				
+Language	localizer_cond	degraded_passage		pssglisten	degraded				
+Language	localizer_cond	tongue_movement		motor	tongue				
+Language	localizer_cond	finger_sequence		fingr	sequence				
+Language	localizer_cond	theory_of_mind		tom					
+Language	localizer_cond	auditory_narrative		audnarrative					
+Language	localizer_cond	n_back		nbckpic	2bck				
+Language	localizer_cond	oddball		oddball					
+Language	localizer_cond	demand_grid		dmndgrid	g12s3b2	a 3x4 grid is shown, 3 times (steps), 2 boxes lit in each step			
+Language	localizer_cond	romance_movie		movie	romance				
+Language	localizer_cond	spatial_navigation		spatialnav					
+Language	localizer_cond	sentence_reading		read	sentence				
+Language	localizer_cond	nonword_reading		read	noword				
 HCP	task	EMOTION	FACES	hcpemotion	faces				
 HCP	task	EMOTION	SHAPES	hcpemotion	shapes				
 HCP	task	GAMBLING	PUNISH	hcpgamble	punish				
@@ -145,13 +145,15 @@ WMFS	ses-02	wm	L6F_encode	wm	l6fencode
 WMFS	ses-02	wm	L6F_retriev	wm	l6fretriev				
 WMFS	ses-02	wm	L6B_encode	wm	l6bencode				
 WMFS	ses-02	wm	L6B_retriev	wm	l6bretriev				
-WMFS	ses-01	fs	LL   	frcspeed	lf_ls				
-WMFS	ses-02	fs	LM   	frcspeed	lf_ms				
-WMFS	ses-03	fs	LH   	frcspeed	lf_hs				
-WMFS	ses-04	fs	ML   	frcspeed	mf_ls				
-WMFS_ses-01	ses-05	fs	HL   	frcspeed	hf_ls				
+WMFS	ses-01	fs	LL	frcspeed	lf_ls				
+WMFS	ses-01	fs	LM	frcspeed	lf_ms				
+WMFS	ses-01	fs	LH	frcspeed	lf_hs				
+WMFS	ses-01	fs	ML	frcspeed	mf_ls				
+WMFS	ses-01	fs	HL	frcspeed	hf_ls				
+WMFS	ses-01	fs	error	frcspeed	err				
+Social	social	Instruct		instrct					
 Social	social	demand_grid		dmndgrid	g12s3b2				
-Social	social	rest		rest	NA				
+Social	social	rest		rest					
 Social	social	action_prediction_greeting_easy		actpredict	greetingeasy				
 Social	social	action_prediction_greeting_hard		actpredict	greetinghard				
 Social	social	action_prediction_soccer_easy		actpredict	soccereasy				
@@ -163,10 +165,12 @@ Social	social	frith_happe_random		frithhappe	random
 Social	social	frith_happe_gd		frithhappe	gd				
 Social	social	liking_like		liking	like				
 Social	social	liking_dislike		liking	dislike				
+Social	social	liking_control		liking	control				
 Social	social	movie_romance		movie	romance				
 Social	social	movie_nature		movie	nature				
 Social	social	picture_sequence_fbelief		picseq	fbelief				
 Social	social	picture_sequence_tbelief		picseq	tbelief				
+Social	social	picture_sequence_control		picseq	control				
 Social	social	rmet_emotion		rmet	emotion				
 Social	social	rmet_age		rmet	age				
 Social	social	strange_stories_social		strngstories	social				
@@ -395,107 +399,107 @@ IBC	tom	EmotionalPain	emotional_pain	emotionalpain	emotionalpain
 IBC	tom	EmotionalPain	physical_pain	emotionalpain	physicalpain				
 IBC	tom	PainMovie	mental	painmovie	mental				
 IBC	tom	PainMovie	pain	painmovie	pain				
-Nishimoto	s1	AnimalPhoto     		animal	photo				
-Nishimoto	s1	AnimalVoice     		animal	voice				
-Nishimoto	s1	CalcEasy        		calc	easy				
-Nishimoto	s1	CalcHard        		calc	hard				
-Nishimoto	s1	CategoryFluency 		categoryfluency	NA				
-Nishimoto	s1	Clock           		clock	NA				
-Nishimoto	s1	ComparePeople   		comparepeople	NA				
-Nishimoto	s1	CountDot        		count	dot				
-Nishimoto	s1	CountTone       		count	tone				
-Nishimoto	s1	CountryMap      		countrymap	NA				
-Nishimoto	s1	DailyPhoto      		daily	photo				
-Nishimoto	s1	DailySound      		daily	sound				
-Nishimoto	s1	DecideFood      		decide	food				
-Nishimoto	s1	DecidePeople    		decide	people				
-Nishimoto	s1	DecidePresent   		decide	present				
-Nishimoto	s1	DecideShopping  		decide	shopping				
-Nishimoto	s1	DetectColor     		detect	color				
+Nishimoto	s1	AnimalPhoto		animal	photo				
+Nishimoto	s1	AnimalVoice		animal	voice				
+Nishimoto	s1	CalcEasy		calc	easy				
+Nishimoto	s1	CalcHard		calc	hard				
+Nishimoto	s1	CategoryFluency		categoryfluency					
+Nishimoto	s1	Clock		clock					
+Nishimoto	s1	ComparePeople		comparepeople					
+Nishimoto	s1	CountDot		count	dot				
+Nishimoto	s1	CountTone		count	tone				
+Nishimoto	s1	CountryMap		countrymap					
+Nishimoto	s1	DailyPhoto		daily	photo				
+Nishimoto	s1	DailySound		daily	sound				
+Nishimoto	s1	DecideFood		decide	food				
+Nishimoto	s1	DecidePeople		decide	people				
+Nishimoto	s1	DecidePresent		decide	present				
+Nishimoto	s1	DecideShopping		decide	shopping				
+Nishimoto	s1	DetectColor		detect	color				
 Nishimoto	s1	DetectDifference		detect	difference				
-Nishimoto	s1	DetectTargetMov 		detect	targetmov				
-Nishimoto	s1	DetectTargetPic 		detect	targetpic				
-Nishimoto	s1	DomesiticName   		domesitic	name				
-Nishimoto	s1	DomesiticPlace  		domesitic	place				
-Nishimoto	s1	EmotionFace     		emotion	face				
-Nishimoto	s1	EmotionVoice    		emotion	voice				
-Nishimoto	s1	EyeBlink        		eyeblink	NA				
-Nishimoto	s1	EyeMoveEasy     		eyemove	easy				
-Nishimoto	s1	EyeMoveHard     		eyemove	hard				
-Nishimoto	s1	FeedbackPos     		feedbackpos	NA				
-Nishimoto	s1	Flag            		flag	NA				
-Nishimoto	s1	ForeignListen   		foreign	listen				
-Nishimoto	s1	ForeignListenQ  		foreign	listenq				
-Nishimoto	s1	ForeignRead     		foreign	read				
-Nishimoto	s1	ForeignReadQ    		foreign	readq				
-Nishimoto	s1	Harmony         		harmony	NA				
-Nishimoto	s1	ImagineFuture   		imagine	future				
-Nishimoto	s1	ImagineIf       		imagine	elf				
-Nishimoto	s1	ImagineMove     		imagine	move				
-Nishimoto	s1	ImaginePlace    		imagine	place				
-Nishimoto	s1	LanguageSound   		languagesound	NA				
-Nishimoto	s1	LetterFluency   		letterfluency	NA				
-Nishimoto	s1	MapIcon         		mapicon	NA				
-Nishimoto	s1	MatchDigit      		match	digit				
-Nishimoto	s1	MatchLetter     		match	letter				
-Nishimoto	s1	MatchNameEasy   		match	nameeasy				
-Nishimoto	s1	MatchNameHard   		match	namehard				
-Nishimoto	s1	MemoryDigit     		memory	digit				
-Nishimoto	s1	MemoryLetter    		memory	letter				
-Nishimoto	s1	MemoryNameEasy  		memory	nameeasy				
-Nishimoto	s1	MemoryNameHard  		memory	namehard				
-Nishimoto	s1	Metaphor        		metaphor	NA				
-Nishimoto	s1	MirrorImage     		mirrorimage	NA				
-Nishimoto	s1	Money           		money	NA				
-Nishimoto	s1	MoralImpersonal 		moral	impersonal				
-Nishimoto	s1	MoralPersonal   		moral	personal				
-Nishimoto	s1	MusicCategory   		musiccategory	NA				
-Nishimoto	s1	PressLR         		press	lr				
-Nishimoto	s1	PressLeft       		press	left				
-Nishimoto	s1	PressOrdEasy    		press	ordheasy				
-Nishimoto	s1	PressOrdHard    		press	ordhard				
-Nishimoto	s1	PressRight      		press	right				
-Nishimoto	s1	PropLogic       		proplogic	NA				
-Nishimoto	s1	RateBeautyMov   		rate	beautymov				
-Nishimoto	s1	RateBeautyPic   		rate	beautypic				
-Nishimoto	s1	RateBeautySound 		rate	beautysound				
-Nishimoto	s1	RateConfidence  		rate	confidence				
+Nishimoto	s1	DetectTargetMov		detect	targetmov				
+Nishimoto	s1	DetectTargetPic		detect	targetpic				
+Nishimoto	s1	DomesiticName		domesitic	name				
+Nishimoto	s1	DomesiticPlace		domesitic	place				
+Nishimoto	s1	EmotionFace		emotion	face				
+Nishimoto	s1	EmotionVoice		emotion	voice				
+Nishimoto	s1	EyeBlink		eyeblink					
+Nishimoto	s1	EyeMoveEasy		eyemove	easy				
+Nishimoto	s1	EyeMoveHard		eyemove	hard				
+Nishimoto	s1	FeedbackPos		feedbackpos					
+Nishimoto	s1	Flag		flag					
+Nishimoto	s1	ForeignListen		foreign	listen				
+Nishimoto	s1	ForeignListenQ		foreign	listenq				
+Nishimoto	s1	ForeignRead		foreign	read				
+Nishimoto	s1	ForeignReadQ		foreign	readq				
+Nishimoto	s1	Harmony		harmony					
+Nishimoto	s1	ImagineFuture		imagine	future				
+Nishimoto	s1	ImagineIf		imagine	elf				
+Nishimoto	s1	ImagineMove		imagine	move				
+Nishimoto	s1	ImaginePlace		imagine	place				
+Nishimoto	s1	LanguageSound		languagesound					
+Nishimoto	s1	LetterFluency		letterfluency					
+Nishimoto	s1	MapIcon		mapicon					
+Nishimoto	s1	MatchDigit		match	digit				
+Nishimoto	s1	MatchLetter		match	letter				
+Nishimoto	s1	MatchNameEasy		match	nameeasy				
+Nishimoto	s1	MatchNameHard		match	namehard				
+Nishimoto	s1	MemoryDigit		memory	digit				
+Nishimoto	s1	MemoryLetter		memory	letter				
+Nishimoto	s1	MemoryNameEasy		memory	nameeasy				
+Nishimoto	s1	MemoryNameHard		memory	namehard				
+Nishimoto	s1	Metaphor		metaphor					
+Nishimoto	s1	MirrorImage		mirrorimage					
+Nishimoto	s1	Money		money					
+Nishimoto	s1	MoralImpersonal		moral	impersonal				
+Nishimoto	s1	MoralPersonal		moral	personal				
+Nishimoto	s1	MusicCategory		musiccategory					
+Nishimoto	s1	PressLR		press	lr				
+Nishimoto	s1	PressLeft		press	left				
+Nishimoto	s1	PressOrdEasy		press	ordheasy				
+Nishimoto	s1	PressOrdHard		press	ordhard				
+Nishimoto	s1	PressRight		press	right				
+Nishimoto	s1	PropLogic		proplogic					
+Nishimoto	s1	RateBeautyMov		rate	beautymov				
+Nishimoto	s1	RateBeautyPic		rate	beautypic				
+Nishimoto	s1	RateBeautySound		rate	beautysound				
+Nishimoto	s1	RateConfidence		rate	confidence				
 Nishimoto	s1	RateDeliciousMov		rate	deliciousmov				
 Nishimoto	s1	RateDeliciousPic		rate	deliciouspic				
-Nishimoto	s1	RateDisgustMov  		rate	disgustmov				
-Nishimoto	s1	RateDisgustPic  		rate	disgustpic				
+Nishimoto	s1	RateDisgustMov		rate	disgustmov				
+Nishimoto	s1	RateDisgustPic		rate	disgustpic				
 Nishimoto	s1	RateDisgustSound		rate	disgustsound				
-Nishimoto	s1	RateHappyMov    		rate	happymov				
-Nishimoto	s1	RateHappyPic    		rate	happypic				
-Nishimoto	s1	RateNoisy       		rate	noisy				
-Nishimoto	s1	RatePainfulMov  		rate	painfulmov				
-Nishimoto	s1	RatePainfulPic  		rate	painfulpic				
-Nishimoto	s1	RatePoem        		rate	poem				
-Nishimoto	s1	RateSexyMovF    		rate	sexymovf				
-Nishimoto	s1	RateSexyMovM    		rate	sexymovm				
-Nishimoto	s1	RateSexyPicF    		rate	sexypicf				
-Nishimoto	s1	RateSexyPicM    		rate	sexypicm				
-Nishimoto	s1	RateSleepy      		rate	sleepy				
-Nishimoto	s1	RateTired       		rate	tired				
-Nishimoto	s1	RecallFace      		recal	face				
-Nishimoto	s1	RecallKnowledge 		recal	knowledge				
-Nishimoto	s1	RecallPast      		recal	past				
-Nishimoto	s1	RecallTaskEasy  		recal	talkeasy				
-Nishimoto	s1	RecallTaskHard  		recal	talkhard				
-Nishimoto	s1	Recipe          		recipe	NA				
-Nishimoto	s1	RelationLogic   		relationlogic	NA				
-Nishimoto	s1	RestClose       		rest	close				
-Nishimoto	s1	RestOpen        		rest	open				
-Nishimoto	s1	Rhythm          		rhythm	NA				
-Nishimoto	s1	Sarcasm         		sarcasm	NA				
-Nishimoto	s1	SoundLeft       		sound	left				
-Nishimoto	s1	SoundPlace      		sound	place				
-Nishimoto	s1	SoundRight      		sound	right				
-Nishimoto	s1	StateMap        		statemap	NA				
-Nishimoto	s1	TimeMov         		time	move				
-Nishimoto	s1	TimeSound       		time	sound				
-Nishimoto	s1	TimeValue       		time	value				
-Nishimoto	s1	TrafficSign     		trafficsign	NA				
-Nishimoto	s1	WordMeaning     		wordmeaning	NA				
-Nishimoto	s1	WorldName       		world	name				
-Nishimoto	s1	WorldPlace      		world	place				
+Nishimoto	s1	RateHappyMov		rate	happymov				
+Nishimoto	s1	RateHappyPic		rate	happypic				
+Nishimoto	s1	RateNoisy		rate	noisy				
+Nishimoto	s1	RatePainfulMov		rate	painfulmov				
+Nishimoto	s1	RatePainfulPic		rate	painfulpic				
+Nishimoto	s1	RatePoem		rate	poem				
+Nishimoto	s1	RateSexyMovF		rate	sexymovf				
+Nishimoto	s1	RateSexyMovM		rate	sexymovm				
+Nishimoto	s1	RateSexyPicF		rate	sexypicf				
+Nishimoto	s1	RateSexyPicM		rate	sexypicm				
+Nishimoto	s1	RateSleepy		rate	sleepy				
+Nishimoto	s1	RateTired		rate	tired				
+Nishimoto	s1	RecallFace		recal	face				
+Nishimoto	s1	RecallKnowledge		recal	knowledge				
+Nishimoto	s1	RecallPast		recal	past				
+Nishimoto	s1	RecallTaskEasy		recal	talkeasy				
+Nishimoto	s1	RecallTaskHard		recal	talkhard				
+Nishimoto	s1	Recipe		recipe					
+Nishimoto	s1	RelationLogic		relationlogic					
+Nishimoto	s1	RestClose		rest	close				
+Nishimoto	s1	RestOpen		rest	open				
+Nishimoto	s1	Rhythm		rhythm					
+Nishimoto	s1	Sarcasm		sarcasm					
+Nishimoto	s1	SoundLeft		sound	left				
+Nishimoto	s1	SoundPlace		sound	place				
+Nishimoto	s1	SoundRight		sound	right				
+Nishimoto	s1	StateMap		statemap					
+Nishimoto	s1	TimeMov		time	move				
+Nishimoto	s1	TimeSound		time	sound				
+Nishimoto	s1	TimeValue		time	value				
+Nishimoto	s1	TrafficSign		trafficsign					
+Nishimoto	s1	WordMeaning		wordmeaning					
+Nishimoto	s1	WorldName		world	name				
+Nishimoto	s1	WorldPlace		world	place				
