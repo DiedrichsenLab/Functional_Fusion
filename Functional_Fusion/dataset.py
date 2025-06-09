@@ -936,7 +936,6 @@ class DataSetMDTB(DataSetNative):
         """
 
         # Depending on the type, make a new contrast
-        info['half'] = 2 - (info.run < 9)
         if type == 'Tseries' or type == 'FixTseries':
             info['names'] = info['timepoint']
             data_new, data_info = data, info
@@ -945,20 +944,20 @@ class DataSetMDTB(DataSetNative):
             if type == 'CondHalf':
                 data_info, C = agg_data(info,
                                         ['half', 'cond_num'],
-                                        ['run', 'reg_num'],
+                                        ['run'],
                                         subset=(info.instruction == 0))
                 data_info['names'] = [
-                    f'{d.cond_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                    f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
                 # Baseline substraction
                 B = matrix.indicator(data_info.half, positive=True)
 
             elif type == 'CondRun':
                 data_info, C = agg_data(info,
                                         ['run', 'cond_num'],
-                                        [],
+                                        ['half'],
                                         subset=(info.instruction == 0)) 
                 data_info['names'] = [
-                    f'{d.cond_name}-run{d.run:02d}' for i, d in data_info.iterrows()]
+                    f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
 
                 # Baseline substraction
                 B = matrix.indicator(data_info.run, positive=True)
@@ -966,10 +965,10 @@ class DataSetMDTB(DataSetNative):
 
                 data_info, C = agg_data(info,
                                         ['cond_num'],
-                                        ['run', 'half', 'reg_num'],
+                                        ['run', 'half'],
                                         subset=(info.instruction == 0))
                 data_info['names'] = [
-                    f'{d.cond_name}' for i, d in data_info.iterrows()]
+                    f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
 
                 # Baseline substraction
                 B = np.ones((data_info.shape[0],1))
@@ -978,10 +977,10 @@ class DataSetMDTB(DataSetNative):
 
                 data_info, C = agg_data(info,
                                         by=['run', 'task_num'],
-                                        over=['reg_num'],
+                                        over=['half'],
                                         subset=(info.instruction == 0))
                 data_info['names'] = [
-                    f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                    f'{d.task_code}_run{d.run}' for i, d in data_info.iterrows()]
                 # Baseline substraction
                 B = matrix.indicator(data_info.run, positive=True)
 
@@ -1161,16 +1160,15 @@ class DataSetPontine(DataSetNative):
         """
 
         # Depending on the type, make a new contrast
-        info['half'] = 2 - (info.run < 9)
         n_cond = np.max(info.reg_id)
 
         if type == 'CondHalf':
             data_info, C = agg_data(info,
                                     ['half', 'reg_id'],
-                                    ['run', 'reg_num'],
+                                    ['run'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
 
@@ -1178,22 +1176,13 @@ class DataSetPontine(DataSetNative):
 
             data_info, C = agg_data(info,
                                     ['run', 'reg_id'],
-                                    ['reg_num'],
+                                    ['half'],
                                     subset=(info.reg_id > 0))
             data_info['names'] = [
-                f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}_run{d.run}' for i, d in data_info.iterrows()]
             # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
+            B = matrix.indicator(data_info.run, positive=True)
 
-        elif type == 'TaskAll':
-            data_info, C = agg_data(info,
-                                    ['reg_id'],
-                                    ['run', 'half', 'reg_num'],
-                                    subset=(info.reg_id > 0))
-            data_info['names'] = [
-                f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = np.ones((data_info.shape[0],1))
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
@@ -1201,7 +1190,8 @@ class DataSetPontine(DataSetNative):
         # Load the designmatrix and perform optimal contrast
         X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy',allow_pickle=True).item()
         reg_in = np.arange(C.shape[1], dtype=int)
-        CI = matrix.indicator(info.run * info.inst, positive=True)
+        CI = matrix.indicator(info.run * info.instruction
+, positive=True)
         C = np.c_[C, CI]
 
         data_new = optimal_contrast(data_n, C, X['nKX'], reg_in)
@@ -1241,15 +1231,14 @@ class DataSetNishi(DataSetNative):
             names: Names for CIFTI-file per row
         """
         # Depending on the type, make a new contrast
-        info['half'] = 2 - (info.run < (len(np.unique(info.run)) / 2 + 1))
         n_cond = np.max(info.reg_id)
 
         if type == 'CondHalf':
             data_info, C = agg_data(info,
                                     ['half', 'reg_id'],
-                                    ['run', 'reg_num'])
+                                    ['run'])
             data_info['names'] = [
-                f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
 
             # Baseline substraction
             B = matrix.indicator(data_info.half, positive=True)
@@ -1257,10 +1246,10 @@ class DataSetNishi(DataSetNative):
         elif type == 'CondRun':
             data_info, C = agg_data(info,
                                     ['run', 'reg_id'],
-                                    ['reg_num'])
+                                    ['half'])
 
             data_info['names'] = [
-                f'{d.task_name.strip()}-run{d.run:02d}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
             # Baseline substraction
             B = matrix.indicator(data_info.run, positive=True)
         elif type == 'CondAll':
@@ -1388,10 +1377,10 @@ class DataSetIBC(DataSetNative):
         info['n_rep'] = np.ones((info.shape[0],))
         if type == 'CondHalf':
             data_info, C = agg_data(info,
-                                    ['half', 'cond_num_uni'],
-                                    ['run', 'reg_num'])
+                                    ['half', 'reg_id'],
+                                    ['run'])
             data_info['names'] = [
-                f'{d.cond_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
@@ -1431,15 +1420,14 @@ class DataSetDemand(DataSetCifti):
             names: Names for CIFTI-file per row
         """
         # Depending on the type, make a new contrast
-        info['half'] = (info.run % 2) + 1
         n_cond = np.max(info.reg_id)
         if type == 'CondHalf':
             data_info, C = agg_data(info, ['half', 'reg_id'], ['run'])
-            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
+            data_info['names'] = [f'{d.task_code}_{d.cond_code}_half{d.half}'
                                   for i, d in data_info.iterrows()]
         elif type == 'CondAll':
             data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
-            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
+            data_info['names'] = [f'{d.task_code}_{d.cond_code}'
                                   for i, d in data_info.iterrows()]
 
         # Prewhiten the data
@@ -1484,35 +1472,34 @@ class DataSetWMFS(DataSetNative):
         """
 
         # Depending on the type, make a new contrast
-        info['half'] = 2 - (info.run < 3)
         n_cond = np.max(info.loc[info.error == 0].reg_id)
 
         if type == 'CondHalf':
             # Make new data frame for the information of the new regressors
 
             data_info, C = agg_data(info,
-                                    ['half', 'cond_num'],
-                                    ['run', 'reg_num'],
+                                    ['half', 'reg_id'],
+                                    ['run'],
                                     subset=(info.error == 0))
             data_info['names'] = [
-                f'{d.cond_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
         elif type == 'CondRun':
 
             # Subset of info sutructure
             data_info, C = agg_data(info,
-                                    ['run', 'cond_num'],
-                                    ['reg_num'],
+                                    ['run', 'reg_id'],
+                                    ['half'],
                                     subset=(info.error == 0))
             data_info['names'] = [
-                f'{d.cond_name.strip()}-run{d.run:02d}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
         elif type == 'CondAll':
             data_info, C = agg_data(info,
-                                    ['cond_num'],
-                                    ['run', 'half', 'reg_num'],
+                                    ['reg_id'],
+                                    ['run', 'half'],
                                     subset=(info.error == 0))
             # data_info = info_gb.agg({'n_rep':np.sum}).reset_index(drop=True)
             data_info['names'] = [
-                f'{d.cond_name.strip()}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
@@ -1598,19 +1585,18 @@ class DataSetSomatotopic(DataSetMNIVol):
         Missing runs are: S3_sess03_MOTOR6, S3_sess01_MOTOR3, S3_sess01_MOTOR4, S3_sess01_MOTOR5, S4_sess01_MOTOR6, S4_sess02_MOTOR6 & S6_sess02_MOTOR2
         """
         # Depending on the type, make a new contrast
-        info['half'] = (info.run % 2) + 1
         n_cond = np.max(info.reg_id)
         if type == 'CondHalf':
             data_info, C = agg_data(info, ['half', 'reg_id'], ['run'])
-            data_info['names'] = [f'{d.cond_name.strip()}-half{d.half}'
+            data_info['names'] = [f'{d.task_code}_{d.cond_code}_half{d.half}'
                                   for i, d in data_info.iterrows()]
         elif type == 'CondAll':
             data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
             data_info['names'] = [
-                f'{d.cond_name}' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
         elif type == 'CondRun':
-            data_info, C = agg_data(info, ['run', 'half', 'reg_id'], [])
-            data_info['names'] = [f'{d.cond_name.strip()}-run{d.run}'
+            data_info, C = agg_data(info, ['run', 'reg_id'], ['half'])
+            data_info['names'] = [f'{d.task_code}_{d.cond_code}_run{d.run}'
                                   for i, d in data_info.iterrows()]
 
         # Prewhiten the data
@@ -1757,7 +1743,6 @@ class DataSetLanguage(DataSetNative):
         """
 
         # Depending on the type, make a new contrast
-        info['half'] = 2 - (info.run < 5)
         if type == 'Tseries' or type == 'FixTseries':
             info['names'] = info['timepoint']
             data_new, data_info = data, info
@@ -1766,29 +1751,29 @@ class DataSetLanguage(DataSetNative):
             if type == 'CondHalf':
                 data_info, C = agg_data(info,
                                         ['half', 'reg_id'],
-                                        ['run', 'reg_num'],
+                                        ['run'],
                                         subset=(info.reg_id >0))
                 data_info['names'] = [
-                    f'{d.taskName.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                    f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
                 # Baseline substraction
 
             elif type == 'CondRun':
 
                 data_info, C = agg_data(info,
                                         ['run', 'reg_id'],
-                                        ['reg_num'],
+                                        ['half'],
                                         subset=(info.reg_id > 0))
                 data_info['names'] = [
-                    f'{d.taskName.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                    f'{d.task_code}_{d.cond_code}_run{d.run}' for i, d in data_info.iterrows()]
                 # Baseline substraction
 
             elif type == 'CondAll':
                 data_info, C = agg_data(info,
                                         ['reg_id'],
-                                        ['run', 'half', 'reg_num'],
+                                        ['run', 'half'],
                                         subset=(info.reg_id > 0))
                 data_info['names'] = [
-                    f'{d.taskName.strip()}' for i, d in data_info.iterrows()]
+                    f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
                 # Baseline substraction
 
             # Prewhiten the data
@@ -1799,7 +1784,8 @@ class DataSetLanguage(DataSetNative):
             # Load the designmatrix and perform optimal contrast
             X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
             reg_in = np.arange(C.shape[1], dtype=int)
-            CI = matrix.indicator(info.run * info.inst, positive=True)
+            CI = matrix.indicator(info.run * info.instruction
+, positive=True)
             C = np.c_[C, CI]
 
             data_new = optimal_contrast(data_n, C, X, reg_in)
@@ -1841,7 +1827,7 @@ class DataSetHcpTask(DataSetNative):
         if type == 'CondRun':
             data_info, C = agg_data(info,
                                     by=['run', 'reg_id'],
-                                    over=[]
+                                    over=['half']
                                     )
             data_info['names'] = [
                 f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
@@ -1853,7 +1839,7 @@ class DataSetHcpTask(DataSetNative):
                                     over=['run','half']
                                     )
             data_info['names'] = [
-                f'{d.task_code}_{d.cond_code}_' for i, d in data_info.iterrows()]
+                f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
 
         # Prewhiten the data
         data_n = prewhiten_data(data)
@@ -1898,7 +1884,6 @@ class DataSetSocial(DataSetNative):
         """
 
         # Depending on the type, make a new contrast
-        info['half'] = 2 - (info.run < 5)
         if type == 'Tseries' or type == 'FixTseries':
             info['names'] = info['timepoint']
             data_new, data_info = data, info
@@ -1907,10 +1892,10 @@ class DataSetSocial(DataSetNative):
             if type == 'CondHalf':
                 data_info, C = agg_data(info,
                                         ['half', 'reg_id'],
-                                        ['run', 'reg_num'],
+                                        ['run'],
                                         subset=(info.reg_id >0))
                 data_info['names'] = [
-                    f'{d.task_name.strip()}-half{d.half}' for i, d in data_info.iterrows()]
+                    f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
                 # Baseline substraction
                 B = matrix.indicator(data_info.half, positive=True)
 
@@ -1918,20 +1903,20 @@ class DataSetSocial(DataSetNative):
 
                 data_info, C = agg_data(info,
                                         ['run', 'reg_id'],
-                                        ['reg_num'],
+                                        ['half'],
                                         subset=(info.reg_id > 0))
                 data_info['names'] = [
-                    f'{d.task_name.strip()}-run{d.run}' for i, d in data_info.iterrows()]
+                    f'{d.task_code}_{d.cond_code}_run{d.run}' for i, d in data_info.iterrows()]
                 # Baseline substraction
                 B = matrix.indicator(data_info.run, positive=True)
 
             elif type == 'CondAll':
                 data_info, C = agg_data(info,
                                         ['reg_id'],
-                                        ['run', 'half', 'reg_num'],
+                                        ['run', 'half'],
                                         subset=(info.reg_id > 0))
                 data_info['names'] = [
-                    f'{d.task_name.strip()}' for i, d in data_info.iterrows()]
+                    f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
                 # Baseline substraction
                 B = np.ones((data_info.shape[0],1))
 

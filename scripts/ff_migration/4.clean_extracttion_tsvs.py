@@ -24,7 +24,7 @@ dataset_names = [
     "Social"
 ]
 dataset_names = [
-    "Pontine"
+    "MDTB"
 ]
 
 valid_types = ["TaskRun", "TaskHalf", "TaskAll", "CondRun", "CondHalf", "CondAll"]
