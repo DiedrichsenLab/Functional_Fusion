@@ -560,7 +560,7 @@ class DataSet:
             deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
+            atlas_maps[0].build(interpolation=interpolation, smooth=smooth)
         elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']:
             # This is nornmalization over SUIT->MNI (cerebellum only)
             deform1  = am.get_deform(atlas.space, 'SUIT')
@@ -568,13 +568,13 @@ class DataSet:
             deform = [deform1, deform2]
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
+            atlas_maps[0].build(interpolation=interpolation, smooth=smooth)
         elif atlas.space in ['MNI152NLin2009cSym']:
             # This is direct MNI normalization 
             deform = adir + f'/{sub}_space-{atlas.space}_xfm.nii'
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
+            atlas_maps[0].build(interpolation=interpolation, smooth=smooth)
         elif atlas.space == 'fs32k':
             for i, struc in enumerate(atlas.structure):
                 if struc=='cortex_left':
@@ -947,12 +947,12 @@ class DataSetMNIVol(DataSet):
         # Matching MNI space
         if atlas.space == self.space:
             atlas_maps.append(am.AtlasMapDeform(atlas.world, None, mask))
-            atlas_maps[0].build(smooth=smooth)
+            atlas_maps[0].build(interpolation=interpolation,smooth=smooth)
         # Mis-matching MNI space
         elif atlas.space in atlas_spaces:
             deform = am.get_deform(atlas.space, self.space)
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
+            atlas_maps[0].build(interpolation=interpolation,smooth=smooth)
         # Any other space (SUIT + fs32k)
         else:
             atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth, interpolation=interpolation)
@@ -993,9 +993,10 @@ class DataSetCifti(DataSet):
         # Get the correct map into CIFTI-format
         if isinstance(myatlas, am.AtlasVolumetric):
             deform = am.get_deform(myatlas.space,'MNI152NLin6Asym')
+            maask = tpl-MNI152NLin6Asym_desc-subcortexmask.nii.gz
             atlas_map = am.AtlasMapDeform(myatlas.world,
                                           deform, None)
-            atlas_map.build(smooth=2.0)
+            atlas_map.build(interpolation=1)
         elif isinstance(myatlas, am.AtlasSurface):
             atlas_map = myatlas
         # Extract the data for each participant
@@ -1455,46 +1456,6 @@ class DataSetDemand(DataSetCifti):
         self.cond_ind = 'reg_id'
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
-
-    def condense_data(self, data, info,
-                      type='CondHalf',
-                      participant_id=None,
-                      ses_id=None):
-        """ Extract data in a specific atlas space
-        Args:
-            participant_id (str): ID of participant
-            atlas_maps (list): List of atlasmaps
-            ses_id (str): Name of session
-            type (str): Type of extraction:
-                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
-                'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'CondHalf'.
-
-        Returns:
-            Y (list of np.ndarray):
-                A list (len = numatlas) with N x P_i numpy array of prewhitened data
-            T (pd.DataFrame):
-                A data frame with information about the N numbers provide
-            names: Names for CIFTI-file per row
-        """
-        # Depending on the type, make a new contrast
-        n_cond = np.max(info.reg_id)
-        if type == 'CondHalf':
-            data_info, C = agg_data(info, ['half', 'reg_id'], ['run'])
-            data_info['names'] = [f'{d.task_code}_{d.cond_code}_half{d.half}'
-                                  for i, d in data_info.iterrows()]
-        elif type == 'CondAll':
-            data_info, C = agg_data(info, ['reg_id'], ['half', 'run'])
-            data_info['names'] = [f'{d.task_code}_{d.cond_code}'
-                                  for i, d in data_info.iterrows()]
-
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
-
-        # Combine with contrast
-        for i in range(len(data_n)):
-            data_n[i] = pinv(C) @ data_n[i]
-        return data_n, data_info
 
 
 class DataSetWMFS(DataSetNative):

@@ -67,12 +67,12 @@ if __name__ == "__main__":
     # make_mdtb_suit()
     # test_decompose()
     # test_get_data()
-    test_extract('MDTB','ses-s1','MNISymC3','CondHalf')
-    test_extract('MDTB','ses-s2','MNISymC3','CondHalf')
-    test_extract('MDTB','ses-s1','MNISymC3','CondRun')
-    test_extract('MDTB','ses-s2','MNISymC3','CondRun')
-    test_extract('MDTB','ses-s1','MNISymC3','CondAll')
-    test_extract('MDTB','ses-s2','MNISymC3','CondAll')
+    test_extract('Demand','ses-01','MNISymC3','CondHalf')
+    test_extract('Demand','ses-01','MNISymC3','CondAll')
+    # test_extract('MDTB','ses-s1','MNISymC3','CondRun')
+    # test_extract('MDTB','ses-s2','MNISymC3','CondRun')
+    # test_extract('MDTB','ses-s1','MNISymC3','CondAll')
+    # test_extract('MDTB','ses-s2','MNISymC3','CondAll')
 
     # data,info,ds = ds.get_dataset(base_dir,'Demand',atlas='MNISymC3')
     pass

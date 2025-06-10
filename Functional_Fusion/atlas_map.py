@@ -920,7 +920,7 @@ class AtlasMap:
         return mask_img
 
 class AtlasMapDeform(AtlasMap):
-    def __init__(self, world, deform_img, mask_img):
+    def __init__(self, world, deform_img, mask_img=None):
         """AtlasMapDeform stores the mapping rules for a non-linear deformation
         to the desired atlas space in form of a voxel list from source space
 
@@ -937,8 +937,12 @@ class AtlasMapDeform(AtlasMap):
                 deform_img = [deform_img]
             for di in deform_img:
                 self.deform_img.append(nb.load(di))
-        self.mask_img = nb.load(mask_img)
-
+        if mask_img is not None:
+            self.mask_img = nb.load(mask_img)
+        else: 
+            raise(NameError("Mask image is required for AtlasMapDeform"))
+        
+        
     def build(self, interpolation=1, smooth=None, additional_mask=None):
         """ Using the dataset, builds a list of voxel indices of
         For each of the locations. It creates:
@@ -1147,7 +1151,7 @@ def get_data_cifti(fnames, atlases):
         cifti = nb.load(f)
         for i, at in enumerate(atlases):
             if isinstance(at, AtlasMapDeform):
-                V = nt.volume_from_cifti(cifti, ["cerebellum"])
+                V = nt.volume_from_cifti(cifti, [at.structure])
                 data[i].append(get_data_nifti([V], [at])[0])
             elif isinstance(at, AtlasVolumetric):
                 V = nt.volume_from_cifti(cifti, [at.structure])
