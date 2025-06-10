@@ -52,7 +52,7 @@ def get_dataset_class(base_dir, dataset):
     return my_dataset
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
-                type=None, smooth=None, info_only=False):
+                type=None, smooth=None):
     """get_dataset tensor and data set object
 
     Args:
@@ -219,7 +219,7 @@ def agg_data(info, by, over, subset=None):
         operations[o] = max
 
     # Group the new data frame
-    info_gb = info_n.groupby(by)
+    info_gb = info_n.groupby(by,sort=False)
     data_info = info_gb.agg(operations).reset_index()
 
     # Build indicator matrix for averaging
@@ -482,13 +482,12 @@ class DataSet:
         return fnames, T
 
     def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None, exclude_subjects=True):
-        """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
+        """Loads the tsv-files and retturns the most complete info structure
 
         Args:
-            space (str): Atlas space (Defaults to 'SUIT3').
             ses_id (str): Session ID (Defaults to 'ses-s1').
             type (str): Type of data (Defaults to 'CondHalf').
-            subj (ndarray): Subject numbers to get - by default all
+            subj (ndarray): Subject numbers to get - by default none (all)
             fields (list): Column names of info stucture that are returned
                 these are also be tested to be equivalent across subjects
             exclude_subjects (bool): If True, excludes subjects that have been specified
@@ -597,21 +596,24 @@ class DataSet:
     def condense_data(self, data, info,
                       type='CondHalf',
                       participant_id=None,
-                      ses_id=None):
-        """ Condense the data in a certain way optimally
-        'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
-        'CondRun': Conditions with seperate estimates per run.
-        'CondAll': Conditions with a single estimate averaging over all runs.
-        'TaskHalf': Task with seperate estimates for first and second half of experiment
-        'TaskRun': Task with seperate estimates per run.
-        'TaskAll': Task with a single estimate averaging over all runs.
+                      ses_id=None,
+                      subset=None):
+        """ Condense the data across the measures to a certain level 
+        If a design matrix file exisits, it is used to combine betas optimally
+            'CondHalf': Conditions with seperate estimates for first and second half of experiment (Default)
+            'CondRun': Conditions with seperate estimates per run.
+            'CondAll': Conditions with a single estimate averaging over all runs.
+            'TaskHalf': Task with seperate estimates for first and second half of experiment
+            'TaskRun': Task with seperate estimates per run.
+            'TaskAll': Task with a single estimate averaging over all runs.
 
         Args:
-            data (list): List of extracted datasets
+            data (ndarray): List of extracted datasets
             info (DataFrame): Data Frame with description of data - row-wise
             type (str): Type of extraction:
             participant_id (str): ID of participant
             ses_id (str): Name of session
+            subset (bool array): If given, ignores certain rows from the
 
         Returns:
             Y (list of np.ndarray):
@@ -621,13 +623,14 @@ class DataSet:
         """
 
         info['cond_code'] = info['cond_code'].fillna('task')  # for tasks that have no condition code
-
+        if subset is None:
+            subset = (info.task_code != 'instrct') # By defaults, ignore instruction regressors 
         # Depending on the type, make a new contrast
         if type == 'CondHalf':
             data_info, C = agg_data(info,
                                     ['half', 'task_code','cond_code'],
                                     ['run','reg_id'],
-                                    subset=(info.instruction == 0))
+                                    subset=subset)
             data_info['names'] = [
                 f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
             # Baseline substraction
@@ -637,7 +640,7 @@ class DataSet:
             data_info, C = agg_data(info,
                                     ['run', 'task_code','cond_code'],
                                     ['half','reg_id'],
-                                    subset=(info.instruction == 0)) 
+                                    subset=subset) 
             data_info['names'] = [
                 f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
 
@@ -649,7 +652,7 @@ class DataSet:
             data_info, C = agg_data(info,
                                     ['task_code','cond_code'],
                                     ['run', 'half','reg_id'],
-                                    subset=(info.instruction == 0))
+                                    subset=subset)
             data_info['names'] = [
                 f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
 
@@ -661,7 +664,7 @@ class DataSet:
             data_info, C = agg_data(info,
                                     by=['task_code'],
                                     over=['half'],
-                                    subset=(info.instruction == 0))
+                                    subset=subset)
             data_info['names'] = [
                 f'{d.task_code}_run{d.run}' for i, d in data_info.iterrows()]
             # Baseline substraction
@@ -671,7 +674,7 @@ class DataSet:
             data_info, C = agg_data(info,
                                     by=['task_code', 'half'],
                                     over=['run'],
-                                    subset=(info.instruction == 0))
+                                    subset=subset)
             data_info['names'] = [
                 f'{d.task_code}_half{d.half}' for i, d in data_info.iterrows()]
             # Baseline substraction
@@ -680,7 +683,7 @@ class DataSet:
             data_info, C = agg_data(info,
                                     by=['task_code'],
                                     over=['run', 'half'],
-                                    subset=(info.instruction == 0))
+                                    subset=subset)
             data_info['names'] = [
                 f'{d.task_code}' for i, d in data_info.iterrows()]
             # Baseline substraction
@@ -691,14 +694,18 @@ class DataSet:
 
         # Load the designmatrix and perform optimal contrast
         dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
-        reg_in = np.arange(C.shape[1], dtype=int)
-        #  contrast for all instructions
-        CI = matrix.indicator(info.run * info.instruction, positive=True)
-        C = np.c_[C, CI]
-        data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
-
-        return data_new, data_info
+        design_matrix_file = dir + f'/{participant_id}_{ses_id}_designmatrix.npy'
+        if os.path.exists(design_matrix_file):
+            X = np.load(design_matrix_file)
+            reg_in = np.arange(C.shape[1], dtype=int)
+            #  contrast for all instructions
+            CI = matrix.indicator(info.run * subset, positive=True)
+            C = np.c_[C, CI]
+            data_n = optimal_contrast(data_n, C, X, reg_in, baseline=B)
+        else:
+            for i in range(len(data_n)):
+                data_n[i] = pinv(C) @ data_n[i]
+        return data_n, data_info
 
 
     def extract_all(self,
@@ -792,8 +799,7 @@ class DataSet:
         if type is None:
             type = self.default_type
 
-        info_com = self.get_info(
-            subj=subj, ses_id=ses_id, type=type, fields=fields)
+        info_com = self.get_info(subj=subj, ses_id=ses_id, type=type, fields=fields)
 
         # Loop again to assemble the data
         Data_list = []
@@ -1049,7 +1055,6 @@ class DataSetMDTB(DataSetNative):
         else:
             data_new,data_info = super().condense_data(data, info, type,
                                                         participant_id=participant_id, ses_id=ses_id)
-
         return data_new, data_info
 
 
@@ -1244,8 +1249,7 @@ class DataSetPontine(DataSetNative):
         # Load the designmatrix and perform optimal contrast
         X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy',allow_pickle=True).item()
         reg_in = np.arange(C.shape[1], dtype=int)
-        CI = matrix.indicator(info.run * info.instruction
-, positive=True)
+        CI = matrix.indicator(info.run * info.instruction, positive=True)
         C = np.c_[C, CI]
 
         data_new = optimal_contrast(data_n, C, X['nKX'], reg_in)

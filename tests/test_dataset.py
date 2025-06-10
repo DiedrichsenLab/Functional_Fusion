@@ -2,14 +2,13 @@
 import pandas as pd
 import shutil
 from pathlib import Path
-import mat73
 import numpy as np
 import Functional_Fusion.atlas_map as am
 import Functional_Fusion.dataset as ds
 from Functional_Fusion.matrix import indicator
 import nibabel as nb
 
-base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
+base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion_new'
 
 def reliability_ibc():
     dataset = ds.DataSetIBC(base_dir + '/IBC')
@@ -30,6 +29,26 @@ def reliability_ibc():
         RB[:,i] = ds.reliability_between_subj(data,cond_vec=info.reg_id)
     pass
 
+def test_get_data():
+    dataset,info,myds= ds.get_dataset(base_dir,'MDTB',atlas='MNISymC3',subj=[0,1,2])
+    dataset,info,myds= ds.get_dataset(base_dir,'Demand',atlas='MNISymC3',subj=[0,1,2])
+    dataset,info,myds= ds.get_dataset(base_dir,'Pontine',atlas='MNISymC3',subj=[0,1,2])
+    dataset,info,myds= ds.get_dataset(base_dir,'HCPur100',atlas='MNISymC3',subj=[0,1,2])
+    pass
+
+def test_extract(dataset,sess,space,type):
+    mydataset = ds.get_dataset_class(base_dir,dataset)
+    mydataset.extract_all(ses_id=sess, type=type, atlas=space)
+    pass
+    #mdtb_dataset.extract_all(ses_id='ses-s1', type='TaskRun', atlas='MNISymC3')
+    #mdtb_dataset.extract_all(ses_id='ses-s2', type='TaskRun', atlas='MNISymC3')
+    #mdtb_dataset.extract_all(ses_id='ses-s1', type='TaskRun', atlas='fs32k')
+    #mdtb_dataset.extract_all(ses_id='ses-s2', type='TaskRun', atlas='fs32k')
+    
+    #mdtb_dataset.extract_all(ses_id='ses-s1', type='CondRun', atlas='MNISymCereb2', smooth=None)
+ 
+
+
 def test_decompose(): 
     N = 5
     R = 3 
@@ -46,7 +65,15 @@ def test_decompose():
 
 if __name__ == "__main__":
     # make_mdtb_suit()
-    test_decompose()
+    # test_decompose()
+    # test_get_data()
+    test_extract('MDTB','ses-s1','MNISymC3','CondHalf')
+    test_extract('MDTB','ses-s2','MNISymC3','CondHalf')
+    test_extract('MDTB','ses-s1','MNISymC3','CondRun')
+    test_extract('MDTB','ses-s2','MNISymC3','CondRun')
+    test_extract('MDTB','ses-s1','MNISymC3','CondAll')
+    test_extract('MDTB','ses-s2','MNISymC3','CondAll')
+
     # data,info,ds = ds.get_dataset(base_dir,'Demand',atlas='MNISymC3')
     pass
 
