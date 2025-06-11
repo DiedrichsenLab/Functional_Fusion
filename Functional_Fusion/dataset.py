@@ -1488,44 +1488,11 @@ class DataSetWMFS(DataSetNative):
         """
 
         # Depending on the type, make a new contrast
-        n_cond = np.max(info.loc[info.error == 0].reg_id)
-
-        if type == 'CondHalf':
-            # Make new data frame for the information of the new regressors
-
-            data_info, C = agg_data(info,
-                                    ['half', 'reg_id'],
-                                    ['run'],
-                                    subset=(info.error == 0))
-            data_info['names'] = [
-                f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
-        elif type == 'CondRun':
-
-            # Subset of info sutructure
-            data_info, C = agg_data(info,
-                                    ['run', 'reg_id'],
-                                    ['half'],
-                                    subset=(info.error == 0))
-            data_info['names'] = [
-                f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
-        elif type == 'CondAll':
-            data_info, C = agg_data(info,
-                                    ['reg_id'],
-                                    ['run', 'half'],
-                                    subset=(info.error == 0))
-            # data_info = info_gb.agg({'n_rep':np.sum}).reset_index(drop=True)
-            data_info['names'] = [
-                f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
-
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
-
-        # Load the designmatrix and perform optimal contrast
-        dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-        X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
-        reg_in = np.arange(C.shape[1], dtype=int)
-        data_new = optimal_contrast(data_n, C, X, reg_in, baseline=None)
-
+        subset = info.cond_code != 'err'
+        data_new, data_info = super().condense_data(data, info, type,
+                                                    participant_id=participant_id, 
+                                                    ses_id=ses_id,
+                                                    subset=subset)
         return data_new, data_info
 
 
