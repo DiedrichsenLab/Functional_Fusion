@@ -404,7 +404,7 @@ class DataSet:
         self.suit_dir = base_dir + '/derivatives/ffimport/{0}/anat'
         self.data_dir = base_dir + '/derivatives/ffextract/{0}'
         # assume that the common atlas directory is on the level before
-        self.atlas_dir = os.path.join(os.path.dirname(base_dir), 'Atlases')
+        self.atlas_dir = util.default_atlas_dir
         # Some information that a standard data set should have
         self.sessions = [None]
         self.default_type = None
@@ -1554,21 +1554,18 @@ class DataSetSomatotopic(DataSetMNIVol):
         atlas_maps = []
         if atlas.structure == 'cerebellum':
             deform = self.atlas_dir + \
-                f'/tpl-{self.space}/tpl-{self.space}_from-SUIT_xfm.nii'
-            if atlas.name[0:4] != 'SUIT':
-                deform1 = am.get_deform(atlas.space, 'SUIT')
-                deform = [deform1, deform]
+                f'/tpl-{atlas.space}/tpl-{atlas.space}_from-{self.space}_mode-image_xfm.nii'
             mask = self.atlas_dir + \
-                f'/{self.space}/{self.space}_desc-cereb_mask.nii'
+                f'/tpl-{self.space}/tpl-{self.space}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=smooth)
+            atlas_maps[0].build(interpolation=interpolation,smooth=smooth)
         elif atlas.space == 'fs32k':
             for i, hem in enumerate(['L', 'R']):
                 adir = self.anatomical_dir.format(sub)
                 pial = adir + f'/{sub}_space-32k_hemi-{hem}_pial.surf.gii'
                 white = adir + f'/{sub}_space-32k_hemi-{hem}_white.surf.gii'
                 mask = self.atlas_dir + \
-                    f'/{self.space}/{self.space}_mask.nii'
+                    f'/tpl-{self.space}/tpl-{self.space}_mask.nii'
                 atlas_maps.append(am.AtlasMapSurf(atlas.vertex[i],
                                                   white, pial, mask))
                 atlas_maps[i].build()
