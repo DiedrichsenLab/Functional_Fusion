@@ -214,9 +214,9 @@ def agg_data(info, by, over, subset=None):
         other.remove(ov)
 
     # Define operations on data
-    operations = {'n_rep': np.sum}
+    operations = {'n_rep': 'sum'}
     for o in other:
-        operations[o] = max
+        operations[o] = 'max'
 
     # Group the new data frame
     info_gb = info_n.groupby(by,sort=False)
@@ -909,7 +909,7 @@ class DataSetNative(DataSet):
             edir = self.estimates_dir.format(sub)
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(smooth=None)
+            atlas_maps[0].build(interpolation=interpolation,smooth=None)
         else:
             atlas_maps = super().get_atlasmaps(atlas,sub,ses_id,smooth=smooth, interpolation=interpolation)
         return atlas_maps
@@ -993,9 +993,8 @@ class DataSetCifti(DataSet):
         # Get the correct map into CIFTI-format
         if isinstance(myatlas, am.AtlasVolumetric):
             deform = am.get_deform(myatlas.space,'MNI152NLin6Asym')
-            maask = tpl-MNI152NLin6Asym_desc-subcortexmask.nii.gz
-            atlas_map = am.AtlasMapDeform(myatlas.world,
-                                          deform, None)
+            mask = util.default_atlas_dir + '/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_desc-subcortexmask.nii.gz'
+            atlas_map = am.AtlasMapDeform(myatlas.world,deform,mask)
             atlas_map.build(interpolation=1)
         elif isinstance(myatlas, am.AtlasSurface):
             atlas_map = myatlas
@@ -1005,9 +1004,7 @@ class DataSetCifti(DataSet):
             print(f'Extract {s}')
             fnames, info = self.get_data_fnames(s, ses_id)
             data = am.get_data_cifti(fnames, [atlas_map])
-
-            data, info = self.condense_data(data, info, type,
-                                            participant_id=s, ses_id=ses_id)
+            data, info = self.condense_data(data, info, type,participant_id=s, ses_id=ses_id)
             C = myatlas.data_to_cifti(data[0], info.names)
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)

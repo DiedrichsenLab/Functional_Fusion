@@ -1151,7 +1151,7 @@ def get_data_cifti(fnames, atlases):
         cifti = nb.load(f)
         for i, at in enumerate(atlases):
             if isinstance(at, AtlasMapDeform):
-                V = nt.volume_from_cifti(cifti, [at.structure])
+                V = nt.volume_from_cifti(cifti)
                 data[i].append(get_data_nifti([V], [at])[0])
             elif isinstance(at, AtlasVolumetric):
                 V = nt.volume_from_cifti(cifti, [at.structure])
