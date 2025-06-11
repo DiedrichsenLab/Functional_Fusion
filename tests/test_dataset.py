@@ -9,6 +9,7 @@ from Functional_Fusion.matrix import indicator
 import nibabel as nb
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion_new'
+base_dir = '/cifs/diedrichsen/data/FunctionalFusion_new'
 
 def reliability_ibc():
     dataset = ds.DataSetIBC(base_dir + '/IBC')
@@ -67,12 +68,13 @@ if __name__ == "__main__":
     # test_extract('MDTB','ses-s2','fs32k','CondRun')
     # test_extract('MDTB','ses-s2','MNISymC3','CondRun')
     # test_extract('MDTB','ses-s1','fs32k','CondHalf')
-    test_extract('MDTB','ses-s2','fs32k','CondHalf')
-    test_extract('MDTB','ses-s1','fs32k','CondAll')
-    test_extract('MDTB','ses-s2','fs32k','CondAll')
-    test_extract('MDTB','ses-s1','MNISymC3','CondAll')
-    test_extract('MDTB','ses-s2','MNISymC3','CondAll')
-
+    test_extract('Somatotopic','ses-motor','fs32k','CondHalf')
+    test_extract('Somatotopic','ses-motor','fs32k','CondAll')
+    test_extract('Somatotopic','ses-motor','fs32k','CondRun')
+    test_extract('Somatotopic','ses-motor','MNISymC3','CondHalf')
+    test_extract('Somatotopic','ses-motor','MNISymC3','CondAll')
+    test_extract('Somatotopic','ses-motor','MNISymC3','CondRun')
+ 
     # data,info,ds = ds.get_dataset(base_dir,'Demand',atlas='MNISymC3')
     pass
 
