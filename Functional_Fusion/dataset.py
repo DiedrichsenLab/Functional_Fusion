@@ -1236,68 +1236,6 @@ class DataSetNishi(DataSetNative):
         self.cond_name = 'task_name'
         self.part_ind = 'half'
 
-    def condense_data(self, data, info,
-                      type='TaskHalf',
-                      participant_id=None,
-                      ses_id=None):
-        """ Condense the data from the pontine project after extraction
-
-        Args:
-            data (list of ndarray)
-            info (dataframe)
-            type (str): Type of extraction:
-                'TaskHalf': Conditions with seperate estimates for first and second half of experient (Default)
-                'TaskRun': Conditions with seperate estimates per run
-                    Defaults to 'CondHalf'.
-            participant_id (str): ID of participant
-            ses_id (str): Name of session
-
-        Returns:
-            Y (list of np.ndarray):
-                A list (len = numatlas) with N x P_i numpy array of prewhitened data
-            T (pd.DataFrame):
-                A data frame with information about the N numbers provide
-            names: Names for CIFTI-file per row
-        """
-        # Depending on the type, make a new contrast
-        n_cond = np.max(info.reg_id)
-
-        if type == 'CondHalf':
-            data_info, C = agg_data(info,
-                                    ['half', 'reg_id'],
-                                    ['run'])
-            data_info['names'] = [
-                f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
-
-            # Baseline substraction
-            B = matrix.indicator(data_info.half, positive=True)
-
-        elif type == 'CondRun':
-            data_info, C = agg_data(info,
-                                    ['run', 'reg_id'],
-                                    ['half'])
-
-            data_info['names'] = [
-                f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
-            # Baseline substraction
-            B = matrix.indicator(data_info.run, positive=True)
-        elif type == 'CondAll':
-            data_info, C = agg_data(info,
-                                    ['reg_id'],
-                                    ['run', 'half'])
-            # Baseline substraction
-            B = np.ones((data_info.shape[0],))
-
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
-
-        # Load the designmatrix and perform optimal contrast
-        X = np.load(self.estimates_dir.format(participant_id) + f'/{ses_id}/{participant_id}_{ses_id}_designmatrix.npy')
-        reg_in = np.arange(C.shape[1], dtype=int)
-        data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
-
-        return data_new, data_info
-
 
 class DataSetIBC(DataSetNative):
     def __init__(self, dir):
