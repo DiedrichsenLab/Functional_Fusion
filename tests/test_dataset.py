@@ -9,6 +9,7 @@ from Functional_Fusion.matrix import indicator
 import nibabel as nb
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion_new'
+base_dir = '/cifs/diedrichsen/data/FunctionalFusion_new'
 
 def reliability_ibc():
     dataset = ds.DataSetIBC(base_dir + '/IBC')
