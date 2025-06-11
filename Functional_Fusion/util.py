@@ -9,7 +9,7 @@ default_atlas_dir = os.path.dirname(am.__file__) + '/Atlases'
 
 def get_base_dir():
     possible_dirs = ['/Volumes/diedrichsen_data$/data/FunctionalFusion_new',
-                     '/srv/diedrichsen/data/FunctionalFusion_new',
+                     '/cifs/diedrichsen/data/FunctionalFusion_new',
                      'Y:/data/FunctionalFusion_new']
     for directory in possible_dirs:
         if Path(directory).exists():

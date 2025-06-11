@@ -5,11 +5,11 @@ from pathlib import Path
 import numpy as np
 import Functional_Fusion.atlas_map as am
 import Functional_Fusion.dataset as ds
+import Functional_Fusion.util as util
 from Functional_Fusion.matrix import indicator
 import nibabel as nb
 
-base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion_new'
-base_dir = '/cifs/diedrichsen/data/FunctionalFusion_new'
+base_dir = util.get_base_dir()
 
 def reliability_ibc():
     dataset = ds.DataSetIBC(base_dir + '/IBC')
