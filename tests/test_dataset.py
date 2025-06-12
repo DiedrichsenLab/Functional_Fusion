@@ -32,7 +32,7 @@ def reliability_ibc():
 
 def test_get_data():
     # dataset,info,myds= ds.get_dataset(base_dir,'MDTB',atlas='MNISymC3',subj=[0,1,2])
-    dataset,info,myds= ds.get_dataset(base_dir,'MDTB',atlas='MNISymC3',subj=[0,1,2],type='CondHalf')
+    dataset,info,myds= ds.get_dataset(base_dir,'MDTB',atlas='fs32k',subj=[0,1,2],type='CondAll')
     # dataset,info,myds= ds.get_dataset(base_dir,'Pontine',atlas='MNISymC3',subj=[0,1,2])
     # dataset,info,myds= ds.get_dataset(base_dir,'HCPur100',atlas='MNISymC3',subj=[0,1,2])
     pass
@@ -41,7 +41,15 @@ def test_extract(dataset,sess,space,type):
     mydataset = ds.get_dataset_class(base_dir,dataset)
     mydataset.extract_all(ses_id=sess, type=type, atlas=space)
 
- 
+def test_group_average(dataset='MDTB',
+                        space=['MNISymC3','fs32k'],
+                        type=['CondAll']):
+    datas =  ds.get_dataset_class(base_dir,dataset)
+    for s in datas.sessions:
+        for t in type:
+            for sp in space:
+                print(f'Processing {dataset} session {s} type {t} space {sp}')
+                datas.group_average_data(ses_id=s,type=t,atlas=sp,subj=None)
 
 
 def test_decompose(): 
@@ -62,6 +70,9 @@ if __name__ == "__main__":
     # make_mdtb_suit()
     # test_decompose()
     # test_get_data()
+    test_group_average('MDTB')
+    test_group_average('Demand')
+    test_group_average('WMFS')
     # test_extract('Demand','ses-01','fs32k','CondHalf')
     # test_extract('Demand','ses-01','MNISymC3','CondAll')
     # test_extract('MDTB','ses-s1','fs32k','CondRun')
@@ -71,17 +82,16 @@ if __name__ == "__main__":
     # test_extract('MDTB','ses-s1','fs32k','CondHalf')
     # test_extract('WMFS','ses-01','fs32k','CondHalf')
     # test_extract('WMFS','ses-02','fs32k','CondHalf')
-    test_extract('WMFS','ses-01','fs32k','CondRun')
-    test_extract('WMFS','ses-02','fs32k','CondRun')
+    # test_extract('WMFS','ses-01','fs32k','CondRun')
+    # test_extract('WMFS','ses-02','fs32k','CondRun')
     # test_extract('WMFS','ses-01','fs32k','CondAll')
     # test_extract('WMFS','ses-02','fs32k','CondAll')
     # test_extract('WMFS','ses-01','MNISymC3','CondHalf')
     # test_extract('WMFS','ses-02','MNISymC3','CondHalf')
-    test_extract('WMFS','ses-01','MNISymC3','CondRun')
-    test_extract('WMFS','ses-02','MNISymC3','CondRun')
+    # test_extract('WMFS','ses-01','MNISymC3','CondRun')
+    # test_extract('WMFS','ses-02','MNISymC3','CondRun')
     # test_extract('WMFS','ses-01','MNISymC3','CondAll')
     # test_extract('WMFS','ses-02','MNISymC3','CondAll')
-
     # data,info,ds = ds.get_dataset(base_dir,'Demand',atlas='MNISymC3')
     pass
 

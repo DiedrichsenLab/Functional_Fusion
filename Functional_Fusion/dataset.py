@@ -482,55 +482,6 @@ class DataSet:
                 
         return fnames, T
 
-    def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None, exclude_subjects=True):
-        """Loads the tsv-files and retturns the most complete info structure
-
-        Args:
-            ses_id (str): Session ID (Defaults to 'ses-s1').
-            type (str): Type of data (Defaults to 'CondHalf').
-            subj (ndarray): Subject numbers to get - by default none (all)
-            fields (list): Column names of info stucture that are returned
-                these are also be tested to be equivalent across subjects
-            exclude_subjects (bool): If True, excludes subjects that have been specified
-                in the exclude column of the participants.tsv file.
-
-        Returns:
-            Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
-            info (DataFramw): Data frame with common descriptor
-        """
-        T = self.get_participants(exclude_subjects=exclude_subjects)
-
-        # only get data from subjects that have rest, if specified in dataset description
-        if type == 'Tseries' and 'ses-rest' in T.columns:
-                subj = T[T['ses-rest'] == 1].participant_id.tolist()
-
-        # Deal with subset of subject option
-        if subj is None:
-            subj = np.arange(T.shape[0])
-        else:
-            subj = [T.participant_id.tolist().index(i) for i in subj]
-
-        if type is None:
-            type = self.default_type
-
-        max = 0
-        # Loop over the different subjects to find the most complete info
-        for s in T.participant_id.iloc[subj]:
-            # Get an check the information
-            info_raw = pd.read_csv(self.data_dir.format(s)
-                                   + f'/{s}_{ses_id}_{type}.tsv', sep='\t')
-            # Reduce tsv file when fields are given
-            if fields is not None:
-                info = info_raw[fields]
-            else:
-                info = info_raw
-
-            # Keep the most complete info
-            if info.shape[0] > max:
-                info_com = info
-                max = info.shape[0]
-        return info_com
-
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for different spaces
             - SUIT: Using individual normalization from source space. 
@@ -764,7 +715,62 @@ class DataSet:
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
-            
+
+    def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None, exclude_subjects=True):
+        """Loads the tsv-files and retturns the most complete info structure
+
+        Args:
+            ses_id (str): Session ID (Defaults to 'ses-s1').
+            type (str): Type of data (Defaults to 'CondHalf').
+            subj (ndarray): Subject numbers to get - by default none (all)
+            fields (list): Column names of info stucture that are returned
+                these are also be tested to be equivalent across subjects
+            exclude_subjects (bool): If True, excludes subjects that have been specified
+                in the exclude column of the participants.tsv file.
+
+        Returns:
+            Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
+            info (DataFramw): Data frame with common descriptor
+        """
+        T = self.get_participants(exclude_subjects=exclude_subjects)
+
+        # Deal with subset of subject option
+        if subj is None:
+            subj = np.arange(T.shape[0])
+        else:
+            subj = [T.participant_id.tolist().index(i) for i in subj]
+
+        if type is None:
+            type = self.default_type
+
+        max = 0
+        # Loop over the different subjects to find the most complete info
+        for s in T.participant_id.iloc[subj]:
+            # Get an check the information
+            info_raw = pd.read_csv(self.data_dir.format(s)
+                                   + f'/{s}_{ses_id}_{type}.tsv', sep='\t')
+            # Reduce tsv file when fields are given
+            if fields is not None:
+                info = info_raw[fields]
+            else:
+                info = info_raw
+
+            # Keep the most complete info
+            if info.shape[0] > max:
+                info_com = info
+                max = info.shape[0]
+
+        # Add the cond_num column to the info structure if task_code or cond_code is present
+        # 
+        if 'task_code' in info_com.columns: 
+            if 'cond_code' in info_com.columns:
+                code = info_com['task_code'] + '_' + info_com['cond_code']
+            else: 
+                code = info_com['task_code']
+            info_com['cond_num'] = pd.factorize(code)[0] + 1
+        return info_com
+
+
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
                  subj=None, exclude_subjects=True, fields=None, smooth=None, verbose=False):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
@@ -788,9 +794,10 @@ class DataSet:
         # Deal with subset of subject option
         if subj is None:
             subj = T.participant_id
+            # JD: This is removed to avoid complications - please use 'subj' argument to select specific subjects
             # only get data from subjects that have rest, if specified in dataset description
-            if type == 'Tseries' and 'ses-rest' in T.columns:
-                subj = T[T['ses-rest'] == 1].participant_id.tolist()
+            # if type == 'Tseries' and 'ses-rest' in T.columns:
+            #     subj = T[T['ses-rest'] == 1].participant_id.tolist()
         elif isinstance(subj, str) and subj in T.participant_id.tolist():
             subj = [subj]
         elif isinstance(subj, (int,np.integer)):
@@ -1027,9 +1034,8 @@ class DataSetMDTB(DataSetNative):
         super().__init__(dir)
         self.sessions = ['ses-s1', 'ses-s2']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'cond_num_uni'
+        self.cond_ind = 'cond_num'
         self.part_ind = 'half'
-        self.cond_name = 'cond_name'
     
     def condense_data(self, data, info,
                       type='CondHalf',
@@ -1177,8 +1183,7 @@ class DataSetPontine(DataSetNative):
         super().__init__(dir)
         self.sessions = ['ses-01']
         self.default_type = 'TaskHalf'
-        self.cond_ind = 'task_num'
-        self.cond_name = 'task_name'
+        self.cond_ind = 'cond_num'
         self.part_ind = 'half'
 
     def condense_data(self, data, info,
@@ -1267,8 +1272,7 @@ class DataSetIBC(DataSetNative):
                          'ses-spatialnavigation',
                          'ses-tom']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'cond_num_uni'
-        self.cond_name = 'cond_name'
+        self.cond_ind = 'cond_num'
         self.part_ind = 'half'
 
     def get_participants(self):
@@ -1338,8 +1342,7 @@ class DataSetDemand(DataSetCifti):
         super().__init__(dir)
         self.sessions = ['ses-01']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'reg_id'
-        self.cond_name = 'cond_name'
+        self.cond_ind = 'cond_num'
         self.part_ind = 'half'
 
 
@@ -1348,8 +1351,7 @@ class DataSetWMFS(DataSetNative):
         super().__init__(dir)
         self.sessions = ['ses-01', 'ses-02']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'reg_id'
-        self.cond_name = 'cond_name'
+        self.cond_ind = 'cond_num'
         self.part_ind = 'half'
 
     def condense_data(self, data, info,
@@ -1390,8 +1392,7 @@ class DataSetSomatotopic(DataSetMNIVol):
         self.space = 'MNI152NLin6Asym'
         self.sessions = ['ses-motor']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'reg_id'
-        self.cond_name = 'cond_name'
+        self.cond_ind = 'cond_num'
         self.part_ind = 'half'
 
     def get_atlasmaps(self, atlas, sub=None, ses_id = None, smooth=None, interpolation=1):
@@ -1435,7 +1436,7 @@ class DataSetDmcc(DataSetMNIVol):
         self.space = 'MNI152NLin2009cAsym'
         self.sessions = ['ses-axcpt-bas-mixed', 'ses-cuedts-bas-mixed', 'ses-stern-bas-mixed', 'ses-stroop-bas-mixed']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'reg_id'
+        self.cond_ind = 'cond_num'
         self.cond_name = 'cond_name'
         self.part_ind = 'knot_num'
 
@@ -1535,8 +1536,7 @@ class DataSetLanguage(DataSetNative):
         super().__init__(dir)
         self.sessions = ['ses-localizer','ses-localizerfm','ses-rest']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'reg_id'
-        self.cond_name = 'taskName'
+        self.cond_ind = 'cond_num'
         self.part_ind = 'half'
 
 
@@ -1545,8 +1545,7 @@ class DataSetHcpTask(DataSetNative):
         super().__init__(dir)
         self.sessions = ['ses-task']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'reg_id'
-        self.cond_name = 'cond_name'
+        self.cond_ind = 'cond_num'
         self.part_ind = 'half'
 
 class DataSetSocial(DataSetNative):
@@ -1554,8 +1553,7 @@ class DataSetSocial(DataSetNative):
         super().__init__(dir)
         self.sessions = ['ses-social', 'ses-rest']
         self.default_type = 'CondHalf'
-        self.cond_ind = 'reg_id'
-        self.cond_name = 'condName'
+        self.cond_ind = 'cond_num'
         self.part_ind = 'half'  
 
     def condense_data(self, data, info,
