@@ -705,10 +705,6 @@ class DataSet:
         design_matrix_file = dir + f'/{participant_id}_{ses_id}_designmatrix.npy'
         if os.path.exists(design_matrix_file):
             X = np.load(design_matrix_file)
-            #  contrast for all instructions
-            CI = matrix.indicator(info.run * subset, positive=True)
-            C = np.c_[C, CI]
-
             data_n = optimal_contrast(data_n, C, X)
         else:
             for i in range(len(data_n)):
@@ -1039,14 +1035,13 @@ class DataSetMDTB(DataSetNative):
                       type='CondHalf',
                       participant_id=None,
                       ses_id=None,
-                      subset=None,
-                      subtract_baseline=False):
+                      subset=None):
         """ Use baseline removal"""
         data_new, data_info = super().condense_data(data, info, type,
                                                     participant_id=participant_id, 
                                                     ses_id=ses_id,
                                                     subset=subset,
-                                                    subtract_baseline=subtract_baseline)
+                                                    subtract_baseline=True)
         return data_new, data_info
 
 class DataSetHcpResting(DataSetCifti):
