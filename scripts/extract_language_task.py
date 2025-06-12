@@ -22,12 +22,11 @@ data_dir = base_dir + '/Language'
 atlas_dir = base_dir + '/Atlases'
 
 
-types = ['CondRun','CondAll','CondHalf']
+types = ['CondRun','CondHalf','CondAll']
 atlases  = ['fs32k','MNISymC3']
 session_list = ['ses-localizer','ses-localizerfm']
 
 subj = 'all'
-subj = [6]
 
 LL_dataset = DataSetLanguage(data_dir)
 for ses in session_list:
