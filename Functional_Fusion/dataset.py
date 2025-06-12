@@ -1518,7 +1518,7 @@ class DataSetDmcc(DataSetMNIVol):
 class DataSetLanguage(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
-        self.sessions = ['ses-localizer','ses-rest']
+        self.sessions = ['ses-localizer','ses-localizerfm','ses-rest']
         self.default_type = 'CondHalf'
         self.cond_ind = 'reg_id'
         self.cond_name = 'taskName'
