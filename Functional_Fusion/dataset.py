@@ -1539,6 +1539,19 @@ class DataSetLanguage(DataSetNative):
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
 
+    def condense_data(self, data, info,
+                      type='CondHalf',
+                      participant_id=None,
+                      ses_id=None,
+                      subset=None):
+        """ Use baseline removal"""
+        data_new, data_info = super().condense_data(data, info, type,
+                                                    participant_id=participant_id, 
+                                                    ses_id=ses_id,
+                                                    subset=subset,
+                                                    subtract_baseline=True)
+        return data_new, data_info
+
 
 class DataSetHcpTask(DataSetNative):
     def __init__(self, dir):
