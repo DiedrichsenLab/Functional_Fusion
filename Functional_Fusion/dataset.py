@@ -286,11 +286,11 @@ def combine_parcel_labels(labels_org,labels_new, labelvec_org=None):
 
 def optimal_contrast(data, C, X, reg_in=None, baseline=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
-
+    For mathematical background and motivation, see: 
     Args:
-        data (list of ndarrays): List of N x P_i arrays of data
-        C (ndarray): N x Q array indicating contrasts
-        X (ndarray): Optimal design matrix - Defaults to None.
+        data (list of ndarrays): List of N x P_i arrays of beta estimates of the original GLM
+        C (ndarray): Contrast matrix (N x Q) going from the original GLM to the new GLM
+        X (ndarray): Original (T x N) design matrix used in estimation of the data
         reg_in (ndarray): Contrast of interest: Logical vector indicating
             which rows of C we will put in the matrix
         baseline (ndarray): Fixed effects contrast removed after estimation
@@ -1318,44 +1318,6 @@ class DataSetIBC(DataSetNative):
             atlas_maps=super().get_atlasmaps(atlas, sub, ses_id, smooth=smooth, interpolation=interpolation)
         return atlas_maps
 
-    def condense_data(self, data, info,
-                      type='CondHalf',
-                      participant_id=None,
-                      ses_id=None):
-        """ Condense the data in a certain way optimally
-        Args:
-            data (list): List of extracted datasets
-            info (DataFrame): Data Frame with description of data - row-wise
-            type (str): Type of extraction:
-                'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
-                'CondRun': Conditions with seperate estimates per run
-                    Defaults to 'CondHalf'.
-            participant_id (str): ID of participant
-            ses_id (str): Name of session
-
-        Returns:
-            Y (list of np.ndarray):
-                A list (len = numatlas) with N x P_i numpy array of prewhitened data
-            T (pd.DataFrame):
-                A data frame with information about the N numbers provide
-            names: Names for CIFTI-file per row
-        """
-        n_cond = np.max(info.reg_id)
-        info['n_rep'] = np.ones((info.shape[0],))
-        if type == 'CondHalf':
-            data_info, C = agg_data(info,
-                                    ['half', 'reg_id'],
-                                    ['run'])
-            data_info['names'] = [
-                f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
-
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
-
-        for i in range(len(data_n)):
-            data_n[i] = pinv(C) @ data_n[i]
-        return data_n, data_info
-
 class DataSetDemand(DataSetCifti):
     def __init__(self, dir):
         super().__init__(dir)
@@ -1571,54 +1533,6 @@ class DataSetHcpTask(DataSetNative):
         self.cond_ind = 'reg_id'
         self.cond_name = 'cond_name'
         self.part_ind = 'half'
-
-    def condense_data(self, data, info,
-                      type='CondHalf',
-                      participant_id=None,
-                      ses_id=None):
-        """ Condense the data in a certain way optimally
-        'CondHalf': Conditions with seperate estimates for first and second half of experient (Default)
-        'CondRun': Conditions with seperate estimates per run. Defaults to 'CondHalf'.
-
-        Args:
-            data (list): List of extracted datasets
-            info (DataFrame): Data Frame with description of data - row-wise
-            type (str): Type of extraction:
-            participant_id (str): ID of participant
-            ses_id (str): Name of session
-
-        Returns:
-            Y (list of np.ndarray):
-                A list (len = numatlas) with N x P_i numpy array of prewhitened data
-            T (pd.DataFrame):
-                A data frame with information about the N numbers provided
-        """
-
-        # Depending on the type, make a new contrast
-        if type == 'CondRun':
-            data_info, C = agg_data(info,
-                                    by=['run', 'reg_id'],
-                                    over=['half']
-                                    )
-            data_info['names'] = [
-                f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
-
-        elif type == 'CondAll':
-
-            data_info, C = agg_data(info,
-                                    by=['reg_id'],
-                                    over=['run','half']
-                                    )
-            data_info['names'] = [
-                f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
-
-        # Prewhiten the data
-        data_n = prewhiten_data(data)
-
-        # Combine with contrast
-        for i in range(len(data_n)):
-            data_n[i] = pinv(C) @ data_n[i]
-        return data_n, data_info
 
 class DataSetSocial(DataSetNative):
     def __init__(self, dir):
