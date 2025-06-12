@@ -31,10 +31,10 @@ def reliability_ibc():
     pass
 
 def test_get_data():
-    dataset,info,myds= ds.get_dataset(base_dir,'MDTB',atlas='MNISymC3',subj=[0,1,2])
-    dataset,info,myds= ds.get_dataset(base_dir,'Demand',atlas='MNISymC3',subj=[0,1,2])
-    dataset,info,myds= ds.get_dataset(base_dir,'Pontine',atlas='MNISymC3',subj=[0,1,2])
-    dataset,info,myds= ds.get_dataset(base_dir,'HCPur100',atlas='MNISymC3',subj=[0,1,2])
+    # dataset,info,myds= ds.get_dataset(base_dir,'MDTB',atlas='MNISymC3',subj=[0,1,2])
+    dataset,info,myds= ds.get_dataset(base_dir,'MDTB',atlas='MNISymC3',subj=[0,1,2],type='CondHalf')
+    # dataset,info,myds= ds.get_dataset(base_dir,'Pontine',atlas='MNISymC3',subj=[0,1,2])
+    # dataset,info,myds= ds.get_dataset(base_dir,'HCPur100',atlas='MNISymC3',subj=[0,1,2])
     pass
 
 def test_extract(dataset,sess,space,type):
@@ -64,22 +64,23 @@ if __name__ == "__main__":
     # test_get_data()
     # test_extract('Demand','ses-01','fs32k','CondHalf')
     # test_extract('Demand','ses-01','MNISymC3','CondAll')
-    # test_extract('MDTB','ses-s1','fs32k','CondRun')
-    # test_extract('MDTB','ses-s2','fs32k','CondRun')
-    # test_extract('MDTB','ses-s2','MNISymC3','CondRun')
+    test_extract('MDTB','ses-s1','fs32k','CondRun')
+    test_extract('MDTB','ses-s2','fs32k','CondRun')
+    test_extract('MDTB','ses-s1','MNISymC3','CondRun')
+    test_extract('MDTB','ses-s2','MNISymC3','CondRun')
     # test_extract('MDTB','ses-s1','fs32k','CondHalf')
     # test_extract('WMFS','ses-01','fs32k','CondHalf')
     # test_extract('WMFS','ses-02','fs32k','CondHalf')
     # test_extract('WMFS','ses-01','fs32k','CondRun')
     # test_extract('WMFS','ses-02','fs32k','CondRun')
-    test_extract('WMFS','ses-01','fs32k','CondAll')
-    test_extract('WMFS','ses-02','fs32k','CondAll')
-    test_extract('WMFS','ses-01','MNISymC3','CondHalf')
-    test_extract('WMFS','ses-02','MNISymC3','CondHalf')
+    # test_extract('WMFS','ses-01','fs32k','CondAll')
+    # test_extract('WMFS','ses-02','fs32k','CondAll')
+    # test_extract('WMFS','ses-01','MNISymC3','CondHalf')
+    # test_extract('WMFS','ses-02','MNISymC3','CondHalf')
     # test_extract('WMFS','ses-01','MNISymC3','CondRun')
     # test_extract('WMFS','ses-02','MNISymC3','CondRun')
-    test_extract('WMFS','ses-01','MNISymC3','CondAll')
-    test_extract('WMFS','ses-02','MNISymC3','CondAll')
+    # test_extract('WMFS','ses-01','MNISymC3','CondAll')
+    # test_extract('WMFS','ses-02','MNISymC3','CondAll')
 
     # data,info,ds = ds.get_dataset(base_dir,'Demand',atlas='MNISymC3')
     pass

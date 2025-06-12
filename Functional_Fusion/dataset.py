@@ -284,16 +284,16 @@ def combine_parcel_labels(labels_org,labels_new, labelvec_org=None):
             labelvec_new[labelvec_org == i] = mapping[i]
         return mapping, labelvec_new 
 
-def optimal_contrast(data, C, X, reg_in=None, baseline=None):
+def optimal_contrast(data, C, X, reg_in=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
     For mathematical background and motivation, see: 
     Args:
         data (list of ndarrays): List of N x P_i arrays of beta estimates of the original GLM
         C (ndarray): Contrast matrix (N x Q) going from the original GLM to the new GLM
-        X (ndarray): Original (T x N) design matrix used in estimation of the data
+        X (ndarray): Original (T x Nx) design matrix used in estimation of the data. 
+            Nx could be longer than N by regressors of no interest
         reg_in (ndarray): Contrast of interest: Logical vector indicating
-            which rows of C we will put in the matrix
-        baseline (ndarray): Fixed effects contrast removed after estimation
+            which rows of C we will put in the matrix (defaults to all)
     """
     # Check the sizes
     N, Q = C.shape
@@ -304,6 +304,10 @@ def optimal_contrast(data, C, X, reg_in=None, baseline=None):
     Cn = sl.block_diag(C, np.eye(num_nointerest))
     # Make new design matrix
     Xn = X @ Cn
+    # If no subset of regressors is given, use all: 
+    if reg_in is None:
+        reg_in = np.arange(Q)
+
     # Loop over the data:
     data_new = []
     for i in range(len(data)):
@@ -311,12 +315,9 @@ def optimal_contrast(data, C, X, reg_in=None, baseline=None):
         dat = np.concatenate([data[i],
                               np.zeros((num_nointerest, data[i].shape[1]))])
         # Do the averaging / reweighting:
-        d = solve(Xn.T @ Xn, Xn.T @ X @ dat)
+        d = pinv(Xn) @ X @ dat
         # Subset to the contrast of interest
-        if reg_in is not None:
-            d = d[reg_in, :]
-        # Now subtract baseline
-        d = remove_baseline(d,baseline)
+        d = d[reg_in, :]
         # Put the data in a list:
         data_new.append(d)
     return data_new
@@ -597,7 +598,8 @@ class DataSet:
                       type='CondHalf',
                       participant_id=None,
                       ses_id=None,
-                      subset=None):
+                      subset=None,
+                      subtract_baseline=False):
         """ Condense the data across the measures to a certain level 
         If a design matrix file exisits, it is used to combine betas optimally
             'CondHalf': Conditions with seperate estimates for first and second half of experiment (Default)
@@ -614,6 +616,7 @@ class DataSet:
             participant_id (str): ID of participant
             ses_id (str): Name of session
             subset (bool array): If given, ignores certain rows from the
+            subtract_baseline (bool): If True, subtracts the baseline per half/ run from the data. Defaults to False.
 
         Returns:
             Y (list of np.ndarray):
@@ -702,14 +705,18 @@ class DataSet:
         design_matrix_file = dir + f'/{participant_id}_{ses_id}_designmatrix.npy'
         if os.path.exists(design_matrix_file):
             X = np.load(design_matrix_file)
-            reg_in = np.arange(C.shape[1], dtype=int)
             #  contrast for all instructions
             CI = matrix.indicator(info.run * subset, positive=True)
             C = np.c_[C, CI]
-            data_n = optimal_contrast(data_n, C, X, reg_in, baseline=B)
+
+            data_n = optimal_contrast(data_n, C, X)
         else:
             for i in range(len(data_n)):
                 data_n[i] = pinv(C) @ data_n[i]
+        
+        # Subtract baseline if needed
+        if subtract_baseline:
+            data_n = [remove_baseline(d, B) for d in data_n]
         return data_n, data_info
 
 
@@ -1027,7 +1034,20 @@ class DataSetMDTB(DataSetNative):
         self.cond_ind = 'cond_num_uni'
         self.part_ind = 'half'
         self.cond_name = 'cond_name'
-
+    
+    def condense_data(self, data, info,
+                      type='CondHalf',
+                      participant_id=None,
+                      ses_id=None,
+                      subset=None,
+                      subtract_baseline=False):
+        """ Use baseline removal"""
+        data_new, data_info = super().condense_data(data, info, type,
+                                                    participant_id=participant_id, 
+                                                    ses_id=ses_id,
+                                                    subset=subset,
+                                                    subtract_baseline=subtract_baseline)
+        return data_new, data_info
 
 class DataSetHcpResting(DataSetCifti):
     def __init__(self, dir):

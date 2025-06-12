@@ -1,9 +1,9 @@
 Data Extraction
 ===============
 
-
-
-Extraction reads out the effect-size estimates or timeseries data (the type) from a dataset out in a specific atlas space (the atlas). The result will be stored in a cifti-file in the subjects data directory, with a uniform Spatial and Data dimension.  This process is done can be done for all subject using the function :py:meth:`dataset.DataSet.extract_all`.
+Extraction reads out the effect-size estimates or timeseries data (the type) from a dataset out in a specific atlas space (the atlas). 
+The data will then be aggregated across different runs and conditions, depending on the type of data extraction. By default, the estimates will also be z-standardized using the Residual Mean square image from the session.  
+The result will be stored in a cifti-file with a uniform Spatial and Data dimension.  This process is done can be done for all subject using the function :py:meth:`dataset.DataSet.extract_all`.
 
 For example, extracting sessions 1 from the MDTB dataset, with a split half-estimate for the condition in MNISymC3,  would look like this:
 
@@ -13,9 +13,9 @@ For example, extracting sessions 1 from the MDTB dataset, with a split half-esti
     dataset.extract_all(ses_id='ses-s1',
                         type='CondAll',
                         atlas='MNISymC3',
-                        smooth=2)
+                        interpolation=1)
 
-The resulting data for each subject and session is stored in a cifti-file in the ``basedir/derivatives/<subj_id>/data`` directory under the name ``sub-<xx>_space-<atlas>_ses-xx_<type>.dscalar.nii``. The description of the data-axis in the cifti-file is stored in ``sub-xx_ses-xx_<type>.tsv`` (note that there is of course only one of these files for all atlas spaces).
+The resulting data for each subject and session is stored in a cifti-file in the ``basedir/derivatives/ffextract/<subj_id>`` directory under the name ``sub-<xx>_space-<atlas>_ses-xx_<type>.dscalar.nii``. The description of the data-axis in the cifti-file is stored in ``sub-xx_ses-xx_<type>.tsv`` (note that there isonly one of these files for all atlas spaces).
 
 That's all you need. The rest of documentation will explain the different steps in the extraction process in detail:
 
@@ -82,11 +82,12 @@ Depending on the type and dataset, the filenames of the raw datafiles need to be
 
 The default behavior is:
 
-* For ``type == 'TSeries'``: ``derivaties/estimates/{participant_id}_{session_id}_run-01.nii'``
-* For ``type == 'task / cond'``: ``derivaties/estimates/{participant_id}_{session_id}_reg_00_beta.nii'``
+* For ``type == 'TSeries'``: ``ffimport/{participant_id}/{sess_id}/{participant_id}_{session_id}_run-01.nii'`` 
+* For ``type == 'task/cond'``: 
+    - ``ffimport/{participant_id}/{sess_id}/{participant_id}_{session_id}_reg_00_beta.nii'`` (beta estimates)
+    - ``ffimport/{participant_id}/{sess_id}/{participant_id}_{session_id}_resms.nii`` (residual mean square image for prewhitening)
 
 If the naming convention differs, your Dataset class needs to overwrite this function.
-
 
 Data aggregation
 ----------------
@@ -99,9 +100,34 @@ Typically, there are different `type`s:
 * ``'CondHalf'``: Two estimates per condition, one per half
 * ``'CondRun'``: A separate estimate per condition and run.
 
-The averaging is done in the function :py:meth:`dataset.optimal_contrast`, which can take into account the first-level design matrix. This procedure will result in the same estimate that you would have gotten if you had defined a design matrix with a regressor for each condition across runs.
+If no design matrix from the frist-level model is provided, the estiamtes will be simply averaged across runs / conditions. If a design matrix is provided, an optimal contras will be computed (see below).
 
-After thius step (and depending how baseline has been modeled) the function :py:meth:`dataset.remove_baseline` can be called to remove the mean of the voxels across conditions within each run. This is totally optional.
+After thus step (and depending how baseline has been modeled) the function :py:meth:`dataset.remove_baseline` can be called to remove the mean of the voxels across conditions within each run. This is totally optional.
 
 Finally, we are dividing the beta estimates by the estimate of the noise standard-deviation per voxel, using :py:meth:`dataset.prewhiten`, coming from the resms.nii.
+
+Optimal contrast
+----------------
+
+If the design matrix is given as a matrix ``{participant_id}_{ses_id}_designmatrix.npy``, then the estimates will be averaged across runs and conditions using an optimal contrast using the function :py:meth:`dataset.optimal_contrast`. The function takes the original estimates (:math:`\beta`), the original design matrix used in the estimation of those estimates (:math:`X`), and a contrast matrix (:math:`C`) that is used to combine the original estimates to the new estiamtes.  
+
+Say you have a GLM with N regressors with the design matrix :math:`X`: 
+
+.. math::
+    \mathbf{y} = \mathbf{X} \boldsymbol{\beta} + \epsilon\\
+    \hat{\boldsymbol{\beta}}=(\mathbf{X}^{T}\mathbf{X})^{-1}\mathbf{y}
+
+
+Then you are interested in a linear subspace, i.e. the projection on a arbitrary new design matrix: 
+
+.. math::
+    \mathbf{Z}=\mathbf{XC}
+
+Then you can simply obtain any new beta estimate by re-weighting the old estimates
+
+.. math::
+    \boldsymbol{\gamma}=(\mathbf{C}^T\mathbf{X}^T\mathbf{X}\mathbf{C})^{-1}\mathbf{C}^T\mathbf{X}^T\mathbf{y}\\
+    =(\mathbf{C}^T\mathbf{X}^T\mathbf{X}\mathbf{C})^{-1}\mathbf{C}^T\mathbf{X}^T\mathbf{X}\hat{\boldsymbol{\beta}}\\
+
+The averaging is done in the function :py:meth:`dataset.optimal_contrast`, which can take into account the first-level design matrix. This procedure will result in the same estimate that you would have gotten if you had defined a design matrix with a regressor for each condition across runs.
 
