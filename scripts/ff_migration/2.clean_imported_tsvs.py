@@ -430,11 +430,9 @@ def clean_social(dir,subject_list,task_map):
                     df = pd.read_csv(tsv_path, sep='\t')
 
                     # keep some columns that are fine
-                    cols_to_keep = ['run','task_name', 'reg_id','Instruction']
+                    cols_to_keep = ['run','task_name', 'reg_id','instruction']
                     df = df[[col for col in cols_to_keep if col in df.columns]]
 
-                    # rename Instruction to instruction
-                    df.rename(columns={'Instruction': 'instruction'}, inplace=True)
 
                     # strip white spaces in task_name
                     df['task_name'] = df['task_name'].str.strip()

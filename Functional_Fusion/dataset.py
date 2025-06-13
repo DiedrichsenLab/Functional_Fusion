@@ -1275,33 +1275,6 @@ class DataSetIBC(DataSetNative):
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
 
-    def get_participants(self):
-        """ returns a data frame with all participants complete participants
-        Returns:
-            Pinfo (pandas data frame): participant information in standard bids format
-        """
-        self.part_info = pd.read_csv(
-            self.base_dir + '/participants.tsv', delimiter='\t')
-        return self.part_info[self.part_info.complete == 1]
-
-    def get_data_fnames(self, participant_id, session_id=None, type = "CondHalf"):
-        """ Gets all raw data files
-
-        Args:
-            participant_id (str): Subject
-            session_id (str): Session ID. Defaults to None.
-        Returns:
-            fnames (list): List of fnames, last one is the resMS image
-            T (pd.DataFrame): Info structure for regressors (reginfo)
-        """
-        dirw = self.estimates_dir.format(participant_id) + f'/{session_id}'
-        T = pd.read_csv(
-            dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
-        fnames = [
-            f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
-        fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
-        return fnames, T
-
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space.
         Uses the general ones, but overwrites the choice of masks
@@ -1594,54 +1567,15 @@ class DataSetSocial(DataSetNative):
             names: Names for CIFTI-file per row
         """
 
-        # Depending on the type, make a new contrast
-        if type == 'Tseries' or type == 'FixTseries':
-            info['names'] = info['timepoint']
-            data_new, data_info = data, info
-
-        else:
-            if type == 'CondHalf':
-                data_info, C = agg_data(info,
-                                        ['half', 'reg_id'],
-                                        ['run'],
-                                        subset=(info.reg_id >0))
-                data_info['names'] = [
-                    f'{d.task_code}_{d.cond_code}_half{d.half}' for i, d in data_info.iterrows()]
-                # Baseline substraction
-                B = matrix.indicator(data_info.half, positive=True)
-
-            elif type == 'CondRun':
-
-                data_info, C = agg_data(info,
-                                        ['run', 'reg_id'],
-                                        ['half'],
-                                        subset=(info.reg_id > 0))
-                data_info['names'] = [
-                    f'{d.task_code}_{d.cond_code}_run{d.run}' for i, d in data_info.iterrows()]
-                # Baseline substraction
-                B = matrix.indicator(data_info.run, positive=True)
-
-            elif type == 'CondAll':
-                data_info, C = agg_data(info,
-                                        ['reg_id'],
-                                        ['run', 'half'],
-                                        subset=(info.reg_id > 0))
-                data_info['names'] = [
-                    f'{d.task_code}_{d.cond_code}' for i, d in data_info.iterrows()]
-                # Baseline substraction
-                B = np.ones((data_info.shape[0],1))
-
-            # Prewhiten the data
-            data_n = prewhiten_data(data)
-
-            dir = self.estimates_dir.format(participant_id) + f'/{ses_id}'
-
-            # Load the designmatrix and perform optimal contrast
-            X = np.load(dir + f'/{participant_id}_{ses_id}_designmatrix.npy')
-            reg_in = np.arange(C.shape[1], dtype=int)
-            CI = matrix.indicator(info.run * info.instruction, positive=True)
-            C = np.c_[C, CI]
-
-            data_new = optimal_contrast(data_n, C, X, reg_in, baseline=B)
-
+    def condense_data(self, data, info,
+                    type='CondHalf',
+                    participant_id=None,
+                    ses_id=None,
+                    subset=None):
+        """ Use baseline removal"""
+        data_new, data_info = super().condense_data(data, info, type,
+                                                    participant_id=participant_id, 
+                                                    ses_id=ses_id,
+                                                    subset=subset,
+                                                    subtract_baseline=True)
         return data_new, data_info
