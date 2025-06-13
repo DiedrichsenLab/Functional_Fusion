@@ -621,7 +621,7 @@ class DataSet:
         elif type == 'TaskRun':
 
             data_info, C = agg_data(info,
-                                    by=['task_code'],
+                                    by=['task_code','run'],
                                     over=['half'],
                                     subset=subset)
             data_info['names'] = [
@@ -1036,6 +1036,7 @@ class DataSetMDTB(DataSetNative):
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
+        self.subtract_baseline = True
     
     def condense_data(self, data, info,
                       type='CondHalf',
