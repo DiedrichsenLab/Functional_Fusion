@@ -32,7 +32,7 @@ def reliability_ibc():
 
 def test_get_data():
     # dataset,info,myds= ds.get_dataset(base_dir,'MDTB',atlas='MNISymC3',subj=[0,1,2])
-    dataset,info,myds= ds.get_dataset(base_dir,'MDTB',atlas='fs32k',subj=[0,1,2],type='CondAll')
+    dataset,info,myds= ds.get_dataset(base_dir,'Demand',atlas='fs32k',subj=[0,1,2],type='CondRun')
     # dataset,info,myds= ds.get_dataset(base_dir,'Pontine',atlas='MNISymC3',subj=[0,1,2])
     # dataset,info,myds= ds.get_dataset(base_dir,'HCPur100',atlas='MNISymC3',subj=[0,1,2])
     pass
@@ -43,7 +43,7 @@ def test_extract(dataset,sess,space,type):
 
 def test_group_average(dataset='MDTB',
                         space=['MNISymC3','fs32k'],
-                        type=['CondHalf']):
+                        type=['CondAll']):
     datas =  ds.get_dataset_class(base_dir,dataset)
     for s in datas.sessions:
         for t in type:
@@ -69,14 +69,18 @@ def test_decompose():
 if __name__ == "__main__":
     # make_mdtb_suit()
     # test_decompose()
-    # test_get_data()
+    test_get_data()
     # test_group_average('MDTB')
     # test_group_average('Demand')
-    # test_group_average('WMFS')
-    test_extract('HCPur100','ses-task','fs32k','CondHalf')
-    test_extract('HCPur100','ses-task','MNISymC3','CondHalf')
-    test_extract('HCPur100','ses-task','fs32k','CondAll')
-    test_extract('HCPur100','ses-task','MNISymC3','CondAll')
+    # test_group_average('HCPur100')
+    test_extract('Demand','ses-01','MNISymC3','CondHalf')
+    test_extract('Demand','ses-01','MNISymC3','CondRun')
+    # test_group_average('Demand')
+    # test_extract('Demand','ses-01','MNISymC3','CondAll')
+    # test_extract('Demand','ses-01','MNISymC3','CondHalf')
+    # test_extract('HCPur100','ses-task','MNISymC3','CondHalf')
+    # test_extract('HCPur100','ses-task','fs32k','CondAll')
+    # test_extract('HCPur100','ses-task','MNISymC3','CondAll')
     # test_extract('Demand','ses-01','MNISymC3','CondAll')
     # test_extract('MDTB','ses-s1','fs32k','CondRun')
     # test_extract('MDTB','ses-s2','fs32k','CondRun')
