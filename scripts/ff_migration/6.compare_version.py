@@ -32,28 +32,30 @@ def compare_data(dataset,sess, subj,space,type):
     return R[0,1],baseline_old,baseline_new,missing_old,missing_new
 
 def compare_all(): 
-    datasets = ['Social','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
+    datasets = ['WMFS'] # ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
     spaces = ['MNISymC3']
     type = 'CondHalf'
     D = pd.DataFrame()
     for space in spaces:
         for i,dataset in enumerate(datasets):
             myds = ds.get_dataset_class(ut.get_base_dir(),dataset)
-            mysess = myds.sessions[0]
             T=myds.get_participants()
-            for s in range(4):
-                mysubj = T.participant_id.iloc[s]
-                R,bo,bn,mo,mn= compare_data(dataset,mysess,mysubj,space,type)
-                print(f'{dataset} {mysess} {mysubj} {space} {type}: {R:.3f}')
-                d = {'dataset': dataset, 'session': mysess, 'subject': mysubj,
-                     'space': space,
-                     'type': type,
-                     'correlation': R,
-                     'baseline_old': bo,
-                     'baseline_new': bn,
-                     'missing_old': mo,
-                     'missing_new': mn}
-                D = pd.concat([D, pd.DataFrame([d])], ignore_index=True)
+            for s in range(len(T)):
+                mysubj = T.participant_id.iloc[s]                   
+                for mysess in myds.sessions:
+                    R,bo,bn,mo,mn= compare_data(dataset,mysess,mysubj,space,type)
+                    print(f'{dataset} {mysess} {mysubj} {space} {type}: {R:.3f}')
+                    d = {'dataset': dataset, 'session': mysess, 'subject': mysubj,
+                        'space': space,
+                        'type': type,
+                        'session' : mysess,
+                        'participant_id': mysubj,
+                        'correlation': R,
+                        'baseline_old': bo,
+                        'baseline_new': bn,
+                        'missing_old': mo,
+                        'missing_new': mn}
+                    D = pd.concat([D, pd.DataFrame([d])], ignore_index=True)
     return D 
 
 if __name__ == '__main__':
