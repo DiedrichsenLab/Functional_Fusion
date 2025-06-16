@@ -33,12 +33,16 @@ def extract_dataset(dataset,space,type):
 
 
 if __name__ == "__main__":
-    datasets = ['WMFS','MDTB','Nishimoto','Somatotopic','IBC']
-    extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
-    extract_dataset('MDTB', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
+    # datasets = ['WMFS','MDTB','Nishimoto','Somatotopic','IBC']
+    extract_dataset('Somatotopic', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
+    extract_dataset('Nishimoto', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
+    extract_dataset('Demand', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
+    extract_dataset('IBC', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
+    extract_dataset('Language', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
+    extract_dataset('Social', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
-    
+    # ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
