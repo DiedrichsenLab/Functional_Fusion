@@ -60,5 +60,5 @@ def compare_all(
     return D 
 
 if __name__ == '__main__':
-    D= compare_all(['Social'],['fs32k'])
+    D= compare_all(['Demand'],['fs32k'])
     pass 
