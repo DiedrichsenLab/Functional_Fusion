@@ -31,10 +31,10 @@ def compare_data(dataset,sess, subj,space,type):
     R= np.corrcoef(A[~np.isnan(C)],B[~np.isnan(C)])
     return R[0,1],baseline_old,baseline_new,missing_old,missing_new
 
-def compare_all(): 
-    datasets = ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
-    spaces = ['fs32k']
-    type = 'CondHalf'
+def compare_all(
+    datasets = ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC'],
+    spaces = ['fs32k'],
+    type = 'CondHalf'):
     D = pd.DataFrame()
     for space in spaces:
         for i,dataset in enumerate(datasets):
@@ -43,21 +43,22 @@ def compare_all():
             for s in range(len(T)):
                 mysubj = T.participant_id.iloc[s]                   
                 for mysess in myds.sessions:
-                    R,bo,bn,mo,mn= compare_data(dataset,mysess,mysubj,space,type)
-                    print(f'{dataset} {mysess} {mysubj} {space} {type}: {R:.3f}')
-                    d = {'dataset': dataset, 'session': mysess, 'subject': mysubj,
-                        'space': space,
-                        'type': type,
-                        'session' : mysess,
-                        'participant_id': mysubj,
-                        'correlation': R,
-                        'baseline_old': bo,
-                        'baseline_new': bn,
-                        'missing_old': mo,
-                        'missing_new': mn}
-                    D = pd.concat([D, pd.DataFrame([d])], ignore_index=True)
+                    if mysess != 'ses-rest':
+                        R,bo,bn,mo,mn= compare_data(dataset,mysess,mysubj,space,type)
+                        print(f'{dataset} {mysess} {mysubj} {space} {type}: {R:.3f}')
+                        d = {'dataset': dataset, 'session': mysess, 'subject': mysubj,
+                            'space': space,
+                            'type': type,
+                            'session' : mysess,
+                            'participant_id': mysubj,
+                            'correlation': R,
+                            'baseline_old': bo,
+                            'baseline_new': bn,
+                            'missing_old': mo,
+                            'missing_new': mn}
+                        D = pd.concat([D, pd.DataFrame([d])], ignore_index=True)
     return D 
 
 if __name__ == '__main__':
-    D= compare_all()
+    D= compare_all(['Social'],['fs32k'])
     pass 

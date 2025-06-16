@@ -1241,7 +1241,7 @@ class DataSetNishi(DataSetNative):
         self.cond_ind = 'reg_id'
         self.cond_name = 'task_name'
         self.part_ind = 'half'
-        self.subtract_baseline = False
+        self.subtract_baseline = True
 
 class DataSetIBC(DataSetNative):
     def __init__(self, dir):
