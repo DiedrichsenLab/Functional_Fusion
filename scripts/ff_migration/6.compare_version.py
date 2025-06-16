@@ -32,8 +32,8 @@ def compare_data(dataset,sess, subj,space,type):
     return R[0,1],baseline_old,baseline_new,missing_old,missing_new
 
 def compare_all(): 
-    datasets = ['WMFS'] # ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
-    spaces = ['MNISymC3']
+    datasets = ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
+    spaces = ['fs32k']
     type = 'CondHalf'
     D = pd.DataFrame()
     for space in spaces:
