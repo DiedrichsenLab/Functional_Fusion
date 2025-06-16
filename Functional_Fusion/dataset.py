@@ -1287,7 +1287,7 @@ class DataSetIBC(DataSetNative):
             atlas_map.build(smooth=2.0, additional_mask=add_mask)
         elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']:
             # This is nornmalization over SUIT->MNI (cerebellum only)
-            deform1, m = am.get_deform(atlas.space, 'SUIT')
+            deform1 = am.get_deform(atlas.space, 'SUIT')
             deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
             deform = [deform1, deform2]
             mask = self.estimates_dir.format(sub) + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
