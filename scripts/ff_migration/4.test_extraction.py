@@ -20,7 +20,7 @@ if __name__ == "__main__":
     # social
     # test_extract('social', 'ses-social', 'fs32k', 'CondRun')
     # test_extract('social', 'ses-social', 'MNISymC3', 'CondRun')
-    # test_extract('social', 'ses-social', 'fs32k', 'CondHalf')
+    test_extract('social', 'ses-social', 'fs32k', 'CondHalf')
     # test_extract('social', 'ses-social', 'MNISymC3', 'CondHalf')
     # test_extract('social', 'ses-social', 'fs32k', 'CondAll')
     # test_extract('social', 'ses-social', 'MNISymC3', 'CondAll')
