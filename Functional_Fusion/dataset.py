@@ -52,7 +52,7 @@ def get_dataset_class(base_dir, dataset):
     return my_dataset
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
-                type=None, smooth=None):
+                type=None, ext=None):
     """get_dataset tensor and data set object
 
     Args:
@@ -62,6 +62,7 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
         sess (str or list): Sessions. Defaults to 'all'.
         subj (ndarray, str, or list):  Subject numbers /names to get [None = all]
         type (str): 'CondHalf','CondRun', etc....
+        ext (str): added qualifier (smoothing, etc.) default None
     Returns:
         data (nd.array):nsubj x ncond x nvox data tensor
         info (pd.DataFrame): Dataframe with info about the data
@@ -84,7 +85,7 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
     info_l = []
     data_l = []
     for s in sess:
-        dat, inf = my_dataset.get_data(atlas, s, type, subj, smooth=smooth)
+        dat, inf = my_dataset.get_data(atlas, s, type, subj, ext=ext)
         data_l.append(dat)
         inf['sess'] = [s] * inf.shape[0]
         info_l.append(inf)
@@ -720,7 +721,7 @@ class DataSet:
                 dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
 
     def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None, exclude_subjects=True):
-        """Loads the tsv-files and retturns the most complete info structure
+        """Loads the tsv-files and returns the most complete info structure
 
         Args:
             ses_id (str): Session ID (Defaults to 'ses-s1').
@@ -775,7 +776,7 @@ class DataSet:
 
 
     def get_data(self, space='SUIT3', ses_id='ses-s1', type=None,
-                 subj=None, exclude_subjects=True, fields=None, smooth=None, verbose=False):
+                 subj=None, exclude_subjects=True, fields=None, ext=None, verbose=False):
         """Loads all the CIFTI files in the data directory of a certain space / type and returns they content as a Numpy array
 
         Args:
@@ -792,6 +793,7 @@ class DataSet:
             info (DataFramw): Data frame with common descriptor
         """
         T = self.get_participants(exclude_subjects=exclude_subjects)
+        is_group = False
         # Assemble the data
         Data = None
         # Deal with subset of subject option
@@ -801,6 +803,9 @@ class DataSet:
             # only get data from subjects that have rest, if specified in dataset description
             # if type == 'Tseries' and 'ses-rest' in T.columns:
             #     subj = T[T['ses-rest'] == 1].participant_id.tolist()
+        elif isinstance(subj, str) and subj == 'group':
+            is_group = True
+            subj = [subj]
         elif isinstance(subj, str) and subj in T.participant_id.tolist():
             subj = [subj]
         elif isinstance(subj, (int,np.integer)):
@@ -817,7 +822,10 @@ class DataSet:
         if type is None:
             type = self.default_type
 
-        info_com = self.get_info(subj=subj, ses_id=ses_id, type=type, fields=fields)
+        if is_group:
+            info_com = self.get_info(subj=None, ses_id=ses_id, type=type, fields=fields)
+        else: 
+            info_com = self.get_info(subj=subj, ses_id=ses_id, type=type, fields=fields)
 
         # Loop again to assemble the data
         Data_list = []
@@ -827,9 +835,9 @@ class DataSet:
             if verbose:
                 print(f'- Getting data for {s} in {space}')
             # Load the data
-            if smooth is not None:
+            if ext is not None:
                 C = nb.load(self.data_dir.format(s)
-                            + f'/{s}_space-{space}_{ses_id}_{type}_desc-sm{int(smooth)}.dscalar.nii')
+                            + f'/{s}_space-{space}_{ses_id}_{type}_{ext}.dscalar.nii')
             else:
                 C = nb.load(self.data_dir.format(s)
                             + f'/{s}_space-{space}_{ses_id}_{type}.dscalar.nii')
