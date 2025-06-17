@@ -1,7 +1,7 @@
 	CondAll-fs	CondHalf-fs	CondRun-fs	CondAll-mni3	CondHalf-mni3	CondRun-mni3
-MDTB		X			X	
+MDTB	X	X	X	X	X	X
 Demand	X	X	X	X	X	X
-WMFS						
+WMFS	X	X	X	X	X	X
 Somatotopic		?				
 IBC	X	X	X	X	X	X
 Language	X	X	X	X	X	X

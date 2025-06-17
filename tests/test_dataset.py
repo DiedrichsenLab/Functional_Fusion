@@ -75,7 +75,11 @@ if __name__ == "__main__":
     # test_group_average('HCPur100')
     # test_extract('Demand','ses-01','MNISymC3','CondHalf')
     # test_extract('Demand','ses-01','MNISymC3','CondRun')
-    test_group_average('Demand')
+    test_group_average('IBC')
+    test_group_average('Language')
+    test_group_average('Social')
+    test_group_average('MDTB')
+
     # test_extract('Demand','ses-01','MNISymC3','CondAll')
     # test_extract('Demand','ses-01','MNISymC3','CondHalf')
     # test_extract('HCPur100','ses-task','MNISymC3','CondHalf')
