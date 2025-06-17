@@ -34,7 +34,7 @@ def extract_dataset(dataset,space,type):
 
 if __name__ == "__main__":
     # datasets = ['WMFS','MDTB','Nishimoto','Somatotopic','IBC']
-    extract_dataset('Somatotopic', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
+    extract_dataset('Social', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     extract_dataset('Nishimoto', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     extract_dataset('Demand', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     extract_dataset('IBC', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])

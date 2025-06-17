@@ -224,8 +224,11 @@ def agg_data(info, by, over, subset=None):
 
     # Build indicator matrix for averaging
     C = np.zeros((info.shape[0], data_info.shape[0]))
-    for i, (k, v) in enumerate(info_gb.indices.items()):
-        C[indx[v], i] = 1
+    for i, d in data_info.iterrows():
+        rows = np.ones(info.shape[0], dtype=bool)
+        for j in by:
+            rows &= (info[j] == d[j])
+        C[rows, i] = 1
     return data_info, C
 
 
