@@ -28,18 +28,19 @@ def extract_dataset(dataset,space,type):
             interpolation = 1 
         for t in type:
             for sess in mydataset.sessions:
-                print(f'extracting {dataset} type {t} space {sp}')
-                mydataset.extract_all(ses_id=sess, type=t, atlas=sp,smooth=smooth,interpolation=interpolation)
+                if sess !='ses-rest':
+                    print(f'extracting {dataset} type {t} space {sp}')
+                    mydataset.extract_all(ses_id=sess, type=t, atlas=sp,smooth=smooth,interpolation=interpolation)
 
 
 if __name__ == "__main__":
     # datasets = ['WMFS','MDTB','Nishimoto','Somatotopic','IBC']
-    extract_dataset('Social', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
-    extract_dataset('Nishimoto', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
-    extract_dataset('Demand', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
-    extract_dataset('IBC', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
-    extract_dataset('Language', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
-    extract_dataset('Social', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
+    extract_dataset('Demand', ['fs32k','MNISymC3'], ['CondHalf'])
+    extract_dataset('MDTB', ['fs32k','MNISymC3'], ['CondHalf'])
+    extract_dataset('WMFS', ['fs32k','MNISymC3'], ['CondHalf'])
+    extract_dataset('HCPur100', ['fs32k','MNISymC3'], ['CondHalf'])
+    extract_dataset('Nishimoto', ['fs32k','MNISymC3'], ['CondHalf'])
+    extract_dataset('Somatotopic', ['fs32k','MNISymC3'], ['CondHalf'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])

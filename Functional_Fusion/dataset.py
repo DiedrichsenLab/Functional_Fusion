@@ -998,7 +998,7 @@ class DataSetCifti(DataSet):
             f'{dirw}/{participant_id}_{session_id}_resms.dscalar.nii')
         return fnames, T
 
-    def extract_all(self, ses_id='ses-s1', type='CondHalf', atlas='SUIT3', exclude_subjects=True):
+    def extract_all(self, ses_id='ses-s1', type='CondHalf', atlas='SUIT3', exclude_subjects=True,interpolation=1, smooth=None):
         """Extracts cerebellar data. Saves the results as CIFTI files in the data directory.
         Args:
             ses_id (str, optional): Session. Defaults to 'ses-s1'.
@@ -1013,7 +1013,7 @@ class DataSetCifti(DataSet):
             deform = am.get_deform(myatlas.space,'MNI152NLin6Asym')
             mask = util.default_atlas_dir + '/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_desc-subcortexmask.nii.gz'
             atlas_map = am.AtlasMapDeform(myatlas.world,deform,mask)
-            atlas_map.build(interpolation=1)
+            atlas_map.build(interpolation=interpolation,smooth=smooth)
         elif isinstance(myatlas, am.AtlasSurface):
             atlas_map = myatlas
         # Extract the data for each participant
