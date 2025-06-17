@@ -32,12 +32,12 @@ def compare_data(dataset,sess, subj,space,type):
     return R[0,1],baseline_old,baseline_new,missing_old,missing_new
 
 def compare_all(
-    datasets = ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC'],
-    spaces = ['fs32k'],
+    datasets = ['MDTB','Demand','Nishimoto','Somatotopic','IBC','Language','WMFS','Social'],
+    spaces = ['fs32k','MNISymC3'],
     type = 'CondHalf'):
     D = pd.DataFrame()
-    for space in spaces:
-        for i,dataset in enumerate(datasets):
+    for i,dataset in enumerate(datasets):
+        for space in spaces:
             myds = ds.get_dataset_class(ut.get_base_dir(),dataset)
             T=myds.get_participants()
             for s in range(len(T)):
@@ -60,5 +60,5 @@ def compare_all(
     return D 
 
 if __name__ == '__main__':
-    D= compare_all(['Demand'],['fs32k'])
+    D= compare_all(['Demand'],type='CondAll')
     pass 
