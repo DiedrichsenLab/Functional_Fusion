@@ -43,7 +43,7 @@ def test_extract(dataset,sess,space,type):
 
 def test_group_average(dataset='MDTB',
                         space=['MNISymC3','fs32k'],
-                        type=['CondAll']):
+                        type=['CondAll','CondHalf']):
     datas =  ds.get_dataset_class(base_dir,dataset)
     for s in datas.sessions:
         for t in type:
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # test_group_average('HCPur100')
     # test_extract('Demand','ses-01','MNISymC3','CondHalf')
     # test_extract('Demand','ses-01','MNISymC3','CondRun')
-    # test_group_average('Demand')
+    test_group_average('Demand')
     # test_extract('Demand','ses-01','MNISymC3','CondAll')
     # test_extract('Demand','ses-01','MNISymC3','CondHalf')
     # test_extract('HCPur100','ses-task','MNISymC3','CondHalf')

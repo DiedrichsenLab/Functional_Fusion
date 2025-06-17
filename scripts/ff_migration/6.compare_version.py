@@ -60,5 +60,5 @@ def compare_all(
     return D 
 
 if __name__ == '__main__':
-    D= compare_all(['Demand'],type='CondAll')
+    D= compare_all(['MDTB'],spaces=['fs32k','MNISymC3'],type='CondAll')
     pass 
