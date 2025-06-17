@@ -16,7 +16,7 @@ def compare_data(dataset,sess, subj,space,type):
         oname = name
     old_path  = os.path.join(base_dir, 'FunctionalFusion', dataset, 'derivatives',subj,'data',oname)
     new_path = os.path.join(base_dir, 'FunctionalFusion_new', dataset, 'derivatives','ffextract',subj,name) 
-    A= nb.load(old_path).get_fdata()
+    A = nb.load(old_path).get_fdata()
     B = nb.load(new_path).get_fdata()
 
     baseline_old = np.nanstd(np.nanmean(A,axis=0))
