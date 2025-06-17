@@ -194,7 +194,7 @@ def clean_language(dir,subject_list,task_map):
                     df = df.merge(task_map[['task_name', 'task_code', 'cond_code']],
                                 on=['task_name'], how='left')
                     
-                    df['half'] = np.where(df['run'] % 2 == 1, 1, 2)
+                    df['half'] = 2 - (df.run < 5)
 
                     # overwrite the tsv file
                     df.to_csv(tsv_path, sep='\t', index=False)
