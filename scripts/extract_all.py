@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # extract_dataset('MDTB', ['fs32k','MNISymC3'], ['CondAll','CondRun'])
     # extract_dataset('MDTB', ['fs32k','MNISymC3'], ['CondHalf'])
     #extract_dataset('WMFS', ['fs32k','MNISymC3'], ['CondHalf'])
-    extract_dataset('HCPur100', ['fs32k','MNISymC3'], ['CondHalf','CondAll','CondRun'])
+    extract_dataset('HCPur100', ['fs32k','MNISymC3'], ['CondAll','CondRun'])
     # extract_dataset('Nishimoto', ['fs32k','MNISymC3'], ['CondHalf'])
     # extract_dataset('Somatotopic', ['fs32k','MNISymC3'], ['CondHalf'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])

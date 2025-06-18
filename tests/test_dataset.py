@@ -46,10 +46,11 @@ def test_group_average(dataset='MDTB',
                         type=['CondAll','CondHalf']):
     datas =  ds.get_dataset_class(base_dir,dataset)
     for s in datas.sessions:
-        for t in type:
-            for sp in space:
-                print(f'Processing {dataset} session {s} type {t} space {sp}')
-                datas.group_average_data(ses_id=s,type=t,atlas=sp,subj=None)
+        if s != 'ses-rest':
+            for t in type:
+                for sp in space:
+                    print(f'Processing {dataset} session {s} type {t} space {sp}')
+                    datas.group_average_data(ses_id=s,type=t,atlas=sp,subj=None)
 
 
 def test_decompose(): 
@@ -75,10 +76,10 @@ if __name__ == "__main__":
     # test_group_average('HCPur100')
     # test_extract('Demand','ses-01','MNISymC3','CondHalf')
     # test_extract('Demand','ses-01','MNISymC3','CondRun')
-    test_group_average('IBC')
-    test_group_average('Language')
-    test_group_average('Social')
-    test_group_average('MDTB')
+    # test_group_average('IBC')
+    # test_group_average('Language')
+    test_group_average('Nishimoto')
+    # test_group_average('MDTB')
 
     # test_extract('Demand','ses-01','MNISymC3','CondAll')
     # test_extract('Demand','ses-01','MNISymC3','CondHalf')

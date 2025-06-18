@@ -60,5 +60,5 @@ def compare_all(
     return D 
 
 if __name__ == '__main__':
-    D= compare_all(['WMFS'],spaces=['fs32k','MNISymC3'],type='CondRun')
+    D= compare_all(['Nishimoto'],spaces=['fs32k'],type='CondHalf')
     pass 
