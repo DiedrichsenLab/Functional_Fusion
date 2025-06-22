@@ -56,7 +56,6 @@ def test_size():
     var_est1 = rel.decompose_subj_group(data,cond_vec,part_vec,separate='subject_wise',subtract_mean=True)
     print(var_est1.shape)
 
-
     var_est2 = rel.within_subj(data,cond_vec,part_vec,separate='condition_wise',subtract_mean=True)
     print(var_est2.shape)
 
@@ -93,7 +92,7 @@ def plot_noiseceil_relationship():
     ncu = np.zeros(len(N))
     for i,n in enumerate(N):
         print(f"Testing N={n}")
-        nc[i], ncl[i], ncu[i] = test_between_subj_loo(var=0.5,N=n)
+        nc[i], ncl[i], ncu[i] = test_between_subj_loo(var=0.2,N=n)
     plt.plot(N, nc, '-', color='black')
     plt.plot(N, ncu, ':', color='red')
     plt.plot(N, ncl, ':', color='blue')
