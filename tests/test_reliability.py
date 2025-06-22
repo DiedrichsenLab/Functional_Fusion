@@ -74,10 +74,35 @@ def test_size():
 
     var_est7 = rel.between_subj_loo(data,cond_vec,separate='none',subtract_mean=True)
     print(var_est7.shape)
-    pass 
+    pass
+
+def test_between_subj_loo(var=0.5, N=10):
+    data,cond_vec,part_vec = sim_data(var_comp=[var,1-var,0],n_subjects=N,n_part=1,n_conditions=1000,n_vox=1)
+    rbs = rel.between_subj(data,cond_vec,separate='none',subtract_mean=True)
+    low = rel.between_subj_loo(data,cond_vec,separate='none',subtract_mean=True)
+    high = rel.between_subj_avrg(data,cond_vec,separate='none',subtract_mean=True)
+    nc = np.sqrt(rbs.mean())
+    ncl = low.mean()
+    ncu =  high.mean()
+    return nc, ncl, ncu
+
+def plot_noiseceil_relationship():
+    N = np.array([2,6,10,30], dtype=int)
+    nc = np.zeros(len(N))
+    ncl = np.zeros(len(N))
+    ncu = np.zeros(len(N))
+    for i,n in enumerate(N):
+        print(f"Testing N={n}")
+        nc[i], ncl[i], ncu[i] = test_between_subj_loo(var=0.5,N=n)
+    plt.plot(N, nc, '-', color='black')
+    plt.plot(N, ncu, ':', color='red')
+    plt.plot(N, ncl, ':', color='blue')
+    pass
 
 if __name__ == "__main__":
-    test_size()
+    plot_noiseceil_relationship()
+
+    # test_between_subj_loo()
 
 
     pass
