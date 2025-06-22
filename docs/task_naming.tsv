@@ -222,6 +222,7 @@ IBC	enumeration	VSTM	vstm_response_num_2	vstm	response2
 IBC	enumeration	VSTM	vstm_response_num_3	vstm	response3				
 IBC	enumeration	VSTM	vstm_response_num_4	vstm	response4				
 IBC	enumeration	VSTM	vstm_response_num_5	vstm	response5				
+IBC	enumeration	VSTM	vstm_response_num_6	vstm	response6				
 IBC	enumeration	Enumeration	enumeration_response_num_1	enumeration	response1				
 IBC	enumeration	Enumeration	enumeration_response_num_2	enumeration	response2				
 IBC	enumeration	Enumeration	enumeration_response_num_3	enumeration	response3				
