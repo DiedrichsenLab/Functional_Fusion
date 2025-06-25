@@ -30,7 +30,7 @@ def extract_dataset(dataset,space,type,sessions='all'):
             if sessions=='all':
                 sessions = mydataset.sessions
             for sess in sessions:
-                print(f'extracting {dataset} type {t} space {sp}')
+                print(f'extracting {dataset} type {t} space {sp} session {sess}')
                 mydataset.extract_all(ses_id=sess, type=t, atlas=sp,smooth=smooth,interpolation=interpolation)
 
 
