@@ -31,11 +31,14 @@ def extract_dataset(dataset,space,type,sessions='all'):
                 sessions = mydataset.sessions
             for sess in sessions:
                 print(f'extracting {dataset} type {t} space {sp} session {sess}')
-                mydataset.extract_all(ses_id=sess, type=t, atlas=sp,smooth=smooth,interpolation=interpolation)
+                if sess == 'ses-rest':
+                    T = mydataset.get_participants(exclude_subjects=True)
+                    subj_idx = T[T['ses-rest'] == 1].index.tolist()
+                mydataset.extract_all(ses_id=sess, type=t, atlas=sp,smooth=smooth,interpolation=interpolation, subj=subj_idx)
 
 
 if __name__ == "__main__":
     
-    extract_dataset('Social', ['fs32k','MNISymC3'], ['Tseries'], ['ses-rest', 'ses-social'])
+    # extract_dataset('Social', ['fs32k','MNISymC3'], ['Tseries'], ['ses-rest', 'ses-social'])
     extract_dataset('Language', ['fs32k','MNISymC3'], ['Tseries', 'FixTseries'], ['ses-rest', 'ses-localizer'])
     extract_dataset('MDTB', ['fs32k','MNISymC3'], ['Tseries', 'FixTseries'], ['ses-rest', 'ses-s1'])
