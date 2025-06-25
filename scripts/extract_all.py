@@ -12,7 +12,7 @@ import nibabel as nb
 
 base_dir = util.get_base_dir()
 
-def extract_dataset(dataset,space,type):
+def extract_dataset(dataset,space,type,sessions='all'):
     mydataset = ds.get_dataset_class(base_dir,dataset)
     if not isinstance(space, list):
         space = [space]
@@ -27,14 +27,15 @@ def extract_dataset(dataset,space,type):
             smooth = None
             interpolation = 1 
         for t in type:
-            for sess in mydataset.sessions:
-                if sess =='ses-rest':
-                    print(f'extracting {dataset} type {t} space {sp}')
-                    mydataset.extract_all(ses_id=sess, type=t, atlas=sp,smooth=smooth,interpolation=interpolation)
+            if sessions=='all':
+                sessions = mydataset.sessions
+            for sess in sessions:
+                print(f'extracting {dataset} type {t} space {sp}')
+                mydataset.extract_all(ses_id=sess, type=t, atlas=sp,smooth=smooth,interpolation=interpolation)
 
 
 if __name__ == "__main__":
     
-    extract_dataset('Social', ['fs32k','MNISymC3'], ['CondRun'])
-    extract_dataset('Language', ['fs32k','MNISymC3'], ['CondRun'])
-    extract_dataset('MDTB', ['fs32k','MNISymC3'], ['CondRun'])
+    extract_dataset('Social', ['fs32k','MNISymC3'], ['Tseries'], ['ses-rest', 'ses-social'])
+    extract_dataset('Language', ['fs32k','MNISymC3'], ['Tseries', 'FixTseries'], ['ses-rest', 'ses-localizer'])
+    extract_dataset('MDTB', ['fs32k','MNISymC3'], ['Tseries', 'FixTseries'], ['ses-rest', 'ses-s1'])
