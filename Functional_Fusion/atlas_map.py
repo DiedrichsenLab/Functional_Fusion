@@ -631,14 +631,14 @@ class AtlasSurface(Atlas):
         """
         if isinstance(img, str):
             img = nb.load(img)
-        if isinstance(img, nb.Cifti2Image):
+        elif isinstance(img, nb.Cifti2Image):
             data = self.cifti_to_data(img)
         elif isinstance(img, nb.gifti.gifti.GiftiImage):
             if len(self.structure) > 1:
                 raise (NameError("Need to pass a Cifti file or list of giftis"))
             else:
                 img = [img]
-        if isinstance(img, list):
+        elif isinstance(img, list):
             if len(img) != len(self.structure):
                 raise (NameError("Number of images needs to match len(self.structure)"))
             data = []
