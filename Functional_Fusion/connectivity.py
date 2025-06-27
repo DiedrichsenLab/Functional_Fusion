@@ -236,12 +236,12 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         # Get the subject's data
         # Get cortical data
         data_cortex_subj, _ = dset.get_data(
-            space='fs32k', ses_id=ses_id, type=load_tseries_type, subj=[row.participant_id])
+            space='fs32k', ses_id=ses_id, type=load_tseries_type, subj=[row.participant_id], exclude_subjects=exclude_subjects)
         data_cortex_subj = data_cortex_subj.squeeze()
 
         # Get source data
         data_source_subj, info_source = dset.get_data(
-                space=space, ses_id=ses_id, type=load_tseries_type, subj=[row.participant_id])
+                space=space, ses_id=ses_id, type=load_tseries_type, subj=[row.participant_id], exclude_subjects=exclude_subjects)
         data_source_subj = data_source_subj.squeeze()
 
         if target[:3] == 'Net' or target[:3] == 'Fus':
