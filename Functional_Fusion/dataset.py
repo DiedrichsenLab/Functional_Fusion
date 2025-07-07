@@ -52,7 +52,7 @@ def get_dataset_class(base_dir, dataset):
     return my_dataset
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
-                type=None, ext=None):
+                type=None, ext=None,exclude_subjects=True):
     """get_dataset tensor and data set object
 
     Args:
@@ -63,6 +63,8 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
         subj (ndarray, str, or list):  Subject numbers /names to get [None = all]
         type (str): 'CondHalf','CondRun', etc....
         ext (str): added qualifier (smoothing, etc.) default None
+        exclude_subjects (bool): If True, excludes subjects that have been specified
+                in the exclude column of the participants.tsv file.
     Returns:
         data (nd.array):nsubj x ncond x nvox data tensor
         info (pd.DataFrame): Dataframe with info about the data
@@ -85,7 +87,7 @@ def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
     info_l = []
     data_l = []
     for s in sess:
-        dat, inf = my_dataset.get_data(atlas, s, type, subj, ext=ext)
+        dat, inf = my_dataset.get_data(atlas, s, type, subj, ext=ext,exclude_subjects=exclude_subjects)
         data_l.append(dat)
         inf['sess'] = [s] * inf.shape[0]
         info_l.append(inf)
@@ -192,8 +194,8 @@ def agg_data(info, by, over, subset=None):
     Return
         data_info (DataFrame): Reduced data frame
         C (ndarray): Indicator matrix defining the mapping from full to reduced
-    Example: 
-        data,info,mdtb= ds.get_data('MDTB','MNISymDentate1',ses_id='ses-s1',type='CondRun')   
+    Example:
+        data,info,mdtb= ds.get_data('MDTB','MNISymDentate1',ses_id='ses-s1',type='CondRun')
         cinfo,C = ds.agg_data(info,['cond_num_uni'],['run','half','reg_num','names'])
         cdata = np.linalg.pinv(C) @ data
     """
@@ -257,18 +259,18 @@ def agg_parcels(data, label_vec, fcn=np.nanmean):
 
 def combine_parcel_labels(labels_org,labels_new, labelvec_org=None):
     """ Combines parcel labels from a new atlas to an existing atlas
-    Example call: 
+    Example call:
     mapping, lv = combine_parcel_labels(labels_org,['0','A.L','A.R','S..','M3.'],labelvec_org)
     To get different aggregations of the Nettekoven atlas
-    * A.L includes A1-4L 
+    * A.L includes A1-4L
     * A.R includes A1-4R
     * S.. includes all S-areas
-    * M3. includes M3L and M3R 
+    * M3. includes M3L and M3R
 
     Args:
         labels_org (list of str): N-lenght original label names (should include '0' for 0)
-        labels_new (list of str): List of regexpressions for new labels (should include '0' for 0) 
-        labelvec_org (ndarray, optional): Original label vector to remap (P-vector) 
+        labels_new (list of str): List of regexpressions for new labels (should include '0' for 0)
+        labelvec_org (ndarray, optional): Original label vector to remap (P-vector)
     Returns:
         mapping (ndarray): New label indices for the old labels (N-length vector)
         labelvec_new (ndarray): New label vector (P-vector) - returned if labelvec_org is given
@@ -286,15 +288,15 @@ def combine_parcel_labels(labels_org,labels_new, labelvec_org=None):
         labelvec_new = np.zeros(labelvec_org.shape)
         for i in np.arange(len(mapping)):
             labelvec_new[labelvec_org == i] = mapping[i]
-        return mapping, labelvec_new 
+        return mapping, labelvec_new
 
 def optimal_contrast(data, C, X, reg_in=None):
     """Recombines betas from a GLM into an optimal new contrast, taking into account a design matrix
-    For mathematical background and motivation, see: 
+    For mathematical background and motivation, see:
     Args:
         data (list of ndarrays): List of N x P_i arrays of beta estimates of the original GLM
         C (ndarray): Contrast matrix (N x Q) going from the original GLM to the new GLM
-        X (ndarray): Original (T x Nx) design matrix used in estimation of the data. 
+        X (ndarray): Original (T x Nx) design matrix used in estimation of the data.
             Nx could be longer than N by regressors of no interest
         reg_in (ndarray): Contrast of interest: Logical vector indicating
             which rows of C we will put in the matrix (defaults to all)
@@ -308,7 +310,7 @@ def optimal_contrast(data, C, X, reg_in=None):
     Cn = sl.block_diag(C, np.eye(num_nointerest))
     # Make new design matrix
     Xn = X @ Cn
-    # If no subset of regressors is given, use all: 
+    # If no subset of regressors is given, use all:
     if reg_in is None:
         reg_in = np.arange(Q)
 
@@ -328,22 +330,22 @@ def optimal_contrast(data, C, X, reg_in=None):
 
 def remove_baseline(data, baseline):
     """ Removes a baseline from the data
-    
+
     Arg:
         data (ndarray): (nsubj x N x P) OR (N x P) array
         baseline (narray): 1-dimensional array (N,) of partition number or (N x npart) indicator matrix
-    Returns: 
-        data_sub (ndarray): Baseline subtracted data  
+    Returns:
+        data_sub (ndarray): Baseline subtracted data
     """
     if baseline is None:
-        return data 
-    N = data.shape[-2]        # This is the trial dimension  
-    if baseline.ndim == 1: 
+        return data
+    N = data.shape[-2]        # This is the trial dimension
+    if baseline.ndim == 1:
         B = matrix.indicator(baseline)
-    else: 
+    else:
         B = baseline
-    R = eye(N) - B @ pinv(B) # Residual forming matrix  
-    return R @ data # Uses broadcasting for >2 dim arrays 
+    R = eye(N) - B @ pinv(B) # Residual forming matrix
+    return R @ data # Uses broadcasting for >2 dim arrays
 
 def reliability_maps(base_dir, dataset_name, atlas='MNISymC3', type='CondHalf',
                      subtract_mean=True, voxel_wise=True, subject_wise=False):
@@ -433,12 +435,12 @@ class DataSet:
         """
         self.part_info = pd.read_csv(
             self.base_dir + '/participants.tsv', delimiter='\t')
-        
+
         if exclude_subjects and 'exclude' in self.part_info.columns:
             # Exclude subjects that have been specified in the exclude column
             # 1 = exclude, 0 = include
             self.part_info = self.part_info[self.part_info.exclude == 0].reset_index()
-        
+
         return self.part_info
 
     def get_data_fnames(self, participant_id, session_id=None, type='Cond'):
@@ -484,12 +486,12 @@ class DataSet:
                 T = pd.DataFrame({'run': runs,
                                     'timepoint': timepoints_string,
                                     'time_id':timepoints}, index=None)
-                
+
         return fnames, T
 
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space. The general DataSet.get_atlasmaps defines atlas maps for different spaces
-            - SUIT: Using individual normalization from source space. 
+            - SUIT: Using individual normalization from source space.
             - MNI152NLin2009cSymC: Via indivual SUIT normalization + group
             - MNI152NLin6AsymC: Via indivual SUIT normalization + group
             - MNI152Lin2009cSym: Via individual MNI normalization
@@ -527,7 +529,7 @@ class DataSet:
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(interpolation=interpolation, smooth=smooth)
         elif atlas.space in ['MNI152NLin2009cSym']:
-            # This is direct MNI normalization 
+            # This is direct MNI normalization
             deform = adir + f'/{sub}_space-{atlas.space}_xfm.nii'
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
@@ -549,13 +551,13 @@ class DataSet:
         else:
             raise ValueError(f'Atlas space {atlas.space} not supported for extraction')
         return atlas_maps
-    
+
     def condense_data(self, data, info,
                       type='CondHalf',
                       participant_id=None,
                       ses_id=None,
                       subset=None):
-        """ Condense the data across the measures to a certain level 
+        """ Condense the data across the measures to a certain level
         If a design matrix file exisits, it is used to combine betas optimally
             'CondHalf': Conditions with seperate estimates for first and second half of experiment (Default)
             'CondRun': Conditions with seperate estimates per run.
@@ -583,11 +585,11 @@ class DataSet:
         if type == 'Tseries' or type == 'FixTseries':
             info['names'] = info['timepoint']
             return data, info
-        
+
         # Task-based data (betas)
         info['cond_code'] = info['cond_code'].fillna('task')  # for tasks that have no condition code
         if subset is None:
-            subset = (info.task_code != 'instrct') # By defaults, ignore instruction regressors 
+            subset = (info.task_code != 'instrct') # By defaults, ignore instruction regressors
         # Depending on the type, make a new contrast
         if type == 'CondHalf':
             data_info, C = agg_data(info,
@@ -603,7 +605,7 @@ class DataSet:
             data_info, C = agg_data(info,
                                     ['run', 'task_code','cond_code'],
                                     ['half','reg_id'],
-                                    subset=subset) 
+                                    subset=subset)
             data_info['names'] = [
                 f'{d.task_code}_{d.cond_code}_run{d.run:02d}' for i, d in data_info.iterrows()]
 
@@ -664,7 +666,7 @@ class DataSet:
         else:
             for i in range(len(data_n)):
                 data_n[i] = pinv(C) @ data_n[i]
-        
+
         # Subtract baseline if needed
         if self.subtract_baseline:
             data_n = [remove_baseline(d, B) for d in data_n]
@@ -765,11 +767,11 @@ class DataSet:
                 max = info.shape[0]
 
         # Add the cond_num column to the info structure if task_code or cond_code is present
-        # 
-        if 'task_code' in info_com.columns: 
+        #
+        if 'task_code' in info_com.columns:
             if 'cond_code' in info_com.columns:
                 code = info_com['task_code'] + '_' + info_com['cond_code']
-            else: 
+            else:
                 code = info_com['task_code']
             info_com['cond_num'] = pd.factorize(code)[0] + 1
         return info_com
@@ -823,9 +825,9 @@ class DataSet:
             type = self.default_type
 
         if is_group:
-            info_com = self.get_info(subj=None, ses_id=ses_id, type=type, fields=fields)
-        else: 
-            info_com = self.get_info(subj=subj, ses_id=ses_id, type=type, fields=fields)
+            info_com = self.get_info(subj=None, ses_id=ses_id, type=type, fields=fields,exclude_subjects=exclude_subjects)
+        else:
+            info_com = self.get_info(subj=subj, ses_id=ses_id, type=type, fields=fields,exclude_subjects=exclude_subjects)
 
         # Loop again to assemble the data
         Data_list = []
@@ -1048,7 +1050,7 @@ class DataSetMDTB(DataSetNative):
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
         self.subtract_baseline = True
-    
+
 
 class DataSetHcpResting(DataSetCifti):
     def __init__(self, dir):
@@ -1275,7 +1277,7 @@ class DataSetIBC(DataSetNative):
 
     def get_atlasmaps(self, atlas, sub, ses_id, smooth=None, interpolation=1):
         """This function generates atlas map for the data of a specific subject into a specific atlas space.
-        This uses the general functionality, but uses a session specific functional mask. 
+        This uses the general functionality, but uses a session specific functional mask.
 
         Args:
             atlas (FunctionFusion.Atlas):
@@ -1353,7 +1355,7 @@ class DataSetWMFS(DataSetNative):
         # Depending on the type, make a new contrast
         subset = info.cond_code != 'err'
         data_new, data_info = super().condense_data(data, info, type,
-                                                    participant_id=participant_id, 
+                                                    participant_id=participant_id,
                                                     ses_id=ses_id,
                                                     subset=subset)
         return data_new, data_info
@@ -1429,5 +1431,5 @@ class DataSetSocial(DataSetNative):
         self.sessions = ['ses-social', 'ses-rest']
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num'
-        self.part_ind = 'half'  
+        self.part_ind = 'half'
         self.subtract_baseline = True
