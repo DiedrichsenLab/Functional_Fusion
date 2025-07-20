@@ -6,7 +6,7 @@ Subclasses are ``AtlasVolumetric``, and ``AtlasSurface``. Each Atlas contains  `
 
 Atlas Spaces
 ------------
-Each Atlas is defined in a specific space. The atlas space defines how data is being transformed between Native space and the atlas, or between different atlases. ``Function_Fusion`` follows the convention of atlas space naming used in [Templateflow.org](https://www.templateflow.org/).
+Each Atlas is defined in a specific space. The atlas space defines how data is transformed between Native space and the atlas, or between different atlases. ``Function_Fusion`` follows the convention of atlas space naming used in [Templateflow.org](https://www.templateflow.org/).
 
 The following spaces are defined so far:
     * ``MNI152NLin6Asym``: MNI152NLin6Asym space, standard MNI space template in FSL
