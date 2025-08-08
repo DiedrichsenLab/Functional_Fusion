@@ -1,7 +1,11 @@
 # Functional_Fusion
-This repository provides the data structures and code to efficiently implement multi-data set project.
-It is written and maintained by the Diedrichsen Lab, Western University.
+The Functional_Fusion Framework is designed to bring contrast maps and preprocessed time series from different fMRI experiments into a common analysis space - flexibly and efficiently.
+The framework is especially designed to share and analyze datasets with many different task for individual subjects.
+Aggregating these fMRI datasets is a powerful way to build better and bigger models of brain function.
 
+It is written and maintained by the Diedrichsen Lab, Western University. We welcome contributions of datasets and code from the community.
+
+Contact: Joern Diedrichsen (joern.diedrichsen@googlemail.com)
 
 ## Installation and dependencies
 This project depends on several third party libraries, including:

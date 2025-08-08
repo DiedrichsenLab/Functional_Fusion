@@ -5,7 +5,16 @@ An increasing number of dataset are available within the Functional Fusion frame
 
 Contributing datasets
 ---------------------
-You can bring your imaging dataset into the required format and use the framework for analysis (see :ref:`import`). If you want to make your datasets available, please contact us. We are happy to test your dataset, and list it here. Most of the processed datasets are stored on Zenodo, and you can use the DOI to cite the dataset in your publications. Zenodo also allows you to determine exactly with whom, when, and under which conditions, you want to share your dataset.
+You can bring your imaging dataset into the required format and use the framework for analysis (see :ref:`import`). If you want to make your datasets available, please contact us. We are happy to test your dataset, and list it here. Most of the processed datasets are stored on Zenodo, giving each preprocessed version a citable DOI. Zenodo also allows you to determine exactly with whom, when, and under which conditions, you want to share your dataset.
+
+Using dataset
+-------------
+After download / organizing a dataset, you should place the Dataset folder (i.e. 'MTDB') into the Functional_Fusion base directory.
+For automatic loading of the dataset, you need to add the following information into a file called ``dataset_description.tsv`` in the base directory. This is a tab-delimited text file with the following columns:
+* name: Name of the dataset (e.g. 'MTDB')
+* dir_name: Path to the dataset directory. Start with ``/`` for absolute path, or set relative to the Functional_Fusion base directory.
+* class_name: Name of Dataset class (i.e. ``DataSetNative`` or ``DataSetMNIVol``)
+
 
 Datasets that are available in the framework
 ------------------------------------------------
@@ -18,35 +27,35 @@ Multi-domain task battery (King et al., 2019)
 |    **No of task conditions**: 47
 |    **DOI/Link**:
 |    **Availability**: Openly available
-|    **Maintainer**: jdiedric@uwo.ca
+|    **Maintainer**: joern.diedrichsen@googlemail.com
 
 
 Individual Brain Charting (IBC, Pinho et al., 2021)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 |    **Description**: A deep-phenotyping dataset with a large number of task. Each group of tasks is measured in a separate imaging session.
-|    **Reference**: Pinho et al. (20xx).
-|    **No of subjects**: 12
+|    **Reference**: Pinho AL, Amadon A, Ruest T, Fabre M, Dohmatob E, Denghien I, et al. Individual Brain Charting, a high-resolution fMRI dataset for cognitive mapping. Scientific data. 2018;5.
+  |  **No of subjects**: 12
 |    **No of task conditions**: 201
 |    **DOI/Link**:
 |    **Availability**: Openly available
-|    **Maintainer**:
+|    **Maintainer**: joern.diedrichsen@googlemail.com
 
 
 Nishomoto (Nakai and Nishimoto)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 |    **Description**: A dataset with 104 tasks, each presented once during each imaging run.
-|    **Reference**: Nakai and Nishimoto ()
-|    **No of subjects**: 12
+|    **Reference**: Nakai T, Nishimoto S. Quantitative models reveal the organization of diverse cognitive functions in the brain. Nat Commun. 2020;11.
+  |  **No of subjects**: 6
 |    **No of task conditions**: 104
 |    **DOI/Link**:
 |    **Availability**: Openly available
-|    **Maintainer**: jdiedric@uwo.ca
+|    **Maintainer**: joern.diedrichsen@googlemail.com
 
 HCP unrelated 100
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-|    **Description**: Human connectome project, unrelated 100 dataset. Both task-based an resting state
-|    **Reference**:
-|    **No of subjects**: 50
+|    **Description**: Human connectome project, unrelated 100 dataset. Both task-based an resting state sessions for the same subjects.
+|    **Reference**: Barch DM, Burgess GC, Harms MP, Petersen SE, Schlaggar BL, Corbetta M, et al. Function in the human connectome: task-fMRI and individual differences in behavior. Neuroimage. 2013;80: 169–189.
+     **No of subjects**: 50
 |    **No of task conditions**: 24
 |    **DOI/Link**:
 |    **Availability**: Openly available
@@ -55,7 +64,7 @@ HCP unrelated 100
 Working memory and motor function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 |    **Description**: Working memory (digit span forward and backwards) and finger tapping with different speeds and forces.
-|    **Reference**: Shahshahani
+|    **Reference**: Shahshahani L, King M, Nettekoven C, Ivry R, Diedrichsen J. Selective recruitment of the cerebellum evidenced by task-dependent gating of inputs. Elife. 2024;13: RP96386.
 |    **No of subjects**: 16
 |    **No of task conditions**: 17
 |    **DOI/Link**:
