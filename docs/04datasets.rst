@@ -25,7 +25,17 @@ Multi-domain task battery (King et al., 2019)
 |    **Reference**: King, M., Hernandez-Castillo, C. R., Poldrack, R. A., Ivry, R. B., & Diedrichsen, J. (2019). Functional boundaries in the human cerebellum revealed by a multi-domain task battery. Nature Neuroscience, 22(8), 1371–1378.
 |    **No of subjects**: 24
 |    **No of task conditions**: 47
-|    **DOI/Link**:
+|    **DOI/Link**: 10.5281/zenodo.16788784
+|    **Availability**: Openly available
+|    **Maintainer**: joern.diedrichsen@googlemail.com
+
+Working memory and finger tapping (Shahshahani et al., 2024)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+|    **Description**: Working memory (digit span forward and backwards) and finger tapping with different speeds and forces.
+|    **Reference**: Shahshahani L, King M, Nettekoven C, Ivry R, Diedrichsen J. Selective recruitment of the cerebellum evidenced by task-dependent gating of inputs. Elife. 2024;13: RP96386.
+|    **No of subjects**: 16
+|    **No of task conditions**: 17
+|    **DOI/Link**: 10.5281/zenodo.16788634
 |    **Availability**: Openly available
 |    **Maintainer**: joern.diedrichsen@googlemail.com
 
@@ -60,15 +70,5 @@ HCP unrelated 100
 |    **DOI/Link**:
 |    **Availability**: Openly available
 |    **Maintainer**: jdiedric@uwo.ca
-
-Working memory and motor function
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-|    **Description**: Working memory (digit span forward and backwards) and finger tapping with different speeds and forces.
-|    **Reference**: Shahshahani L, King M, Nettekoven C, Ivry R, Diedrichsen J. Selective recruitment of the cerebellum evidenced by task-dependent gating of inputs. Elife. 2024;13: RP96386.
-|    **No of subjects**: 16
-|    **No of task conditions**: 17
-|    **DOI/Link**:
-|    **Availability**: Openly available
-|    **Maintainer**:
 
 
