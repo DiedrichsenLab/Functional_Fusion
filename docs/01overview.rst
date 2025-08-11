@@ -16,5 +16,5 @@ The analysis spaces (or regions of interest) are defined by an ``Atlas``. While 
 There are three main steps to using this framework on new data:
 
 * **Data Import**: Bringing the data into the common framework. This includes the import of the preprocessed time series or the contrast (beta) estimates. The data files are stored in the ``ffimport`` directory. A number of :ref:`datasets` are already imported and can be downloaded freely.
-* **Data Extraction**: Pull the data in a specific atlas space, defined by an ``atlas``. The resulting CIFTI-file are by default stored in the ``ffextract`` directory for each dataset for quick retrieval.
-* **Data Analysis**: After the data is extracted, you can simply load the data with ``dataset.get_data()``. which gives you a ``(nsubj x  nfeatures x voxel/vertices)`` tensor. You can then perform any analysis on this data. The repository provides a number of common analysis function for data aggregation and reliability estimation.
+* **Data Extraction**: Pull the data in a specific atlas space, defined by an ``Atlas``. The resulting CIFTI-file are by default stored in the ``ffextract`` directory for each dataset for quick retrieval.
+* **Data Analysis**: After the data is extracted, you can simply load the data from the ``ffextract`` directory with ``dataset.get_data()``. which gives you a ``(nsubj x  nfeatures x voxel/vertices)`` tensor. You can then perform any analysis on this data. The repository provides a number of common analysis function for data aggregation and reliability estimation.

@@ -1,12 +1,12 @@
 Atlases, Regions, and Parcellations
 ===================================
 
-The Atlas class defines the atlas space, the voxel resolution, and the set of voxels or vertices that will form the basis of the analysis.
-Subclasses are ``AtlasVolumetric``, and ``AtlasSurface``. Each Atlas contains  :math:`P` locations (vertices or voxels) that are being sampled for the analysis.
+The ``Atlas`` class defines the atlas space, the voxel resolution, and the set of voxels or vertices that will form the basis of the analysis.
+Subclasses are ``AtlasVolumetric``, and ``AtlasSurface``. Each atlas contains  :math:`P` locations (vertices or voxels) that are being sampled for the analysis.
 
 Atlas Spaces
 ------------
-Each Atlas is defined in a specific space. The atlas space defines how data is transformed between Native space and the atlas, or between different atlases. ``Functional_Fusion`` follows the convention of atlas space naming used in `Templateflow.org <https://www.templateflow.org/>`_.
+Each atlas is defined in a specific space. The atlas space defines how data is transformed between native space and the atlas, or between different atlases. ``Functional_Fusion`` follows the convention of atlas space naming used in `Templateflow.org <https://www.templateflow.org/>`_.
 
 The following spaces are defined so far:
     * ``MNI152NLin6Asym``: MNI152NLin6Asym space, the standard MNI space template in FSL
@@ -45,7 +45,7 @@ Optional fields:
     * ``res``: resolution (not used yet) - voxel locations are defined by mask image
     * ``normspace``: Norm space for suit.vol2surf -
 
-Getting atlases
+Getting Atlases
 ---------------
 You can get an atlas by calling:
 
@@ -59,7 +59,7 @@ You can get an atlas by calling:
 
 Defining new Atlases or Regions
 -------------------------------
-If an Atlas or Region is not defined in the repository, you can obtain a new Atlas object by calling the constructor of the Atlas class.
+If an atlas or region is not defined in the repository, you can obtain a new Atlas object by calling the constructor of the Atlas class.
 
 .. code-block:: python
 
@@ -68,7 +68,7 @@ If an Atlas or Region is not defined in the repository, you can obtain a new Atl
 ``mask.nii`` is a `NIFTI` file that defines the voxels of the atlas, ``structure`` is the `CIFTI`-structure name, and ``space`` is the space in which the atlas is defined.
 
 
-If an Atlas or Region is not defined in the repository, you can obtain a new Atlas object by calling the constructor of the Atlas class.
+If an atlas or region is not defined in the repository, you can obtain a new ``Atlas`` object by calling the constructor of the ``Atlas`` class.
 
 .. code-block:: python
 
