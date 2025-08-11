@@ -401,7 +401,7 @@ class DataSet:
         a uniform interface of how to get subject info
 
         Args:
-            basedir (str): basis directory
+            base_dir (str): base directory for dataset
         """
         self.base_dir = base_dir
         self.surface_dir = base_dir + '/derivatives/ffimport/{0}/anat'
@@ -947,7 +947,7 @@ class DataSetMNIVol(DataSet):
         """Data set with estimates data stored as nifti-files in a standard group space. The exact MNI template should be indicated in the space-argument ('MNI152NLin6Asym','MNI152N2009cAsym','MNI152N2009cSym'). The small deformations between the different MNI spaces are implemented when extracting the data.
 
         Args:
-            basedir (str): basis directory
+            base_dir (str): basis directory
             space (str): Group Space in which data is stored (Defaults to 'MNI152NLin6Asym').
         """
         super().__init__(base_dir)

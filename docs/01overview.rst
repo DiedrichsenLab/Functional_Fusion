@@ -1,8 +1,9 @@
 Overview
 ========
 
-The **Functional_Fusion** repository is designed to bring data from many different fMRI experiments into a common analysis space - flexibly and efficiently.
-Aggregating many smaller fMRI datasets will allow us to build better and bigger models of brain function.
+The **Functional_Fusion Framework** is designed to bring contrast maps and preprocessed time series from different fMRI experiments into a common analysis space - flexibly and efficiently.
+The framework is especially designed to share and analyze datasets with many different task for individual subjects.
+Aggregating these fMRI datasets is a powerful way to build better and bigger models of brain function.
 
 .. image:: _static/extraction.png
   :alt: overview
@@ -16,4 +17,4 @@ There are three main steps to using this framework on new data:
 
 * **Data Import**: Bringing the data into the common framework. This includes the import of the preprocessed time series or the contrast (beta) estimates. The data files are stored in the ``ffimport`` directory. A number of :ref:`datasets` are already imported and can be downloaded freely.
 * **Data Extraction**: Pull the data in a specific atlas space, defined by an ``atlas``. The resulting CIFTI-file are by default stored in the ``ffextract`` directory for each dataset for quick retrieval.
-* **Data Analysis**: After the data is extracted, you can simply load the data with ``dataset.get_data()`` which gives you a :math:`N_{subjects} \times N_{features} \times P` tensor (in which :math:`P` in the number of locattions - voxels or vertices). You can then perform any analysis on this data. The repository provides a number of common analysis functions for data aggregation and reliability estimation.
+* **Data Analysis**: After the data is extracted, you can simply load the data with ``dataset.get_data()``. which gives you a ``(nsubj x  nfeatures x voxel/vertices)`` tensor. You can then perform any analysis on this data. The repository provides a number of common analysis function for data aggregation and reliability estimation.
