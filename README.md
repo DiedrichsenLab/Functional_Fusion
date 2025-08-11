@@ -1,4 +1,4 @@
-# Functional_Fusion
+# Functional Fusion Framework
 The Functional_Fusion Framework is designed to bring contrast maps and preprocessed time series from different fMRI experiments into a common analysis space - flexibly and efficiently.
 The framework is especially designed to share and analyze datasets with many different task for individual subjects.
 Aggregating these fMRI datasets is a powerful way to build better and bigger models of brain function.
