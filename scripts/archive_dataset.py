@@ -50,4 +50,4 @@ def archive_dataset(dataset,sess):
 
 if __name__== '__main__':
     # archive_dataset('WMFS', ['ses-01', 'ses-02'])
-    archive_dataset('MDTB',  ['ses-s1', 'ses-s2'])
+    archive_dataset('HCPur100',  ['ses-task'])
