@@ -638,7 +638,7 @@ class AtlasSurface(Atlas):
                 raise (NameError("Need to pass a Cifti file or list of giftis"))
             else:
                 img = [img]
-        if isinstance(img, list):
+        elif isinstance(img, list):
             if len(img) != len(self.structure):
                 raise (NameError("Number of images needs to match len(self.structure)"))
             data = []
