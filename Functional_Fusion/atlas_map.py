@@ -623,8 +623,7 @@ class AtlasSurface(Atlas):
 
         Args:
             img (nibabel.image) or str: Cifti or its filename or
-                                        (list of) gifti images
-                                        or gifti if single hemisphere
+                                        list of gifti images
             interpolation (int): nearest neighbour (0), trilinear (1)
         Returns:
             data (ndarray): (N,P) ndarray
@@ -633,12 +632,7 @@ class AtlasSurface(Atlas):
             img = nb.load(img)
         if isinstance(img, nb.Cifti2Image):
             data = self.cifti_to_data(img)
-        elif isinstance(img, nb.gifti.gifti.GiftiImage):
-            if len(self.structure) > 1:
-                raise (NameError("Need to pass a Cifti file or list of giftis"))
-            else:
-                img = [img]
-        if isinstance(img, list):
+        elif isinstance(img, list):
             if len(img) != len(self.structure):
                 raise (NameError("Number of images needs to match len(self.structure)"))
             data = []
