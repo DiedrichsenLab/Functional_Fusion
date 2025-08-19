@@ -39,6 +39,15 @@ Working memory and finger tapping (Shahshahani et al., 2024)
 |    **Availability**: Openly available
 |    **Maintainer**: joern.diedrichsen@googlemail.com
 
+HCP unrelated 100
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+|    **Description**: Human connectome project, unrelated 100 dataset. Both task-based an resting state sessions for the same subjects.
+|    **Reference**: Barch DM, Burgess GC, Harms MP, Petersen SE, Schlaggar BL, Corbetta M, et al. Function in the human connectome: task-fMRI and individual differences in behavior. Neuroimage. 2013;80: 169–189.
+     **No of subjects**: 50
+|    **No of task conditions**: 24
+|    **DOI/Link**: 10.5281/zenodo.16903949
+|    **Availability**: Openly available
+|    **Maintainer**: jdiedric@uwo.ca
 
 Individual Brain Charting (IBC, Pinho et al., 2021)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -60,15 +69,3 @@ Nishomoto (Nakai and Nishimoto)
 |    **DOI/Link**:
 |    **Availability**: Openly available
 |    **Maintainer**: joern.diedrichsen@googlemail.com
-
-HCP unrelated 100
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-|    **Description**: Human connectome project, unrelated 100 dataset. Both task-based an resting state sessions for the same subjects.
-|    **Reference**: Barch DM, Burgess GC, Harms MP, Petersen SE, Schlaggar BL, Corbetta M, et al. Function in the human connectome: task-fMRI and individual differences in behavior. Neuroimage. 2013;80: 169–189.
-     **No of subjects**: 50
-|    **No of task conditions**: 24
-|    **DOI/Link**:
-|    **Availability**: Openly available
-|    **Maintainer**: jdiedric@uwo.ca
-
-
