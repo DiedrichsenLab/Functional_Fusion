@@ -219,13 +219,13 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
     res = target[3:]
     
     if target[:3] == 'Net':
-        net = nb.load(data_dir +
+        net = nb.load(atlas_dir +
                     f'/targets/{target}_space-fs32k.dscalar.nii')
     elif target[:3] == 'Ico':
         net = [atlas_dir + f'/tpl-fs32k/Icosahedron{res}.L.label.gii',
             atlas_dir + f'/tpl-fs32k/Icosahedron{res}.R.label.gii']
     elif target[:3] == 'Fus':
-        net = nb.load(data_dir +
+        net = nb.load(atlas_dir +
                     f'/targets/{target}_space-fs32k.pscalar.nii')
     atlas, _ = am.get_atlas(space, dset.atlas_dir)
         
@@ -306,7 +306,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 
 def get_cortical_target(target):
 
-    orig = nb.load(data_dir +
+    orig = nb.load(atlas_dir +
                   f'/targets/{target}')
     
     lh, rh = ut.surf_from_cifti(orig)
@@ -329,7 +329,7 @@ def get_cortical_target(target):
     header = nb.Cifti2Header.from_axes((bpa, bmc))
     cifti_img = nb.Cifti2Image(
         dataobj=np.c_[lh_masked, rh_masked], header=header)
-    dest_dir = data_dir + '/targets/'
+    dest_dir = atlas_dir + '/targets/'
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     nb.save(cifti_img, dest_dir + f'/{target_name}_space-fs32k.dscalar.nii')
 
@@ -337,7 +337,7 @@ def make_net67():
     """Script to remove two networks (first and 11th network) from the 69 network set
     First and 11th network are cerebellar-only networks and do not have substantial cortical weights. Therefore they are removed."""
     
-    net = nb.load(data_dir +
+    net = nb.load(atlas_dir +
                     f'/targets/Net69_space-fs32k.dscalar.nii')
     # Remove the first and 10th network
     net_data = np.delete(net.get_fdata(), [0, 10], axis=0)
@@ -350,7 +350,7 @@ def make_net67():
     cifti_img = nb.cifti2.Cifti2Image(dataobj=net_data, header=header)
 
     # Save the new network
-    dest_dir = data_dir + '/targets/'
+    dest_dir = atlas_dir + '/targets/'
     Path(dest_dir).mkdir(parents=True, exist_ok=True)
     nb.save(cifti_img, dest_dir + f'/Net67_space-fs32k.dscalar.nii')
 
