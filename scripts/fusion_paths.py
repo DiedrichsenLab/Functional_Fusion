@@ -29,7 +29,7 @@ def set_fusion_dir(base_dir=base_dir):
     Set the directory for the atlases.
     The directory is set based on the provided base directory.
     """
-    fusion_dir = base_dir + f'/FunctionalFusion_new'
+    fusion_dir = base_dir + f'/FunctionalFusion'
     return fusion_dir
 
 def set_atlas_dir(base_dir=base_dir):
@@ -37,7 +37,7 @@ def set_atlas_dir(base_dir=base_dir):
     Set the directory for the atlases.
     The directory is set based on the provided base directory.
     """
-    atlas_dir = base_dir + f'/FunctionalFusion_new/Atlases'
+    atlas_dir = base_dir + f'/FunctionalFusion/Atlases'
     return atlas_dir
 
 def set_figure_dir():
