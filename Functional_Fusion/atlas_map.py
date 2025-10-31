@@ -1086,7 +1086,7 @@ class AtlasMapSurf(AtlasMap):
         self.vox_list = self.vox_list.T
         self.vox_weight = self.vox_weight.T
 
-def get_data_nifti(fnames, atlas_maps):
+def get_data_nifti(fnames, atlas_maps,dtype=np.float32):
     """Extracts the data for a list of fnames
     for a list of atlas_maps. This is usually called by DataSet.extract_data()
     to extract the required raw data before processing it further
@@ -1115,7 +1115,7 @@ def get_data_nifti(fnames, atlas_maps):
     data = []
     # Make the empty data structures
     for at in atlas_maps:
-        data.append(np.full((n_vols, at.P), np.nan))
+        data.append(np.full((n_vols, at.P), np.nan,dtype=dtype))
     for j, V in enumerate(vols):
         X = V.get_fdata()
         X = X.ravel()
