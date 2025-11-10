@@ -10,7 +10,7 @@ base_dir = paths.set_base_dir()
 atlas_dir = paths.set_atlas_dir(base_dir)
 
 orig_dir = base_dir + '/Cerebellum/super_cerebellum'
-target_dir = base_dir + 'FunctionalFusion/MDTB'
+target_dir = base_dir + 'FunctionalFusion_new/MDTB'
 
 
 def fix_sc2_reginfo():
@@ -46,7 +46,7 @@ def fix_sc2_reginfo():
 
 def import_fix_restingstate():
     # Import session s1 and session s2 fix-cleaned timeseries
-    T = pd.read_csv(target_dir + '/FunctionalFusion/MDTB/participants.tsv', delimiter='\t')
+    T = pd.read_csv(target_dir + '/FunctionalFusion_new/MDTB/participants.tsv', delimiter='\t')
     participants = T.participant_id
     participants_rest = participants[T['ses-rest'] == 1]
 
@@ -56,7 +56,7 @@ def import_fix_restingstate():
     # for session in ['1','2']:
     for session in ['rest']:
         session_name = f'ses-s{session}' if session != 'rest' else 'ses-rest'
-        dest_dir = base_dir + '/FunctionalFusion/MDTB/derivatives/{sub}/estimates/' + session_name + '/{sub}_' + session_name
+        dest_dir = base_dir + '/FunctionalFusion_new/MDTB/derivatives/{sub}/estimates/' + session_name + '/{sub}_' + session_name
         if fix:
             src_stem = base_dir + '/Cerebellum/super_cerebellum/sc1/' + 'imaging_data_fix/{sub}_' + session_name if session != 'rest' else base_dir + '/Cerebellum/super_cerebellum/resting_state/imaging_data_fix/'
             file_ending = '_run-{run}_fix.nii'
@@ -77,7 +77,7 @@ def import_mean_bold():
     for s in participants:
         subject_orig = s.replace('sub-', 's', 1)
         src = base_dir + f'/Cerebellum/super_cerebellum/sc1/imaging_data/{subject_orig}/rmeanepi.nii'
-        dest = base_dir + f'/FunctionalFusion/MDTB/derivatives/{s}/anat/{s}_meanbold.nii'
+        dest = base_dir + f'/FunctionalFusion_new/MDTB/derivatives/{s}/anat/{s}_meanbold.nii'
         shutil.copyfile(src,dest)
 
 if __name__ == "__main__":
@@ -111,15 +111,22 @@ if __name__ == "__main__":
     # (only take participants who have rest data)
     T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
     participants = T[T['ses-rest'] == 1].participant_id
+    trs = 598
     for s in participants:
         old_id = s.replace('sub-', 's', 1)
-        dir1 = orig_dir + '/resting_state/imaging_data_fix/'
-        dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
         info_dict = {
             'runs': ['01', '02'],
             'reginfo_general': 'sub-02',
         }
-        id.import_tseries(dir1, dir2, s, 'ses-rest', info_dict)
+        for fix in [True, False]:
+            if fix:
+                dir1 = orig_dir + f'/resting_state/imaging_data_fix/{s}' + '_run-{run}.nii'
+                dir2 = target_dir + f'/derivatives/ffimport/{s}/func/ses-rest/{s}_ses-rest' + '_run-{run}_fix.nii'
+                id.import_tseries(dir1, dir2, s, 'ses-rest', info_dict['runs'], trs=trs)
+            else:
+                dir1 = orig_dir + f'/resting_state/imaging_data/{old_id}/' + 'rrun_{run}.nii'
+                dir2 = target_dir + f'/derivatives/ffimport/{s}/func/ses-rest/{s}_ses-rest' + '_run-{run}.nii'
+                id.import_tseries(dir1, dir2, s, 'ses-rest', info_dict['runs'], trs=trs)
 
     # 
     # for s in T.participant_id:
