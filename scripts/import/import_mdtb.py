@@ -82,7 +82,7 @@ def import_mean_bold():
 
 if __name__ == "__main__":
     # fix_sc2_reginfo()
-    import_mean_bold()
+    # import_mean_bold()
 
     # for s in participants:
     # old_id = s.replace('sub-','s',1)
@@ -109,18 +109,19 @@ if __name__ == "__main__":
 
     # Import resting-state session
     # (only take participants who have rest data)
-    # participants = participants[T['ses-rest'] == 1]
-    # for s in participants:
-    #     old_id = s.replace('sub-', 's', 1)
-    #     dir1 = orig_dir + '/resting_state/imaging_data_fix/'
-    #     dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
-    #     info_dict = {
-    #         'runs': ['01', '02'],
-    #         'reginfo_general': 'sub-02',
-    #     }
-    #     id.import_tseries(dir1, dir2, s, 'ses-rest', info_dict)
+    T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+    participants = T[T['ses-rest'] == 1].participant_id
+    for s in participants:
+        old_id = s.replace('sub-', 's', 1)
+        dir1 = orig_dir + '/resting_state/imaging_data_fix/'
+        dir2 = target_dir + f'/derivatives/{s}/estimates/ses-rest'
+        info_dict = {
+            'runs': ['01', '02'],
+            'reginfo_general': 'sub-02',
+        }
+        id.import_tseries(dir1, dir2, s, 'ses-rest', info_dict)
 
-    # T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+    # 
     # for s in T.participant_id:
     #     print(f"-Start importing subject {s}")
     #     # old_id = s.replace('sub-','s',1)
