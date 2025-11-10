@@ -219,7 +219,7 @@ def import_tseries(src, dest, sub_id, ses_id, runs, trs=None, mask_file=None):
         # move data into the corresponding session folder
         src_file = src.format(run=run)
         dest_file = dest.format(run=run)
-        if True: # not Path(dest_file).exists():
+        if not Path(dest_file).exists():
             if trs is not None: # If TR number is specified, then only import that number of TRs
                 img = nb.load(src_file)
                 if isinstance(trs, (int, np.integer)):  # Check if trs is a scalar integer
