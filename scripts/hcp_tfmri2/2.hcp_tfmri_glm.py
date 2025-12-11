@@ -1,5 +1,6 @@
 import os
 import subprocess
+import shutil
 
 new_directory = 'Y:/data/ExternalOpenData/HCP_UR100_new/tasktest'
 if not os.path.exists(new_directory):
@@ -58,8 +59,6 @@ def update_all_fsf_files(new_directory):
                 f.writelines(updated)
 
 
-
-
 def run_all_glms(new_directory):
     for root, dirs, files in os.walk(new_directory):
         if root.endswith(".feat"):
@@ -94,15 +93,58 @@ def run_all_glms(new_directory):
             except Exception as e:
                 print(f"[UNEXPECTED ERROR] {e}")
 
+def reorg(new_dir):
+
+    for subj_folder in os.listdir(new_dir):
+        subj_path = os.path.join(new_dir, subj_folder)
+        if not os.path.isdir(subj_path):
+            continue
+        
+        # Extract subject ID from something like 101309_Task3TRecommended
+        subj_id = subj_folder.split("_")[0]
+
+        # Find original Results folder
+        results_dir = os.path.join(subj_path, subj_id, "MNINonLinear", "Results")
+        if not os.path.exists(results_dir):
+            continue
+    
+        # Create reorganized output inside the SAME root
+        out_sub_dir = os.path.join(new_dir, f"sub-{subj_id}", "func")
+        os.makedirs(out_sub_dir, exist_ok=True)
+
+        # Loop through all tfMRI folders
+        for run_folder in os.listdir(results_dir):
+
+            if not run_folder.startswith("tfMRI_"):
+                continue
+
+            # skip concat folders
+            if "concat" in run_folder.lower():
+                continue
+
+            run_path = os.path.join(results_dir, run_folder)
+            if not os.path.isdir(run_path):
+                continue
+
+            # Parse tfMRI_<SESSION>_<RUN>
+            parts = run_folder.split("_")
+            session = parts[1]      # e.g. EMOTION
+
+            # Create session folder
+            ses_dir = os.path.join(out_sub_dir, f"ses-{session}")
+            os.makedirs(ses_dir, exist_ok=True)
+
+            # Destination folder
+            dest_run_dir = os.path.join(ses_dir, run_folder)
+
+            # Copy folder
+            shutil.copytree(run_path, dest_run_dir)
 
 
 
 if __name__ == "__main__":
-    # update_all_fsf_files(new_directory)
-    run_all_glms(new_directory)
-
-
-
-    
+    update_all_fsf_files(new_directory)
+    # run_all_glms(new_directory)
+    # reorg(new_directory)
 
     
