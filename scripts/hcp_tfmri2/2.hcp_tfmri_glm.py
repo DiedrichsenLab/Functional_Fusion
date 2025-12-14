@@ -143,8 +143,8 @@ def reorg(new_dir):
 
 
 if __name__ == "__main__":
-    update_all_fsf_files(new_directory)
+    # update_all_fsf_files(new_directory)
     # run_all_glms(new_directory)
-    # reorg(new_directory)
+    reorg(new_directory)
 
     
