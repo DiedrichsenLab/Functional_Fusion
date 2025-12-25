@@ -25,7 +25,7 @@ def clean_hcp_tfmri(dir,subject_list,task_map):
 
     if not subject_list:
         T = pd.read_csv(participants_tsv, sep='\t')
-        subject_list = T['participant_id'].tolist()[:14]
+        subject_list = T['participant_id'].tolist()
 
     # Loop through each subject
     for subject in subject_list:

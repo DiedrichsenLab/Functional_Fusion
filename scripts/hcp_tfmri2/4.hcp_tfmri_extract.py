@@ -23,8 +23,8 @@ data_dir = base_dir + '/HCPur100'
 atlas_dir = base_dir + '/Atlases'
 
 
-types = ['CondHalf']
-atlases  = ['fs32k']
+types = ['CondHalf','CondAll']
+atlases  = ['SUIT3','fs32k']
 session_list = ['ses-task2']
 
 
@@ -32,11 +32,8 @@ dataset = DataSetHcpTask(data_dir)
 for ses in session_list:
     print(f'extracting session {ses}')
     participants_tsv = pd.read_csv(f'{data_dir}/participants.tsv',sep = '\t')
-    subj_list = participants_tsv['participant_id'].tolist()[:14]
+    subj_list = participants_tsv['participant_id'].tolist()
 
-    # remove 'sub-105115'
-    # subj_list.remove('sub-105115')
-    subj_list = ['sub-101309','sub-103111','sub-103414','sub-103818','sub-105014','sub-110411','sub-117122','sub-118730','sub-123117','sub-124422','sub-127630','sub-128632','sub-130013']
 
     for type in types:
         print(f'extracting type {type}')

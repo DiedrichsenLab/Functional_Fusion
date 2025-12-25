@@ -19,7 +19,7 @@ HCP_dir = f'{base_dir}/ExternalOpenData/HCP_UR100_new/tasktest'
 
 def import_resms(source_dir,dest_dir):
     participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
-    participants = participants["participant_id"].tolist()[:14]
+    participants = participants["participant_id"].tolist()
 
     for participant in participants:
         resms_files = list(Path(f'{source_dir}/{participant}').rglob('sigmasquareds.nii.gz'))
@@ -45,7 +45,7 @@ def import_resms(source_dir,dest_dir):
 
 def import_betas(source_dir, dest_dir):
     participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
-    participants = participants["participant_id"].tolist()[:14]
+    participants = participants["participant_id"].tolist()
 
     for participant in participants:
         print(f"Processing participant: {participant}")
@@ -115,8 +115,7 @@ def import_betas(source_dir, dest_dir):
 
 def import_masks(source_dir, dest_dir):
     participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
-    participants = participants["participant_id"].tolist()[:14]
-
+    participants = participants["participant_id"].tolist()
     for participant in participants:
         mask_files = list(Path(f'{source_dir}/{participant}').rglob('mask.nii.gz'))
 
@@ -146,7 +145,7 @@ def import_masks(source_dir, dest_dir):
 
 def make_reginfo(source_dir, dest_dir):
     participants = pd.read_csv(Path(dest_dir) / "participants.tsv", sep="\t")
-    participants = participants["participant_id"].tolist()[:14]
+    participants = participants["participant_id"].tolist()
 
     for participant in participants:
         reginfo_data = []  # To store reginfo entries
@@ -217,7 +216,7 @@ def make_reginfo(source_dir, dest_dir):
 
 
 if __name__ == '__main__':
-    # import_resms(HCP_dir, functional_fusion_dir)
+    import_resms(HCP_dir, functional_fusion_dir)
     import_masks(HCP_dir, functional_fusion_dir)
     import_betas(HCP_dir, functional_fusion_dir)
     make_reginfo(HCP_dir, functional_fusion_dir)
