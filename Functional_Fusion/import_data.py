@@ -65,7 +65,7 @@ def import_anat(source_dir, dest_dir, anat_name, participant_id):
     src.append(f'/c3{anat_name}.nii')
     dest.append(f'/{participant_id}_label-CSF_probseg.nii')
     src.append(f'/y_{anat_name}.nii')
-    dest.append(f'/{participant_id}_space-MNI_xfm.nii')
+    dest.append(f'/{participant_id}_space-MNI152NLin6Asym_xfm.nii')
     for i in range(len(src)):
         try:
             shutil.copyfile(source_dir + src[i], dest_dir + dest[i])

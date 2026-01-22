@@ -145,6 +145,18 @@
             	   "tpl-fs32kAsym_hemi-R_mask.label.gii"],
           "structure": ["cortex_left","cortex_right"],
           "type": "AtlasSurface"},
+      "fs32k_Asym_L": {
+	      "dir": "tpl-fs32kAsym",
+         "space": "fs32k",
+          "mask": ["tpl-fs32kAsym_hemi-L_mask.label.gii"],
+          "structure": ["cortex_left"],
+          "type": "AtlasSurface"},
+      "fs32k_Asym_R": {
+	      "dir": "tpl-fs32kAsym",
+         "space": "fs32k",
+          "mask": ["tpl-fs32kAsym_hemi-R_mask.label.gii"],
+          "structure": ["cortex_right"],
+          "type": "AtlasSurface"},
       "MNIAsymAmygdala_L": { 
          "dir": "tpl-MNI152NLin6Asym",
          "space": "MNI152NLin6Asym",
@@ -229,23 +241,23 @@
          "mask": "tpl-MNI152NLin6Asym_desc-thalamus_hemi-R_mask.nii.gz",
          "structure": "thalamus_right",
          "type": "AtlasVolumetric"},
-      "MNIAsymDiencephalon_L": { 
+      "MNIAsymDiencephalonventral_L": { 
          "dir": "tpl-MNI152NLin6Asym",
          "space": "MNI152NLin6Asym",
          "mask": "tpl-MNI152NLin6Asym_desc-diencephalonventral_hemi-L_mask.nii.gz",
-         "structure": "diencephalonventral_left",
+         "structure": "diencephalon_ventral_left",
          "type": "AtlasVolumetric"},
-      "MNIAsymDiencephalon_R": { 
+      "MNIAsymDiencephalonventral_R": { 
          "dir": "tpl-MNI152NLin6Asym",
          "space": "MNI152NLin6Asym",
          "mask": "tpl-MNI152NLin6Asym_desc-diencephalonventral_hemi-R_mask.nii.gz",
-         "structure": "diencephalonventral_right",
+         "structure": "diencephalon_ventral_right",
          "type": "AtlasVolumetric"},
       "MNIAsymBrainstem": { 
          "dir": "tpl-MNI152NLin6Asym",
          "space": "MNI152NLin6Asym",
          "mask": "tpl-MNI152NLin6Asym_desc-brainstem_mask.nii.gz",
-         "structure": "brainstem",
+         "structure": "brain_stem",
          "type": "AtlasVolumetric"},
       "MNIAsymCerebellum_L": { 
          "dir": "tpl-MNI152NLin6Asym",

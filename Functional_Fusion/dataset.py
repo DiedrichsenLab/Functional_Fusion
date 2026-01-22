@@ -7,6 +7,7 @@ The class for converting and mapping raw data from multi-dataset
 to a standard data structure that can be used in Diedrichsen lab
 
 """
+import nt
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -18,6 +19,7 @@ import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
 import scipy.linalg as sl
 import nibabel as nb
+import nitools as nt
 from numpy import eye, zeros, ones, empty, nansum, sqrt
 from numpy.linalg import pinv, solve
 import warnings
@@ -528,7 +530,7 @@ class DataSet:
             mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(interpolation=interpolation, smooth=smooth)
-        elif atlas.space in ['MNI152NLin2009cSym']:
+        elif atlas.space in ['MNI152NLin2009cSym','MNI152NLin6Asym']:
             # This is direct MNI normalization
             deform = adir + f'/{sub}_space-{atlas.space}_xfm.nii'
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
@@ -677,6 +679,7 @@ class DataSet:
                     ses_id='ses-s1',
                     type='CondHalf',
                     atlas='SUIT3',
+                    multiatlas_name = None,
                     smooth=None,
                     interpolation=1,
                     subj='all',
@@ -688,8 +691,8 @@ class DataSet:
                 Session. Defaults to 'ses-s1'.
             type (str):
                 Type for condense_data. Defaults to 'CondHalf'.
-            atlas (str):
-                Short atlas string. Defaults to 'SUIT3'.
+            atlas (str or list):
+                Short atlas string. can be a string for a single atlas or a list of atlases.
             smooth (float):
                 Smoothing kernel. Defaults to 2.0.
             subj (list / str):
@@ -698,6 +701,18 @@ class DataSet:
                 If True, excludes subjects that have been specified
                 in the exclude column of the participants.tsv file.
         """
+        # If atlas is a list, dispatch to multiatlas method
+        if isinstance(atlas, list):
+            return self.extract_all_multiatlas(
+                ses_id=ses_id,
+                type=type,
+                atlases=atlas,
+                multiatlas_name=multiatlas_name,
+                smooth=smooth,
+                interpolation=interpolation,
+                subj=subj,
+                exclude_subjects=exclude_subjects
+            )
         myatlas, _ = am.get_atlas(atlas)
         # create and calculate the atlas map for each participant
         T = self.get_participants(exclude_subjects=exclude_subjects)
@@ -723,7 +738,74 @@ class DataSet:
                     f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
+            
+    def extract_all_multiatlas(self,
+                    ses_id='ses-s1',
+                    type='CondHalf',
+                    atlases=['MNIAsymCerebellum_L','MNIAsymCerebellum_R'],
+                    multiatlas_name = 'multiatlas_HCP',
+                    smooth=None,
+                    interpolation=1,
+                    subj='all',
+                    exclude_subjects=True):
+        """Extracts data in multiple spaces. Saves the results as CIFTI files (one for all atlases) in the data directory.
 
+        Args:
+            ses_id (str):
+                Session. Defaults to 'ses-s1'.
+            type (str):
+                Type for condense_data. Defaults to 'CondHalf'.
+            atlases (list):
+                List of atlas strings to combine into a single CIFTI.
+            multias atlas_name (str):
+                Name for the multi-atlas combination. If None, atlases are combined with '+'.
+            smooth (float):
+                Smoothing kernel. Defaults to 2.0.
+            subj (list / str):
+                List of Subject numbers to get use. Default = 'all'
+            exclude_subjects (bool):
+                If True, excludes subjects that have been specified
+                in the exclude column of the participants.tsv file.
+        
+        """
+        myatlases = [am.get_atlas(a)[0] for a in atlases]
+
+        # create and calculate the atlas map for each participant
+        T = self.get_participants(exclude_subjects=exclude_subjects)
+        if subj != 'all':
+            T = T.iloc[subj]
+        for s in T.participant_id:
+            cifti_list = []
+            for myatlas, atlas_name in zip(myatlases, atlases):
+                print(f'Atlasmap {s} - {atlas_name}')
+                atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
+                                                smooth=smooth,
+                                                interpolation=interpolation)
+                print(f'Extract {s} - {atlas_name}')
+                fnames, info = self.get_data_fnames(s, ses_id, type=type)
+                data = am.get_data_nifti(fnames, atlas_maps)
+                data, info = self.condense_data(data, info, type,
+                                            participant_id=s, ses_id=ses_id)
+                # Write out data as CIFTI file
+                C = myatlas.data_to_cifti(data, info.names)
+                cifti_list.append(C)
+
+            # Join all CIFTIs
+            combined = nt.join_ciftis(cifti_list)
+            
+            dest_dir = self.data_dir.format(s)
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
+
+            if multiatlas_name is not None:
+                atlas_str = multiatlas_name
+            else:
+                atlas_str = '+'.join(atlases)
+            nb.save(combined, dest_dir +
+                    f'/{s}_space-{atlas_str}_{ses_id}_{type}.dscalar.nii')
+            info.to_csv(
+                dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
+            
+    
     def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None, exclude_subjects=True):
         """Loads the tsv-files and returns the most complete info structure
 
@@ -930,12 +1012,12 @@ class DataSetNative(DataSet):
         """
         atlas_maps = []
 
-        if atlas.space == ['MNI152NLin2009cSym','MNI152NLin6Asym']:
+        if atlas.space in ['MNI152NLin2009cSym','MNI152NLin6Asym']:
             # This is for MNI standard space)
             deform = self.anatomical_dir.format(sub) + f'/{sub}_space-{atlas.space}_xfm.nii'
             if not os.path.exists(deform):
-                warnings.warn(f'No individual deformation found for {atlas.space} in {sub} - resortinh to MNI_xfm.nii')
-                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+                warnings.warn(f'No individual deformation found for {atlas.space} in {sub} - resortinh to MNI152NLin6Asym_xfm.nii')
+                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI152NLin6Asym_xfm.nii'
             edir = self.estimates_dir.format(sub)
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
@@ -1295,9 +1377,9 @@ class DataSetLanguage(DataSetNative):
         self.subtract_baseline = True
 
 
-class DataSetHcpTask(DataSetNative):
+class DataSetHcpTask(DataSetMNIVol):
     def __init__(self, dir):
-        super().__init__(dir)
+        super().__init__(dir, space='MNI152NLin6Asym')
         self.sessions = ['ses-task']
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num'
