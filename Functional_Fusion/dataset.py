@@ -701,8 +701,10 @@ class DataSet:
         myatlas, _ = am.get_atlas(atlas)
         # create and calculate the atlas map for each participant
         T = self.get_participants(exclude_subjects=exclude_subjects)
-        if subj != 'all':
+        if isinstance(subj, np.ndarray):
             T = T.iloc[subj]
+        elif subj != 'all':
+            raise(NameError('Subj argument should be "all" or a numpy array of subject indices'))
         for s in T.participant_id:
             print(f'Atlasmap {s}')
             atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
