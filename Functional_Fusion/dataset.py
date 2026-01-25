@@ -462,7 +462,7 @@ class DataSet:
             fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
         elif type == 'Tseries' or type == 'FixTseries':
             # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
-            fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii')
+            fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii') if type == 'Tseries' else glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??_fix.nii')
             # If no files are found, throw error
             if fnames == []:
                 raise ValueError('No timepoints found in timeseries files')
