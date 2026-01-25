@@ -21,7 +21,7 @@ def clean_hcp_tfmri(dir,subject_list,task_map):
     task_map = task_map[task_map['Dataset'] == 'HCP']
     task_map = task_map.drop_duplicates(subset=['task_name', 'cond_name'])
 
-    participants_tsv = os.path.join(dir,'HCP_tfMRI', 'participants.tsv')
+    participants_tsv = os.path.join(dir,'HCPur100', 'participants.tsv')
 
     if not subject_list:
         T = pd.read_csv(participants_tsv, sep='\t')
@@ -29,7 +29,7 @@ def clean_hcp_tfmri(dir,subject_list,task_map):
 
     # Loop through each subject
     for subject in subject_list:
-        subject_dir = os.path.join(dir, 'HCP_tfMRI', 'derivatives','ffimport', subject, 'func')
+        subject_dir = os.path.join(dir, 'HCPur100', 'derivatives','ffimport', subject, 'func')
         if not os.path.exists(subject_dir):
             print(f"{subject_dir} not found.")
             continue
@@ -39,7 +39,7 @@ def clean_hcp_tfmri(dir,subject_list,task_map):
                 continue # skip if not a directoy needed since there is a dsstore file
 
             for fname in os.listdir(session_path):
-                if fname.endswith('.tsv'):
+                if fname.endswith('2_reginfo.tsv'):
                     tsv_path = os.path.join(session_path, fname)
                     df = pd.read_csv(tsv_path, sep='\t')
 
@@ -505,7 +505,7 @@ if __name__=='__main__':
 
     # what to cleanup
     subject_list = None
-    # clean_hcp_tfmri(ff_dir, subject_list, task_map)
+    clean_hcp_tfmri(ff_dir, subject_list, task_map)
     # clean_nishimoto(ff_dir, subject_list, task_map)
     # clean_pontine(ff_dir, subject_list, task_map)
     # clean_language(ff_dir, subject_list, task_map)
