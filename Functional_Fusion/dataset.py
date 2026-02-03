@@ -1379,7 +1379,7 @@ class DataSetLanguage(DataSetNative):
 
 class DataSetHcpTask(DataSetMNIVol):
     def __init__(self, dir):
-        super().__init__(dir)
+        super().__init__(dir,space='MNI152NLin6Asym')
         self.sessions = ['ses-task2']
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num'
