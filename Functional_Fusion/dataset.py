@@ -1370,7 +1370,7 @@ class DataSetSomatotopic(DataSetMNIVol):
 class DataSetLanguage(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
-        self.sessions = ['ses-localizer','ses-rest']
+        self.sessions = ['ses-localizer','ses-localizerfm','ses-rest']
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
@@ -1380,7 +1380,7 @@ class DataSetLanguage(DataSetNative):
 class DataSetHcpTask(DataSetMNIVol):
     def __init__(self, dir):
         super().__init__(dir, space='MNI152NLin6Asym')
-        self.sessions = ['ses-task2']
+        self.sessions = ['ses-task']
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
