@@ -801,10 +801,6 @@ class DataSet:
         # Deal with subset of subject option
         if subj is None:
             subj = T.participant_id
-            # JD: This is removed to avoid complications - please use 'subj' argument to select specific subjects
-            # only get data from subjects that have rest, if specified in dataset description
-            # if type == 'Tseries' and 'ses-rest' in T.columns:
-            #     subj = T[T['ses-rest'] == 1].participant_id.tolist()
         elif isinstance(subj, str) and subj == 'group':
             is_group = True
             subj = [subj]
