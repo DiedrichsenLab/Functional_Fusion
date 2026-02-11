@@ -460,9 +460,9 @@ class DataSet:
                 dirw + f'/{participant_id}_{session_id}_reginfo.tsv', sep='\t')
             fnames = [f'{dirw}/{participant_id}_{session_id}_run-{t.run:02}_reg-{t.reg_id:02}_beta.nii' for i, t in T.iterrows()]
             fnames.append(f'{dirw}/{participant_id}_{session_id}_resms.nii')
-        elif type == 'Tseries' or type == 'FixTseries':
+        elif type == 'Tseries' or type == 'FixTseries' or type == 'FullTseries':
             # Find all run files of the structure f'{dirw}/{participant_id}_{session_id}_run-??.nii'
-            fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii') if type == 'Tseries' else glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??_fix.nii')
+            fnames = glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??.nii') if type == 'Tseries' or type == 'FullTseries' else glob.glob(f'{dirw}/{participant_id}_{session_id}_run-??_fix.nii')
             # If no files are found, throw error
             if fnames == []:
                 raise ValueError('No timepoints found in timeseries files')
@@ -582,7 +582,7 @@ class DataSet:
                 A data frame with information about the N numbers provided
         """
         # Time series: do not condence, just return the data
-        if type == 'Tseries' or type == 'FixTseries':
+        if type == 'Tseries' or type == 'FixTseries' or type == 'FullTseries':
             info['names'] = info['timepoint']
             return data, info
 
