@@ -472,6 +472,9 @@ class DataSet:
             if type == 'FixTseries':
                 # Make sure to load fix-cleaned timeseries
                 fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}_fix.nii' for r in runs]
+            elif type == 'FullTseries':
+                # Make sure to load fix-cleaned timeseries
+                fnames = [f'{dirw}/{participant_id}_{session_id}_run-{r:02}_full.nii' for r in runs]
             try:
                 # Load timeseries info file if it exists
                 T = pd.read_csv(
