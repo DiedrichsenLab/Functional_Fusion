@@ -921,7 +921,7 @@ class AtlasMapDeform(AtlasMap):
         Args:
             worlds (ndarray): 3xP ND array of world locations
             deform_img (str/list): Name of deformation map image(s). If None, no deformation is applied.
-            mask_img (str): Name of masking image that defines the functional source space.
+            mask_img (str): Name of masking image that defines the voxels in functional space that are available for mapping. 
         """
         self.P = world.shape[1]
         self.world = world
@@ -985,7 +985,7 @@ class AtlasMapDeform(AtlasMap):
             self.vox_list = linindx.reshape(-1, 1)
             self.vox_weight = np.ones((linindx.shape[0], 1))
             self.vox_weight[np.logical_not(good)] = np.nan
-        elif interpolation==1:
+        elif interpolation==1: # Use trilinear interpolation
             atlas_vox = nt.affine_transform_mat(atlas_coord,np.linalg.inv(self.mask_img.affine))
             vox_lpi = np.floor(atlas_vox).astype(int)
             remainder = atlas_vox - vox_lpi

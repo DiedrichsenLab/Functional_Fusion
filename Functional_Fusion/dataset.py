@@ -40,15 +40,21 @@ def get_dataset_class(base_dir, dataset):
     i = np.where(dataset.casefold() == T.name)[0]
     if len(i) == 0:
         raise (NameError(f'Unknown dataset: {dataset}'))
-    dsclass = getattr(sys.modules[__name__], T.class_name[int(i)])
-    dir_name = T.dir_name[int(i)]
+    t = T.iloc[int(i)]
+    dsclass = getattr(sys.modules[__name__], t.class_name)
+    dir_name = t.dir_name
     if dir_name[0] == '/':
         abs_path = dir_name
     elif dir_name[0] == '.':  # Relative path relative to fusion project
         abs_path = Path(base_dir).parent + Path(dir_name[1:])
     else:
-        abs_path = base_dir + '/' + T.dir_name[int(i)]
+        abs_path = base_dir + '/' + t.dir_name
     my_dataset = dsclass(abs_path)
+    my_dataset.sessions = eval(t.sessions)
+    my_dataset.default_type = t.default_type
+    my_dataset.cond_ind = t.cond_ind  # Condition Indicator (field in tsv file )
+    my_dataset.part_ind = t.part_ind  # Partition Indicator (field in tsv file )
+    my_dataset.subtract_baseline = bool(t.subtract_baseline)  # If True, baseline is subtracted from the data
     return my_dataset
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
@@ -510,25 +516,27 @@ class DataSet:
                 Width of smoothing kernel for extraction. Defaults to None.
         Returns:
             AtlasMap:
-                Built AtlasMap object
+                List of AtlasMap object - usually but for fs32k these are two  
         """
+        cerebellar_spaces = ['SUIT','MNI152NLin2009cSymC','MNI152NLin6AsymC']
+        wholebrain_spaces = ['MNI152Lin2009cSym','MNI152NLin6Asym']
         atlas_maps = []
         adir = self.anatomical_dir.format(sub)
         edir = self.estimates_dir.format(sub)
-        if atlas.space == 'SUIT':
-            deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
-            mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
+        if atlas.space in cerebellar_spaces:
+            deform = util.file_nii_or_gz(self.suit_dir.format(sub) + f'/{sub}_space-{atlas.space}_xfm.nii')
+            mask = util.file_nii_or_gz(self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii')
+            if deform is None: 
+                print('Direct transform not found, trying to build from SUIT normalization')
+                deform1  = am.get_deform(atlas.space, 'SUIT')
+                deform2 = util.file_nii_or_gz(self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii')
+                if deform2 is None:
+                    raise ValueError(f'Neither direct transform nor SUIT transform found. Run import_data.run SUIT using desired space.')
+                else:
+                    deform = [deform1, deform2]
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(interpolation=interpolation, smooth=smooth)
-        elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']:
-            # This is nornmalization over SUIT->MNI (cerebellum only)
-            deform1  = am.get_deform(atlas.space, 'SUIT')
-            deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
-            deform = [deform1, deform2]
-            mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
-            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(interpolation=interpolation, smooth=smooth)
-        elif atlas.space in ['MNI152NLin2009cSym']:
+        elif atlas.space in wholebrain_spaces:
             # This is direct MNI normalization
             deform = adir + f'/{sub}_space-{atlas.space}_xfm.nii'
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
@@ -1050,7 +1058,6 @@ class DataSetMDTB(DataSetNative):
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
         self.subtract_baseline = True
-
 
 
 class DataSetPontine(DataSetNative):

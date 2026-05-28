@@ -5,6 +5,7 @@ import numpy as np
 import scipy.io as sio
 import nibabel as nb
 import SUITPy as suit
+import Functional_Fusion.util as ut
 
 def import_suit(source_dir, dest_dir, anat_name, participant_id):
     """
@@ -257,12 +258,10 @@ def run_suit(anat_dir, participant_id,space='MNISymC'):
         anat_dir (str): Name of the anatomical directory 
         participant_id (str): ID of participant
     """
-    src = anat_dir + f'/{participant_id}_T1w.nii'
+    maps = {'MNISymC': 'MNI152NLin2009cSymC', 'SUIT': 'SUIT','MNI152NLin2009cSymC': 'MNI152NLin2009cSymC'}
+    src = ut.file_nii_or_gz(anat_dir + f'/{participant_id}_T1w.nii')
     suit.isolate(src)
     mask = anat_dir + f'/{participant_id}_T1w_cerebellum_dseg.nii.gz'
-    tmask = anat_dir + f'/{participant_id}_desc_cereb_mask.nii.gz'
-    shutil.move(mask, tmask)
-    results = suit.normalize(src, tmask,space=space,write_normalized=True,write_deformation=True) 
+    results = suit.normalize(src, mask,space=maps[space],write_normalized=False,write_deformation=True) 
     tdef = anat_dir + f'/{participant_id}_space-{space}_xfm.nii.gz'
-    shutil.move(results['deformation'], tdef)
-    
+    shutil.move(results['fwd_deformation'], tdef)

@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 import Functional_Fusion.import_data as id
+import Functional_Fusion.util as ut
 import scripts.fusion_paths as paths
 import shutil
 from pathlib import Path 
@@ -37,7 +38,7 @@ def import_surface():
 def import_bold():
     T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
     D = pd.read_csv(target_dir + '/reginfo.tsv',delimiter='\t')
-    participants = T.participant_id.iloc[15:]
+    participants = T.participant_id
     for sub in participants:
         print(f'Importing {sub}')
         for ses in ['ses-1','ses-2','ses-3']:
@@ -66,13 +67,14 @@ def import_bold():
                     print(f'Warning: expected 16 regressors but found {X.shape[3]} for {sub} {ses} run {run}')
                 for reg in range(16):
                     reg_file = nb.Nifti1Image(X[:,:,:,reg], beta_file.affine, beta_file.header)
-                    reg_file.to_filename(subj_dir + f'/{sub}_{ses}_run-{run:02d}_reg-{reg:02d}.nii')
+                    reg_file.to_filename(subj_dir + f'/{sub}_{ses}_run-{run:02d}_reg-{reg:02d}_beta.nii')
                 d = pd.DataFrame({'run': [run]*16, 'task_name': D['task_name'], 
                                   'cond_name': D['cond_name'], 
                                   'reg_id': D['reg_id'],    
                                   'instruction': D['instruction'], 
                                   'task_code': D['task_code'], 
-                                  'cond_code': D['cond_code']
+                                  'cond_code': D['cond_code'],
+                                  'half': [np.mod(run-1,2)+1]*16
                                   })
                 reginfo.append(d)
             reginfo = pd.concat(reginfo, ignore_index=True)
@@ -80,16 +82,43 @@ def import_bold():
             
 def run_suit(): 
     T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
-    participants = T.participant_id.iloc[0:]
+    participants = T.participant_id
     for sub in participants:
         print(f'SUITing {sub}')
-        id.run_suit(target_dir + f'/derivatives/ffimport/{sub}/anat', sub,space='MNISymC')
+        id.run_suit(target_dir + f'/derivatives/ffimport/{sub}/anat', sub,space='MNI200')
+
+def rename_bold():
+    T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+    participants = T.participant_id
+    for sub in participants:
+        print(f'Importing {sub}')
+        for ses in ['ses-1','ses-2','ses-3']:
+            subj_dir = target_dir + f'/derivatives/ffimport/{sub}/func/{ses}'
+
+            for run in range(1, 7):
+                    for reg in range(16):
+                        src = subj_dir + f'/{sub}_{ses}_run-{run:02d}_reg-{reg:02d}.nii'
+                        trg = subj_dir + f'/{sub}_{ses}_run-{run:02d}_reg-{reg:02d}_beta.nii'
+                        shutil.move(src, trg)
+
+def rename_xfm():
+    T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+    participants = T.participant_id
+    for sub in participants:
+        print(f'changing {sub}')
+        subj_dir = target_dir + f'/derivatives/ffimport/{sub}/anat'
+        src = subj_dir + f'/{sub}_space-MNISymC_xfm.nii.gz'
+        trg = subj_dir + f'/{sub}_space-MNI152NLin2009cSymC_xfm.nii.gz'
+        shutil.move(src, trg)
+
+
+
 
 
 if __name__ == "__main__":
     # fix_sc2_reginfo()
-    import_anatomical()
+    # import_anatomical()
     # import_surface() 
     # import_bold()   
     # run_suit()
-    
+    rename_xfm()

@@ -18,6 +18,7 @@ def get_base_dir():
     
 def file_nii_or_gz(file_path):
     """ Checks if the file exists with .nii or .nii.gz extension and returns the correct path
+    returns None if the file does not exist with either extension
     
     Args:
         file_path (str): the file path to check, can end with .nii or .nii.gz
@@ -31,7 +32,7 @@ def file_nii_or_gz(file_path):
     elif file_path.endswith('.nii.gz') and Path(file_path[:-3]).exists():
         return file_path[:-3]
     else:        
-        raise FileNotFoundError(f'Could not find file {file_path} or {file_path}.gz')    
+        return None
 
 
 def sq_eucl_distances(coordA,coordB):

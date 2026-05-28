@@ -20,12 +20,8 @@ def extract_dataset(dataset,space,type):
         type = [type]
 
     for sp in space:
-        if sp == 'MNISymC3':
-            smooth=2.0
-            interpolation=2
-        else:
-            smooth = None
-            interpolation = 1 
+        smooth = None
+        interpolation = 1 
         for t in type:
             for sess in mydataset.sessions:
                 if sess !='ses-rest':
@@ -38,7 +34,7 @@ if __name__ == "__main__":
     # extract_dataset('MDTB', ['fs32k','MNISymC3'], ['CondAll','CondRun'])
     # extract_dataset('MDTB', ['fs32k','MNISymC3'], ['CondHalf'])
     #extract_dataset('WMFS', ['fs32k','MNISymC3'], ['CondHalf'])
-    extract_dataset('HCPur100', ['fs32k','MNISymC3'], ['CondAll','CondRun'])
+    # extract_dataset('HCPur100', ['fs32k','MNISymC3'], ['CondAll','CondRun'])
     # extract_dataset('Nishimoto', ['fs32k','MNISymC3'], ['CondHalf'])
     # extract_dataset('Somatotopic', ['fs32k','MNISymC3'], ['CondHalf'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
@@ -47,3 +43,4 @@ if __name__ == "__main__":
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
+    extract_dataset('MTLearn', ['MNISymC3'], ['CondAll'])
