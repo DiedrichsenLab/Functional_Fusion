@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import scipy.io as sio
 import nibabel as nb
+import SUITPy as suit
 
 def import_suit(source_dir, dest_dir, anat_name, participant_id):
     """
@@ -248,3 +249,20 @@ def import_tseries(src, dest, sub_id, ses_id, runs, trs=None, mask_file=None):
         except:
             print(f'{dest_file} could not be copied.')
 
+def run_suit(anat_dir, participant_id,space='MNISymC'):
+    """
+    Runs new SUITPy isolation and normalization on the anatomical image. 
+
+    Args:
+        anat_dir (str): Name of the anatomical directory 
+        participant_id (str): ID of participant
+    """
+    src = anat_dir + f'/{participant_id}_T1w.nii'
+    suit.isolate(src)
+    mask = anat_dir + f'/{participant_id}_T1w_cerebellum_dseg.nii.gz'
+    tmask = anat_dir + f'/{participant_id}_desc_cereb_mask.nii.gz'
+    shutil.move(mask, tmask)
+    results = suit.normalize(src, tmask,space=space,write_normalized=True,write_deformation=True) 
+    tdef = anat_dir + f'/{participant_id}_space-{space}_xfm.nii.gz'
+    shutil.move(results['deformation'], tdef)
+    
