@@ -560,7 +560,7 @@ class AtlasSurface(Atlas):
         Args:
             data: the input data to be mapped
 
-                | (ndarray) - 1-d Numpy array of the size (P,)
+                | (ndarray) - Numpy array of the size (K,P)
                 | (list) - list of ndarray
 
             row_axis: label for row axis in cifti file, it can be
