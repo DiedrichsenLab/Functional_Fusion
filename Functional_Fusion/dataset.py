@@ -339,7 +339,7 @@ def remove_baseline(data, baseline):
 
     Arg:
         data (ndarray): (nsubj x N x P) OR (N x P) array
-        baseline (narray): 1-dimensional array (N,) of partition number or (N x npart) indicator matrix
+        baseline (narray): 1-dimensional array (N,) of partition numbers or (N x npart) indicator matrix
     Returns:
         data_sub (ndarray): Baseline subtracted data
     """
@@ -800,7 +800,7 @@ class DataSet:
                 these are also be tested to be equivalent across subjects
         Returns:
             Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
-            info (DataFramw): Data frame with common descriptor
+            info (DataFrame): Data frame with common descriptor
         """
         T = self.get_participants(exclude_subjects=exclude_subjects)
         is_group = False
@@ -877,8 +877,8 @@ class DataSet:
                                type=None,
                                atlas='SUIT3',
                                subj=None):
-            """Loads group data in SUIT space from a standard experiment structure
-            averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
+            """Loads data from all subjects in for a certain session, type and atlas. 
+            Averages data across subjects. Saves the results as CIFTI files in the data/group directory.
 
             Args:
                 ses_id (str, optional): Session ID. If not provided, the first session ID in the dataset will be used.

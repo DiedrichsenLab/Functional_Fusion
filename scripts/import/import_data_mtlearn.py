@@ -5,6 +5,7 @@ import Functional_Fusion.import_data as id
 import Functional_Fusion.util as ut
 import scripts.fusion_paths as paths
 import shutil
+import nilearn.image as nl
 from pathlib import Path 
 import nibabel as nb
 
@@ -85,7 +86,7 @@ def run_suit():
     participants = T.participant_id
     for sub in participants:
         print(f'SUITing {sub}')
-        id.run_suit(target_dir + f'/derivatives/ffimport/{sub}/anat', sub,space='MNI200')
+        id.run_suit(target_dir + f'/derivatives/ffimport/{sub}/anat', sub,space='MNI152NLin2009cSymC')
 
 def rename_bold():
     T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
@@ -103,7 +104,7 @@ def rename_bold():
 
 def rename_xfm():
     T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
-    participants = T.participant_id
+    participants = T.participant_id[0:]
     for sub in participants:
         print(f'changing {sub}')
         subj_dir = target_dir + f'/derivatives/ffimport/{sub}/anat'
@@ -112,8 +113,23 @@ def rename_xfm():
         shutil.move(src, trg)
 
 
-
-
+def make_suit_mask(): 
+    """ resample the mask into functional space and constrain by masking voxels"""
+    T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
+    participants = T.participant_id
+    for sub in participants:
+        anat_dir = target_dir + f'/derivatives/ffimport/{sub}/anat'
+        X=[]
+        for ses in ['ses-1','ses-2','ses-3']:
+            subj_dir = target_dir + f'/derivatives/ffimport/{sub}/func/{ses}'
+            mask_file = nb.load(subj_dir + f'/{sub}_{ses}_mask.nii')
+            X.append(mask_file.get_fdata())
+        X = np.stack(X, axis=3).mean(axis=3)
+        X = X > 0.5
+        suit_mask = nb.load(anat_dir + f'/{sub}_T1w_cerebellum_dseg.nii.gz')
+        Y = nl.resample_img(suit_mask,mask_file.affine,mask_file.shape,interpolation='nearest',copy_header=True,force_resample=True)
+        cereb_mask_file = nb.Nifti1Image((X*Y.get_fdata()).astype(np.uint8), mask_file.affine)
+        cereb_mask_file.to_filename(anat_dir + f'/{sub}_desc-cereb_mask.nii.gz')
 
 if __name__ == "__main__":
     # fix_sc2_reginfo()
@@ -121,4 +137,4 @@ if __name__ == "__main__":
     # import_surface() 
     # import_bold()   
     # run_suit()
-    rename_xfm()
+    make_suit_mask()

@@ -262,6 +262,6 @@ def run_suit(anat_dir, participant_id,space='MNISymC'):
     src = ut.file_nii_or_gz(anat_dir + f'/{participant_id}_T1w.nii')
     suit.isolate(src)
     mask = anat_dir + f'/{participant_id}_T1w_cerebellum_dseg.nii.gz'
-    results = suit.normalize(src, mask,space=maps[space],write_normalized=False,write_deformation=True) 
-    tdef = anat_dir + f'/{participant_id}_space-{space}_xfm.nii.gz'
-    shutil.move(results['fwd_deformation'], tdef)
+    # results = suit.normalize(src, mask,space=maps[space],write_normalized=False,write_deformation=True) 
+    # tdef = anat_dir + f'/{participant_id}_space-{space}_xfm.nii.gz'
+    # shutil.move(results['fwd_deformation'], tdef)
