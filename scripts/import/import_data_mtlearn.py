@@ -135,6 +135,6 @@ if __name__ == "__main__":
     # fix_sc2_reginfo()
     # import_anatomical()
     # import_surface() 
-    # import_bold()   
+    import_bold()   
     # run_suit()
-    make_suit_mask()
+    # make_suit_mask()

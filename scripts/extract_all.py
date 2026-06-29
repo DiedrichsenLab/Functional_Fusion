@@ -26,7 +26,7 @@ def extract_dataset(dataset,atlas,type):
             for sess in mydataset.sessions:
                 if sess !='ses-rest':
                     print(f'extracting {dataset} type {t} space {at}')
-                    mydataset.extract_all(ses_id=sess, type=t, atlas=sp,smooth=smooth,interpolation=interpolation)
+                    mydataset.extract_all(ses_id=sess, type=t, atlas=at,smooth=smooth,interpolation=interpolation)
 
 def group_average(dataset,atlas,type):
     mydataset = ds.get_dataset_class(base_dir,dataset)
@@ -56,4 +56,5 @@ if __name__ == "__main__":
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
+    extract_dataset('MTLearn', ['fs32k','MNISymC3'], ['CondHalf','CondAll','CondRun'])
     group_average('MTLearn', ['fs32k','MNISymC3'], ['CondAll'])
