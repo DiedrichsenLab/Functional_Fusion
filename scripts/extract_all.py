@@ -28,6 +28,19 @@ def extract_dataset(dataset,atlas,type):
                     print(f'extracting {dataset} type {t} space {at}')
                     mydataset.extract_all(ses_id=sess, type=t, atlas=at,smooth=smooth,interpolation=interpolation)
 
+def extract_dataset_multiatlas(dataset,atlases,type,cifti_atlas_name=None):
+    mydataset = ds.get_dataset_class(base_dir,dataset)
+    if not isinstance(type, list):
+        type = [type]
+
+    for t in type:
+        smooth = None
+        interpolation = 1 
+        for sess in mydataset.sessions:
+            if sess !='ses-rest':
+                print(f'extracting {dataset} type {t} ')
+                mydataset.extract_all(ses_id=sess, type=t, atlas=atlases,smooth=smooth,interpolation=interpolation,cifti_atlas_name=cifti_atlas_name)
+
 def group_average(dataset,atlas,type):
     mydataset = ds.get_dataset_class(base_dir,dataset)
     if not isinstance(atlas, list):
@@ -56,5 +69,6 @@ if __name__ == "__main__":
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
-    extract_dataset('MTLearn', ['fs32k','MNISymC3'], ['CondHalf','CondAll','CondRun'])
-    group_average('MTLearn', ['fs32k','MNISymC3'], ['CondAll'])
+    # extract_dataset('MTLearn', ['fs32k','MNISymC3'], ['CondHalf','CondAll','CondRun'])
+    # group_average('MTLearn', ['fs32k','MNISymC3'], ['CondAll'])
+    extract_dataset_multiatlas('MDTB', ['MNIAsymHippocampus_L','MNIAsymHippocampus_R'], ['CondHalf'], cifti_atlas_name='MNIAsymHippocampus')
