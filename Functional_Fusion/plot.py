@@ -4,11 +4,13 @@ import nitools as nt
 import nibabel as nb
 import Functional_Fusion.atlas_map as am
 import Functional_Fusion.util as ut
+import os
 import nibabel as nb
 import nilearn.plotting as nlp
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.colors import ListedColormap
+import SUITPy as suit
 
 import nitools as nt
 from numpy.linalg import inv
@@ -78,6 +80,136 @@ def ortho(data, voxel, fig=None, cursor=False, background=None, **kwargs):
             ax.spines[side].set_visible(False)
     
     return (fig, xax, yax, zax)
+
+def plot_cortex(data,
+        hem='L',
+        atlas = 'fs32k',
+        overlay_type='func',
+        underscale=[-1,1],
+        undermap='gray',
+        threshold=None,
+        cmap=None,
+        cscale=None,
+        label_names=None,
+        borders=None,
+        bordercolor = 'k',
+        bordersize = 2,
+        alpha=1.0,
+        render='matplotlib',
+        hover = 'auto',
+        new_figure=False,
+        colorbar=False,
+        cbar_tick_format="%.2g",
+        backgroundcolor = 'w',
+        frame = None
+        ):
+    """Plot activity on flatmap representation of the cortex. 
+
+
+    Args:
+        data (np.array):
+            Data to be plotted in fs32k atlas space. 
+        hem (str):
+            'L' or 'R' hemisphere (default: 'L')
+        overlay_type (str)
+            'func': functional activation (default)
+            'label': categories
+            'rgb': RGB(A) values (0-1) directly specified. Alpha is optional
+        threshold (scalar or array-like)
+            Threshold for functional overlay. If one value is given, it is used as a positive threshold.
+            If two values are given, an positive and negative threshold is used.
+        cmap (str)
+            A Matplotlib colormap or an equivalent Nx3 or Nx4 floating point array (N rgb or rgba values). (defaults to 'jet' if none given)
+        label_names (list)
+            labelnames (default is None - extracts from .label.gii )
+        borders (str)
+            Full filepath of the borders txt file 
+        bordercolor (char or matplotlib.color)
+            Color of border - defaults to 'k'
+        bordersize (int)
+            Size of the border points - defaults to 2
+        cscale (int array)
+            Colorscale [min, max] for the overlay, valid input values from -1 to 1 (default: [overlay.max, overlay.min])
+        alpha (float)
+            Opacity of the overlay (default: 1)
+        render (str)
+            Renderer for graphic display 'matplot' / 'plotly'. Dafault is matplotlib
+        hover (str)
+            When renderer is plotly, it determines what is displayed in the hover label: 'auto', 'value', or None
+        new_figure (bool)
+            If False, plot renders into matplotlib's current axis. If True, it creates a new figure (default=True)
+        colorbar (bool)
+            By default, colorbar is not plotted into matplotlib's current axis (or new figure if new_figure is set to True)
+        cbar_tick_format : str, optional
+            Controls how to format the tick labels of the colorbar, and for the hover label.
+            Ex: use "%i" to display as integers.
+            Default='%.2g' for scientific notation.
+        backgroundcolor (str): 
+            Color for the background of the plot (default: 'w')
+        frame (list): [Left, Right, Top, Bottom] margins for the plot (default: plot entire surface )
+
+    Returns:
+        ax (matplotlib.axis)
+            If render is matplotlib, the function returns the axis
+        fig (plotly.go.Figure)
+            If render is plotly, it returns Figure object
+
+    """
+    cortex_atlas,_  = am.get_atlas(atlas)
+    if data.ndim == 1:
+        data = data[np.newaxis,:]
+
+    cifti = cortex_atlas.data_to_cifti(data)
+    gifti = nt.cifti.split_cifti_to_giftis(cifti,type='func')
+    data = gifti[0].agg_data()
+
+    atlas_dir = __file__.replace('plot.py','') + 'Atlases'
+    surf = os.path.join(atlas_dir,'tpl-fs32k',f'tpl-fs32k_hemi-{hem}_flat.surf.gii')
+    underlay = os.path.join(atlas_dir,'tpl-fs32k',f'tpl-fs32k_hemi-{hem}.shape.gii')
+    fig = suit.flatmap.plot( data,surf,
+        underlay,undermap,underscale,
+        overlay_type,threshold,cmap,cscale,label_names,
+        borders,bordercolor,bordersize,
+        alpha,render,hover,new_figure,colorbar,
+        cbar_tick_format,backgroundcolor,frame)
+    return fig
+
+def plot_cerebellum(data,
+        atlas = 'MNISymC3',
+        overlay_type='func',
+        underscale=[-1,1],
+        undermap='gray',
+        threshold=None,
+        cmap=None,
+        cscale=None,
+        label_names=None,
+        borders=None,
+        bordercolor = 'k',
+        bordersize = 2,
+        alpha=1.0,
+        render='matplotlib',
+        hover = 'auto',
+        new_figure=False,
+        colorbar=False,
+        cbar_tick_format="%.2g",
+        backgroundcolor = 'w',
+        frame = None
+        ):
+    """Plot activity on flatmap representation of the cerebellum.""" 
+    myatlas,ainfo  = am.get_atlas(atlas)
+    nii = myatlas.data_to_nifti(data)
+    overlay = suit.vol_to_surf(nii,space=ainfo['normspace'])
+    fig = suit.flatmap.plot( overlay,
+    overlay_type=overlay_type,
+    threshold=threshold,
+    cmap = cmap,
+    cscale=cscale,label_names=label_names,
+    borders=borders,bordercolor=bordercolor,bordersize=bordersize,
+    alpha=alpha,render=render,hover=hover,new_figure=new_figure,colorbar=colorbar,
+    cbar_tick_format=cbar_tick_format,backgroundcolor=backgroundcolor,frame=frame)
+    return fig
+
+
 
 def plot_dentate(data,
                  bg_img=True,
