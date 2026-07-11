@@ -71,5 +71,5 @@ if __name__ == "__main__":
     # ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
     # extract_dataset('MTLearn', ['fs32k'], ['CondAll'])
     # group_average('MTLearn', ['fs32k','MNISymC3'], ['CondAll'])
-    for dataset in ['MDTB','Social','Language','WMFS','Demand','Nishimoto','Somatotopic','IBC']:
-        extract_dataset_multiatlas('MDTB', ['MNIAsymHippocampus_L','MNIAsymHippocampus_R'], ['CondHalf'], cifti_atlas_name='MNIAsymHippocampus')
+    for dataset in ['Nishimoto','Somatotopic','IBC','Demand']:
+        extract_dataset_multiatlas(dataset,['MNIAsymHippocampus_L','MNIAsymHippocampus_R'], ['CondHalf'], cifti_atlas_name='MNIAsymHippocampus')

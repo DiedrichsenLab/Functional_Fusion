@@ -1056,7 +1056,7 @@ class DataSetCifti(DataSet):
             f'{dirw}/{participant_id}_{session_id}_resms.dscalar.nii')
         return fnames, T
 
-    def extract_all(self, ses_id='ses-s1', type='CondHalf', atlas='SUIT3', exclude_subjects=True,interpolation=1, smooth=None):
+    def extract_all(self, ses_id='ses-s1', subj='all',type='CondHalf', atlas='SUIT3', exclude_subjects=True,interpolation=1, smooth=None, cifti_atlas_name=None):
         """Extracts cerebellar data. Saves the results as CIFTI files in the data directory.
         Args:
             ses_id (str, optional): Session. Defaults to 'ses-s1'.
@@ -1065,29 +1065,66 @@ class DataSetCifti(DataSet):
             exclude_subjects (bool): If True, excludes subjects that have been specified
                 in the exclude column of the participants.tsv file.
         """
-        myatlas, _ = am.get_atlas(atlas)
-        # Get the correct map into CIFTI-format
-        if isinstance(myatlas, am.AtlasVolumetric):
-            deform = am.get_deform(myatlas.space,'MNI152NLin6Asym')
-            mask = util.default_atlas_dir + '/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_desc-subcortexmask.nii.gz'
-            atlas_map = am.AtlasMapDeform(myatlas.world,deform,mask)
-            atlas_map.build(interpolation=interpolation,smooth=smooth)
-        elif isinstance(myatlas, am.AtlasSurface):
-            atlas_map = myatlas
-        # Extract the data for each participant
+        if isinstance(atlas, str):
+            atlas = [atlas]
+            cifti_atlas_name = atlas[0]
+        elif isinstance(atlas, list):
+            if cifti_atlas_name is None:
+                cifti_atlas_name = '+'.join(atlas)
+        else:
+            raise ValueError('Atlas argument should be a string or a list of strings')
+
+        # select the participants to extract data for
         T = self.get_participants(exclude_subjects=exclude_subjects)
+        if isinstance(subj, np.ndarray):
+            T = T.iloc[subj]
+        elif subj != 'all':
+            raise(NameError('Subj argument should be "all" or a numpy array of subject indices'))
+        
+        # Loop over participants and extract data 
         for s in T.participant_id:
             print(f'Extract {s}')
+            fnames, info = self.get_data_fnames(s, ses_id, type=type)
+            atlas_maps = []
+            my_atlasses = []
+            num_atlas_maps = [] # Number of atlas maps for each atlas, fs32k has 2, SUIT has 1, etc.
+            # loop over atlases and extract data for each atlas, then combine into a single cifti file
+            for atlas_name in atlas:
+                myatlas, ainf = am.get_atlas(atlas_name)
+                my_atlasses.append(myatlas)
+                print(f'Atlasmap {s} - {atlas_name}')                                    
+                if isinstance(myatlas, am.AtlasVolumetric):
+                    deform = am.get_deform(myatlas.space,'MNI152NLin6Asym')
+                    mask = util.default_atlas_dir + '/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_desc-subcortexmask.nii.gz'
+                    atlas_map = am.AtlasMapDeform(myatlas.world,deform,mask)
+                    atlas_map.build(interpolation=interpolation,smooth=smooth)
+                elif isinstance(myatlas, am.AtlasSurface):
+                    atlas_map = myatlas
+                atlas_maps = atlas_maps + atlas_map
+                num_atlas_maps.append(len(atlas_map))
+    
             fnames, info = self.get_data_fnames(s, ses_id)
-            data = am.get_data_cifti(fnames, [atlas_map])
+            data = am.get_data_cifti(fnames, atlas_maps)
             data, info = self.condense_data(data, info, type,participant_id=s, ses_id=ses_id)
-            C = myatlas.data_to_cifti(data[0], info.names)
+
+            # Build a list of CIFTI files for each atlas and combine them into a single CIFTI file
+            cifti_list = []
+            j = 0
+            for i, myatlas in enumerate(my_atlasses):
+                cifti_list.append(myatlas.data_to_cifti(data[j:j + num_atlas_maps[i]], info.names))
+                j += num_atlas_maps[i]
+
+            # Join all CIFTIs
+            combined = nt.join_ciftis(cifti_list)
+            
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+
+            nb.save(combined, dest_dir +
+                    f'/{s}_space-{cifti_atlas_name}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
+
 
 
 class DataSetMDTB(DataSetNative):
