@@ -1138,10 +1138,10 @@ def get_data_cifti(fnames, atlases):
         fnames (list): list of file names to be sampled
         atlas_maps (list): list of K built atlas-map objects
     returns:
-        data (list): List of NxP_k 2-d array data matrices (np)
+        data (list): List of Lists NxP_k 2-d array data matrices (np)
     """
     n_atlas = len(atlases)
-    data = [[]] * n_atlas
+    data = [[] for _ in range(n_atlas)]
     # Make the empty data structures
     # Loop over files
     for j, f in enumerate(fnames):

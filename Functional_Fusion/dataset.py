@@ -1096,8 +1096,8 @@ class DataSetCifti(DataSet):
                 if isinstance(myatlas, am.AtlasVolumetric):
                     deform = am.get_deform(myatlas.space,'MNI152NLin6Asym')
                     mask = util.default_atlas_dir + '/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_desc-subcortexmask.nii.gz'
-                    atlas_map = am.AtlasMapDeform(myatlas.world,deform,mask)
-                    atlas_map.build(interpolation=interpolation,smooth=smooth)
+                    atlas_map = [am.AtlasMapDeform(myatlas.world,deform,mask)]
+                    atlas_map[0].build(interpolation=interpolation,smooth=smooth)
                 elif isinstance(myatlas, am.AtlasSurface):
                     atlas_map = myatlas
                 atlas_maps = atlas_maps + atlas_map
