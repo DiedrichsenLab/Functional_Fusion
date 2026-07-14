@@ -63,8 +63,11 @@ def get_deform(target_space, source_space,atlas_dir = default_atlas_dir):
     Returns:
         deform (str): Name of deformation map
     """
-    deform = f"{atlas_dir}/tpl-{target_space}/tpl-{target_space}_from-{source_space}_mode-image_xfm.nii"
-    return deform
+    if target_space == source_space:
+        return None
+    else:
+        deform = f"{atlas_dir}/tpl-{target_space}/tpl-{target_space}_from-{source_space}_mode-image_xfm.nii"
+        return deform
 
 def deform_data(data, src_atlas,trg_atlas,interpolation=1):
     """ Deforms any data from a source atlas to a target atlas

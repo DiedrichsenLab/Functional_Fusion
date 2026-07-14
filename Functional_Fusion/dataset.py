@@ -1038,7 +1038,7 @@ class DataSetCifti(DataSet):
     """Data set that comes in HCP-format in already pre-extracted cifti files.
     """
 
-    def get_data_fnames(self, participant_id, session_id=None):
+    def get_data_fnames(self, participant_id, session_id=None,type='Cond'):
         """ Gets all raw data files
 
         Args:
