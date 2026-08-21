@@ -5,19 +5,29 @@ from pathlib import Path
 import mat73
 import numpy as np
 import Functional_Fusion.atlas_map as am
-from Functional_Fusion.dataset import DataSetHcpResting
+from Functional_Fusion.dataset import DataSetHcpResting, DataSetHcpTask
 import Functional_Fusion.dataset as ds
 import nibabel as nb
 import SUITPy as suit
-import os
-import sys
+import os, sys
 import matplotlib.pyplot as plt
 import re
 import Functional_Fusion.connectivity as conn
+import Functional_Fusion.util as ut
+
+import threading
+from functools import wraps
+import psutil
+
+ERIS_DIR = '/home/dzhi/eris_mount'
+if not Path(ERIS_DIR).exists():
+    ERIS_DIR = '/data/tge'
+if not Path(ERIS_DIR).exists():
+    raise (NameError('Could not find ERIS'))
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
-    base_dir = '/data/tge/Tian/UKBB_full/imaging'
+    base_dir = ERIS_DIR + '/Tian/UKBB_full/imaging'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -25,10 +35,93 @@ if not Path(base_dir).exists():
 if not Path(base_dir).exists():
     print('diedrichsen data server not mounted')
 
-hcp_dir = '/data/tge/Tian/HCP_img'
+hcp_dir = ERIS_DIR + '/Tian/HCP_img'
 atlas_dir = base_dir + '/Atlases'
 hem_name = ['cortex_left', 'cortex_right']
 
+def track_time_and_memory(interval=0.1, include_children=False):
+    """
+    Measure wall time and peak resident memory of a function.
+
+    Parameters
+    ----------
+    interval : float
+        Memory sampling interval in seconds.
+    include_children : bool
+        Include subprocess memory when True.
+    """
+
+    def decorator(func):
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            process = psutil.Process(os.getpid())
+            stop_event = threading.Event()
+
+            def get_rss():
+                rss = process.memory_info().rss
+
+                if include_children:
+                    for child in process.children(recursive=True):
+                        try:
+                            rss += child.memory_info().rss
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+
+                return rss
+
+            baseline_bytes = get_rss()
+            peak_bytes = baseline_bytes
+
+            def sample_memory():
+                nonlocal peak_bytes
+
+                while not stop_event.is_set():
+                    try:
+                        peak_bytes = max(peak_bytes, get_rss())
+                    except psutil.NoSuchProcess:
+                        break
+
+                    stop_event.wait(interval)
+
+            monitor = threading.Thread(
+                target=sample_memory,
+                daemon=True
+            )
+
+            start_time = time.perf_counter()
+            monitor.start()
+
+            try:
+                return func(*args, **kwargs)
+
+            finally:
+                elapsed = time.perf_counter() - start_time
+
+                try:
+                    peak_bytes = max(peak_bytes, get_rss())
+                except psutil.NoSuchProcess:
+                    pass
+
+                stop_event.set()
+                monitor.join()
+
+                mib = 1024**2
+                gib = 1024**3
+
+                print("\nResource summary")
+                print(f"Wall time:           {elapsed:.3f} seconds")
+                print(f"Baseline RSS:        {baseline_bytes / gib:.3f} GiB")
+                print(f"Peak RSS:            {peak_bytes / gib:.3f} GiB")
+                print(
+                    f"Peak RSS increase:   "
+                    f"{(peak_bytes - baseline_bytes) / gib:.3f} GiB"
+                )
+                print(f"Peak RSS:            {peak_bytes / mib:.1f} MiB")
+
+        return wrapper
+
+    return decorator
 
 def extract_hcp_timeseries(ses_id='ses-rest1', type='Tseries', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
@@ -68,17 +161,16 @@ def rename_infofile():
     hcp_dataset = DataSetHcpResting(hcp_dir)
 
     T = pd.read_csv(hcp_dataset.base_dir + '/participants.tsv', sep='\t')
-    for p, participant_id in enumerate(T.participant_id):
-
-        dest_dir = hcp_dataset.base_dir + \
-                   f'/derivatives/{participant_id}/data/'
+    for s in T.participant_id:
+        dest_dir = hcp_dataset.data_dir.format(s)
         for file_name in os.listdir(dest_dir):
-            if "_info" in file_name and file_name.endswith(".tsv"):
+            if ("info-" in file_name) and (file_name.endswith(".tsv")):
                 new_name = file_name.replace("info-", "")
                 os.rename(
                     os.path.join(dest_dir, file_name),
                     os.path.join(dest_dir, new_name)
                 )
+                print(f"Removed '_info' substring in the .tsv file name for subject {s}")
 
 def group_average_hcp(type='Net69Run', atlas='MNISymC3'):
     hcp_dataset = DataSetHcpResting(hcp_dir)
@@ -95,7 +187,7 @@ def group_average_hcp(type='Net69Run', atlas='MNISymC3'):
     #         'ses-rest1', 'ses-rest2'], type=type, atlas=atlas, savefig=True, colorbar=True)
 
 
-
+@track_time_and_memory(interval=0.1, include_children=True)
 def get_hcp_fs32k_rsfc(type='Net69Run', space='MNISymC3', ses_id='ses-rest1',
                        subj_list=None, smooth=None, kernel=None, thres=None, keeptop=False):
     # Load dataset
@@ -190,6 +282,8 @@ def get_hcp_fs32k_rsfc(type='Net69Run', space='MNISymC3', ses_id='ses-rest1',
                 names = [f'Network_{i}' for i in range(1, int(res)+1)]
 
             # Calculate the connectivity fingerprint
+            data_cortex_subj = np.ascontiguousarray(data_cortex_subj, dtype=np.float32)
+            network_timecourse = np.ascontiguousarray(network_timecourse, dtype=np.float32)
             coef = conn.connectivity_fingerprint(data_cortex_subj, network_timecourse, info,
                                                 type, threshold=thres, keeptop=keeptop)
             # Make info
@@ -208,7 +302,7 @@ def get_hcp_fs32k_rsfc(type='Net69Run', space='MNISymC3', ses_id='ses-rest1',
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
             nb.save(C,  file_name)
-            info.to_csv(f'{dest_dir}/{s}_{ses_id}_info-{target+type}.tsv', 
+            info.to_csv(f'{dest_dir}/{s}_{ses_id}_{target+type}.tsv',
                         sep='\t', index=False)
             
             finish = time.perf_counter()
@@ -302,7 +396,69 @@ def binarize_rsfc_fs32k(bulk, ses_id='ses-s1', type='Tseries', smooth=None, kern
         
         print(f'- Done.')
 
+def concatenate_rs_timeseries(run_id_list, space='fs32k', start_point=0, duration=600, tr=0.72):
+    myatlas, _ = am.get_atlas('fs32k')
+    myatlas.calculate_symmetry()
+    hcp_dataset = DataSetHcpResting(hcp_dir)
+
+    T = pd.read_csv(hcp_dir + '/subj_list/HCP200_test.tsv', delimiter='\t')
+    for s in T.participant_id:
+        source_dir = hcp_dataset.data_dir.format(s)
+
+        data = []
+        for run_id in run_id_list:
+            print(f"-- Concatenating subject {s} run{run_id} Tseries --")
+            start = time.perf_counter()
+            data_file = f'/mnt/sda/HCP_rfMRI/fix_32k/{s}' + f'/{s}_run{run_id}_desc-sm4fwhm.dtseries.nii'
+            this_data = myatlas.cifti_to_data(data_file)
+
+            finish = time.perf_counter()
+            elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+            print(f"   Done - time {elapse}")
+            data.append(ut.zstandarize_ts(this_data))
+
+        data = np.vstack(data)
+        end_point = int(start_point + duration / tr)
+        data = data[start_point:end_point, :]
+        this_num_tpoint = [f'T{i + 1:04}' for i in range(end_point - start_point)]
+
+        ## Make new data info
+        info = pd.DataFrame({'sn': [s] * data.shape[0],
+                             'run': [1] * data.shape[0],
+                             'timepoint': this_num_tpoint,
+                             'task': ['rest'] * data.shape[0],
+                             'time_id': [i + 1 for i in range(data.shape[0])],
+                             'names': this_num_tpoint})
+
+        C = myatlas.data_to_cifti(data, this_num_tpoint)
+        nb.save(C, source_dir +
+                f'/{s}_space-{space}_ses-rest{duration}s2_Tseries.dscalar.nii')
+        info.to_csv(source_dir + f'/{s}_ses-rest{duration}s2_Tseries.tsv',
+                    sep='\t', index=False)
+
+def mask_hcptask_fs32k(subj_list, ses_id='ses-task', type='CondHalf',
+                       high_percent=0.1, low_percent=0.1, smooth=None,
+                       z_transfer=False, binarized=False):
+    hcp_dataset = DataSetHcpTask(hcp_dir)
+    T = pd.read_csv(hcp_dataset.base_dir + subj_list, sep='\t')
+
+    for s in T.participant_id:
+        print(f'Mask data for {s} fs32k {ses_id} in high {high_percent} low {low_percent} ...')
+
+        start = time.perf_counter()
+        if smooth is not None:
+            file = hcp_dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}_desc-sm{smooth}.dscalar.nii'
+        else:
+            file = hcp_dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
+
+        ut.mask_fs32k_data(file, high_percent=high_percent, low_percent=low_percent,
+                           z_transfer=z_transfer, binarized=binarized)
+        finish = time.perf_counter()
+        elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+        print(f"- Done subject {s} - time {elapse}.")
+
 if __name__ == "__main__":
+    # rename_infofile()
     # make_info(type='Tseries', ses_id='ses-rest1')
     # make_info(type='Tseries', ses_id='ses-rest2')
     #  -- Extract timeseries --
@@ -316,18 +472,19 @@ if __name__ == "__main__":
 
     # -- Get connectivity fingerprint --
     dname = 'HCP'
+    # concatenate_rs_timeseries([3,2,1,0], start_point=0, duration=2261)
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest1')
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='MNISymC2', ses_id='ses-rest2')
 
-    for t in [162]:
-        get_hcp_fs32k_rsfc(type=f'Ico{t}Run', space='fs32k', ses_id='ses-rest1', 
-                        subj_list='/subj_list/HCP40_training_set.tsv',
-                        smooth=None, kernel='fwhm', thres=None, keeptop=False)
-        get_hcp_fs32k_rsfc(type=f'Ico{t}Run', space='fs32k', ses_id='ses-rest2',
-                        subj_list='/subj_list/test_split/HCP923_test_set_split_1.tsv',
-                        smooth=4, kernel='fwhm', thres=0.1, keeptop=False)
+    # for t in [642]:
+    #     get_hcp_fs32k_rsfc(type=f'Ico{t}Run', space='fs32k', ses_id='ses-rest2261s2',
+    #                     subj_list='/subj_list/HCP200_test.tsv',
+    #                     smooth=4, kernel='fwhm', thres=0.1, keeptop=False)
+        # get_hcp_fs32k_rsfc(type=f'Ico{t}Run', space='fs32k', ses_id='ses-rest2',
+        #                 subj_list='/subj_list/test_split/HCP923_test_set_split_1.tsv',
+        #                 smooth=4, kernel='fwhm', thres=0.1, keeptop=False)
         # get_hcp_fs32k_rsfc(type='Ico42Run', space='fs32k', ses_id='ses-rest1',
         #                    subj_list='/subj_list/HCP40_validation_set.tsv',
         #                    smooth=4, kernel='fwhm')
@@ -342,8 +499,8 @@ if __name__ == "__main__":
         #                    smooth=4, kernel='fwhm')
 
     #  -- fs32k smoothing (cortex)
-    # smooth_hcp_fs32k(hcp_dir + '/subj_list/HCP40_validation_set.tsv', ses_id='ses-rest1',
-    #                 type=f'Tseries', smooth=4, kernel='fwhm', return_data_only=False)
+    smooth_hcp_fs32k(hcp_dir + '/subj_list/HCP200_test.tsv', ses_id='ses-task',
+                    type=f'ZstatHalf', smooth=4, kernel='fwhm', return_data_only=False)
     # smooth_hcp_fs32k(hcp_dir + '/subj_list/HCP40_validation_set.tsv', ses_id='ses-rest2',
     #                 type=f'Tseries', smooth=4, kernel='fwhm', return_data_only=False)
     
@@ -358,3 +515,10 @@ if __name__ == "__main__":
     #                                   type='Net67Run', space='fs32k', ses_id='ses-rest1')
     # conn.get_connectivity_fingerprint(dname,
     #                                   type='Net67Run', space='fs32k', ses_id='ses-rest2')
+
+    for s in ['6fwhm']:
+        print(f'Doing processing for {s}fwhm ...')
+        mask_hcptask_fs32k('/subj_list/HCP200_test_new-added.tsv', ses_id='ses-task', type='CondHalf',
+                            high_percent=0.1, low_percent=0.1, smooth=s, z_transfer=True, binarized=False)
+        mask_hcptask_fs32k('/subj_list/HCP40_validation.tsv', ses_id='ses-task', type='CondHalf',
+                            high_percent=0.1, low_percent=0.1, smooth=s, z_transfer=True, binarized=False)

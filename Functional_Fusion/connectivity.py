@@ -43,7 +43,7 @@ def regress_networks(X, Y):
     return network_timecourse
 
 
-def binarize_top_percent(arr, percent=0.1, keep_top=False):
+def binarize_top_percent_old(arr, percent=0.1, keep_top=False):
     """Binarization of the rsFC by giving a top percent
     For example, the top 10% values are 1, the rest are 0s
 
@@ -66,6 +66,42 @@ def binarize_top_percent(arr, percent=0.1, keep_top=False):
         # 2. set to 1
         result = np.where(arr >= threshold, 1, 0).astype(np.int8)
     
+    return result
+
+def binarize_top_percent(arr, percent=0.1, keep_top=False):
+    """
+    Apply one global percentile threshold to the entire matrix.
+
+    The input correlation matrix may be modified in place.
+    """
+
+    arr = np.asarray(arr)
+
+    # Avoid making another full-size matrix copy
+    np.nan_to_num(arr, copy=False, nan=-1)
+
+    # Make one working copy for percentile calculation.
+    # overwrite_input prevents percentile from making another copy.
+    percentile_data = arr.ravel().copy()
+
+    threshold = np.percentile(
+        percentile_data,
+        (1 - percent) * 100,
+        overwrite_input=True
+    )
+
+    del percentile_data
+
+    if keep_top:
+        # coef is already float32, so modify it directly
+        arr[arr < threshold] = 0
+        return arr
+
+    result = np.empty(arr.shape, dtype=np.int8)
+
+    # Write 0/1 directly into result without np.where()
+    np.greater_equal(arr, threshold, out=result)
+
     return result
 
 def keep_top_percent(arr, percent=0.1):
@@ -165,7 +201,51 @@ def connectivity_fingerprint(source, target, info, type, threshold=None, keeptop
     return np.vstack(coefs) 
 
 
-def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', smooth=None, subj=None):
+def _parse_connectivity_type(conn_type):
+    """Parse names like Ico642Run, Ico642ResTrim410Run, or Ico642nonFixResRun."""
+    fingerprint_types = ('Run', 'Half', 'All')
+    for fingerprint_type in fingerprint_types:
+        if conn_type.endswith(fingerprint_type):
+            base_type = conn_type[:-len(fingerprint_type)]
+            break
+    else:
+        raise ValueError(
+            f'Connectivity type {conn_type} must end with one of '
+            f'{fingerprint_types}'
+        )
+
+    tseries_types = [
+        ('nonFixRes', 'nonFixResiduals'),
+        ('NonFixRes', 'nonFixResiduals'),
+        ('FixRes', 'FixResiduals'),
+        ('Res', 'Residuals'),
+        ('Fix', 'FixTseries')
+    ]
+    target = base_type
+    tseries_type = ''
+    load_tseries_type = 'Tseries'
+    trim_match = re.match(r'(.+?)(ResTrim|ResidualsTrim)(\d+)$', base_type)
+    if trim_match:
+        target = trim_match.group(1)
+        tseries_type = f'ResTrim{trim_match.group(3)}'
+        load_tseries_type = f'ResidualsTrim{trim_match.group(3)}'
+        return target, tseries_type, fingerprint_type, load_tseries_type
+
+    for suffix, data_type in tseries_types:
+        if base_type.endswith(suffix):
+            target = base_type[:-len(suffix)]
+            tseries_type = suffix
+            load_tseries_type = data_type
+            break
+
+    if target == '':
+        raise ValueError(f'Connectivity type {conn_type} is missing a target')
+
+    return target, tseries_type, fingerprint_type, load_tseries_type
+
+
+def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_id='ses-rest1', smooth=None, subj=None,
+                                 threshold=None, keeptop=True):
     """Extracts the connectivity fingerprint for each network in the HCP data
     Steps:  Step 1: Regress each network into the fs32k cortical data to get a run-specific network timecourse 
                     Alternatively, average cortical timecourse within each Icosahedron parcel to get network timecourse
@@ -195,20 +275,14 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         T = T.iloc[subj]
 
     # Load the cortical networks
-    type_parts = re.findall('[A-Z][^A-Z]*', type)        
-    if len(type_parts) == 2:
-        target, type = type_parts
-        tseries_type = ''
-    elif len(type_parts) == 3:
-        target, tseries_type, type = type_parts
-    
-    
-    if tseries_type == 'Fix':
-        load_tseries_type = 'FixTseries'
-    elif tseries_type == 'Res':
-        load_tseries_type = 'Residuals'
-    elif tseries_type == '':
-        load_tseries_type = 'Tseries'
+    out_type = type
+    if threshold is not None:
+        if keeptop:
+            output_type = out_type + f'masked-{threshold}'
+        else:
+            output_type = out_type + f'binarized-{threshold}'
+
+    target, tseries_type, type, load_tseries_type = _parse_connectivity_type(type)
     
 
     res = target[3:]
@@ -220,22 +294,23 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         net = [atlas_dir + f'/tpl-fs32k/Icosahedron{res}.L.label.gii',
             atlas_dir + f'/tpl-fs32k/Icosahedron{res}.R.label.gii']
     elif target[:3] == 'Fus':
-        net = nb.load(data_dir +
+        net = nb.load(atlas_dir +
                     f'/targets/{target}_space-fs32k.pscalar.nii')
-    atlas, _ = am.get_atlas(space, dset.atlas_dir)
+    atlas, _ = am.get_atlas(space, atlas_dir)
         
     for p, row in enumerate(T.itertuples()):
+        print(f"Extracting FC for subject {row}")
         participant_id = row.participant_id
 
         # Get the subject's data
         # Get cortical data
-        data_cortex_subj, _ = dset.get_data(
-            space='fs32k', ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
+        data_cortex_subj, info_cortex = dset.get_data(
+            space='fs32k', ses_id=ses_id, type=load_tseries_type, smooth=smooth, subj=[row.Index])
         data_cortex_subj = data_cortex_subj.squeeze()
 
         # Get source data
         data_source_subj, info_source = dset.get_data(
-                space=space, ses_id=ses_id, type=load_tseries_type, subj=[row.Index])
+                space=space, ses_id=ses_id, type=load_tseries_type, smooth=smooth, subj=[row.Index])
         data_source_subj = data_source_subj.squeeze()
 
         if target[:3] == 'Net' or target[:3] == 'Fus':
@@ -261,7 +336,8 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
 
         # Calculate the connectivity fingerprint
         coef = connectivity_fingerprint(
-            data_source_subj, network_timecourse, info_source, type)
+            data_source_subj, network_timecourse, info_source, type,
+            threshold=threshold, keeptop=keeptop)
         # Make info
         runs = np.repeat([info_source.run.unique()], len(names))
         net_id = np.tile(np.arange(len(names)),
@@ -270,7 +346,7 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
             info = pd.DataFrame({'sn': [participant_id] * coef.shape[0],
                              'sess': [ses_id] * coef.shape[0],
                              'run': runs,
-                             'half': 2 - (runs < runs[-1]),
+                             'half': 2 - runs % 2,
                              'net_id': net_id,
                              'names': names * int(coef.shape[0] / len(names))})
             info['names'] = [f'{d.names.strip()}-run{d.run}' for i, d in info.iterrows()]
@@ -293,9 +369,9 @@ def get_connectivity_fingerprint(dname, type='Net69Run', space='MNISymC3', ses_i
         dest_dir = dset.data_dir.format(participant_id)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
-        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{target+tseries_type+type}.dscalar.nii')
+        nb.save(C,  f'{dest_dir}/{participant_id}_space-{space}_{ses_id}_{output_type}.dscalar.nii')
         info.to_csv(
-            f'{dest_dir}/{participant_id}_{ses_id}_{target+tseries_type+type}.tsv', sep='\t', index=False)
+            f'{dest_dir}/{participant_id}_{ses_id}_{out_type}.tsv', sep='\t', index=False)
 
 
 def get_cortical_target(target):
@@ -356,4 +432,5 @@ if __name__ == "__main__":
     # get_cortical_target('orig/hcp_1200/Net100_space-fs32k.dscalar.nii')
     # get_cortical_target('orig/hcp_1200/Net50_space-fs32k.dscalar.nii')
     # get_cortical_target('orig/hcp_1200/Net15_space-fs32k.dscalar.nii')
-    make_net67()
+    # make_net67()
+    pass

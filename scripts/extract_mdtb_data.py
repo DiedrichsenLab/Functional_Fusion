@@ -65,10 +65,10 @@ def smooth_mdtb_fs32k(ses_id='ses-s1', type='CondHalf', smooth=1, kernel='gaussi
     T = mdtb_dataset.get_participants()
 
     for s in T.participant_id:
-        print(f'Smoothing data for {s} fs32k {ses_id} in {smooth}mm {kernel} ...')
+        print(f'Smoothing data for {s} fs32k {ses_id} {type} in {smooth}mm {kernel} ...')
 
         start = time.perf_counter()
-        file = mdtb_dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}_masked-hi0.1lo0.1.dscalar.nii'
+        file = mdtb_dataset.data_dir.format(s) + f'/{s}_space-fs32k_{ses_id}_{type}.dscalar.nii'
         ut.smooth_fs32k_data(file, smooth=smooth, kernel=kernel)
         finish = time.perf_counter()
         elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))

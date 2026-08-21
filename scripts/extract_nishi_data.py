@@ -13,15 +13,23 @@ import SUITPy as suit
 import matplotlib.pyplot as plt
 import subprocess
 
+ERIS_DIR = '/home/dzhi/eris_mount'
+if not Path(ERIS_DIR).exists():
+    ERIS_DIR = '/data/tge'
+if not Path(ERIS_DIR).exists():
+    raise (NameError('Could not find ERIS'))
+
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
+if not Path(base_dir).exists():
+    base_dir = '/data/tge/Tian/UKBB_full/imaging'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = 'Y:/data/FunctionalFusion'
 if not Path(base_dir).exists():
-    raise(NameError('Could not find base_dir'))
+    print('data server not mounted')
 
-data_dir = base_dir + '/Nishimoto'
+data_dir = ERIS_DIR + '/Tian/Nishimoto'
 atlas_dir = base_dir + '/Atlases'
 
 
@@ -124,8 +132,8 @@ def mask_nishi_fs32k(ses_id='ses-s1', type='CondHalf', high_percent=0.1, low_per
         print(f"- Done subject {s} - time {elapse}.")
 
 if __name__ == "__main__":
-    smooth_nishi_fs32k(ses_id='ses-01', type='CondHalf', smooth=4, kernel='fwhm')
-    smooth_nishi_fs32k(ses_id='ses-02', type='CondHalf', smooth=4, kernel='fwhm')
+    # smooth_nishi_fs32k(ses_id='ses-01', type='CondHalf', smooth=6, kernel='fwhm')
+    # smooth_nishi_fs32k(ses_id='ses-02', type='CondHalf', smooth=6, kernel='fwhm')
     # extract_nishi_group(type='CondHalf', atlas='SUIT3')
     # show_nishimoto_group(type='CondHalf', atlas='SUIT3', cond='all', savefig=True)
     # parcel_nishi_fs32k(res=162,ses_id='ses-01',type='condHalf')

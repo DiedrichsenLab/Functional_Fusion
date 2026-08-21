@@ -129,11 +129,46 @@ def zstandarize_ts(X):
     X = X / np.sqrt(np.nansum(X**2, axis=0)/X.shape[0])
     return X
 
-def correlate(X, Y):
+def correlate_old(X, Y):
     """ Correlate X and Y numpy arrays after standardizing them"""
     X = zstandarize_ts(X)
     Y = zstandarize_ts(Y)
     return Y.T @ X / X.shape[0]
+
+def correlate(X, Y):
+    """
+    Fast column-wise Pearson correlation.
+
+    X: timepoints × vertices
+    Y: timepoints × targets
+
+    X and Y are modified in place, so pass run-specific copies.
+    """
+
+    # Center in place
+    X -= X.mean(axis=0, keepdims=True)
+    Y -= Y.mean(axis=0, keepdims=True)
+
+    # Calculate column norms without creating X**2 and Y**2 arrays
+    x_norm = np.sqrt(
+        np.einsum('ij,ij->j', X, X, optimize=True)
+    )
+    y_norm = np.sqrt(
+        np.einsum('ij,ij->j', Y, Y, optimize=True)
+    )
+
+    # Preserve the original NaN behavior for constant columns
+    x_norm[x_norm == 0] = np.nan
+    y_norm[y_norm == 0] = np.nan
+
+    # Main operation: optimized BLAS matrix multiplication
+    coef = Y.T @ X
+
+    # Normalize the result
+    coef /= y_norm[:, None]
+    coef /= x_norm[None, :]
+
+    return coef
 
 def pearson_correlation(X, Y):
     assert X.shape[0] == Y.shape[0], "Both matrices must have the same size of rows."
@@ -395,7 +430,7 @@ def mask_fs32k_data(input_file, high_percent=0.1, low_percent=0.1, binarized=Fal
     dir_path, file_name = os.path.split(input_file)
     base_name = file_name.split('.')[0]
 
-    base_name += '_zstat' if z_transfer else base_name
+    base_name = base_name + '_zstat' if z_transfer else base_name
     ext = '.' + '.'.join(file_name.split('.')[1:])
     mask_suffix = f'_masked-hi{high_percent}lo{low_percent}'
 

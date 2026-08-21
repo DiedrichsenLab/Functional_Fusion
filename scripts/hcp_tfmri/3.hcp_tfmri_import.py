@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 from Functional_Fusion.import_data import *
+import Functional_Fusion.dataset as ds
 import os
 import nibabel as nb
 import numpy as np
@@ -12,8 +13,14 @@ if not Path(base_dir).exists():
 if not Path(base_dir).exists():
     base_dir = '/Volumes/diedrichsen_data$/data'
 
-functional_fusion_dir = f'/data/tge/Tian/HCP_img'
-HCP_dir = f'/data/tge/dzhi/projects/HCP_tfMRI'
+ERIS_DIR = '/home/dzhi/eris_mount'
+if not Path(ERIS_DIR).exists():
+    ERIS_DIR = '/data/tge'
+if not Path(ERIS_DIR).exists():
+    raise (NameError('Could not find hcp_dir'))
+
+functional_fusion_dir = ERIS_DIR + f'/Tian/HCP_img'
+HCP_dir = '/mnt/sda/HCP_tfMRI'
 
 def make_participant_tsv(source_dir, dest_dir):
     if not Path(dest_dir).exists():
@@ -31,8 +38,8 @@ def make_participant_tsv(source_dir, dest_dir):
     return
 
 
-def import_anat_data(source_dir, dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
+def import_anat_data(source_dir, dest_dir, subj_list):
+    participants = pd.read_csv(dest_dir + subj_list, sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
@@ -50,8 +57,8 @@ def import_anat_data(source_dir, dest_dir):
     return
 
 
-def import_freesurfer(source_dir, dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
+def import_freesurfer(source_dir, dest_dir, subj_list):
+    participants = pd.read_csv(dest_dir + subj_list, sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
@@ -83,8 +90,8 @@ def import_freesurfer(source_dir, dest_dir):
     return
 
 
-def import_resms(source_dir,dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
+def import_resms(source_dir,dest_dir, subj_list):
+    participants = pd.read_csv(dest_dir + subj_list, sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
@@ -105,19 +112,23 @@ def import_resms(source_dir,dest_dir):
 
     return
 
-def import_betas(source_dir, dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
+def import_betas(source_dir, dest_dir, subj_list):
+    participants = pd.read_csv(dest_dir + subj_list, sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
         # Gather all session directories
         participant_dir = Path(source_dir) / str(participant) / 'func'
-        session_dirs = [d for d in participant_dir.iterdir() if d.is_dir() and d.name.startswith("ses-")]
+        session_dirs = sorted([d for d in participant_dir.iterdir()
+                               if d.is_dir() and d.name.startswith("ses-")],
+                               key=lambda d: d.name)
 
         session_run_mapping = {}
 
         for session_index, session_dir in enumerate(session_dirs):
-            run_dirs = [d for d in session_dir.iterdir() if d.is_dir()]
+            run_dirs = sorted([d for d in session_dir.iterdir()
+                               if d.is_dir() and (d.name.endswith('LR') or d.name.endswith('RL'))],
+                               key=lambda d: d.name)
             session_run_mapping[session_index] = run_dirs
 
         max_runs = max(len(runs) for runs in session_run_mapping.values())
@@ -136,7 +147,7 @@ def import_betas(source_dir, dest_dir):
                     stats_dir = feat_dir[0] / "stats"
 
                     if stats_dir.exists():
-                        pe_files = list(stats_dir.glob("pe*.nii.gz"))
+                        pe_files = sorted(list(stats_dir.glob("pe*.nii.gz")), key=lambda d: d.name)
 
                         # Filter for odd-numbered PE files (derivatives)
                         odd_pe_files = []
@@ -172,8 +183,8 @@ def import_betas(source_dir, dest_dir):
 
     return
 
-def import_masks(source_dir, dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
+def import_masks(source_dir, dest_dir, subj_list):
+    participants = pd.read_csv(dest_dir + subj_list, sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
@@ -199,9 +210,199 @@ def import_masks(source_dir, dest_dir):
 
     return
 
+def download_2lvl_glm_from_s3_server(subject_id, directory):
+    # AWS S3 Bucket URL
+    s3_base_url = "s3://hcp-openaccess/HCP_1200"
 
-def make_reginfo(source_dir, dest_dir):
-    participants = pd.read_csv(Path(dest_dir) / "subj_list/HCP203_test_set.tsv", sep="\t")
+    """Download specific data folder for each subject."""
+    # Construct the full S3 path for the subject and folder
+    s3_mni_result_path = f"{s3_base_url}/{subject_id}/MNINonLinear/Results"
+    local_folder = f"{directory}/{subject_id}"
+    commands = []
+
+    ## functional
+    func_folder = os.path.join(local_folder, 'func')
+    os.makedirs(func_folder, exist_ok=True)
+    session_names = ['EMOTION', 'GAMBLING', 'LANGUAGE', 'MOTOR', 'RELATIONAL', 'SOCIAL', 'WM']
+
+    # Iterate over session directories that need preprocessing
+    for session_name in session_names:
+        ses_dir = os.path.join(func_folder, f'ses-{session_name}')
+        os.makedirs(ses_dir, exist_ok=True)
+
+        source_folder = os.path.join(s3_mni_result_path, f'tfMRI_{session_name}')
+        commands.append(["aws", "s3", "sync", source_folder,
+                         os.path.join(ses_dir, f'tfMRI_{session_name}'),
+                         "--region", "us-east-1", "--exclude", "*", "--include", "*.dscalar.nii"])
+
+    # Run the command to download the data
+    for cmd in commands:
+        try:
+            subprocess.run(cmd, check=True)
+            print(f"Successfully downloaded {cmd}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error {cmd}: {e}")
+
+def import_2lvl_task_contrast(source_dir, dest_dir, subj_list):
+    session_names = ['EMOTION', 'GAMBLING', 'LANGUAGE', 'MOTOR', 'RELATIONAL', 'SOCIAL', 'WM']
+    participants = pd.read_csv(dest_dir + subj_list, sep="\t")
+    participants = participants["participant_id"].tolist()
+
+    for participant in participants:
+        # Iterate over session directories that need preprocessing
+        for session_name in session_names:
+            print(f'Copying {participant}/ses-{session_name}')
+            ses_dir = f'{source_dir}/{participant}/func/ses-{session_name}/tfMRI_{session_name}'
+            contrast_dir = list(Path(ses_dir).rglob('*.dscalar.nii'))
+
+            if len(contrast_dir) != 0:
+                dest_folder = f'{dest_dir}/derivatives/{participant}/func/ses-{session_name}'
+                if not Path(dest_folder).exists():
+                    os.makedirs(dest_folder, exist_ok=True)
+
+                # Copy files
+                for contrast_file in contrast_dir:
+                    d_file = shutil.copy(contrast_file, dest_folder)
+                    os.chmod(d_file, 0o755)
+            else:
+                print(f'No contrasts for subject {participant}, skipping')
+
+        # Average the mask data
+        print(f"Copied all task contrasts for participant {participant}!")
+
+
+def import_contrast(source_dir, dest_dir, subj_list, import_type="zstat"):
+    participants = pd.read_csv(dest_dir + subj_list, sep="\t")
+    participants = participants["participant_id"].tolist()
+
+    for participant in participants:
+        # Gather all session directories
+        participant_dir = Path(source_dir) / str(participant) / 'func'
+        session_dirs = sorted([d for d in participant_dir.iterdir()
+                               if d.is_dir() and d.name.startswith("ses-")],
+                               key=lambda d: d.name)
+
+        session_run_mapping = {}
+
+        for session_index, session_dir in enumerate(session_dirs):
+            run_dirs = sorted([d for d in session_dir.iterdir()
+                               if d.is_dir() and (d.name.endswith('LR') or d.name.endswith('RL'))],
+                               key=lambda d: d.name)
+            session_run_mapping[session_index] = run_dirs
+
+        max_runs = max(len(runs) for runs in session_run_mapping.values())
+        global_run_counter = 1  # Global counter for runs across sessions
+
+        for run_index in range(max_runs):
+            reg_num = 1
+            for session_index, run_dirs in session_run_mapping.items():
+                if run_index < len(run_dirs):
+                    run_dir = run_dirs[run_index]
+
+                    # Path to the stats folder
+                    feat_dir = list(run_dir.glob("*.feat"))
+                    if not feat_dir:
+                        continue
+                    stats_dir = feat_dir[0] / "stats"
+
+                    if stats_dir.exists():
+                        pe_files = sorted(list(stats_dir.glob(f"{import_type}*.nii.gz")), key=lambda d: d.name)
+                        for pe_file in pe_files:
+                            reg_label = f"reg-{reg_num:02d}"
+
+                            # Construct output filename
+                            dest_folder = Path(dest_dir) / "derivatives" / str(participant) / "estimates" / "ses-task"
+                            dest_file = dest_folder / f"{participant}_ses-task_run-{global_run_counter:02d}_{reg_label}_{import_type}.nii.gz"
+                            if not dest_folder.exists():
+                                os.makedirs(dest_folder, exist_ok=True)
+
+                            # Copy contrast file
+                            shutil.copyfile(pe_file, dest_file)
+                            decompressed_file = dest_file.with_suffix('')
+                            with gzip.open(dest_file, 'rb') as f_in:
+                                with open(decompressed_file, 'wb') as f_out:
+                                    shutil.copyfileobj(f_in, f_out)
+
+                            # Remove the original .gz file
+                            os.remove(dest_file)
+
+                            reg_num += 1
+                global_run_counter += 1
+        print(f"Copied {import_type} files for participant {participant}")
+
+    return
+
+def make_task_contrasts(dataset_dir, subj_list="/subj_list/HCP203_test_set.tsv", smooth='2_MSMAll'):
+    session_names = ['EMOTION', 'GAMBLING', 'LANGUAGE', 'MOTOR', 'RELATIONAL', 'SOCIAL', 'WM']
+    hcp_ds = ds.DataSetHcpTask(dataset_dir)
+    T = hcp_ds.get_participants(subj_list)
+    positive_ind = [1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+    beta_ind = [1, 1, 0, 0, 0, 0,
+                    1, 1, 0, 0, 0, 0,
+                    1, 1, 0, 0, 0, 0,
+                    1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    1, 1, 0, 0, 0, 0,
+                    1, 1, 0, 0, 0, 0,
+                    1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    for s in T.participant_id:
+        out_file = hcp_ds.func_dir.format(s) + \
+                    f'/{s}_tfMRI_contrasts_level2_hp200_s{smooth}.dscalar.nii'
+        if os.path.exists(out_file):
+            print(f"Subject {s} combined contrasts already exists, skipping")
+            continue
+        else:
+            ses_data, ses_info, ses_domains = [], [], []
+            for sess in session_names:
+                print(f'Loading {s}/ses-{sess}')
+                ses_dir = hcp_ds.func_dir.format(s) + f'/ses-{sess}'
+                contrast_file = ses_dir + f'/{s}_tfMRI_{sess}_level2_hp200_s{smooth}.dscalar.nii'
+
+                # Load data / info
+                dat = nb.load(contrast_file)
+                this_info = dat.header.get_axis(0).name.tolist()
+                prefix = os.path.commonprefix(this_info)
+                this_info = [s[len(prefix):] for s in this_info]
+                dat = dat.get_fdata().astype(np.float32)
+
+                ses_data.append(dat)
+                ses_info.append(this_info)
+                ses_domains.append([sess] * len(this_info))
+
+            data = np.vstack(ses_data)
+            info = np.concatenate(ses_info)
+            domains = np.concatenate(ses_domains)
+
+            # Build new header
+            C = nb.load(contrast_file)
+            new_axis = nb.cifti2.ScalarAxis(info)
+            bm = C.header.get_axis(1)  # brain models axis
+            new_header = nb.cifti2.Cifti2Header.from_axes((new_axis, bm))
+
+            # Save combined task contrasts
+            C = nb.Cifti2Image(dataobj=data, header=new_header)
+            nb.save(C, hcp_ds.func_dir.format(s) +
+                    f'/{s}_tfMRI_contrasts_level2_hp200_s{smooth}.dscalar.nii')
+
+            info_com = pd.DataFrame({'contrast_name': info,
+                                     'task_name': domains,
+                                     'positive': positive_ind,
+                                     'betas': beta_ind})
+            info_com.to_csv(hcp_ds.func_dir.format(s) +
+                            f'/{s}_tfMRI_contrasts_level2_hp200.tsv', sep='\t', index=False)
+
+            # Average the mask data
+            print(f"Combined all task contrasts for participant {s}!")
+
+
+def make_reginfo(source_dir, dest_dir, subj_list):
+    participants = pd.read_csv(dest_dir + subj_list, sep="\t")
     participants = participants["participant_id"].tolist()
 
     for participant in participants:
@@ -209,11 +410,15 @@ def make_reginfo(source_dir, dest_dir):
         participant_dir = Path(source_dir) / str(participant) / "func"
 
         # Get session directories
-        session_dirs = [d for d in participant_dir.iterdir() if d.is_dir() and d.name.startswith("ses-")]
+        session_dirs = sorted([d for d in participant_dir.iterdir()
+                               if d.is_dir() and d.name.startswith("ses-")],
+                              key=lambda d: d.name)
 
         session_run_mapping = {}
         for session_index, session_dir in enumerate(session_dirs):
-            run_dirs = [d for d in session_dir.iterdir() if d.is_dir()]
+            run_dirs = sorted([d for d in session_dir.iterdir()
+                               if d.is_dir() and (d.name.endswith('LR') or d.name.endswith('RL'))],
+                              key=lambda d: d.name)
             session_run_mapping[session_index] = run_dirs
 
         max_runs = max(len(runs) for runs in session_run_mapping.values())
@@ -270,16 +475,50 @@ def make_reginfo(source_dir, dest_dir):
 
     return
 
+def make_zstat_reginfo(dataset_dir, subj_list):
+    session_names = ['EMOTION', 'GAMBLING', 'LANGUAGE', 'MOTOR', 'RELATIONAL', 'SOCIAL', 'WM']
+    hcp_ds = ds.DataSetHcpTask(dataset_dir)
+    T = hcp_ds.get_participants(subj_list)
+    positive_ind = [1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 0, 0, 0,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0] * 2
+    beta_ind = [1, 1, 0, 0, 0, 0,
+                1, 1, 0, 0, 0, 0,
+                1, 1, 0, 0, 0, 0,
+                1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                1, 1, 0, 0, 0, 0,
+                1, 1, 0, 0, 0, 0,
+                1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] * 2
 
+    for s in T.participant_id:
+        out_file = hcp_ds.data_dir.format(s) + f'/{s}_ses-task_ZstatHalf.tsv'
+        if os.path.exists(out_file):
+            df = pd.read_csv(out_file, sep="\t")
+            df["positive"] = positive_ind
+            df["beta"] = beta_ind
+            df.to_csv(out_file, sep="\t", index=False)
+            print(f"Saved reginfo file: {out_file}")
+        else:
+            print(f"Subject {s} zstat tsv not found")
 
 if __name__ == '__main__':
+    subj_list = "/subj_list/HCP200_test.tsv"
     # make_participant_tsv(HCP_dir, functional_fusion_dir)
-    # import_anat_data(HCP_dir, functional_fusion_dir)
-    # import_freesurfer(HCP_dir, functional_fusion_dir)
-    # import_resms(HCP_dir, functional_fusion_dir)
-    # import_masks(HCP_dir, functional_fusion_dir)
-    
-    import_betas(HCP_dir, functional_fusion_dir)
-    make_reginfo(HCP_dir, functional_fusion_dir)
+    # import_anat_data(HCP_dir, functional_fusion_dir, subj_list)
+    # import_freesurfer(HCP_dir, functional_fusion_dir, subj_list)
+    # import_resms(HCP_dir, functional_fusion_dir, subj_list)
+    # import_masks(HCP_dir, functional_fusion_dir, subj_list)
+    #
+    # import_2lvl_task_contrast('/mnt/sda/HCP_tfMRI', '/home/dzhi/eris_mount/Tian/HCP_img', subj_list)
+
+    # make_task_contrasts('/home/dzhi/eris_mount/Tian/HCP_img', smooth='2_MSMAll', subj_list=subj_list)
+    # import_contrast(HCP_dir, functional_fusion_dir, subj_list, import_type='zstat')
+    # import_betas(HCP_dir, functional_fusion_dir, subj_list)
+    # make_reginfo(HCP_dir, functional_fusion_dir, subj_list)
+    make_zstat_reginfo(functional_fusion_dir, subj_list)
 
 

@@ -5,7 +5,13 @@ import nibabel as nb
 import pandas as pd
 
 
-directory = '/data/tge/dzhi/projects/HCP_tfMRI'
+base_dir = '/home/dzhi/eris_mount'
+if not os.path.exists(base_dir):
+    base_dir = '/data/tge'
+
+directory = base_dir + '/dzhi/projects/HCP_tfMRI'
+if not os.path.exists(directory):
+    directory = '/mnt/sda/HCP_tfMRI'
 if not os.path.exists(directory):
     directory = 'Y:\\data\\ExternalOpenData\\HCP_UR100_tfMRI_new'
 if not os.path.exists(directory):
@@ -225,21 +231,56 @@ def download_func_from_s3_server(subject_id, directory):
             print(f"Error {cmd}: {e}")
 
 
+def download_2lvl_glm_from_s3_server(subject_id, directory):
+    # AWS S3 Bucket URL
+    s3_base_url = "s3://hcp-openaccess/HCP_1200"
+
+    """Download specific data folder for each subject."""
+    # Construct the full S3 path for the subject and folder
+    s3_mni_result_path = f"{s3_base_url}/{subject_id}/MNINonLinear/Results"
+    local_folder = f"{directory}/{subject_id}"
+    commands = []
+
+    ## functional
+    func_folder = os.path.join(local_folder, 'func')
+    os.makedirs(func_folder, exist_ok=True)
+    session_names = ['EMOTION', 'GAMBLING', 'LANGUAGE', 'MOTOR', 'RELATIONAL', 'SOCIAL', 'WM']
+
+    # Iterate over session directories that need preprocessing
+    for session_name in session_names:
+        ses_dir = os.path.join(func_folder, f'ses-{session_name}')
+        os.makedirs(ses_dir, exist_ok=True)
+
+        source_folder = os.path.join(s3_mni_result_path, f'tfMRI_{session_name}')
+        commands.append(["aws", "s3", "sync", source_folder,
+                         os.path.join(ses_dir, f'tfMRI_{session_name}'),
+                         "--region", "us-east-1", "--exclude", "*", "--include", "*.dscalar.nii"])
+
+    # Run the command to download the data
+    for cmd in commands:
+        try:
+            subprocess.run(cmd, check=True)
+            print(f"Successfully downloaded {cmd}")
+        except subprocess.CalledProcessError as e:
+            print(f"Error {cmd}: {e}")
+
+
 if __name__ == '__main__':
     # unzip_clean(directory)
     # group_participant_folders(directory)
     # process_anat(directory)
     # process_func(directory)
-    T = pd.read_csv('/data/tge/Tian/HCP_img/subj_list/HCP203_test_set.tsv', delimiter='\t')
+    T = pd.read_csv(base_dir + '/Tian/HCP_img/subj_list/HCP40_validation.tsv', delimiter='\t')
     for s in T.participant_id:
-        if not os.path.exists(f'/data/tge/dzhi/projects/HCP_tfMRI/{s}'):
-            print(f"-- Start downloading subject {s}")
+        # if not os.path.exists(f'/mnt/sda/HCP_tfMRI/{s}'):
+        print(f"-- Start downloading subject {s}")
 
-            start = time.perf_counter()
-            download_anat_from_s3_server(s, directory)
-            download_func_from_s3_server(s, directory)
-            finish = time.perf_counter()
-            elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
-            print(f'-- Done {elapse}')
-        else:
-            print(f'Already downloaded subject {s}')
+        start = time.perf_counter()
+        download_anat_from_s3_server(s, directory)
+        download_func_from_s3_server(s, directory)
+        download_2lvl_glm_from_s3_server(s, directory)
+        finish = time.perf_counter()
+        elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+        print(f'-- Done {elapse}')
+        # else:
+        #     print(f'Already downloaded subject {s}')

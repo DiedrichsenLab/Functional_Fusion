@@ -13,16 +13,24 @@ import SUITPy as suit
 import matplotlib.pyplot as plt
 import subprocess
 
+ERIS_DIR = '/home/dzhi/eris_mount'
+if not Path(ERIS_DIR).exists():
+    ERIS_DIR = '/data/tge'
+if not Path(ERIS_DIR).exists():
+    raise (NameError('Could not find ERIS'))
+
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = 'Y:/data/FunctionalFusion'
 if not Path(base_dir).exists():
+    base_dir = ERIS_DIR + '/Tian'
+if not Path(base_dir).exists():
     raise NameError('Could not find base_dir')
 
 data_dir = base_dir + '/IBC'
-atlas_dir = base_dir + '/Atlases'
+atlas_dir = base_dir + '/UKBB_full/imaging/Atlases'
 
 
 def show_ibc_group(ses_id='ses-hcp1', type='CondHalf', atlas='MNISymC3',
@@ -194,15 +202,15 @@ if __name__ == "__main__":
     #     for s in [2,3,5,7,9]:
     #         smooth_ibc_fs32k(ses_id='ses-01', type='CondHalf', smooth=s, kernel='fwhm')
 
-    for ses_id in ibc_ds.sessions:
-        for s in [3,5,7]:
-            print(f'Doing processing for session {ses_id} in {s}fwhm ...')
-            mask_ibc_fs32k(ses_id=ses_id, type=f'CondHalf', high_percent=0.1,
-                            low_percent=0.1, smooth=f'{s}', z_transfer=True, binarized=False)
+    # for ses_id in ibc_ds.sessions:
+    #     for s in [3,5,7]:
+    #         print(f'Doing processing for session {ses_id} in {s}fwhm ...')
+    #         mask_ibc_fs32k(ses_id=ses_id, type=f'CondHalf', high_percent=0.1,
+    #                         low_percent=0.1, smooth=f'{s}', z_transfer=True, binarized=False)
 
     dataset = DataSetIBC(data_dir)
-    # for session in dataset.sessions:
-    #     dataset.group_average_data(atlas='MNISymC2', ses_id=session)
+    for session in dataset.sessions:
+        dataset.group_average_data(atlas='fs32k', type='CondHalf', ses_id=session, smooth='5')
     #
     # dataset.plot_cerebellum(savefig=True, atlas='MNISymC2', colorbar=True)
 

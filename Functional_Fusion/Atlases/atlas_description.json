@@ -146,7 +146,7 @@
           "mask": ["tpl-fs32k_hemi-R_mask.label.gii"],
           "structure": ["cortex_right"],
           "type": "AtlasSurface"},
-     "fs32k_Asym": {
+     "fs32kAsym": {
 	      "dir": "tpl-fs32kAsym",
          "space": "fs32k",
           "mask": ["tpl-fs32kAsym_hemi-L_mask.label.gii",

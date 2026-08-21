@@ -12,6 +12,7 @@ def set_base_dir():
         '/srv/diedrichsen/data',
         'Y:\data\\',
         '/data/tge/Tian/UKBB_full/imaging',
+        '/home/dzhi/eris_mount/Tian/UKBB_full/imaging',
         '/Users/callithrix/Documents/Projects//',
         '/Users/jdiedrichsen/Data//',
     ]

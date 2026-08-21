@@ -13,14 +13,13 @@ import Functional_Fusion.dataset as ds
 import numpy as np
 from nibabel import cifti2
 import numpy as np
-from neuromaps import transforms
+# from neuromaps import transforms
 import nibabel as nb
 import Functional_Fusion.atlas_map as am
 import Functional_Fusion.util as ut
 import mat73
 import scipy.io as spio
 import nitools as nt
-import FusionModel.util as fut
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
@@ -64,47 +63,47 @@ def import_FIX_extended(source_dir, dest_dir, participant_id):
             print('skipping ' + f'/rfMRI_{run_n}')
 
 
-def check_timepoints(networks):
-    dest_dir = networks.split('signal')[0]
-    dest_dir + f'/Net69_space-fs32k.dscalar.nii'
-    for p, participant_id in enumerate(T.participant_id):
-        print(p, participant_id)
-        for run in range(4):
-            fname = Path(dataset.func_dir.format(
-                participant_id)) / f'sub-{participant_id}_run-{run}_space-MSMSulc.dtseries.nii'
-            img = cifti2.load(str(fname))
-            data = img.get_fdata()
-            if data.shape[0] != 1200:
-                print(f'Wrong timepoints for {fname}')
-                print(data.shape)
-
-
-def ica_networks_vol2surf(networks):
-    fslr = transforms.mni152_to_fslr(networks, '32k')
-    lh, rh = fslr
-    # Save object as cifti
-    structure = ['CORTEX_LEFT', 'CORTEX_RIGHT']
-    seed_names = ['Network_{}'.format(i)
-                  for i in range(1, len(lh.agg_data()) + 1)]
-    bpa = nb.cifti2.ScalarAxis(seed_names)
-    # lh = cifti2.Cifti2Image(lh, transforms.get_cifti2_axes('32k'))
-    print(f'Writing {networks} ...')
-
-    # Remove medial wall
-    lh_masked = [data[atlas.mask[0]] for data in lh.agg_data()]
-    rh_masked = [data[atlas.mask[1]] for data in rh.agg_data()]
-
-    # --- Build a connectivity CIFTI-file and save ---
-    # Make the atlas object
-    atlas, atlas_info = am.get_atlas('fs32k', ut.atlas_dir)
-    bmc = atlas.get_brain_model_axis()
-
-    header = nb.Cifti2Header.from_axes((bpa, bmc))
-    cifti_img = nb.Cifti2Image(
-        dataobj=np.c_[lh_masked, rh_masked], header=header)
-    dest_dir = networks.split('signal')[0]
-    Path(dest_dir).mkdir(parents=True, exist_ok=True)
-    nb.save(cifti_img, dest_dir + f'/Net69_space-fs32k.dscalar.nii')
+# def check_timepoints(networks):
+#     dest_dir = networks.split('signal')[0]
+#     dest_dir + f'/Net69_space-fs32k.dscalar.nii'
+#     for p, participant_id in enumerate(T.participant_id):
+#         print(p, participant_id)
+#         for run in range(4):
+#             fname = Path(dataset.func_dir.format(
+#                 participant_id)) / f'sub-{participant_id}_run-{run}_space-MSMSulc.dtseries.nii'
+#             img = cifti2.load(str(fname))
+#             data = img.get_fdata()
+#             if data.shape[0] != 1200:
+#                 print(f'Wrong timepoints for {fname}')
+#                 print(data.shape)
+#
+#
+# def ica_networks_vol2surf(networks):
+#     fslr = transforms.mni152_to_fslr(networks, '32k')
+#     lh, rh = fslr
+#     # Save object as cifti
+#     structure = ['CORTEX_LEFT', 'CORTEX_RIGHT']
+#     seed_names = ['Network_{}'.format(i)
+#                   for i in range(1, len(lh.agg_data()) + 1)]
+#     bpa = nb.cifti2.ScalarAxis(seed_names)
+#     # lh = cifti2.Cifti2Image(lh, transforms.get_cifti2_axes('32k'))
+#     print(f'Writing {networks} ...')
+#
+#     # Remove medial wall
+#     lh_masked = [data[atlas.mask[0]] for data in lh.agg_data()]
+#     rh_masked = [data[atlas.mask[1]] for data in rh.agg_data()]
+#
+#     # --- Build a connectivity CIFTI-file and save ---
+#     # Make the atlas object
+#     atlas, atlas_info = am.get_atlas('fs32k', ut.atlas_dir)
+#     bmc = atlas.get_brain_model_axis()
+#
+#     header = nb.Cifti2Header.from_axes((bpa, bmc))
+#     cifti_img = nb.Cifti2Image(
+#         dataobj=np.c_[lh_masked, rh_masked], header=header)
+#     dest_dir = networks.split('signal')[0]
+#     Path(dest_dir).mkdir(parents=True, exist_ok=True)
+#     nb.save(cifti_img, dest_dir + f'/Net69_space-fs32k.dscalar.nii')
 
 
 def check_vertices(networks):
@@ -123,6 +122,113 @@ def scan_folders_and_save_subj_id(dir):
     # Create a pandas DataFrame with the folder names
     df = pd.DataFrame(items, columns=['participant_id'])
     df.to_csv(dir + '/participants.tsv', index=False, sep='\t')
+
+
+def _get_subject_ids(subject_list):
+    """Return subject IDs from a dataframe, iterable, or participants TSV/CSV."""
+    if isinstance(subject_list, pd.DataFrame):
+        table = subject_list
+    elif isinstance(subject_list, (str, Path)) and Path(subject_list).exists():
+        table = pd.read_csv(subject_list, sep=None, engine='python')
+    elif isinstance(subject_list, (str, Path)):
+        return [str(subject_list)]
+    else:
+        return [str(s) for s in subject_list]
+
+    for column in ['participant_id', 'subject_id', 'subject', 'sub_id']:
+        if column in table.columns:
+            return table[column].dropna().astype(str).tolist()
+
+    if len(table.columns) == 1:
+        return table.iloc[:, 0].dropna().astype(str).tolist()
+
+    raise ValueError(
+        "Could not find a subject ID column. Expected one of "
+        "'participant_id', 'subject_id', 'subject', or 'sub_id'."
+    )
+
+
+def download_fs32k_va_from_s3_server(
+        subject_list,
+        derivative_dir='/home/dzhi/eris_mount/Tian/HCP_img/derivatives',
+        region='us-east-1',
+        no_sign_request=False,
+        aws_profile=None,
+        s3_prefixes=None):
+    """Download HCP fs_LR32k midthickness vertex-area files for subjects.
+
+    Downloads:
+        /{subject}/T1w/fsaverage_LR32k/
+        {subject}.{L,R}.midthickness_MSMAll_va.32k_fs_LR.shape.gii
+
+    Stores files at:
+        {derivative_dir}/{subject}/anat
+
+    HCP S3 access generally requires ConnectomeDB/HCP AWS credentials.
+    Pass aws_profile if those credentials are stored in a non-default profile.
+    By default, this tries T1w/fsaverage_LR32k first and then the
+    MNINonLinear/fsaverage_LR32k location used by HCP preprocessed data.
+    """
+    s3_base_url = 's3://hcp-openaccess/HCP_1200'
+    subject_ids = _get_subject_ids(subject_list)
+    if s3_prefixes is None:
+        s3_prefixes = ['T1w/fsaverage_LR32k',
+                       'MNINonLinear/fsaverage_LR32k']
+    failed = []
+
+    for subject_id in subject_ids:
+        anat_folder = os.path.join(derivative_dir, subject_id, 'anat')
+        os.makedirs(anat_folder, exist_ok=True)
+
+        print(f'-- Start downloading fs32k VA files for subject {subject_id} --')
+        for hemi in ['L', 'R']:
+            file_name = (
+                f'{subject_id}.{hemi}.midthickness_MSMAll_va.'
+                '32k_fs_LR.shape.gii'
+            )
+            local_file = os.path.join(anat_folder, file_name)
+
+            if os.path.isfile(local_file):
+                print(f'   Already exists, skipping {local_file}')
+                continue
+
+            last_error = None
+            for s3_prefix in s3_prefixes:
+                s3_file = (
+                    f'{s3_base_url}/{subject_id}/{s3_prefix}/'
+                    f'{file_name}'
+                )
+                cmd = ['aws']
+                if aws_profile is not None:
+                    cmd.extend(['--profile', aws_profile])
+                cmd.extend([
+                    's3', 'cp', s3_file, anat_folder,
+                    '--region', region
+                ])
+                if no_sign_request:
+                    cmd.append('--no-sign-request')
+
+                try:
+                    subprocess.run(
+                        cmd, check=True, capture_output=True, text=True)
+                    print(f'   Successfully downloaded {file_name}')
+                    break
+                except subprocess.CalledProcessError as e:
+                    last_error = e
+            else:
+                error_message = (
+                    last_error.stderr or last_error.stdout or str(last_error)
+                ).strip()
+                failed.append((subject_id, hemi, error_message))
+                print(f'   Error downloading {file_name}: {error_message}')
+
+    return failed
+
+
+def dowload_fs32k_va_from_s3_server(*args, **kwargs):
+    """Backward-compatible wrapper for the misspelled function name."""
+    return download_fs32k_va_from_s3_server(*args, **kwargs)
+
 
 def random_sampling_HCP_unrelated_family_subjects(original_df, num_subj=40):
     df = original_df.loc[original_df['full_4_runs']==True]
@@ -310,8 +416,8 @@ def step1_smooth_yeo_hcp_sess_tseries(bulk, data_dir, res_dir, smooth=4, kernel=
                 print(f"Done subject {s} run {i}- time {elapse}.")
             
 
-def make_yeo_hcp_sess_rsfc(subj_list, data_dir, ses_id='ses-rest1'):
-    myatlas, _ = am.get_atlas('fs32k')
+def make_yeo_hcp_sess_rsfc(subj_list, data_dir, space='fs32k', ses_id='ses-rest1'):
+    myatlas, _ = am.get_atlas(space)
     if ses_id == 'ses-rest1':
         run_name = ['sess1', 'sess2']
     elif ses_id == 'ses-rest2':
@@ -338,15 +444,15 @@ def make_yeo_hcp_sess_rsfc(subj_list, data_dir, ses_id='ses-rest1'):
                                       'names': this_names})
             info = pd.concat([info, this_info], ignore_index=True)
 
-        data = np.vstack(data)[:, np.concatenate(myatlas.mask)]
+        data = np.vstack(data)[:, np.concatenate(myatlas.vertex_mask)]
         C = myatlas.data_to_cifti(data, sum(col_name, []))
 
         out_dir = hcp_dir + f'/derivatives/{s}/data'
         Path(out_dir).mkdir(parents=True, exist_ok=True)
         
         nb.save(C, out_dir +
-                    f'/{s}_space-fs32k_{ses_id}_ROI1483Run_desc-sm4fwhm_binarized.dscalar.nii')
-        info.to_csv(out_dir + f'/{s}_{ses_id}_info-ROI1483Run.tsv', 
+                    f'/{s}_space-{space}_{ses_id}_ROI1483Run_desc-sm4fwhm_binarized.dscalar.nii')
+        info.to_csv(out_dir + f'/{s}_{ses_id}_ROI1483Run.tsv',
                     sep='\t', index=False)
         
         print(f'Write HCP rsfc (ROI1483) for subject {s} {ses_id}!')
@@ -412,7 +518,7 @@ def make_yeo_hcp_custom_rsfc(subj_list, out_dir, type='ICA15Run',
 def step1_generate_fmri_list():
     fmri_dir = '/data/tge/Tian/HCP_img/rfMRI/fix_32k'
     res_dir = '/data/tge/dzhi/workspace/res/data_list/fMRI_list'
-    T = pd.read_csv(fmri_dir + '/HCP923_test_set.tsv', delimiter='\t')
+    T = pd.read_csv(fmri_dir + '/participants.tsv', delimiter='\t')
 
     # Generate 40 lines
     for sub_id in T.participant_id:
@@ -426,7 +532,7 @@ def step1_generate_fmri_list():
                 
                 file.write(f'{fmri_dir}/{sub_id}/{sub_id}_run{ses-1}_desc-sm4fwhm.dtseries.nii\n')
     
-    print(f"File '{res_dir}' generated with 40 lines.")
+    print(f"File '{res_dir}' generated.")
 
 def step1_make_avrg_file():
     fmri_dir = '/data/tge/Tian/HCP_img/rfMRI/fix_32k'
@@ -440,10 +546,10 @@ def step1_make_avrg_file():
     
     print('Done.')
 
-def step3_generate_profile_list():
+def step3_generate_profile_list(subject_list):
     profiles_dir = '/data/tge/dzhi/workspace/res/profiles'
-    res_dir = '/data/tge/dzhi/workspace/res/profile_list/test_set'
-    T = pd.read_csv('/data/tge/Tian/HCP_img/rfMRI/fix_32k/HCP923_test_set.tsv', delimiter='\t')
+    res_dir = '/data/tge/dzhi/workspace/res/profile_list/HCP200_test_set'
+    T = pd.read_csv(subject_list, delimiter='\t')
 
     # Generate 40 lines
     for ses in [1,2,3,4]:
@@ -471,18 +577,23 @@ def convert_yeo_prior_to_cifti(file, out_dir, col_names=None):
 def convert_MSHBM_prior_to_cifti(mat_file, color, col_names=None):
     import torch as pt
     import HierarchBayesParcel.evaluation as hev
+    import HierarchBayesParcel.arrangements as ar
     atlas, _ = am.get_atlas('fs32k_Asym')
-    align = atlas.cifti_to_data('/data/tge/dzhi/Indiv_par/Kong_2019/group_prior' \
-                       '/HCP_40/Kong-2019_MSHBM_HCP40_prob_prior.dscalar.nii')
+    align = atlas.cifti_to_data('/data/tge/dzhi/workspace/DU15NET' \
+                       '/HCP/fsLR_32k/DU15NET_Prior_fsLR_32k.dlabel.nii').reshape(-1)
+    align = ar.expand_mn_1d(align, K=16)
     align = pt.tensor(align, dtype=pt.get_default_dtype())
 
     stem = os.path.dirname(mat_file)
     Prob = spio.loadmat(mat_file)['Params']['theta'][0][0]
-    Prob = Prob[np.concatenate(atlas.mask),:].T
+    Prob = Prob[np.concatenate(atlas.vertex_mask),:].T
     Prob = pt.tensor(Prob, dtype=pt.get_default_dtype())
+    col_sums = Prob.sum(dim=0)
+    mask = ~pt.isclose(col_sums, pt.tensor(1.0), atol=1e-6)
+    Prob[:, mask] = Prob[:, mask] / col_sums[mask]
 
-    indx = hev.matching_greedy(align, pt.softmax(Prob, dim=0))
-    # Prob = Prob[indx,:]
+    indx = hev.matching_greedy(align[1:,:], pt.softmax(Prob, dim=0))
+    Prob = Prob[indx,:]
 
     # C = atlas.data_to_cifti(Prob.cpu().numpy(), row_axis=col_names)
     # nb.save(C, f'{stem}/MSHBM_group_prior_HCP40training_k-17.dscalar.nii')
@@ -499,9 +610,13 @@ if __name__ == "__main__":
     #     print("Usage: python import_hcp.py <i>")
     #     sys.exit(1)        
 
+    ## Download va data from s3 server
+    T = pd.read_csv('/home/dzhi/eris_mount/Tian/HCP_img/subj_list/participants_all.tsv', delimiter='\t')
+    dowload_fs32k_va_from_s3_server(T.participant_id)
+
     # step1_generate_fmri_list()
     # step1_make_avrg_file()
-    # step3_generate_profile_list()
+    step3_generate_profile_list('/data/tge/Tian/HCP_img/subj_list/HCP200_test.tsv')
 
     #### Making HCP training/validation/test set subject list
     # df = pd.read_csv('/data/tge/Tian/HCP_img/family_group_id.tsv', delimiter='\t')
@@ -512,7 +627,12 @@ if __name__ == "__main__":
     # test_set = df.drop(index=np.concatenate([training_set.index, validation_set.index]))
 
     #### Convert and make Yeo prior to cifti file
-    # convert_MSHBM_prior_to_cifti('/data/tge/dzhi/workspace/res/priors/Params_Final.mat', 
+    # info = pd.read_csv('/data/tge/dzhi/workspace/DU15NET' + '/DU15NET_ColorLUT.csv')
+    # network_names = list(info['Abbreviation'])
+    # colors = info[["R","G","B","A"]].to_numpy().astype(float)
+    # colors[:, :3] = colors[:, :3] / 255
+
+    # convert_MSHBM_prior_to_cifti('/data/tge/dzhi/workspace/res/priors/Params_Final.mat',
     #                              colors, col_names=network_names)
     # img = nt.make_label_cifti(parcel, atlas.get_brain_model_axis(),
     #                           column_names=['Kong_2019'])
@@ -532,16 +652,16 @@ if __name__ == "__main__":
     #### Relication of Kong 2019 MS-HBM algorithm
     # step1_make_yeo_hcp_sess_tseries(hcp_dir + '/rfMRI/fix_32k', 
     #                           '/data/tge/dzhi/workspace/res')
-    step1_smooth_yeo_hcp_sess_tseries(hcp_dir + '/subj_list/test_split/' + 'HCP923_test_set_split_6.tsv',
-                                       hcp_dir + '/rfMRI/fix_32k', 
-                                      '/data/tge/dzhi/workspace/res', 
-                                      smooth=4, kernel='fwhm')
-    # make_yeo_hcp_sess_rsfc(hcp_dir + '/subj_list/HCP80_training+validation_set.tsv',
-    #                        '/data/tge/dzhi/workspace/res/profiles',
-    #                        ses_id='ses-rest1')
-    # make_yeo_hcp_sess_rsfc(hcp_dir + '/subj_list/HCP80_training+validation_set.tsv',
-    #                        '/data/tge/dzhi/workspace/res/profiles',
-    #                        ses_id='ses-rest2')
+    # step1_smooth_yeo_hcp_sess_tseries(hcp_dir + '/subj_list/test_split/' + 'HCP923_test_set_split_6.tsv',
+    #                                    hcp_dir + '/rfMRI/fix_32k',
+    #                                   '/data/tge/dzhi/workspace/res',
+    #                                   smooth=4, kernel='fwhm')
+    make_yeo_hcp_sess_rsfc(hcp_dir + '/subj_list/HCP40_training_KONG2019.tsv',
+                           '/data/tge/dzhi/workspace/res/profiles',
+                           space='fs32k', ses_id='ses-rest1')
+    make_yeo_hcp_sess_rsfc(hcp_dir + '/subj_list/HCP40_training_KONG2019.tsv',
+                           '/data/tge/dzhi/workspace/res/profiles',
+                           space='fs32k', ses_id='ses-rest2')
     
     # make_yeo_hcp_custom_rsfc(hcp_dir + '/subj_list/HCP80_training+validation_set.tsv',
     #                        '/data/tge/dzhi/workspace/res/profiles',

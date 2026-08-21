@@ -4,7 +4,13 @@ import pandas as pd
 from multiprocessing import Pool, cpu_count
 
 
+base_dir = '/home/dzhi/eris_mount'
+if not os.path.exists(base_dir):
+    base_dir = '/data/tge'
+
 directory = '/data/tge/dzhi/projects/HCP_tfMRI'
+if not os.path.exists(directory):
+    directory = '/mnt/sda/HCP_tfMRI'
 if not os.path.exists(directory):
     directory = 'Y:\\data\\ExternalOpenData\\HCP_UR100_tfMRI_new'
 if not os.path.exists(directory):
@@ -108,6 +114,64 @@ def run_feat_all(set_index):
         else:
             print(f'Already processed subject {s}')
 
+def get_smoothing(fsf_path):
+
+    with open(fsf_path, "r") as f:
+        for line in f:
+            if "set fmri(smooth)" in line:
+                return float(line.split()[-1])
+
+    return None
+
+def update_fsf(fsf_path):
+    # ---- construct outputdir from fsf path ----
+    output_dir = fsf_path.replace(".fsf", ".feat")
+    new_lines = []
+
+    with open(fsf_path, "r") as f:
+        for line in f:
+            # ---- force smoothing = 0 ----
+            if line.startswith("set fmri(smooth)"):
+                line = "set fmri(smooth) 0\n"
+            # ---- overwrite outputdir ----
+            elif line.startswith("set fmri(outputdir)"):
+                line = f'set fmri(outputdir) "{output_dir}"\n'
+
+            new_lines.append(line)
+
+    # overwrite original fsf
+    with open(fsf_path, "w") as f:
+        f.writelines(new_lines)
+
+def re_glm(subj_folder):
+    for root, dirs, files in os.walk(subj_folder):
+
+        dirs[:] = [d for d in dirs if not d.endswith('.feat')]
+        for file in files:
+            if file.endswith(".fsf"):
+                fsf_path = os.path.join(root, file)
+                smooth = get_smoothing(fsf_path)
+
+                if smooth != 0:
+                    print(f"Re-run FEAT on {fsf_path}")
+                    feat_dir = fsf_path.replace(".fsf", ".feat")
+                    # update_fsf(fsf_path)
+                    #
+                    # # Delete existing .feat folder
+                    # if os.path.exists(feat_dir):
+                    #     print("Deleting:", feat_dir)
+                    #     shutil.rmtree(feat_dir)
+                    #
+                    # # Run FEAT
+                    # try:
+                    #     print(f"Running FEAT on: {fsf_path}")
+                    #     subprocess.run(["feat", fsf_path], check=True)
+                    #     print(f"FEAT successfully completed for: {fsf_path}")
+                    # except subprocess.CalledProcessError as e:
+                    #     print(f"Error running FEAT on {fsf_path}: {e}")
+                    # except Exception as e:
+                    #     print(f"Unexpected error: {e}")
+
 
 if __name__ == "__main__":
     # # step 1; change the smoothing kernel in the fsf files
@@ -116,11 +180,11 @@ if __name__ == "__main__":
     # # step 2 run feat
     # update_outputdir_and_run_feat(directory)
 
-    if len(sys.argv) != 2:
-        print("Usage: python hcp_tfmri_glm.py <num_cpus>")
-        sys.exit(1)
+    # if len(sys.argv) != 2:
+    #     print("Usage: python hcp_tfmri_glm.py <num_cpus>")
+    #     sys.exit(1)
 
-    T = pd.read_csv('/data/tge/Tian/HCP_img/subj_list/HCP203_test_set.tsv', delimiter='\t')
+    T = pd.read_csv('/home/dzhi/eris_mount/Tian/HCP_img/subj_list/HCP200_test.tsv', delimiter='\t')
 
     # num_cpus = 100  # Get CPUs from SLURM
     # set_indices = list(range(num_cpus))  # Modify based on the number of parallel tasks
@@ -132,14 +196,16 @@ if __name__ == "__main__":
     # print("Processing complete.")
 
 
-    s = T.participant_id[int(sys.argv[1])-1]
-    print(f"-- Start FEAT on subject {s}")
+    # s = T.participant_id[int(sys.argv[1])-1]
+    for s in T.participant_id:
+        print(f"-- Start FEAT on subject {s}")
 
-    start = time.perf_counter()
-    update_outputdir_and_run_feat(directory + f'/{s}')
-    finish = time.perf_counter()
-    elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
-    print(f'-- Done {elapse}')
+        start = time.perf_counter()
+        # update_outputdir_and_run_feat(directory + f'/{s}')
+        re_glm(directory + f'/{s}')
+        finish = time.perf_counter()
+        elapse = time.strftime('%H:%M:%S', time.gmtime(finish - start))
+        print(f'-- Done {elapse}')
 
     
 

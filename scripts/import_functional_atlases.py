@@ -2,15 +2,24 @@
 import shutil
 from pathlib import Path
 import numpy as np
-import atlas_map as am
+import Functional_Fusion.atlas_map as am
 import nibabel as nb
 import nitools as nt
 import sys
 
+ERIS_DIR = '/home/dzhi/eris_mount'
+if not Path(ERIS_DIR).exists():
+    ERIS_DIR = '/data/tge'
+if not Path(ERIS_DIR).exists():
+    raise (NameError('Could not find ERIS_DIR'))
 
 base_dir = '/Volumes/diedrichsen_data$/data/FunctionalFusion'
 if not Path(base_dir).exists():
     base_dir = '/srv/diedrichsen/data/FunctionalFusion'
+if not Path(base_dir).exists():
+    base_dir = ERIS_DIR + '/Tian/UKBB_full/imaging'
+if not Path(base_dir).exists():
+    print('data server not mounted')
 
 data_dir = base_dir + '/MDTB'
 atlas_dir = base_dir + '/Atlases'
@@ -19,12 +28,12 @@ def resample_atlases(atlas_names):
     # create and calculate the atlas map for each participant
     for at in atlas_names:
         print(f'at')
-        xfm_name = atlas_dir + '/tpl-MNI152NLIn2000cSymC/tpl-SUIT_space-MNI152NLin2009cSymC_xfm.nii'
+        xfm_name = atlas_dir + '/tpl-MNI152NLin6AsymC/tpl-MNI152NLin6AsymC_from-SUIT_mode-image_xfm.nii'
         deform = nb.load(xfm_name)
         source_name = atlas_dir + f'/tpl-SUIT/atl-{at}_space-SUIT_dseg.nii'
         source = nb.load(source_name)
         nifti = nt.deform_image(source,deform,0)
-        out_name = atlas_dir + f'/tpl-MNI152NLIn2000cSymC/atl-{at}_space-MNI152NLin2009cSymC_dseg.nii'
+        out_name = atlas_dir + f'/tpl-MNI152NLin6AsymC/atl-{at}_space-MNI152NLin6AsymC_dseg.nii'
         nb.save(nifti,out_name)
 
 if __name__ == "__main__":
