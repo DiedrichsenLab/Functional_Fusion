@@ -39,7 +39,7 @@ def import_surface():
 def import_bold():
     T = pd.read_csv(target_dir + '/participants.tsv', delimiter='\t')
     D = pd.read_csv(target_dir + '/reginfo.tsv',delimiter='\t')
-    participants = T.participant_id[15:]
+    participants = T.participant_id[14:15]
     for sub in participants:
         print(f'Importing {sub}')
         for ses in ['ses-1','ses-2','ses-3']:

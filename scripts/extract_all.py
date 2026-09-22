@@ -69,7 +69,8 @@ if __name__ == "__main__":
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
-    # extract_dataset('MTLearn', ['fs32k'], ['CondAll'])
-    # group_average('MTLearn', ['fs32k','MNISymC3'], ['CondAll'])
-    for dataset in ['Somatotopic']:
-        extract_dataset_multiatlas(dataset,['MNIAsymHippocampus_L','MNIAsymHippocampus_R'], ['CondHalf'], cifti_atlas_name='MNIAsymHippocampus')
+    extract_dataset('MTLearn', ['MNISymC3','fs32k'], ['CondAll'])
+    group_average('MTLearn', ['MNISymC3','fs32k'], ['CondAll'])
+    extract_dataset('MTLearn', ['MNISymC3','fs32k'], ['CondRun'])
+        # for dataset in ['Somatotopic']:
+    #     extract_dataset_multiatlas(dataset,['MNIAsymHippocampus_L','MNIAsymHippocampus_R'], ['CondHalf'], cifti_atlas_name='MNIAsymHippocampus')
