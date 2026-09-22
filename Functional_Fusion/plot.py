@@ -161,7 +161,10 @@ def plot_cortex(data,
 
     cifti = cortex_atlas.data_to_cifti(data)
     gifti = nt.cifti.split_cifti_to_giftis(cifti,type='func')
-    data = gifti[0].agg_data()
+    if hem=='L':
+        data = gifti[0].agg_data()
+    if hem=='R':
+        data = gifti[1].agg_data()
 
     atlas_dir = __file__.replace('plot.py','') + 'Atlases'
     surf = os.path.join(atlas_dir,'tpl-fs32k',f'tpl-fs32k_hemi-{hem}_flat.surf.gii')
