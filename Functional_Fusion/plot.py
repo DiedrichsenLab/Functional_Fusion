@@ -107,7 +107,7 @@ def plot_cortex(data,
 
 
     Args:
-        data (np.array):
+        data (np.array or cifti_img or filename):
             Data to be plotted in fs32k atlas space. 
         hem (str):
             'L' or 'R' hemisphere (default: 'L')
@@ -156,10 +156,16 @@ def plot_cortex(data,
 
     """
     cortex_atlas,_  = am.get_atlas(atlas)
-    if data.ndim == 1:
-        data = data[np.newaxis,:]
-
-    cifti = cortex_atlas.data_to_cifti(data)
+    if isinstance(data,np.ndarray):
+        if data.ndim == 1:
+            data = data[np.newaxis,:]
+        cifti = cortex_atlas.data_to_cifti(data)
+    elif isinstance(data,nb.Cifti2Image):
+        cifti = data
+    elif isinstance(data,str):
+        cifti = nb.load(data)
+    else: 
+        raise ValueError("data must be a numpy array, a Cifti2Image, or a string path to a cifti file.")
     gifti = nt.cifti.split_cifti_to_giftis(cifti,type='func')
     if hem=='L':
         data = gifti[0].agg_data()
@@ -186,7 +192,7 @@ def plot_cerebellum(data,
         cmap=None,
         cscale=None,
         label_names=None,
-        borders=None,
+        borders= 'borders.txt',
         bordercolor = 'k',
         bordersize = 2,
         alpha=1.0,
