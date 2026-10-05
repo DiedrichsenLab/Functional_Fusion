@@ -1394,3 +1394,12 @@ class DataSetSocial(DataSetNative):
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
         self.subtract_baseline = True
+
+class DataSetDesign(DataSetNative):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.sessions = ['ses-interspersed']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'cond_num'
+        self.part_ind = 'half'
+        self.subtract_baseline = True
