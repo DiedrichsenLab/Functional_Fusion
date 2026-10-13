@@ -225,6 +225,67 @@ def download_fs32k_va_from_s3_server(
     return failed
 
 
+def download_motion_qc_from_s3_server(
+        subject_list,
+        derivative_dir='/home/dzhi/eris_mount/Tian/HCP_img/derivatives',
+        region='us-east-1',
+        no_sign_request=False,
+        aws_profile=None):
+    """Download resting-state HCP motion files for subjects.
+
+    Downloads all ``Movement_*`` files from the four resting-state runs:
+    ``REST1_LR``, ``REST1_RL``, ``REST2_LR``, and ``REST2_RL``. Files are
+    stored at::
+
+        {derivative_dir}/{subject}/func/rfMRI_{run}/
+
+    HCP S3 access generally requires ConnectomeDB/HCP AWS credentials.
+    Pass ``aws_profile`` if those credentials are stored in a non-default
+    profile.
+    """
+    s3_base_url = 's3://hcp-openaccess/HCP_1200'
+    subject_ids = _get_subject_ids(subject_list)
+    run_names = [
+        'rfMRI_REST1_LR', 'rfMRI_REST1_RL',
+        'rfMRI_REST2_LR', 'rfMRI_REST2_RL'
+    ]
+    failed = []
+
+    for subject_id in subject_ids:
+        source_folder = (
+            f'{s3_base_url}/{subject_id}/MNINonLinear/Results'
+        )
+        func_folder = os.path.join(derivative_dir, subject_id, 'func')
+        os.makedirs(func_folder, exist_ok=True)
+
+        cmd = ['aws']
+        if aws_profile is not None:
+            cmd.extend(['--profile', aws_profile])
+        cmd.extend([
+            's3', 'sync', source_folder, func_folder,
+            '--exclude', '*'
+        ])
+        for run_name in run_names:
+            cmd.extend(['--include', f'{run_name}/Movement_*'])
+        cmd.extend(['--region', region])
+        if no_sign_request:
+            cmd.append('--no-sign-request')
+
+        print(f'-- Start downloading motion QC files for subject '
+              f'{subject_id} --')
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            print(f'   Successfully downloaded motion QC files for '
+                  f'{subject_id}')
+        except subprocess.CalledProcessError as e:
+            error_message = (e.stderr or e.stdout or str(e)).strip()
+            failed.append((subject_id, error_message))
+            print(f'   Error downloading motion QC files for {subject_id}: '
+                  f'{error_message}')
+
+    return failed
+
+
 def dowload_fs32k_va_from_s3_server(*args, **kwargs):
     """Backward-compatible wrapper for the misspelled function name."""
     return download_fs32k_va_from_s3_server(*args, **kwargs)
@@ -610,9 +671,10 @@ if __name__ == "__main__":
     #     print("Usage: python import_hcp.py <i>")
     #     sys.exit(1)        
 
-    ## Download va data from s3 server
-    T = pd.read_csv('/home/dzhi/eris_mount/Tian/HCP_img/subj_list/participants_all.tsv', delimiter='\t')
-    dowload_fs32k_va_from_s3_server(T.participant_id)
+    ## Download VA and resting-state motion QC data from S3 server
+    T = pd.read_csv('/home/dzhi/eris_mount/Tian/HCP_img/subj_list/HCP200_test.tsv', delimiter='\t')
+    # dowload_fs32k_va_from_s3_server(T.participant_id)
+    download_motion_qc_from_s3_server(T.participant_id)
 
     # step1_generate_fmri_list()
     # step1_make_avrg_file()

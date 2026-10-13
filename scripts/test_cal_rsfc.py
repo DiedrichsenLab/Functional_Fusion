@@ -259,8 +259,13 @@ def get_hcp_fs32k_rsfc(
     thres: float | None = None,
     keeptop: bool = False,
     skip_existing: bool = False,
+    output_tag: str | None = None,
+    remove_output: bool = False,
 ) -> None:
     """Extract rsFC data while recording each major operation."""
+    if output_tag and re.fullmatch(r"[A-Za-z0-9_.-]+", output_tag) is None:
+        raise ValueError("output_tag may contain only letters, numbers, ., _, and -")
+
     with profiler.measure("initialize_dataset", scope="setup"):
         if subj_list is None:
             dset = DataSetHcpResting(hcp_dir)
@@ -313,6 +318,8 @@ def get_hcp_fs32k_rsfc(
                 output_stem += "_binarized"
             if keeptop:
                 output_stem += "_kt"
+            if output_tag:
+                output_stem += f"_benchmark-{output_tag}"
             output_file = output_stem + ".dscalar.nii"
 
             if skip_existing and os.path.exists(output_file):
@@ -439,7 +446,12 @@ def get_hcp_fs32k_rsfc(
             with profiler.measure("save_cifti", subject, "subject_step"):
                 nb.save(cifti, output_file)
 
-            print(f"   Done: {output_file}")
+            if remove_output:
+                with profiler.measure("remove_output", subject, "subject_step"):
+                    Path(output_file).unlink()
+                print(f"   Done; removed temporary output: {output_file}")
+            else:
+                print(f"   Done: {output_file}")
 
 
 def parse_number(value: str) -> int | float:
@@ -463,6 +475,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--skip-existing",
         action="store_true",
         help="Do not recompute an output file that already exists",
+    )
+    parser.add_argument(
+        "--output-tag",
+        help="Append a unique tag to each RSFC output filename",
+    )
+    parser.add_argument(
+        "--remove-output",
+        action="store_true",
+        help="Delete each RSFC output immediately after its save is profiled",
     )
     parser.add_argument("--sample-interval", type=float, default=0.1)
     parser.add_argument(
@@ -505,6 +526,8 @@ def main() -> None:
                 thres=args.thres,
                 keeptop=args.keep_top,
                 skip_existing=args.skip_existing,
+                output_tag=args.output_tag,
+                remove_output=args.remove_output,
             )
     finally:
         profiler.stop()
