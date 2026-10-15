@@ -18,6 +18,7 @@ import Functional_Fusion.matrix as matrix
 import Functional_Fusion.atlas_map as am
 import scipy.linalg as sl
 import nibabel as nb
+import nitools as nt
 from numpy import eye, zeros, ones, empty, nansum, sqrt
 from numpy.linalg import pinv, solve
 import warnings
@@ -40,15 +41,21 @@ def get_dataset_class(base_dir, dataset):
     i = np.where(dataset.casefold() == T.name)[0]
     if len(i) == 0:
         raise (NameError(f'Unknown dataset: {dataset}'))
-    dsclass = getattr(sys.modules[__name__], T.class_name[int(i)])
-    dir_name = T.dir_name[int(i)]
+    t = T.iloc[int(i)]
+    dsclass = getattr(sys.modules[__name__], t.class_name)
+    dir_name = t.dir_name
     if dir_name[0] == '/':
         abs_path = dir_name
     elif dir_name[0] == '.':  # Relative path relative to fusion project
         abs_path = Path(base_dir).parent + Path(dir_name[1:])
     else:
-        abs_path = base_dir + '/' + T.dir_name[int(i)]
+        abs_path = base_dir + '/' + t.dir_name
     my_dataset = dsclass(abs_path)
+    my_dataset.sessions = eval(t.sessions)
+    my_dataset.default_type = t.default_type
+    my_dataset.cond_ind = t.cond_ind  # Condition Indicator (field in tsv file )
+    my_dataset.part_ind = t.part_ind  # Partition Indicator (field in tsv file )
+    my_dataset.subtract_baseline = bool(t.subtract_baseline)  # If True, baseline is subtracted from the data
     return my_dataset
 
 def get_dataset(base_dir, dataset, atlas='SUIT3', sess='all', subj=None,
@@ -333,7 +340,7 @@ def remove_baseline(data, baseline):
 
     Arg:
         data (ndarray): (nsubj x N x P) OR (N x P) array
-        baseline (narray): 1-dimensional array (N,) of partition number or (N x npart) indicator matrix
+        baseline (narray): 1-dimensional array (N,) of partition numbers or (N x npart) indicator matrix
     Returns:
         data_sub (ndarray): Baseline subtracted data
     """
@@ -513,25 +520,27 @@ class DataSet:
                 Width of smoothing kernel for extraction. Defaults to None.
         Returns:
             AtlasMap:
-                Built AtlasMap object
+                List of AtlasMap object - usually but for fs32k these are two  
         """
+        cerebellar_spaces = ['SUIT','MNI152NLin2009cSymC','MNI152NLin6AsymC']
+        wholebrain_spaces = ['MNI152Lin2009cSym','MNI152NLin6Asym']
         atlas_maps = []
         adir = self.anatomical_dir.format(sub)
         edir = self.estimates_dir.format(sub)
-        if atlas.space == 'SUIT':
-            deform = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
-            mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
+        if atlas.space in cerebellar_spaces:
+            deform = util.file_nii_or_gz(self.suit_dir.format(sub) + f'/{sub}_space-{atlas.space}_xfm.nii')
+            mask = util.file_nii_or_gz(self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii')
+            if deform is None: 
+                print('Direct transform not found, trying to build from SUIT normalization')
+                deform1  = am.get_deform(atlas.space, 'SUIT')
+                deform2 = util.file_nii_or_gz(self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii')
+                if deform2 is None:
+                    raise ValueError(f'Neither direct transform nor SUIT transform found. Run import_data.run SUIT using desired space.')
+                else:
+                    deform = [deform1, deform2]
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
             atlas_maps[0].build(interpolation=interpolation, smooth=smooth)
-        elif atlas.space in ['MNI152NLin2009cSymC','MNI152NLin6AsymC']:
-            # This is nornmalization over SUIT->MNI (cerebellum only)
-            deform1  = am.get_deform(atlas.space, 'SUIT')
-            deform2 = self.suit_dir.format(sub) + f'/{sub}_space-SUIT_xfm.nii'
-            deform = [deform1, deform2]
-            mask = self.suit_dir.format(sub) + f'/{sub}_desc-cereb_mask.nii'
-            atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
-            atlas_maps[0].build(interpolation=interpolation, smooth=smooth)
-        elif atlas.space in ['MNI152NLin2009cSym']:
+        elif atlas.space in wholebrain_spaces:
             # This is direct MNI normalization
             deform = adir + f'/{sub}_space-{atlas.space}_xfm.nii'
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
@@ -680,51 +689,90 @@ class DataSet:
                     ses_id='ses-s1',
                     type='CondHalf',
                     atlas='SUIT3',
-                    smooth=None,
                     interpolation=1,
+                    smooth=None,
                     subj='all',
-                    exclude_subjects=True):
-        """Extracts data in Volumetric space from a dataset in which the data is stored in Native space. Saves the results as CIFTI files in the data directory.
+                    exclude_subjects=True,
+                    cifti_atlas_name=None):
+        """Extracts data for a dataset in different atlas spacesspace. Saves the results as a single CIFTI file in the data directory
 
         Args:
             ses_id (str):
-                Session. Defaults to 'ses-s1'.
+                Session name. Defaults to 'ses-s1'. Can be 'all'. 
             type (str):
                 Type for condense_data. Defaults to 'CondHalf'.
-            atlas (str):
-                Short atlas string. Defaults to 'SUIT3'.
+            atlas (str or list):
+                Short atlas string. Can be a string for a single atlas or a list of atlases.
+            interpolation (int):
+                Interpolation method for atlasmap. 0: nearest neighbour, 1: trilinear, 2: Gaussian kernel. Defaults to 1
             smooth (float):
-                Smoothing kernel. Defaults to 2.0.
+                Smoothing kernel. Defaults to None. Only relevant if interpolation is 2 (Gaussian kernel).
             subj (list / str):
                 List of Subject numbers to get use. Default = 'all'
             exclude_subjects (bool):
                 If True, excludes subjects that have been specified
                 in the exclude column of the participants.tsv file.
+            cifti_atlas_name (str):
+                Name of the (combined) atlas for the cifti file. Defaults to None.
         """
-        myatlas, _ = am.get_atlas(atlas)
-        # create and calculate the atlas map for each participant
+        # deal with multiple atlases: if a list of atlases is given, combine them into a single cifti file
+        if isinstance(atlas, str):
+            atlas = [atlas]
+            cifti_atlas_name = atlas[0]
+        elif isinstance(atlas, list):
+            if cifti_atlas_name is None:
+                cifti_atlas_name = '+'.join(atlas)
+        else:
+            raise ValueError('Atlas argument should be a string or a list of strings')
+        
+        # select the participants to extract data for
         T = self.get_participants(exclude_subjects=exclude_subjects)
-        if subj != 'all':
+        if isinstance(subj, np.ndarray):
             T = T.iloc[subj]
+        elif subj != 'all':
+            raise(NameError('Subj argument should be "all" or a numpy array of subject indices'))
+        
+        # Loop over participants and extract data 
         for s in T.participant_id:
-            print(f'Atlasmap {s}')
-            atlas_maps = self.get_atlasmaps(myatlas, s, ses_id,
+            fnames, info = self.get_data_fnames(s, ses_id, type=type)
+            atlas_maps = []
+            my_atlasses = []
+            num_atlas_maps = [] # Number of atlas maps for each atlas, fs32k has 2, SUIT has 1, etc.
+            # loop over atlases and extract data for each atlas, then combine into a single cifti file
+            for atlas_name in atlas:
+                myatlas, ainf = am.get_atlas(atlas_name)
+                my_atlasses.append(myatlas)
+                print(f'Atlasmap {s} - {atlas_name}')                                    
+                atlas_map = self.get_atlasmaps(myatlas, s, ses_id,
                                                 smooth=smooth,
                                                 interpolation=interpolation)
+                atlas_maps = atlas_maps + atlas_map
+                num_atlas_maps.append(len(atlas_map))
+            # For efficiency, extract all data for all atlases at once
             print(f'Extract {s}')
-            fnames, info = self.get_data_fnames(s, ses_id, type=type)
             data = am.get_data_nifti(fnames, atlas_maps)
             data, info = self.condense_data(data, info, type,
                                             participant_id=s, ses_id=ses_id)
-            # Write out data as CIFTI file
-            C = myatlas.data_to_cifti(data, info.names)
+            # Build a list of CIFTI files for each atlas and combine them into a single CIFTI file
+            cifti_list = []
+            j = 0
+            for i, myatlas in enumerate(my_atlasses):
+                cifti_list.append(myatlas.data_to_cifti(data[j:j + num_atlas_maps[i]], info.names))
+                j += num_atlas_maps[i]
+
+
+            # Join all CIFTIs
+            combined = nt.join_ciftis(cifti_list)
+            
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+
+            nb.save(combined, dest_dir +
+                    f'/{s}_space-{cifti_atlas_name}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
-
+            
+    
     def get_info(self, ses_id='ses-s1', type=None, subj=None, fields=None, exclude_subjects=True):
         """Loads the tsv-files and returns the most complete info structure
 
@@ -795,7 +843,7 @@ class DataSet:
                 these are also be tested to be equivalent across subjects
         Returns:
             Data (ndarray): (n_subj, n_contrast, n_voxel) array of data
-            info (DataFramw): Data frame with common descriptor
+            info (DataFrame): Data frame with common descriptor
         """
         T = self.get_participants(exclude_subjects=exclude_subjects)
         is_group = False
@@ -868,8 +916,8 @@ class DataSet:
                                type=None,
                                atlas='SUIT3',
                                subj=None):
-            """Loads group data in SUIT space from a standard experiment structure
-            averaged across all subjects. Saves the results as CIFTI files in the data/group directory.
+            """Loads data from all subjects in for a certain session, type and atlas. 
+            Averages data across subjects. Saves the results as CIFTI files in the data/group directory.
 
             Args:
                 ses_id (str, optional): Session ID. If not provided, the first session ID in the dataset will be used.
@@ -927,12 +975,12 @@ class DataSetNative(DataSet):
         """
         atlas_maps = []
 
-        if atlas.space == ['MNI152NLin2009cSym','MNI152NLin6Asym']:
+        if atlas.space in ['MNI152NLin2009cSym','MNI152NLin6Asym']:
             # This is for MNI standard space)
             deform = self.anatomical_dir.format(sub) + f'/{sub}_space-{atlas.space}_xfm.nii'
             if not os.path.exists(deform):
-                warnings.warn(f'No individual deformation found for {atlas.space} in {sub} - resortinh to MNI_xfm.nii')
-                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI_xfm.nii'
+                warnings.warn(f'No individual deformation found for {atlas.space} in {sub} - resortinh to MNI152NLin6Asym_xfm.nii')
+                deform = self.anatomical_dir.format(sub) + f'/{sub}_space-MNI152NLin6Asym_xfm.nii'
             edir = self.estimates_dir.format(sub)
             mask = edir + f'/{ses_id}/{sub}_{ses_id}_mask.nii'
             atlas_maps.append(am.AtlasMapDeform(atlas.world, deform, mask))
@@ -989,7 +1037,7 @@ class DataSetCifti(DataSet):
     """Data set that comes in HCP-format in already pre-extracted cifti files.
     """
 
-    def get_data_fnames(self, participant_id, session_id=None):
+    def get_data_fnames(self, participant_id, session_id=None,type='Cond'):
         """ Gets all raw data files
 
         Args:
@@ -1007,7 +1055,7 @@ class DataSetCifti(DataSet):
             f'{dirw}/{participant_id}_{session_id}_resms.dscalar.nii')
         return fnames, T
 
-    def extract_all(self, ses_id='ses-s1', type='CondHalf', atlas='SUIT3', exclude_subjects=True,interpolation=1, smooth=None):
+    def extract_all(self, ses_id='ses-s1', subj='all',type='CondHalf', atlas='SUIT3', exclude_subjects=True,interpolation=1, smooth=None, cifti_atlas_name=None):
         """Extracts cerebellar data. Saves the results as CIFTI files in the data directory.
         Args:
             ses_id (str, optional): Session. Defaults to 'ses-s1'.
@@ -1016,29 +1064,66 @@ class DataSetCifti(DataSet):
             exclude_subjects (bool): If True, excludes subjects that have been specified
                 in the exclude column of the participants.tsv file.
         """
-        myatlas, _ = am.get_atlas(atlas)
-        # Get the correct map into CIFTI-format
-        if isinstance(myatlas, am.AtlasVolumetric):
-            deform = am.get_deform(myatlas.space,'MNI152NLin6Asym')
-            mask = util.default_atlas_dir + '/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_desc-subcortexmask.nii.gz'
-            atlas_map = am.AtlasMapDeform(myatlas.world,deform,mask)
-            atlas_map.build(interpolation=interpolation,smooth=smooth)
-        elif isinstance(myatlas, am.AtlasSurface):
-            atlas_map = myatlas
-        # Extract the data for each participant
+        if isinstance(atlas, str):
+            atlas = [atlas]
+            cifti_atlas_name = atlas[0]
+        elif isinstance(atlas, list):
+            if cifti_atlas_name is None:
+                cifti_atlas_name = '+'.join(atlas)
+        else:
+            raise ValueError('Atlas argument should be a string or a list of strings')
+
+        # select the participants to extract data for
         T = self.get_participants(exclude_subjects=exclude_subjects)
+        if isinstance(subj, np.ndarray):
+            T = T.iloc[subj]
+        elif subj != 'all':
+            raise(NameError('Subj argument should be "all" or a numpy array of subject indices'))
+        
+        # Loop over participants and extract data 
         for s in T.participant_id:
             print(f'Extract {s}')
+            fnames, info = self.get_data_fnames(s, ses_id, type=type)
+            atlas_maps = []
+            my_atlasses = []
+            num_atlas_maps = [] # Number of atlas maps for each atlas, fs32k has 2, SUIT has 1, etc.
+            # loop over atlases and extract data for each atlas, then combine into a single cifti file
+            for atlas_name in atlas:
+                myatlas, ainf = am.get_atlas(atlas_name)
+                my_atlasses.append(myatlas)
+                print(f'Atlasmap {s} - {atlas_name}')                                    
+                if isinstance(myatlas, am.AtlasVolumetric):
+                    deform = am.get_deform(myatlas.space,'MNI152NLin6Asym')
+                    mask = util.default_atlas_dir + '/tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_desc-subcortexmask.nii.gz'
+                    atlas_map = [am.AtlasMapDeform(myatlas.world,deform,mask)]
+                    atlas_map[0].build(interpolation=interpolation,smooth=smooth)
+                elif isinstance(myatlas, am.AtlasSurface):
+                    atlas_map = myatlas
+                atlas_maps = atlas_maps + atlas_map
+                num_atlas_maps.append(len(atlas_map))
+    
             fnames, info = self.get_data_fnames(s, ses_id)
-            data = am.get_data_cifti(fnames, [atlas_map])
+            data = am.get_data_cifti(fnames, atlas_maps)
             data, info = self.condense_data(data, info, type,participant_id=s, ses_id=ses_id)
-            C = myatlas.data_to_cifti(data[0], info.names)
+
+            # Build a list of CIFTI files for each atlas and combine them into a single CIFTI file
+            cifti_list = []
+            j = 0
+            for i, myatlas in enumerate(my_atlasses):
+                cifti_list.append(myatlas.data_to_cifti(data[j:j + num_atlas_maps[i]], info.names))
+                j += num_atlas_maps[i]
+
+            # Join all CIFTIs
+            combined = nt.join_ciftis(cifti_list)
+            
             dest_dir = self.data_dir.format(s)
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
-            nb.save(C, dest_dir +
-                    f'/{s}_space-{atlas}_{ses_id}_{type}.dscalar.nii')
+
+            nb.save(combined, dest_dir +
+                    f'/{s}_space-{cifti_atlas_name}_{ses_id}_{type}.dscalar.nii')
             info.to_csv(
                 dest_dir + f'/{s}_{ses_id}_{type}.tsv', sep='\t', index=False)
+
 
 
 class DataSetMDTB(DataSetNative):
@@ -1049,7 +1134,6 @@ class DataSetMDTB(DataSetNative):
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
         self.subtract_baseline = True
-
 
 
 class DataSetPontine(DataSetNative):
@@ -1285,17 +1369,17 @@ class DataSetSomatotopic(DataSetMNIVol):
 class DataSetLanguage(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
-        self.sessions = ['ses-localizer','ses-localizerfm','ses-rest']
+        self.sessions = ['ses-localizer','ses-rest']
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
         self.subtract_baseline = True
 
 
-class DataSetHcpTask(DataSetNative):
+class DataSetHcpTask(DataSetMNIVol):
     def __init__(self, dir):
-        super().__init__(dir)
-        self.sessions = ['ses-task']
+        super().__init__(dir,space='MNI152NLin6Asym')
+        self.sessions = ['ses-task2']
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
@@ -1305,6 +1389,15 @@ class DataSetSocial(DataSetNative):
     def __init__(self, dir):
         super().__init__(dir)
         self.sessions = ['ses-social', 'ses-rest']
+        self.default_type = 'CondHalf'
+        self.cond_ind = 'cond_num'
+        self.part_ind = 'half'
+        self.subtract_baseline = True
+
+class DataSetDesign(DataSetNative):
+    def __init__(self, dir):
+        super().__init__(dir)
+        self.sessions = ['ses-interspersed']
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'

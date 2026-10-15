@@ -12,25 +12,47 @@ import nibabel as nb
 
 base_dir = util.get_base_dir()
 
-def extract_dataset(dataset,space,type):
+def extract_dataset(dataset,atlas,type):
     mydataset = ds.get_dataset_class(base_dir,dataset)
-    if not isinstance(space, list):
-        space = [space]
+    if not isinstance(atlas, list):
+        atlas = [atlas]
     if not isinstance(type, list):
         type = [type]
 
-    for sp in space:
-        if sp == 'MNISymC3':
-            smooth=2.0
-            interpolation=2
-        else:
-            smooth = None
-            interpolation = 1 
+    for at in atlas:
+        smooth = None
+        interpolation = 1 
         for t in type:
             for sess in mydataset.sessions:
                 if sess !='ses-rest':
-                    print(f'extracting {dataset} type {t} space {sp}')
-                    mydataset.extract_all(ses_id=sess, type=t, atlas=sp,smooth=smooth,interpolation=interpolation)
+                    print(f'extracting {dataset} type {t} space {at}')
+                    mydataset.extract_all(ses_id=sess, type=t, atlas=at,smooth=smooth,interpolation=interpolation)
+
+def extract_dataset_multiatlas(dataset,atlases,type,cifti_atlas_name=None):
+    mydataset = ds.get_dataset_class(base_dir,dataset)
+    if not isinstance(type, list):
+        type = [type]
+
+    for t in type:
+        smooth = None
+        interpolation = 1 
+        for sess in mydataset.sessions:
+            if sess !='ses-rest':
+                print(f'extracting {dataset} type {t} ')
+                mydataset.extract_all(ses_id=sess, type=t, atlas=atlases,smooth=smooth,interpolation=interpolation,cifti_atlas_name=cifti_atlas_name)
+
+def group_average(dataset,atlas,type):
+    mydataset = ds.get_dataset_class(base_dir,dataset)
+    if not isinstance(atlas, list):
+        atlas = [atlas]
+    if not isinstance(type, list):
+        type = [type]
+
+    for at in atlas:
+        for t in type:
+            for sess in mydataset.sessions:
+                print(f'group averaging {dataset} type {t} space {at}')
+                mydataset.group_average_data(ses_id=sess, type=t, atlas=at)
 
 
 if __name__ == "__main__":
@@ -38,7 +60,7 @@ if __name__ == "__main__":
     # extract_dataset('MDTB', ['fs32k','MNISymC3'], ['CondAll','CondRun'])
     # extract_dataset('MDTB', ['fs32k','MNISymC3'], ['CondHalf'])
     #extract_dataset('WMFS', ['fs32k','MNISymC3'], ['CondHalf'])
-    extract_dataset('HCPur100', ['fs32k','MNISymC3'], ['CondAll','CondRun'])
+    # extract_dataset('HCPur100', ['fs32k','MNISymC3'], ['CondAll','CondRun'])
     # extract_dataset('Nishimoto', ['fs32k','MNISymC3'], ['CondHalf'])
     # extract_dataset('Somatotopic', ['fs32k','MNISymC3'], ['CondHalf'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
@@ -47,3 +69,8 @@ if __name__ == "__main__":
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # extract_dataset('WMFS', ['MNISymC3'], ['CondHalf','CondAll','CondRun'])
     # ['Social','Language','WMFS','MDTB','Demand','Nishimoto','Somatotopic','IBC']
+    extract_dataset('MTLearn', ['MNISymC3','fs32k'], ['CondAll'])
+    group_average('MTLearn', ['MNISymC3','fs32k'], ['CondAll'])
+    extract_dataset('MTLearn', ['MNISymC3','fs32k'], ['CondRun'])
+        # for dataset in ['Somatotopic']:
+    #     extract_dataset_multiatlas(dataset,['MNIAsymHippocampus_L','MNIAsymHippocampus_R'], ['CondHalf'], cifti_atlas_name='MNIAsymHippocampus')

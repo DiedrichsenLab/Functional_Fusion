@@ -16,7 +16,33 @@ def get_base_dir():
             return directory
     raise FileNotFoundError('Could not find base_dir')
     
+def file_nii_or_gz(file_path):
+    """ Checks if the file exists with .nii or .nii.gz extension and returns the correct path
+    returns None if the file does not exist with either extension
+    
+    Args:
+        file_path (str): the file path to check, can end with .nii or .nii.gz
+    Returns:
+        str: the file path with the correct extension that exists
+    """
+    if Path(file_path).exists():
+        return file_path
+    elif file_path.endswith('.nii') and Path(file_path + '.gz').exists():
+        return file_path + '.gz'
+    elif file_path.endswith('.nii.gz') and Path(file_path[:-3]).exists():
+        return file_path[:-3]
+    else:        
+        return None
+
+
 def sq_eucl_distances(coordA,coordB):
+    """ Calculates the squared euclidean distance between two sets of coordinates
+    Args:
+        coordA (ndarray): 3 x N array of coordinates
+        coordB (ndarray): 3 x M array of coordinates
+    Returns:
+        D (ndarray): N x M array of squared euclidean distances between each pair of coordinates in A and B
+    """
     D = coordA.reshape(3,-1,1)-coordB.reshape(3,1,-1)
     D = np.sum(D**2,axis=0)
     return D

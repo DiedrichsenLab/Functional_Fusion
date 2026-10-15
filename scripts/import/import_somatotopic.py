@@ -8,7 +8,6 @@ Author: caro nettekoven
 import pandas as pd
 import shutil
 from pathlib import Path
-import mat73
 import numpy as np
 import scipy.io as sio
 from Functional_Fusion.dataset import DataSetSomatotopic
@@ -24,7 +23,7 @@ if not Path(base_dir).exists():
 
 
 src_base_dir = Path(base_dir + '/Cerebellum//Somatotopic')
-dest_base_dir = Path(base_dir + '/FunctionalFusion/Somatotopic')
+dest_base_dir = Path(base_dir + '/FunctionalFusion_new/Somatotopic')
 
 
 def create_reginfo(log_message=False):
@@ -136,7 +135,19 @@ def import_anat(source_dir, dest_dir, anat_name, participant_id):
     except FileNotFoundError:
         print('skipping ' + src)
 
-    
+def make_masks(): 
+    dataset = DataSetSomatotopic(str(dest_base_dir))
+    pinfo = dataset.get_participants()
+    for id in pinfo.participant_id:         
+        wdir = f"{dest_base_dir}/derivatives/ffimport/{id}/func/ses-motor/" 
+        resms_file = f"{wdir}/{id}_ses-motor_resms.nii"
+        mask_file = f"{wdir}/{id}_ses-motor_mask.nii"
+        # Load and mask - save as uint8
+        A = nb.load(resms_file)
+        X = np.uint8(A.get_fdata()>0)
+        B= nb.Nifti1Image(X,A.affine)
+        nb.save(B,mask_file)
+
 
 if __name__ == '__main__':
     # --- Create reginfo ---
@@ -157,16 +168,16 @@ if __name__ == '__main__':
     #     import_freesurfer(source_dir, dest_dir, old_id, new_id)
 
     # --- Importing Freesurfer & Anat ---
-    
-    for participant_id in ['01', '02', '03', '04', '05', '06', '07', '08']:
 
-        source_dir = '{}/raw/sub-{}/anat/'.format(
-            src_base_dir, participant_id)
-        dest_dir = '{}/derivatives/sub-{}/anat'.format(
-            dest_base_dir, participant_id)
-        id = 'sub-{}'.format(participant_id)
-        anat_name = f'{id}_T1w'
-        import_anat(source_dir, dest_dir, anat_name, id)
+    # for participant_id in ['01', '02', '03', '04', '05', '06', '07', '08']:
 
+    #     source_dir = '{}/raw/sub-{}/anat/'.format(
+    #         src_base_dir, participant_id)
+    #     dest_dir = '{}/derivatives/sub-{}/anat'.format(
+    #         dest_base_dir, participant_id)
+    #     id = 'sub-{}'.format(participant_id)
+    #     anat_name = f'{id}_T1w'
+    #     import_anat(source_dir, dest_dir, anat_name, id)
 
+    make_masks()
 

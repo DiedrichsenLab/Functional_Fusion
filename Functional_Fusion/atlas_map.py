@@ -63,8 +63,11 @@ def get_deform(target_space, source_space,atlas_dir = default_atlas_dir):
     Returns:
         deform (str): Name of deformation map
     """
-    deform = f"{atlas_dir}/tpl-{target_space}/tpl-{target_space}_from-{source_space}_mode-image_xfm.nii"
-    return deform
+    if target_space == source_space:
+        return None
+    else:
+        deform = f"{atlas_dir}/tpl-{target_space}/tpl-{target_space}_from-{source_space}_mode-image_xfm.nii"
+        return deform
 
 def deform_data(data, src_atlas,trg_atlas,interpolation=1):
     """ Deforms any data from a source atlas to a target atlas
@@ -560,7 +563,7 @@ class AtlasSurface(Atlas):
         Args:
             data: the input data to be mapped
 
-                | (ndarray) - 1-d Numpy array of the size (P,)
+                | (ndarray) - Numpy array of the size (K,P)
                 | (list) - list of ndarray
 
             row_axis: label for row axis in cifti file, it can be
@@ -921,7 +924,7 @@ class AtlasMapDeform(AtlasMap):
         Args:
             worlds (ndarray): 3xP ND array of world locations
             deform_img (str/list): Name of deformation map image(s). If None, no deformation is applied.
-            mask_img (str): Name of masking image that defines the functional source space.
+            mask_img (str): Name of masking image that defines the voxels in functional space that are available for mapping. 
         """
         self.P = world.shape[1]
         self.world = world
@@ -985,7 +988,7 @@ class AtlasMapDeform(AtlasMap):
             self.vox_list = linindx.reshape(-1, 1)
             self.vox_weight = np.ones((linindx.shape[0], 1))
             self.vox_weight[np.logical_not(good)] = np.nan
-        elif interpolation==1:
+        elif interpolation==1: # Use trilinear interpolation
             atlas_vox = nt.affine_transform_mat(atlas_coord,np.linalg.inv(self.mask_img.affine))
             vox_lpi = np.floor(atlas_vox).astype(int)
             remainder = atlas_vox - vox_lpi
@@ -1135,10 +1138,10 @@ def get_data_cifti(fnames, atlases):
         fnames (list): list of file names to be sampled
         atlas_maps (list): list of K built atlas-map objects
     returns:
-        data (list): List of NxP_k 2-d array data matrices (np)
+        data (list): List of Lists NxP_k 2-d array data matrices (np)
     """
     n_atlas = len(atlases)
-    data = [[]] * n_atlas
+    data = [[] for _ in range(n_atlas)]
     # Make the empty data structures
     # Loop over files
     for j, f in enumerate(fnames):
