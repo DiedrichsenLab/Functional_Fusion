@@ -1402,4 +1402,4 @@ class DataSetDesign(DataSetNative):
         self.default_type = 'CondHalf'
         self.cond_ind = 'cond_num'
         self.part_ind = 'half'
-        self.subtract_baseline = True
+        self.subtract_baseline = False
